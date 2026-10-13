@@ -1,0 +1,5 @@
+interface:
+  short_description: "Set up Automattic and understand configuration scopes"
+  default_prompt: "Use $automattic:setup-automattic to explain my current configuration and guide me through any changes at user, project or session scope."
+policy:
+  allow_implicit_invocation: false

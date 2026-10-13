@@ -10,7 +10,7 @@ configuration data; resolution never loads user-supplied code or schemas.
 ## Start with the models skill
 
 For a guided explanation of the whole configuration and its scopes, use
-[setup-automiattic](../skills/setup-automiattic/SKILL.md). For direct inspection and edits, use models below.
+[setup-automattic](../skills/setup-automattic/SKILL.md). For direct inspection and edits, use models below.
 Both entry points follow the same [configuration procedure](configuration.md).
 
 Use `/automattic:models` in Claude Code, `$automattic:models` in Codex, or

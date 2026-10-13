@@ -6,7 +6,7 @@ under its [MIT license](LICENSE). Source: show-me 1.0.1 at HumanLayer skills com
 Automattic separates it from the manual entry so explicit commands can share it.
 
 [presentation.md](presentation.md) is the single presentation source. Automattic's
-brief, walkthrough and setup-automiattic read it directly; [skills/show-me/SKILL.md](skills/show-me/SKILL.md) preserves
+brief, walkthrough and setup-automattic read it directly; [skills/show-me/SKILL.md](skills/show-me/SKILL.md) preserves
 the manual show-me command and its invocation policy. Reading this shared reference
 is ordinary composition, not invocation of a disabled skill after a tool refusal.
 The caller's scope controls whether files may be created.

@@ -80,7 +80,7 @@ Agent-chosen thinking changes require the selected agent's allowed set or legacy
 opt-in and the
 [automatic adjustment path](executors.md#automatic-thinking-adjustments); explicit
 user override flags are not a substitute for that permission.
-`/automattic:setup-automiattic` guides configuration and `/automattic:models` handles direct
+`/automattic:setup-automattic` guides configuration and `/automattic:models` handles direct
 settings requests. Both use the [configuration procedure](configuration.md) only
 for user-requested changes; workflow execution reads
 configuration without invoking either explicit-only skill.

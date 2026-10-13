@@ -140,6 +140,9 @@ def check_package():
     assert codex['skills'] == './skills/'
     assert codex['hooks'] == './harnesses/codex/hooks.json'
     assert portable['extensions']['com.openai']['hooks'] == './harnesses/codex/hooks.json'
+    # Codex 0.162 reads a root manifest declaring the Agent Plugins $schema as that format and drops
+    # .codex-plugin hooks, so a copied install would register none.
+    assert '$schema' not in portable, 'root plugin.json must not declare $schema'
     for path in (PLUGIN / 'skills').glob('*/SKILL.md'):
         implicit = path.parent.name in {'code-comments', 'housekeeping', 'model-routing', 'decision'}
         if not implicit:

@@ -1,7 +1,7 @@
 # Configuration procedure
 
-Shared by the user-invoked setup-automiattic and models skills. The entry point first reads
-[runtime bootstrap](README.md) and the active host adapter. The setup-automiattic skill owns guided
+Shared by the user-invoked setup-automattic and models skills. The entry point first reads
+[runtime bootstrap](README.md) and the active host adapter. The setup-automattic skill owns guided
 explanation; models handles direct requests. Both use this procedure for inspection,
 edits, resets and validation without invoking one another's explicit-only skill.
 Respect native invocation restrictions; a refused operation stays refused.

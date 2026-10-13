@@ -14,5 +14,5 @@ current shape, legacy command compatibility, scope precedence and validation.
 No arguments means read-only inspection; a one-run choice is not a saved default.
 
 For a guided explanation of the whole setup, offer
-[setup-automiattic](../setup-automiattic/SKILL.md). A direct, fully specified change needs no walkthrough
+[setup-automattic](../setup-automattic/SKILL.md). A direct, fully specified change needs no walkthrough
 or repeated approval. Apply existing authorization and report its effective result.

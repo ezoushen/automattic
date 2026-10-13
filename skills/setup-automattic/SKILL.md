@@ -1,5 +1,5 @@
 ---
-name: setup-automiattic
+name: setup-automattic
 description: "Walk through the current Automattic setup and help change user, project or session configuration."
 disable-model-invocation: true
 argument-hint: "[question or desired change] [--scope user|project|session]"

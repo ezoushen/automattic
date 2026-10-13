@@ -1,7 +1,7 @@
 # Show-me presentation
 
 Shared presentation guidance adapted from HumanLayer's show-me. This plain
-reference is reusable by brief, walkthrough, setup-automiattic and the manual show-me entry; it has no independent
+reference is reusable by brief, walkthrough, setup-automattic and the manual show-me entry; it has no independent
 invocation or tool permissions. Follow the caller's scope: a read-only briefing
 uses in-chat visuals, with file creation/export only when requested.
 

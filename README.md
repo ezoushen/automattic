@@ -153,22 +153,22 @@ the installed `subagent` tool. See the [Pi adapter](harnesses/pi/adapter.md).
 
 ## Guided setup
 
-Use [setup-automiattic](skills/setup-automiattic/SKILL.md) for a guided explanation of the current
+Use [setup-automattic](skills/setup-automattic/SKILL.md) for a guided explanation of the current
 configuration and help changing it. It shows available workers, launch routes,
 selection policy, decision opt-ins and which scope supplies each effective value.
 
 | Host | Command |
 |---|---|
-| Claude Code | `/automattic:setup-automiattic` |
-| Codex | `$automattic:setup-automiattic` |
-| Pi | `/skill:setup-automiattic` |
+| Claude Code | `/automattic:setup-automattic` |
+| Codex | `$automattic:setup-automattic` |
+| Pi | `/skill:setup-automattic` |
 
 Start with a tour or a specific question:
 
 ```text
-/automattic:setup-automiattic
-/automattic:setup-automiattic Why does this project use a different router from my user default?
-/automattic:setup-automiattic Disable recovery decisions for this session only.
+/automattic:setup-automattic
+/automattic:setup-automattic Why does this project use a different router from my user default?
+/automattic:setup-automattic Disable recovery decisions for this session only.
 ```
 
 A tour is read-only. Requested changes continue in the same conversation, at user,
@@ -176,7 +176,7 @@ project or session scope, with a focused diff and effective result. It follows t
 project's existing tracker and verification conventions without creating a competing
 setup. No worker launch or calibration run is part of inspection.
 
-`setup-automiattic` and `models` use one [configuration procedure](harnesses/configuration.md).
+`setup-automattic` and `models` use one [configuration procedure](harnesses/configuration.md).
 Use `models` for direct inspection/edits when you already know the setting; no second
 command is needed during a guided setup.
 
