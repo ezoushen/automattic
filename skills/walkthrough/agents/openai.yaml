@@ -1,0 +1,5 @@
+interface:
+  short_description: "Understand a PR through guided discussion"
+  default_prompt: "Use $automattic:walkthrough <branch|PR-number|PR-URL> to explain the change, discuss its tradeoffs and guide me toward review readiness."
+policy:
+  allow_implicit_invocation: false

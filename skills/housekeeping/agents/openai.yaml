@@ -1,0 +1,5 @@
+interface:
+  short_description: "Clean task residue and update affected docs"
+  default_prompt: "Use $automattic:housekeeping for <task scope or paths> to remove disposable outputs, keep maintained docs current, and place useful history in journals while preserving required evidence."
+policy:
+  allow_implicit_invocation: true

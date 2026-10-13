@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Automattic agent execution configuration",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "executor_types": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/customExecutorName" },
+      "additionalProperties": { "$ref": "#/$defs/skillExecutor" }
+    },
+    "models": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "$ref": "#/$defs/modelDefinition" }
+    },
+    "runtimes": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/runtimeName" },
+      "additionalProperties": { "$ref": "#/$defs/runtime" }
+    },
+    "agents": { "$ref": "#/$defs/agents" },
+    "router": { "$ref": "#/$defs/router" },
+    "decisions": { "$ref": "#/$defs/decisions" },
+    "profiles": {
+      "type": "object",
+      "propertyNames": { "type": "string", "minLength": 1, "not": { "pattern": "[\\s\\u0000-\\u001f]" } },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": { "$ref": "#/$defs/roleName" },
+        "additionalProperties": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/runtimeName" },
+          "additionalProperties": { "$ref": "#/$defs/routingOverride" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "decisionBackend": {
+      "type": "object",
+      "properties": {
+        "protocol": { "const": "systemone" },
+        "endpoint": { "type": "string", "pattern": "^https?://[^\\s]+$" },
+        "model": { "$ref": "#/$defs/identifier" },
+        "revision": { "type": "string", "pattern": "\\S" },
+        "timeout_seconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60 },
+        "instruction": { "type": "string", "pattern": "\\S" }
+      },
+      "required": ["protocol", "endpoint", "model"],
+      "additionalProperties": false
+    },
+    "decisions": {
+      "type": "object",
+      "properties": {
+        "backend": { "$ref": "#/$defs/decisionBackend" },
+        "enabled": {
+          "type": "array", "uniqueItems": true,
+          "items": { "enum": ["mandate", "alignment", "refinement", "worker-selection", "review-triage", "recovery", "delivery", "failure-cause", "wake-triage"] }
+        },
+        "shadow_auto_accept": {
+          "type": "object",
+          "properties": { "min_confidence": { "type": "number", "minimum": 0, "maximum": 1 } },
+          "required": ["min_confidence"], "additionalProperties": false
+        },
+        "calibration": {
+          "type": "object",
+          "properties": {
+            "suite": { "type": "string", "pattern": "^/" },
+            "baseline": { "type": "string", "pattern": "^/" },
+            "check_every": { "type": "integer", "minimum": 1, "default": 50 },
+            "max_accuracy_drop": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.1 }
+          },
+          "required": ["suite", "baseline"], "additionalProperties": false
+        }
+      },
+      "required": ["backend", "enabled"], "additionalProperties": false
+    },
+    "roleName": { "enum": ["implementer", "spec-reviewer", "reproducer", "repair", "e2e-runner"] },
+    "router": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "decision-model" },
+            "fallback_profile": { "type": "string", "minLength": 1 },
+            "consult": { "enum": ["always", "after-failure"] }
+          },
+          "required": ["type"], "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "skill" },
+            "skill": { "type": "string", "pattern": "\\S" },
+            "instruction": { "type": "string", "pattern": "\\S" }
+          },
+          "required": ["type", "skill"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "decision-model" },
+            "protocol": { "const": "systemone" },
+            "endpoint": { "type": "string", "pattern": "^https?://[^\\s]+$" },
+            "model": { "$ref": "#/$defs/identifier" },
+            "timeout_seconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 60, "default": 20 },
+            "instruction": { "type": "string", "pattern": "\\S" },
+            "fallback_profile": { "type": "string", "minLength": 1 },
+            "consult": { "enum": ["always", "after-failure"] }
+          },
+          "required": ["type", "protocol", "endpoint", "model"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "profile" },
+            "profile": { "$ref": "#/$defs/identifier" }
+          },
+          "required": ["type", "profile"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "routingOverride": {
+      "type": "object",
+      "properties": {
+        "candidate": { "$ref": "#/$defs/identifier" },
+        "thinking": { "$ref": "#/$defs/thinkingLabel" }
+      },
+      "additionalProperties": false
+    },
+    "agents": {
+      "type": "object",
+      "propertyNames": { "enum": ["implementer", "spec-reviewer", "reproducer", "repair", "e2e-runner"] },
+      "additionalProperties": { "$ref": "#/$defs/agent" }
+    },
+    "agent": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/instance" }, { "$ref": "#/$defs/pool" }, { "$ref": "#/$defs/modelReference" }] },
+    "executor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": { "type": { "const": "subagent" }, "config": { "$ref": "executors/subagent.schema.json" } },
+          "required": ["type"],
+          "additionalProperties": false
+        },
+        { "$ref": "#/$defs/skillExecutor" },
+        {
+          "type": "object",
+          "properties": { "type": { "const": "bash" }, "config": { "$ref": "executors/bash.schema.json" } },
+          "required": ["type", "config"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": { "type": { "$ref": "#/$defs/customExecutorName" } },
+          "required": ["type"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "customExecutorName": {
+      "allOf": [{ "$ref": "#/$defs/identifier" }, { "not": { "enum": ["subagent", "skill", "bash"] } }]
+    },
+    "skillExecutor": {
+      "type": "object",
+      "properties": { "type": { "const": "skill" }, "config": { "$ref": "executors/skill.schema.json" } },
+      "required": ["type", "config"],
+      "additionalProperties": false
+    },
+    "modelReference": {
+      "type": "object",
+      "properties": { "model": { "$ref": "#/$defs/identifier" } },
+      "required": ["model"],
+      "additionalProperties": false
+    },
+    "modelDefinition": {
+      "type": "object",
+      "properties": {
+        "description": { "type": "string", "pattern": "\\S" },
+        "runtimes": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/runtimeName" },
+          "additionalProperties": { "$ref": "#/$defs/modelBinding" }
+        }
+      },
+      "required": ["description", "runtimes"],
+      "additionalProperties": false
+    },
+    "runtimeName": { "enum": ["claude", "codex", "pi", "opencode"] },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "executors": {
+          "type": "object",
+          "description": "Launch routes keyed by the actual caller runtime. The herdr key is a shared fallback only in a managed Herdr environment; every selected route still requires caller-specific preflight.",
+          "minProperties": 1,
+          "propertyNames": { "enum": ["claude", "codex", "pi", "opencode", "herdr"] },
+          "additionalProperties": { "$ref": "#/$defs/executor" }
+        }
+      },
+      "required": ["executors"],
+      "additionalProperties": false
+    },
+    "modelBinding": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "thinking": { "oneOf": [{ "$ref": "#/$defs/identifier" }, { "$ref": "#/$defs/thinking" }] },
+        "allow_thinking_override": { "type": "boolean", "default": false }
+      },
+      "required": ["id"],
+      "additionalProperties": false,
+      "allOf": [{
+        "if": { "required": ["thinking"], "properties": { "thinking": { "type": "object" } } },
+        "then": { "not": { "required": ["allow_thinking_override"] } }
+      }]
+    },
+    "instance": {
+      "type": "object",
+      "properties": {
+        "executor": { "$ref": "#/$defs/executor" },
+        "models": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": { "mode": { "const": "inherit" } },
+              "required": ["mode"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": { "const": "override" },
+                "allow_thinking_override": { "type": "boolean", "default": false },
+                "model": { "type": "string", "minLength": 1, "not": { "pattern": "[\\s\\u0000-\\u001f]" } },
+                "thinking": { "oneOf": [{ "$ref": "#/$defs/identifier" }, { "$ref": "#/$defs/thinking" }] }
+              },
+              "required": ["mode"],
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": { "required": ["thinking"], "properties": { "thinking": { "type": "object" } } },
+                  "then": { "not": { "required": ["allow_thinking_override"] } }
+                }
+              ]
+            }
+          ]
+        },
+        "description": { "type": "string", "pattern": "\\S" }
+      },
+      "required": ["executor"],
+      "additionalProperties": false
+    },
+    "identifier": { "type": "string", "minLength": 1, "not": { "pattern": "[\\s\\u0000-\\u001f]" } },
+    "thinking": {
+      "type": "object",
+      "properties": {
+        "default": { "$ref": "#/$defs/thinkingLabel" },
+        "allowed": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/thinkingLabel" } }
+      },
+      "required": ["default", "allowed"],
+      "additionalProperties": false
+    },
+    "thinkingLabel": { "allOf": [{ "$ref": "#/$defs/identifier" }, { "not": { "const": "native" } }] },
+    "pool": {
+      "type": "object",
+      "properties": {
+        "fallback": { "type": "boolean", "default": true },
+        "candidates": {
+          "oneOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/identifier" }
+            },
+            {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "$ref": "#/$defs/identifier" },
+              "additionalProperties": { "$ref": "#/$defs/instance" }
+            }
+          ]
+        }
+      },
+      "required": ["candidates"],
+      "additionalProperties": false
+    }
+  }
+}

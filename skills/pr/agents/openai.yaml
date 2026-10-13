@@ -1,0 +1,5 @@
+interface:
+  short_description: "Open a PR using completed verification evidence"
+  default_prompt: "Use $automattic:pr <effort-slug> to prepare a WHAT / WHY / HOW description from current review and verification evidence, respect the repository PR template, and open the PR when publication is authorized."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+interface:
+  short_description: "Review a branch/PR; draft, preview or post comments"
+  default_prompt: "Use $automattic:review <branch|PR-number|PR-URL> to assess the change within scope and prepare local comment drafts."
+policy:
+  allow_implicit_invocation: false

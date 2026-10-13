@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Automattic candidate recommendation",
+  "type": "object",
+  "properties": {
+    "candidate": { "type": ["string", "null"], "minLength": 1 },
+    "thinking": { "$ref": "executors.schema.json#/$defs/thinkingLabel" },
+    "reason": { "type": "string", "pattern": "\\S" }
+  },
+  "required": ["candidate", "reason"],
+  "additionalProperties": false,
+  "if": { "properties": { "candidate": { "type": "null" } } },
+  "then": { "not": { "required": ["thinking"] } }
+}

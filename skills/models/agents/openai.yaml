@@ -1,0 +1,5 @@
+interface:
+  short_description: "Configure worker pools, decisions, routers and execution"
+  default_prompt: "Use $automattic:models to inspect model runtime bindings, shared launch routes, decision opt-ins and calibration, routing policy, profiles, worker pools and session overrides without changing them."
+policy:
+  allow_implicit_invocation: false

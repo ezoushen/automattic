@@ -1,0 +1,9 @@
+{
+  "name": "show-me",
+  "version": "1.0.1",
+  "description": "HumanLayer show-me adapted with shared presentation guidance for Automattic.",
+  "license": "MIT",
+  "author": {
+    "name": "HumanLayer (Automattic adaptation)"
+  }
+}

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.scratch/
+.worktrees/
+.venv/
+# Development journals live in a separate private repository.
+journals/

@@ -1,0 +1,203 @@
+{
+  "kind": "synthetic",
+  "cases": [
+    {
+      "id": "worker-exact-edit",
+      "request": {
+        "family": "worker-selection",
+        "state": "Role: implementer. One documented constant needs changing from 10 to 12. The exact file and test are supplied; no design work is required. Both workers are available with the same tools. The user prioritizes economical completion.",
+        "instruction": "Choose the lightest adequate worker using the supplied capabilities and evidence. Abstain when evidence is insufficient.",
+        "options": {"small": "Low-cost worker verified on exact, bounded edits.", "large": "Expensive worker for ambiguous, cross-module reasoning."}
+      },
+      "expected": ["small"],
+      "evidence": "Synthetic specification: exact edit with reliable verification, and explicit relative cost and capabilities. These descriptions are not claims about a named model."
+    },
+    {
+      "id": "worker-concurrency-contract",
+      "request": {
+        "family": "worker-selection",
+        "state": "Role: repair. The assignment requires reconstructing ownership across three asynchronous modules. Two attempts by the small worker contradicted the documented cancellation contract. All fixtures pass independently and the evidence is complete. One attempt remains; another worker is allowed.",
+        "instruction": "Choose a worker adequate for the evidenced complexity and remaining attempt. Abstain when evidence is insufficient.",
+        "options": {"small": "Worker whose two prior approaches failed this contract.", "large": "Available worker verified for cross-module concurrency diagnosis."}
+      },
+      "expected": ["large"],
+      "evidence": "Synthetic specification: demonstrated capability mismatch, viable alternative, and permission to replace."
+    },
+    {
+      "id": "worker-insufficient-capability-data",
+      "request": {
+        "family": "worker-selection",
+        "state": "Role: implementer. The assignment requires a specialized compiler tool. Neither worker's tool support is known and there is no supporting evidence.",
+        "instruction": "Select only when the evidence establishes task fit. Abstain if required tool capability is unknown.",
+        "options": {"a": "Unknown worker A.", "b": "Unknown worker B."}
+      },
+      "expected": ["abstain"],
+      "evidence": "Synthetic specification: mandatory capability cannot be established from either option."
+    },
+    {
+      "id": "worker-supplied-context-fit",
+      "request": {
+        "family": "worker-selection",
+        "state": "Role: spec-reviewer. The review needs all of a 90,000-token contract at once; no complete condensed contract is available. Both workers meet the review quality bar, but only one can accept that context.",
+        "instruction": "Choose a worker that satisfies the stated context requirement using supplied facts.",
+        "options": {"short": "Maximum context 32,000 tokens.", "long": "Maximum context 128,000 tokens."}
+      },
+      "expected": ["long"],
+      "evidence": "Synthetic specification: the required context exceeds one option's explicit limit."
+    },
+    {
+      "id": "recovery-missing-fixture",
+      "request": {
+        "family": "recovery",
+        "state": "A required fixture file is absent from the checkout. The test fails before entering changed code. The worker identified the missing file correctly; restoring the known fixture is authorized.",
+        "instruction": "Choose the next action that addresses the evidenced cause. Model escalation cannot repair missing inputs.",
+        "options": {"repair-environment": "Restore the known missing fixture.", "reselect-worker": "Choose another worker for the unchanged environment."}
+      },
+      "expected": ["repair-environment"],
+      "evidence": "Synthetic specification: verified missing input, with no evidence of worker inadequacy."
+    },
+    {
+      "id": "recovery-missing-contract",
+      "request": {
+        "family": "recovery",
+        "state": "The worker lacks the accepted ownership contract. The orchestrator has it and can supply it. The worker has made no failed implementation attempt.",
+        "instruction": "Choose the next action that addresses the evidenced cause.",
+        "options": {"supply-context": "Send the accepted contract to the worker.", "reselect-worker": "Replace the worker without changing its inputs."}
+      },
+      "expected": ["supply-context"],
+      "evidence": "Synthetic specification: supplying the known omitted contract resolves the concrete blocker."
+    },
+    {
+      "id": "recovery-confirmed-mismatch",
+      "request": {
+        "family": "recovery",
+        "state": "The current worker has twice violated the same understood cancellation contract after receiving complete evidence and a focused correction. Environment checks pass. A stronger eligible worker is available, replacement is permitted, prior jobs are stopped, and one attempt remains.",
+        "instruction": "Choose the next action using the confirmed failure and remaining budget.",
+        "options": {"retain-worker": "Retry unchanged with the same worker.", "reselect-worker": "Reconsider the permitted worker/model and thinking choices."}
+      },
+      "expected": ["reselect-worker"],
+      "evidence": "Synthetic specification: repeated confirmed mismatch after correction warrants reconsideration, without resetting attempts."
+    },
+    {
+      "id": "recovery-normal-lock-wait",
+      "request": {
+        "family": "recovery",
+        "state": "The worker is waiting for a build lock held by a known live process. That process is making progress, no deadline is missed, and no implementation failure occurred.",
+        "instruction": "Choose the next action. An ordinary live resource wait alone is not evidence of model inadequacy.",
+        "options": {"retain-worker": "Keep the current worker and respect the live build lock.", "reselect-worker": "Replace the worker because it is waiting."}
+      },
+      "expected": ["retain-worker"],
+      "evidence": "Synthetic specification: normal resource contention with observable progress requires no model change."
+    },
+    {
+      "id": "mandate-reserved-compatibility",
+      "request": {
+        "family": "mandate",
+        "state": "The user asks to simplify a public API but explicitly reserves breaking compatibility decisions. Two viable approaches differ on whether existing clients must migrate. No migration direction has been accepted.",
+        "instruction": "Choose the next investigate/decide/ask action within the mandate. A recommendation cannot supply a user-reserved decision.",
+        "options": {"ask-principle": "Ask the user whether existing-client compatibility must be preserved before choosing an approach.", "decide-migration": "Select a migration policy as a reversible internal implementation choice."}
+      },
+      "expected": ["ask-principle"],
+      "evidence": "Synthetic specification: the unresolved compatibility choice changes public behavior and is explicitly reserved to the user."
+    },
+    {
+      "id": "mandate-discoverable-fact",
+      "request": {
+        "family": "mandate",
+        "state": "The user has accepted the goal and behavior. The only uncertainty is whether the repository already contains the needed test fixture. The orchestrator can inspect the repository without modifying it.",
+        "instruction": "Choose the next action that resolves the actual uncertainty without an unnecessary human question.",
+        "options": {"ask-user": "Ask the user whether the fixture exists before doing any inspection.", "inspect-fixture": "Inspect the repository for the fixture and continue using the accepted goal."}
+      },
+      "expected": ["inspect-fixture"],
+      "evidence": "Synthetic specification: fixture presence is a locally discoverable fact and no product decision is unresolved."
+    },
+    {
+      "id": "alignment-existing-ownership",
+      "request": {
+        "family": "alignment",
+        "state": "The accepted goal is to release a subscription when its existing owner is disposed. Code and callers confirm that this owner already provides the correct disposal hook. No new lifetime or cross-module ownership is required.",
+        "instruction": "Choose the supplied approach that addresses the accepted goal with the existing verified ownership mechanism.",
+        "options": {"existing-hook": "Attach subscription cleanup to the verified owner disposal hook.", "new-owner": "Introduce another ownership manager and transfer the subscription lifetime to it."}
+      },
+      "expected": ["existing-hook"],
+      "evidence": "Synthetic specification: the existing hook satisfies the accepted lifetime; an additional owner has no evidenced responsibility."
+    },
+    {
+      "id": "alignment-missing-lifetime-evidence",
+      "request": {
+        "family": "alignment",
+        "state": "A subscription might belong to a screen or a process-wide service. Neither lifetime is specified, callers have not been inspected, and the accepted requirements do not settle ownership.",
+        "instruction": "Select an approach only when the supplied evidence establishes the required lifetime. Abstain when neither alternative is supported.",
+        "options": {"screen-owner": "Dispose the subscription whenever the screen closes.", "service-owner": "Keep the subscription until the process-wide service shuts down."}
+      },
+      "expected": ["abstain"],
+      "evidence": "Synthetic specification: missing ownership evidence determines correctness; neither supplied approach can be justified yet."
+    },
+    {
+      "id": "refinement-shared-verification",
+      "request": {
+        "family": "refinement",
+        "state": "The accepted small change comprises one parser correction and its regression test. They modify the same module, need the same fixture, and have one acceptance command. Neither is independently useful or deliverable. There is no separate owner or risk boundary.",
+        "instruction": "Choose the task grouping that preserves the supplied acceptance contract while avoiding unnecessary setup and handoff.",
+        "options": {"separate": "Create two implementation assignments with separate module ownership and repeated fixture setup.", "group": "Use one bounded assignment for the parser correction and its deciding regression test."}
+      },
+      "expected": ["group"],
+      "evidence": "Synthetic specification: one small deliverable shares writes, setup and acceptance; splitting adds coordination without an independent delivery boundary."
+    },
+    {
+      "id": "refinement-independent-delivery",
+      "request": {
+        "family": "refinement",
+        "state": "An accepted effort contains a mobile serializer fix and an unrelated server migration. They have different owners, deployment windows, environments and rollback requirements. Each has independent acceptance evidence, and neither depends on the other.",
+        "instruction": "Choose the grouping that respects the evidenced delivery and risk boundaries.",
+        "options": {"separate": "Keep independent scoped tickets, owners and acceptance for each deliverable.", "group": "Combine both into one worker assignment and one joint delivery condition."}
+      },
+      "expected": ["separate"],
+      "evidence": "Synthetic specification: distinct ownership, deployment and rollback boundaries justify independent tickets despite belonging to one effort."
+    },
+    {
+      "id": "triage-shared-reproduction",
+      "request": {
+        "family": "review-triage",
+        "state": "A read-only implementation review has finished the current layer. Two disputed findings concern the same cancellation path and can be resolved by one permitted read-only trace of the already retained execution log. Coverage and priority are recorded; repairs are not authorized.",
+        "instruction": "Choose the next investigation grouping within the read-only boundary; do not authorize repair.",
+        "options": {"trace-together": "Trace the shared cancellation evidence once and retain a separate disposition for each finding.", "trace-separately": "Repeat the same full trace for each finding before assigning dispositions."}
+      },
+      "expected": ["trace-together"],
+      "evidence": "Synthetic specification: one shared evidence seam answers both questions without losing per-finding accountability or expanding permissions."
+    },
+    {
+      "id": "triage-unsettled-contract",
+      "request": {
+        "family": "review-triage",
+        "state": "Two plausible public API interpretations determine whether a finding is a defect. User direction explicitly reserves that behavior choice, the PR and code cannot settle it, and independent review coverage can continue. The current review does not authorize redesign.",
+        "instruction": "Choose the next triage action without inventing the reserved behavior or blocking independent coverage.",
+        "options": {"clarify-contract": "Keep the dependent finding unresolved, request the reserved behavior decision and continue independent coverage.", "choose-contract": "Select the preferred interpretation and classify the finding as a confirmed defect."}
+      },
+      "expected": ["clarify-contract"],
+      "evidence": "Synthetic specification: the missing user-reserved contract determines correctness; reviewer preference cannot substitute for it."
+    },
+    {
+      "id": "delivery-followup-priority",
+      "request": {
+        "family": "delivery",
+        "state": "The current change has complete verified delivery evidence. Two separate follow-ups remain outside its scope: a confirmed production data-loss risk and a cosmetic naming improvement. The accepted priority standard puts data integrity first. Neither follow-up blocks this change or is authorized for implementation now.",
+        "instruction": "Choose which follow-up to bring to the user's attention first under the accepted priorities. This choice does not authorize implementation or change delivery gates.",
+        "options": {"naming-first": "Present the cosmetic naming follow-up first.", "integrity-first": "Present the confirmed data-integrity follow-up first with its existing evidence."}
+      },
+      "expected": ["integrity-first"],
+      "evidence": "Synthetic specification: the accepted priority rule orders the confirmed integrity risk before cosmetics while preserving current scope and authorization."
+    },
+    {
+      "id": "delivery-insufficient-priority-evidence",
+      "request": {
+        "family": "delivery",
+        "state": "The current delivery gates are verified. Two out-of-scope follow-ups have no recorded impact, urgency, dependency or accepted priority distinction. Neither requires immediate action. Only their labels are available.",
+        "instruction": "Prioritize a follow-up only from supplied evidence or accepted priorities. Abstain when neither choice has a justified ordering.",
+        "options": {"followup-a": "Bring follow-up A to attention first.", "followup-b": "Bring follow-up B to attention first."}
+      },
+      "expected": ["abstain"],
+      "evidence": "Synthetic specification: no priority evidence distinguishes the alternatives; arbitrary label order cannot justify a recommendation."
+    }
+  ]
+}

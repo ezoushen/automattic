@@ -1,0 +1,5 @@
+interface:
+  short_description: "Brief current progress, blockers and next steps"
+  default_prompt: "Use $automattic:brief to explain current progress, remaining work, verification status and any decisions needed for the active task."
+policy:
+  allow_implicit_invocation: false

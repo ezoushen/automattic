@@ -1,0 +1,5 @@
+interface:
+  short_description: "Plan WHAT / WHY / HOW within accepted scope"
+  default_prompt: "Use $automattic:align <effort-slug> to establish a scoped WHAT / WHY / HOW plan using accepted decisions; add --interactive for a human checkpoint."
+policy:
+  allow_implicit_invocation: false

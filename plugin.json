@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "automattic",
+  "version": "0.3.0",
+  "description": "Loop engineering on top of Matt Pocock's skills: the principal steers, agents decide within a vetoable ledger, and a graph-scheduled outer loop drives tickets to done.",
+  "author": {
+    "name": "ezou"
+  },
+  "license": "MIT",
+  "keywords": [
+    "loop-engineering",
+    "orchestration",
+    "tdd",
+    "tickets",
+    "scrum"
+  ],
+  "extensions": {
+    "com.openai": {
+      "hooks": "./harnesses/codex/hooks.json"
+    }
+  }
+}

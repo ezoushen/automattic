@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill executor configuration",
+  "type": "object",
+  "properties": {
+    "skill": { "type": "string", "minLength": 1, "not": { "pattern": "[\\s\\u0000-\\u001f]" } },
+    "instruction": { "type": "string", "minLength": 1, "pattern": "\\S" }
+  },
+  "required": ["skill", "instruction"],
+  "additionalProperties": false
+}

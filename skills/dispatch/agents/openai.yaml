@@ -1,0 +1,5 @@
+interface:
+  short_description: "Implement tickets and review; autofix is optional"
+  default_prompt: "Use $automattic:dispatch <effort|project|milestone|issue-ID|issue-URL> to implement the selected tickets and complete a read-only review. Omit the scope to use the project's configured queue."
+policy:
+  allow_implicit_invocation: false

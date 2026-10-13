@@ -1,0 +1,5 @@
+interface:
+  short_description: "Record decisions, review outcomes and test prompts"
+  default_prompt: "Use $automattic:decision to assess this checkpoint or retrospectively review its recorded prompt, recommendation, host action and outcome."
+policy:
+  allow_implicit_invocation: true

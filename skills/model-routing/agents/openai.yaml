@@ -1,0 +1,5 @@
+interface:
+  short_description: "Choose a worker model and thinking for one assignment"
+  default_prompt: "Use $automattic:model-routing to select one eligible worker and thinking setting for this assignment."
+policy:
+  allow_implicit_invocation: true
