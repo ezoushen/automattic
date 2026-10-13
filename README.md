@@ -473,6 +473,11 @@ scoping, cross-effort locking/capacity, unknown arguments, mutation boundaries,
 cycles, prerequisite branch ancestry, evidence acceptance, malformed input, both
 hook registrations, shared file links, and build-lock exclusion/release/exit status.
 
+Use the [review behavior rehearsal](docs/review-rehearsal.md) to check walkthrough
+discussion, review handoff and finding adjudication separately from package registration.
+Use the [dispatch recovery rehearsal](docs/dispatch-rehearsal.md) to check executor
+completion, failed waits, state reconciliation and automatic review continuation.
+
 Native package checks validate discovery, invocation metadata and registration.
 When this source is installed in Claude, `--native` also checks that the installed
 development plugin is enabled and has no loading errors, including missing dependencies.
