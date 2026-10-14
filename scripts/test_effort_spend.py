@@ -227,5 +227,63 @@ class EffortSpend(unittest.TestCase):
         self.assertIn('--since', self.report('--host', str(pi), code=2))
 
 
+    def test_damaged_lines_split_records_and_subagent_files_do_not_break_or_shrink_the_count(self):
+        self.attempt('t1/1', 't1', 'sess-a')
+        usage = {'input_tokens': 1, 'cache_creation_input_tokens': 0, 'cache_read_input_tokens': 0, 'output_tokens': 5}
+        path = self.claude_transcript('sess-a', [('msg-1', usage, [])])
+        lines = path.read_text().splitlines(keepends=True)
+        user = {'type': 'user', 'message': {'role': 'user', 'content': 'line\u2028separator'}}
+        path.write_text(lines[0] + json.dumps(user, ensure_ascii=False) + '\n' + ''.join(lines[1:])
+                        + '{"type":"assistant","message":{"id":"x')
+        child = self.claude / '-tmp-worktree' / 'sess-a' / 'subagents' / 'agent-1.jsonl'
+        child.parent.mkdir(parents=True)
+        child.write_text(json.dumps({'type': 'assistant', 'timestamp': '2026-10-14T01:00:00Z', 'message': {
+            'id': 'sub-1', 'model': 'claude-haiku-5-5', 'content': [], 'usage': dict(usage, output_tokens=9)}}) + '\n')
+        result = self.report()
+        self.assertEqual((result['workers']['total']['responses'], result['workers']['total']['output']), (2, 14))
+        self.assertEqual(result['coverage']['unreadable_lines'], [{'path': str(path), 'line': 4}])
+
+    def test_codex_pages_are_one_stream_and_compressed_pages_are_a_coverage_gap(self):
+        self.attempt('t1/1', 't1', 'sess-b', runtime='codex')
+        first = self.codex_transcript('sess-b', [(10, 0, 5, [])])
+        lines = first.read_text().splitlines(keepends=True)
+        later = {'timestamp': '2026-10-14T01:00:09Z', 'type': 'event_msg', 'payload': {'type': 'token_count', 'info': {
+            'total_token_usage': {'input_tokens': 30, 'cached_input_tokens': 0, 'output_tokens': 12},
+            'last_token_usage': {'input_tokens': 20, 'cached_input_tokens': 0, 'output_tokens': 7}}}}
+        first.rename(first.with_name(first.stem + '_page-1.jsonl'))
+        first.with_name(first.stem + '_page-2.jsonl').write_text(lines[-1] + json.dumps(later) + '\n')
+        first.with_name(first.stem + '_page-3.jsonl.zst').write_bytes(b'\x28\xb5\x2f\xfd')
+        result = self.report()
+        self.assertEqual((result['workers']['total']['responses'], result['workers']['total']['output']), (2, 12))
+        self.assertEqual([gap['reason'] for gap in result['coverage']['missing']], ['compressed pages not read'])
+
+    def test_host_commands_are_named_by_the_program_that_runs(self):
+        self.attempt('t1/1', 't1', 'sess-a')
+        bash = lambda command: {'type': 'tool_use', 'name': 'Bash', 'input': {'command': command}}
+        host = self.claude_host(['go'] + [(f'2026-10-14T02:00:0{index}Z', f'h{index}', index + 1, [bash(command)])
+                                          for index, command in enumerate([
+            "# it's 'x'; the end\nls -la",
+            'TOK=$(sim-mirror token create) && curl -s a',
+            "echo 'a;b' | grep a"])])
+        codex = self.codex_transcript('host-c', [])
+        exec_call = {'timestamp': '2026-10-14T02:00:05Z', 'type': 'response_item', 'payload': {
+            'type': 'custom_tool_call', 'name': 'exec',
+            'input': 'text(await tools.exec_command({cmd:"git -C /r status --short","max_output_tokens":100}));'}}
+        count = {'timestamp': '2026-10-14T02:00:06Z', 'type': 'event_msg', 'payload': {'type': 'token_count', 'info': {
+            'total_token_usage': {'input_tokens': 1, 'output_tokens': 4},
+            'last_token_usage': {'input_tokens': 1, 'output_tokens': 4}}}}
+        poll = json.loads(json.dumps(exec_call))
+        poll['payload']['input'] = 'const id=load("s"); const r=await tools.write_stdin({session_id:id});'
+        polled = json.loads(json.dumps(count))
+        polled['payload']['info']['total_token_usage']['output_tokens'] = 10
+        polled['payload']['info']['last_token_usage']['output_tokens'] = 6
+        codex.write_text(codex.read_text() + ''.join(json.dumps(line) + '\n'
+                                                     for line in (exec_call, count, poll, polled)))
+        result = self.report('--host', str(host), '--host', str(codex),
+                             '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')
+        self.assertEqual({key: value['output'] for key, value in result['host']['by_activity'].items()},
+                         {'tool:write_stdin': 6, 'git:status': 4, 'command:echo': 3, 'command:sim-mirror': 2,
+                          'read': 1})
+
 if __name__ == '__main__':
     unittest.main()

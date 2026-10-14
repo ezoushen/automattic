@@ -19,6 +19,7 @@ TOOL_ACTIVITIES = {'read': {'Read', 'Grep', 'Glob', 'LS', 'read', 'grep', 'find'
 READ_COMMANDS = {'cat', 'sed', 'head', 'tail', 'rg', 'grep', 'ls', 'find', 'wc', 'jq'}
 SCRIPTS = {'run-check.py': 'check', 'agent-models.py': 'routing', 'decisions.py': 'routing',
            'decision_journal.py': 'routing'}
+SEPARATORS = ';&|()\n'
 OPTION_VALUES = {'git': {'-C', '-c', '--git-dir', '--work-tree'}, 'herdr': {'--session'}}
 
 
@@ -54,10 +55,23 @@ def trigger(text):
 
 
 def words(command):
+    """Shell words, with separators, subshell brackets and newlines as their own tokens and comments dropped."""
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=SEPARATORS)
+    lexer.whitespace, lexer.whitespace_split, lexer.commenters = ' \t\r', True, '#'
     try:
-        return shlex.split(command, comments=True)
+        return list(lexer)
     except ValueError:
         return command.split('#')[0].split()
+
+
+def segments(tokens):
+    segment = []
+    for token in tokens + [';']:
+        if set(token) <= set(SEPARATORS):
+            yield segment
+            segment = []
+        elif not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*=.*', token) or segment:
+            segment.append(token)
 
 
 def command_activity(command):
@@ -67,8 +81,7 @@ def command_activity(command):
             return 'lifecycle:' + (tokens[index + 1] if index + 1 < len(tokens) else '?')
         if Path(token).name in SCRIPTS:
             return SCRIPTS[Path(token).name]
-    for segment in re.split(r'&&|\|\||;|\||\n', command):
-        tokens = [token for token in words(segment) if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*=.*', token)]
+    for tokens in segments(tokens):
         if not tokens or tokens[0] == 'cd':
             continue
         program, rest, skip = Path(tokens[0]).name, [], False
@@ -98,6 +111,13 @@ def activity(calls):
 
 
 def shell_command(name, arguments):
+    if name == 'exec' and isinstance(arguments, str):
+        # Codex code mode runs shell commands from JavaScript; read the first one it issues.
+        match = re.search(r'exec_command\(\{\s*"?cmd"?\s*:\s*("(?:[^"\\]|\\.)*")', arguments)
+        try:
+            return json.loads(match.group(1)) if match else None
+        except ValueError:
+            return None
     if name not in SHELL_TOOLS or not isinstance(arguments, dict):
         return None
     command = arguments.get('command', arguments.get('cmd'))
@@ -113,11 +133,24 @@ def text_of(content):
     return '\n'.join(texts) if texts else None
 
 
-def claude_responses(path):
+def entries(paths, unreadable):
+    """Each JSON line of each file in order; a damaged or partly written line is recorded and skipped."""
+    for path in paths:
+        with path.open(encoding='utf-8', errors='replace') as stream:
+            for number, line in enumerate(stream, 1):
+                try:
+                    entry = json.loads(line)
+                except ValueError:
+                    unreadable.append({'path': str(path), 'line': number})
+                    continue
+                if isinstance(entry, dict):
+                    yield path, entry
+
+
+def claude_responses(paths, unreadable):
     """One entry per response ID; streamed blocks repeat usage, so keep the largest output snapshot."""
     responses, cause = {}, 'user'
-    for line in path.read_text().splitlines():
-        entry = json.loads(line)
+    for _, entry in entries(paths, unreadable):
         message = entry.get('message') or {}
         if entry.get('type') == 'user':
             text = text_of(message.get('content'))
@@ -140,11 +173,10 @@ def claude_responses(path):
     return list(responses.values())
 
 
-def codex_responses(path):
-    """Codex repeats a token count without a new response; only a growing total marks one."""
+def codex_responses(paths, unreadable):
+    """Codex repeats a token count without a new response, also across pages; only a growing total marks one."""
     responses, previous, cause, calls = [], None, 'user', []
-    for line in path.read_text().splitlines():
-        entry = json.loads(line)
+    for _, entry in entries(paths, unreadable):
         payload = entry.get('payload') or {}
         if entry.get('type') == 'response_item':
             if payload.get('type') == 'message' and payload.get('role') == 'user':
@@ -152,10 +184,14 @@ def codex_responses(path):
                 cause = trigger(text) if text is not None else cause
             elif payload.get('type') in ('function_call', 'custom_tool_call'):
                 try:
-                    arguments = json.loads(payload.get('arguments') or '{}')
+                    arguments = payload['input'] if 'input' in payload else json.loads(payload.get('arguments') or '{}')
                 except ValueError:
                     arguments = {}
-                calls.append((payload.get('name'), shell_command(payload.get('name'), arguments)))
+                name, command = payload.get('name'), shell_command(payload.get('name'), arguments)
+                if name == 'exec' and command is None and isinstance(arguments, str):
+                    called = re.search(r'tools\.(\w+)\(', arguments)
+                    name = called.group(1) if called else name
+                calls.append((name, command))
             continue
         info = payload.get('info') or {}
         if entry.get('type') != 'event_msg' or payload.get('type') != 'token_count' or not info:
@@ -171,11 +207,10 @@ def codex_responses(path):
     return responses
 
 
-def pi_responses(path):
+def pi_responses(paths, unreadable):
     """Pi records usage on each assistant message entry, including abandoned branches, which were still paid for."""
     responses, cause = {}, 'user'
-    for line in path.read_text().splitlines():
-        entry = json.loads(line)
+    for path, entry in entries(paths, unreadable):
         message = entry.get('message') or {}
         if entry.get('type') == 'custom_message':
             cause = 'yield-hook' if entry.get('customType') == 'automattic_yield_gate' else trigger(
@@ -191,20 +226,24 @@ def pi_responses(path):
         if message.get('role') == 'assistant' and usage:
             calls = [(block.get('name'), shell_command(block.get('name'), block.get('arguments')))
                      for block in message.get('content', []) if block.get('type') == 'toolCall']
-            responses[entry['id']] = {'input': usage.get('input', 0), 'cache_write': usage.get('cacheWrite', 0),
+            responses[path, entry.get('id')] = {'input': usage.get('input', 0), 'cache_write': usage.get('cacheWrite', 0),
                                       'cache_read': usage.get('cacheRead', 0), 'output': usage.get('output', 0),
                                       'time': entry.get('timestamp'), 'trigger': cause, 'calls': calls}
     return list(responses.values())
 
 
-READERS = {'claude': (claude_responses, lambda root, session: [*root.glob(f'*/{session}.jsonl')]),
-           'codex': (codex_responses, lambda root, session: [*root.glob(f'**/rollout-*-{session}.jsonl')]),
-           'pi': (pi_responses, lambda root, session: [*root.glob(f'*/*_{session}.jsonl')])}
+READERS = {  # A Claude session's own Agent-tool children are part of that worker's spend.
+    'claude': (claude_responses, ('*/{s}.jsonl', '*/{s}/subagents/*.jsonl', '*/*/subagents/agent-{s}.jsonl')),
+    'codex': (codex_responses, ('**/rollout-*-{s}.jsonl', '**/rollout-*-{s}_*.jsonl', '**/rollout-*-{s}*.jsonl.zst')),
+    'pi': (pi_responses, ('*/*_{s}.jsonl',))}
 
 
 def host_reader(path):
-    with path.open() as stream:
-        first = json.loads(stream.readline() or '{}')
+    with path.open(encoding='utf-8', errors='replace') as stream:
+        try:
+            first = json.loads(stream.readline() or '{}')
+        except ValueError:
+            first = {}
     return {'session': pi_responses, 'session_meta': codex_responses}.get(first.get('type'), claude_responses)
 
 
@@ -218,7 +257,7 @@ def grouped(responses, key):
 def report(state, roots, hosts=(), since=None, until=None):
     db = sqlite3.connect(f'file:{state}?mode=ro', uri=True)
     attempts = [json.loads(row[0]) for row in db.execute('SELECT data FROM attempts ORDER BY id')]
-    seen, workers, missing = set(), {}, []
+    seen, workers, missing, unreadable = set(), {}, [], []
     for saved in attempts:
         key = (saved['runtime'], saved['native_session'])
         if key in seen:
@@ -228,17 +267,21 @@ def report(state, roots, hosts=(), since=None, until=None):
         if saved['runtime'] not in READERS:
             missing.append(dict(gap, reason='unsupported runtime'))
             continue
-        read, find = READERS[saved['runtime']]
-        paths = find(roots[saved['runtime']], saved['native_session'])
-        if not paths:
+        read, patterns = READERS[saved['runtime']]
+        found = sorted({path for pattern in patterns
+                        for path in roots[saved['runtime']].glob(pattern.format(s=saved['native_session']))})
+        paths = [path for path in found if path.suffix == '.jsonl']
+        if len(paths) < len(found):
+            missing.append(dict(gap, reason='compressed pages not read'))
+        elif not paths:
             missing.append(dict(gap, reason='no transcript found'))
-        responses = [response for path in paths for response in read(path)]
+        responses = read(paths, unreadable)
         workers.setdefault((saved['assignment'], saved['role']), []).extend(responses)
     by_assignment, by_role = {}, {}
     for (assignment, role), responses in workers.items():
         by_assignment.setdefault(assignment, []).extend(responses)
         by_role.setdefault(role, []).extend(responses)
-    host = [response for path in hosts for response in host_reader(path)(path)
+    host = [response for path in hosts for response in host_reader(path)([path], unreadable)
             if response['time'] and since <= timestamp(response['time']) < until]
     reverted = {row[0] for row in db.execute("SELECT attempt FROM events WHERE kind = 'attribution' "
                                              "AND json_extract(payload, '$.kind') = 'revert'")}
@@ -255,7 +298,7 @@ def report(state, roots, hosts=(), since=None, until=None):
                      'until_exclusive': until and until.isoformat(), 'total': total(host),
                      'by_trigger': grouped(host, lambda response: response['trigger']),
                      'by_activity': grouped(host, lambda response: activity(response['calls']))},
-            'coverage': {'missing': missing}}
+            'coverage': {'missing': missing, 'unreadable_lines': unreadable}}
 
 
 def main():

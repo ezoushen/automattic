@@ -13,9 +13,11 @@ python3 /path/to/automattic/scripts/effort-spend.py \
 ```
 
 Workers come from the state: each registered attempt's `runtime` and
-`native_session` find its Claude, Codex or Pi transcript, read whole. The host does
+`native_session` find its Claude, Codex or Pi transcript, read whole. A Claude
+worker's own Agent-tool children and every page of a Codex rollout count toward
+that worker. The host does
 not register, so name its transcript with `--host` (repeatable; the format is
-detected) and bound it with `--since`/`--until`, because a coordinator session often
+detected) and bound it with `--since`/`--until`, which `--host` requires, because a coordinator session often
 spans more than one effort. Start the window at the effort's planning, not its first
 registration, to include preparation. `--claude-root`, `--codex-root` and
 `--pi-root` override the default transcript directories.
@@ -34,8 +36,11 @@ registration, to include preparation. `--claude-root`, `--codex-root` and
   `lifecycle:<action>`, `check`, `routing`, `herdr:<group> <command>`, `git:<subcommand>`,
   `read`, `edit`, `agent`, `command:<program>`, `tool:<name>`, or `reply` when the
   response called no tool. Groups are sorted by output tokens.
-- `coverage.missing`: attempts whose transcript was not found or whose runtime has
-  no reader (OpenCode). Their tokens are absent, not estimated.
+- `coverage.missing`: attempts whose transcript was not found, whose runtime has
+  no reader (OpenCode), or whose Codex rollout has compressed (`.jsonl.zst`) pages,
+  which are not read. Those tokens are absent, not estimated.
+- `coverage.unreadable_lines`: damaged lines skipped, such as the partly written
+  last line of a live transcript. Rerun after the writer settles.
 
 Every figure counts `responses`, fresh `input`, `cache_write`, `cache_read` and
 `output` separately; thinking is part of output.
@@ -53,5 +58,8 @@ Every figure counts `responses`, fresh `input`, `cache_write`, `cache_read` and
 - Claude streams one response as several blocks; each response ID is counted once
   with its largest usage. Codex repeats token counts; only a growing total counts.
   Pi records usage on each assistant entry, including abandoned branches.
+- Codex code mode runs commands from JavaScript; the first `exec_command` it issues
+  names the activity, and other calls appear as `tool:<name>`, such as
+  `tool:write_stdin` for polling a running command.
 - A worker session reused by later attempts of the same assignment is counted once,
   under the first attempt's assignment and role.
