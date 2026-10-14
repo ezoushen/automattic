@@ -264,7 +264,8 @@ class EffortSpend(unittest.TestCase):
                                           for index, command in enumerate([
             "# it's 'x'; the end\nls -la",
             'TOK=$(sim-mirror token create) && curl -s a',
-            "echo 'a;b' | grep a"])])
+            "echo 'a;b' | grep a",
+            'cd /repo  # enter the checkout\ngit -C /repo diff'])])
         codex = self.codex_transcript('host-c', [])
         exec_call = {'timestamp': '2026-10-14T02:00:05Z', 'type': 'response_item', 'payload': {
             'type': 'custom_tool_call', 'name': 'exec',
@@ -282,8 +283,8 @@ class EffortSpend(unittest.TestCase):
         result = self.report('--host', str(host), '--host', str(codex),
                              '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')
         self.assertEqual({key: value['output'] for key, value in result['host']['by_activity'].items()},
-                         {'tool:write_stdin': 6, 'git:status': 4, 'command:echo': 3, 'command:sim-mirror': 2,
-                          'read': 1})
+                         {'tool:write_stdin': 6, 'git:status': 4, 'git:diff': 4, 'command:echo': 3,
+                          'command:sim-mirror': 2, 'read': 1})
 
 if __name__ == '__main__':
     unittest.main()

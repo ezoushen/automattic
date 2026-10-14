@@ -54,14 +54,34 @@ def trigger(text):
         'wait-finished', 'hold') else 'user'
 
 
+def uncommented(command):
+    """The command without shell comments, keeping their newlines so the next line stays separate."""
+    kept, quote, index = [], None, 0
+    while index < len(command):
+        char = command[index]
+        if quote:
+            quote = None if char == quote else quote
+        elif char in '\'"':
+            quote = char
+        elif char == '#' and (index == 0 or command[index - 1].isspace()):
+            index = command.find('\n', index)
+            if index < 0:
+                break
+            char = '\n'
+        kept.append(char)
+        index += 1
+    return ''.join(kept)
+
+
 def words(command):
-    """Shell words, with separators, subshell brackets and newlines as their own tokens and comments dropped."""
+    """Shell words, with separators, subshell brackets and newlines as their own tokens."""
+    command = uncommented(command)
     lexer = shlex.shlex(command, posix=True, punctuation_chars=SEPARATORS)
-    lexer.whitespace, lexer.whitespace_split, lexer.commenters = ' \t\r', True, '#'
+    lexer.whitespace, lexer.whitespace_split, lexer.commenters = ' \t\r', True, ''
     try:
         return list(lexer)
     except ValueError:
-        return command.split('#')[0].split()
+        return command.split()
 
 
 def segments(tokens):
