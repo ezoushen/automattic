@@ -169,7 +169,8 @@ below or record why it is excluded/blocked before reporting the invocation finis
    Missing assigned implementation evidence → blocked with the exact failure in the issue or run report.
    Accepted → retain the [check evidence](../../harnesses/checks.md#retain-evidence)
    outside the ticket worktree, verify its report links, then merge its branch in
-   the spec worktree. Record implementation integrated and apply the project's
+   the spec worktree. Record implementation integrated, record lifecycle `accepted`
+   on the attempt with the integrated commit, and apply the project's
    corresponding tracker transition. Keep the ticket worktree through the remaining
    review/repair and applicable E2E; integration alone does not retire it.
    Once an integrated build allows checks that only the user can observe

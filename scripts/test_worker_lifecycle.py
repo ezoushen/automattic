@@ -389,6 +389,22 @@ class WorkerLifecycle(unittest.TestCase):
         self.assertIn('collected attempt', error)
         self.register('ticket-3/1', 'ticket-3', 'native-4', 'pane-4', repairs='ticket-2/1', code=2)
 
+    def test_acceptance_is_recorded_once_on_a_completed_collected_attempt(self):
+        self.register()
+        self.ready()
+        error = self.record('accepted', commit='merge-1', evidence=['git log merge-1'], code=2)
+        self.assertIn('completed result', error)
+        self.watch()
+        self.record('reconciled', evidence=['native worker idle with its report'])
+        self.collect()
+        self.acknowledge()
+        self.record('closed', evidence=['native session exited'])
+        self.assertIn('commit', self.record('accepted', 'ticket-1/1', evidence=['log'], code=2))
+        self.record('accepted', commit='merge-1', evidence=['git log merge-1'])
+        accepted = self.cli('status')['attempts'][0]['accepted']
+        self.assertEqual((accepted['commit'], accepted['evidence']), ('merge-1', ['git log merge-1']))
+        self.assertIn('already accepted', self.record('accepted', commit='merge-2', evidence=['log'], code=2))
+
     def test_each_notified_wake_is_triaged_in_shadow_and_a_direct_collection_labels_it(self):
         execution = json.loads(self.execution.read_text())
         execution['decision_policy'] = {'enabled': ['wake-triage'], 'backend': self.system_one()}

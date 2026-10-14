@@ -187,6 +187,11 @@ includes native workers and separately attributes related worktree sessions over
 an explicit time window. It reports recorded tokens without estimating account
 credits and makes no model calls.
 
+The read-only [effort spend report](docs/effort-spend.md) divides an effort's worker
+and coordinator tokens by its accepted tickets, and shows which triggers and
+activities the coordinator's tokens went to. It reads Claude, Codex and Pi
+transcripts.
+
 ## Configure workers
 
 No configuration is required for the existing native workflow. To choose how a

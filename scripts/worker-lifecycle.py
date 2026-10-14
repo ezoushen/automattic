@@ -353,8 +353,8 @@ def record(db, data):
                 require(get(db, data['repairs']).get('result'), 'A repaired attempt must be collected first')
         else:
             saved = get(db, attempt)
-            require((saved['runtime'], saved['native_session']) not in closed_sessions(db) or kind == 'ruling',
-                    'Native conversation already closed')
+            require((saved['runtime'], saved['native_session']) not in closed_sessions(db)
+                    or kind in ('ruling', 'accepted'), 'Native conversation already closed')
             if kind == 'startup':
                 observed = data.get('observed')
                 require(isinstance(observed, dict) and not set(observed) - {'runtime', 'model', 'effort'}
@@ -397,6 +397,12 @@ def record(db, data):
                 started = submitted_at(db, attempt)
                 if started:
                     saved['result']['metrics'] = {'worker_seconds': round(time.time() - started, 3)}
+            elif kind == 'accepted':
+                require(saved.get('result', {}).get('status') == 'completed',
+                        'Acceptance requires a collected completed result')
+                require(not saved.get('accepted'), 'Attempt already accepted')
+                require(text(data.get('commit')), 'Acceptance requires the integrated commit')
+                saved['accepted'] = data
             elif kind in ('retain', 'closed'):
                 if kind == 'closed':
                     final_retirement(db, saved)
@@ -886,7 +892,7 @@ def status(db, attempt=None):
                for row in pending(db, saved['attempt'])):
             attention.append('inspect parent and recover pending notification')
         summary = {key: saved[key] for key in ('attempt', 'assignment', 'role', 'worker', 'native_session',
-                   'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'retained', 'closed',
+                   'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'accepted', 'retained', 'closed',
                    'retirement_requested') if key in saved}
         result.append(dict(summary, attention=attention,
                            **({'native_closed_by': closure['attempt']} if closure else {})))

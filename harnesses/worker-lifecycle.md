@@ -250,6 +250,12 @@ an error does not fix its settings mismatch or resolve its design hold. Continue
 board transition and review handoff once their prerequisites pass; monitoring alone
 does not dispatch the next phase.
 
+When the orchestrator accepts a completed result and integrates it, record
+`accepted` on that attempt with the integrated `commit` and evidence. It is allowed
+after the worker's session closed, once per attempt. Acceptance is the
+orchestrator's judgement, not the worker's `completed` claim; the
+[effort spend report](../docs/effort-spend.md) counts accepted tickets from it.
+
 Later evidence about collected work goes back to its attempt:
 `attribute --state ... --attempt <collected attempt> --kind review-defect|revert|owner-defect
 [--count <n>] --evidence <reference>` for a confirmed review finding, a reverted
