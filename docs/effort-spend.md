@@ -15,12 +15,12 @@ python3 /path/to/automattic/scripts/effort-spend.py \
 Workers come from the state: each registered attempt's `runtime` and
 `native_session` find its Claude, Codex or Pi transcript, read whole. A Claude
 worker's own Agent-tool children and every page of a Codex rollout count toward
-that worker. The host does
-not register, so name its transcript with `--host` (repeatable; the format is
-detected) and bound it with `--since`/`--until`, which `--host` requires, because a coordinator session often
-spans more than one effort. Start the window at the effort's planning, not its first
-registration, to include preparation. `--claude-root`, `--codex-root` and
-`--pi-root` override the default transcript directories.
+that worker. The host does not register, so name its transcript with `--host`
+(repeatable; the format is detected). `--host` requires `--since` and `--until`,
+because a coordinator session often spans more than one effort. Start the window
+at the effort's planning, not its first registration, to include preparation.
+`--claude-root`, `--codex-root` and `--pi-root` override the default transcript
+directories.
 
 ## What it reports
 
