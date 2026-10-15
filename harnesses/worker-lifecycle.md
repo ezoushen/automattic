@@ -256,6 +256,21 @@ after the worker's session closed, once per attempt. Acceptance is the
 orchestrator's judgement, not the worker's `completed` claim; the
 [effort spend report](../docs/effort-spend.md) counts accepted tickets from it.
 
+Closing or retiring a completed implementer attempt that has neither settles it:
+the `closed` record, `retire` request or `collect` retire disposition carries
+`"acceptance": {"decision": "accepted", "commit": "...", "evidence": [...]}`,
+or `{"decision": "deferred" | "declined", "reason": "..."}`. A missing decision is
+refused before the pane closes. A deferred attempt asks for `record acceptance or
+decline` in `status` until `accepted` is recorded; a declined one cannot be accepted.
+
+Each collected attempt's outcome (result, acceptance or decline, reverts) also goes
+to a machine-wide ledger, `$XDG_STATE_HOME/automattic/outcomes.sqlite`, with its
+candidate and role, whatever routed it. `scripts/outcomes.py summary` counts
+successes, failures and pending attempts per role and candidate: an implementer
+succeeds when accepted, other roles when completed; a decline, revert, failed or
+blocked result fails. `outcomes.py import <decisions.jsonl>...` adds past decision
+journals once. A failed ledger write is reported as `ledger` and never blocks the record.
+
 Later evidence about collected work goes back to its attempt:
 `attribute --state ... --attempt <collected attempt> --kind review-defect|revert|owner-defect
 [--count <n>] --evidence <reference>` for a confirmed review finding, a reverted

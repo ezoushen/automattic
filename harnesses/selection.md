@@ -59,6 +59,13 @@ registered model ID. Replace illustrative local IDs with installed catalog value
 }
 ```
 
+A model may also state `cost` (`subscription`, `free` or `local`) and `data`
+(`local`, `no-retention`, `provider` or `trains`). A model whose `data` is `trains`
+uses prompts to train the provider's models, so it is unavailable, and listed in
+`unavailable_candidates` with that reason, unless a configuration layer sets
+top-level `"allow_training": true`. Set that only in the `.automattic/executors.json`
+of a repository whose code may be used that way.
+
 `models.<name>.runtimes` lists supported worker runtimes: `claude`, `codex`, `pi`,
 `opencode`. Herdr is a launch mechanism, not a worker runtime or model provider.
 One model can have multiple bindings with distinct IDs and thinking policies.
@@ -297,6 +304,19 @@ Unavailability, abstention or invalid router output falls back once to the built
 host skill. Distinguish router uncertainty from no suitable worker; neither consumes
 worker repair attempts. The router cannot launch workers, widen pools, waive gates
 or recursively select itself. No provider-specific dependency is required by core.
+
+### Shadow selection
+
+Every pooled route also returns `shadow_selection`: what a cost-aware policy would
+have chosen, without changing the route. For each eligible candidate it draws a
+sample from a Beta(1 + successes, 1 + failures) acceptance rate for this role in the
+[outcome ledger](worker-lifecycle.md), seeded by the assignment ID or text so a
+retry draws the same, and subtracts `cost_weight` (0.15) when the model's `cost` is
+`subscription` or unstated. The highest utility is its `choice`; `agrees` compares it
+with the actual route. A candidate without outcomes keeps a wide prior, so it is
+sometimes chosen: that is the exploration. The lifecycle keeps the shadow choice
+with each attempt's outcome so the two policies can be compared before routing
+switches to it.
 
 ## Decision-model router
 

@@ -170,7 +170,8 @@ below or record why it is excluded/blocked before reporting the invocation finis
    Accepted → retain the [check evidence](../../harnesses/checks.md#retain-evidence)
    outside the ticket worktree, verify its report links, then merge its branch in
    the spec worktree. Record implementation integrated, record lifecycle `accepted`
-   on the attempt with the integrated commit, and apply the project's
+   on the attempt with the integrated commit (or pass it as the retirement's
+   `acceptance`), and apply the project's
    corresponding tracker transition. Keep the ticket worktree through the remaining
    review/repair and applicable E2E; integration alone does not retire it.
    Once an integrated build allows checks that only the user can observe

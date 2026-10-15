@@ -192,6 +192,10 @@ and coordinator tokens by its accepted tickets, and shows which triggers and
 activities the coordinator's tokens went to. It reads Claude, Codex and Pi
 transcripts.
 
+`scripts/outcomes.py summary [--role <role>]` counts each candidate's accepted,
+failed and pending attempts across efforts from the lifecycle's outcome ledger;
+`scripts/outcomes.py import <decisions.jsonl>...` adds past decision journals once.
+
 ## Configure workers
 
 No configuration is required for the existing native workflow. To choose how a
