@@ -271,8 +271,10 @@ class Decisions(unittest.TestCase):
         return decisions.checkpoint(self.policy, family, transport=self.transport, trace=trace, **kwargs)
 
     def test_every_configured_family_has_an_executable_checkpoint_and_handoff(self):
+        phases = ('mandate', 'alignment', 'refinement', 'worker-selection',
+                  'review-triage', 'recovery', 'delivery')
         self.policy['enabled'] = list(decisions.FAMILIES)
-        for family in decisions.PHASE_FAMILIES:
+        for family in phases:
             with self.subTest(family=family):
                 trace = journal.trace_config(self.root / 'phases.jsonl', self.root, f'phase/{family}', 'root-1')
                 missing = journal.check_checkpoint(trace['path'], trace, family, 'launch')
@@ -287,9 +289,9 @@ class Decisions(unittest.TestCase):
                 self.assertTrue(journal.check_checkpoint(trace['path'], trace, family, 'launch')['complete'])
                 self.assertFalse(journal.check_checkpoint(trace['path'], trace, family, 'completion')['complete'])
         # Worker selection scores both option orders; the other families make one call.
-        self.assertEqual(len(self.calls), len(decisions.PHASE_FAMILIES) + 1)
+        self.assertEqual(len(self.calls), len(phases) + 1)
         inventory = journal.inspect(self.root / 'phases.jsonl')
-        self.assertEqual({row['family'] for row in inventory['checkpoints']}, set(decisions.PHASE_FAMILIES))
+        self.assertEqual({row['family'] for row in inventory['checkpoints']}, set(phases))
 
     def test_disabled_checkpoint_needs_no_record_or_backend(self):
         result = self.checkpoint('alignment')
