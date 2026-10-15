@@ -614,6 +614,11 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
     if pooled:
         metadata['candidate_pool'] = instance
         pool = instance
+        # Shadow scoring weighs every reachable candidate the host did not exclude, whatever the route's runtime.
+        competing = [name for name in configured_candidates
+                     if (eligible_candidates is None or name in eligible_candidates) and name in catalog
+                     and (catalog[name][0].get('data') != 'trains' or allow_training)
+                     and expand_model(name, catalog, runtimes, host)[0] is not None]
         if eligible_candidates is not None:
             eligible_candidates = [name for name in eligible_candidates if name in pool['candidates']]
         decision_requested = (router['type'] == 'decision-model' and assignment is not None
@@ -704,7 +709,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             metadata['selection_source'] = ('sole-option' if metadata['decision_model']['status'] == 'skipped'
                                             else 'decision-model')
         if isinstance(configured_candidates, list) and configured_candidates:
-            shadow = shadow_selection(info['eligible_candidates'], catalog, role,
+            shadow = shadow_selection(competing, catalog, role,
                                       f'{role}|{assignment_id or assignment or ""}')
             if shadow.get('choice') is not None:
                 shadow['agrees'] = shadow['choice'] == info['candidate']

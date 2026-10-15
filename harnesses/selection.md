@@ -308,7 +308,9 @@ or recursively select itself. No provider-specific dependency is required by cor
 ### Shadow selection
 
 Every pooled route also returns `shadow_selection`: what a cost-aware policy would
-have chosen, without changing the route. For each eligible candidate it draws a
+have chosen, without changing the route. For every candidate this host can reach
+through any runtime, except those the host excluded or training endpoints the
+repository does not allow, it draws a
 sample from a Beta(1 + successes, 1 + failures) acceptance rate for this role in the
 [outcome ledger](worker-lifecycle.md), seeded by the assignment ID or text so a
 retry draws the same, and subtracts `cost_weight` (0.15) when the model's `cost` is

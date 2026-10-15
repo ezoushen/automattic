@@ -870,7 +870,12 @@ class Router(unittest.TestCase):
         result = self.resolve(target_runtime='codex', assignment='Implement ticket 1.')
         self.assertEqual((result['candidate'], result['selection_source']), ('sol', 'profile'))
         shadow = result['shadow_selection']
-        self.assertEqual(set(shadow['candidates']), {'luna', 'sol', 'glm'})  # muse stays behind the boundary
+        # Every reachable candidate competes, whatever runtime the route was pinned to; muse stays behind
+        # the training boundary, and a host's reasoned exclusion still applies.
+        self.assertEqual(set(shadow['candidates']), {'luna', 'sol', 'opus', 'glm'})
+        narrowed = self.resolve(target_runtime='codex', assignment='Implement ticket 1.',
+                                eligible_candidates=['sol', 'luna', 'opus'])['shadow_selection']
+        self.assertEqual(set(narrowed['candidates']), {'luna', 'sol', 'opus'})
         sol, glm = shadow['candidates']['sol'], shadow['candidates']['glm']
         self.assertEqual((sol['cost'], sol['successes'], sol['failures'], sol['mean']), ('subscription', 9, 0, 0.909))
         self.assertEqual((glm['cost'], glm['successes'], glm['failures'], glm['mean']), ('local', 0, 1, 0.333))
