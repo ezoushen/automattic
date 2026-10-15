@@ -1,7 +1,10 @@
 # Research basis
 
-The skill synthesizes content and maintenance principles across these primary
-sources. It does not impose one language's formatting rules on another.
+These sources inform function/interface documentation and maintenance. Their
+broader advice about implementation comments is not permission to add them:
+Automattic permits other comments only for a constraint that cannot be encoded as
+a type, assertion, test or lint rule, after trying to encode it. A project's
+documented convention wins. The sources do not define that project policy.
 
 | Source | Principle carried into the skill |
 |---|---|
@@ -16,8 +19,8 @@ The sources differ on sentence form, symbol coverage and examples: PEP 257 favor
 imperative summaries; Google's C++ guide uses descriptive verb phrases; Go commonly
 starts with the declared name. Rust's example conventions are not a universal
 requirement to add an example to every symbol. Keep those choices with the project's
-language and tooling. "Explain why" is useful for implementation comments, but is
-insufficient for API documentation, which must communicate usable contracts.
+language and tooling. Function/interface documentation must communicate usable
+contracts; explaining reasoning alone does not satisfy the constraint rule for other comments.
 
 Automattic's mandatory documentation review gate, scoped follow-ups, prohibition on
 working-journal comments (including ADR/ticket references), and rule against
