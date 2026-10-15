@@ -52,7 +52,7 @@ assert names(blocked) == [], names(blocked)
 assert len(ready({f"s{i}/01": ticket(f"s{i}/01", "ready", [f"area{i}"]) for i in range(MAX_LIVE + 2)})) == MAX_LIVE
 
 # Two tickets of one spec may run at once when their areas differ: each live
-# ticket gets its own worktree, and Gradle is serialised by scripts/build-lock.sh.
+# ticket gets its own worktree.
 same_spec_parallel = {"s/01": ticket("s/01", "implementing", ["generator"]),
                       "s/02": ticket("s/02", "ready", ["docs"]),
                       "t/01": ticket("t/01", "ready", ["apple"])}

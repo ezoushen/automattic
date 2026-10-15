@@ -194,8 +194,6 @@ def digest(value):
 
 
 def fingerprint(policy, context):
-    # agent-models.py only reads routing config, so its edits cannot change what the model
-    # sees or how answers are scored; the backend and enabled families are hashed separately.
     code = {name: hashlib.sha256((ROOT / 'scripts' / name).read_bytes()).hexdigest()
             for name in ('decisions.py', 'decision_images.py')}
     return digest({'backend': policy['backend'], 'enabled': policy['enabled'],
