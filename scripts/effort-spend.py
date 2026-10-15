@@ -85,24 +85,87 @@ def words(command):
 
 
 def segments(tokens):
+    """Simple commands with the separator that ends each one."""
     segment = []
     for token in tokens + [';']:
         if set(token) <= set(SEPARATORS):
-            yield segment
+            yield segment, token
             segment = []
-        elif not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*=.*', token) or segment:
+        else:
             segment.append(token)
 
 
+ASSIGNMENT = re.compile(r'([A-Za-z_][A-Za-z0-9_]*)=(.*)', re.S)
+# Words that open or continue a compound command; the program follows them.
+PREFIXES = {'do', 'then', 'else', 'elif', '{', '!', 'time'}
+# Shell keywords and builtins that run no program of their own.
+BUILTINS = {'for', 'while', 'until', 'if', 'case', 'select', 'in', 'done', 'fi', 'esac', '}', 'set', 'export',
+            'local', 'declare', 'readonly', 'unset', 'shift', 'trap', 'cd', 'pushd', 'popd', 'true', 'false', ':',
+            'wait', 'return', 'exit', 'function'}
+
+
+def simple_commands(command):
+    """Each simple command's words without leading assignments, skipping function bodies, with the
+    names that hold the lifecycle script: variables assigned it and functions that run it."""
+    aliases, commands, body = set(), [], None
+    for segment, separator in segments(words(command)):
+        while segment and segment[0] in PREFIXES:
+            segment = segment[1:]
+        while segment and ASSIGNMENT.fullmatch(segment[0]):
+            name, value = ASSIGNMENT.fullmatch(segment[0]).groups()
+            if 'worker-lifecycle.py' in value:
+                aliases.add(name)
+            segment = segment[1:]
+        if body is not None:
+            if segment == ['}']:
+                body = None
+            elif any(token.endswith('worker-lifecycle.py') for token in segment):
+                aliases.add(body)
+            continue
+        if separator == '()' and len(segment) == 1:
+            body = segment[0]  # A definition; its body runs only when called.
+            continue
+        if segment:
+            commands.append(segment)
+    return aliases, commands
+
+
+def script_index(segment, runs):
+    """Where a simple command runs a script: the script word, after only an interpreter, its options or a
+    variable. A script that is another program's argument, such as a file being read, is not run."""
+    for index, token in enumerate(segment):
+        if runs(index, token):
+            prefix = segment[:index]
+            return index if all(word.startswith(('-', '$')) or 'python' in Path(word).name
+                                for word in prefix) else None
+    return None
+
+
+def lifecycle_action(segment, aliases):
+    """The lifecycle action a simple command runs, or None when it does not run the script."""
+    index = script_index(segment, lambda index, token: token.endswith('worker-lifecycle.py')
+                         or token.startswith('$') and token.lstrip('$').strip('{}') in aliases
+                         or index == 0 and token in aliases)
+    if index is None:
+        return None
+    rest = segment[index + 1:]
+    while rest[:1] == ['--state']:
+        rest = rest[2:]
+    action = next((word for word in rest if not word.startswith('-')), '?')
+    return None if action.startswith('$') else action
+
+
 def command_activity(command):
-    tokens = words(command)
-    for index, token in enumerate(tokens):
-        if token.endswith('worker-lifecycle.py'):
-            return 'lifecycle:' + (tokens[index + 1] if index + 1 < len(tokens) else '?')
-        if Path(token).name in SCRIPTS:
-            return SCRIPTS[Path(token).name]
-    for tokens in segments(tokens):
-        if not tokens or tokens[0] == 'cd':
+    aliases, commands = simple_commands(command)
+    for tokens in commands:
+        action = lifecycle_action(tokens, aliases)
+        if action:
+            return 'lifecycle:' + action
+        index = script_index(tokens, lambda index, token: Path(token).name in SCRIPTS)
+        if index is not None:
+            return SCRIPTS[Path(tokens[index]).name]
+    for tokens in commands:
+        if tokens[0] in BUILTINS or tokens[0] in aliases:
             continue
         program, rest, skip = Path(tokens[0]).name, [], False
         for token in tokens[1:]:

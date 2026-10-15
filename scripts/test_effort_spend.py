@@ -286,5 +286,27 @@ class EffortSpend(unittest.TestCase):
                          {'tool:write_stdin': 6, 'git:status': 4, 'git:diff': 4, 'command:echo': 3,
                           'command:sim-mirror': 2, 'read': 1})
 
+    def test_lifecycle_calls_through_aliases_are_named_and_shell_keywords_are_not_programs(self):
+        self.attempt('t1/1', 't1', 'sess-a')
+        bash = lambda command: {'type': 'tool_use', 'name': 'Bash', 'input': {'command': command}}
+        lifecycle = '/plugin/scripts/worker-lifecycle.py'
+        commands = [
+            f'P=/r; L={lifecycle}; PY=/v/bin/python; $PY -B $L ack --state $P/w.sqlite --event-id 3',
+            f'L="/v/bin/python -B {lifecycle}"; $L status --state /r/w.sqlite',
+            f'cd /r; L() {{ /v/bin/python -B {lifecycle} --state $PWD/w.sqlite "$@"; }}\nA=t1/1\n'
+            'L record --input /r/rec.json',
+            f'python3 {lifecycle} --state /r/w.sqlite gate --stage yield',
+            f'grep -n "def watch" {lifecycle} | head -5',
+            'for t in 1.3.1 1.3.2; do gh release view $t; done',
+            'set -e; cd /x; git clone -q git@host:o/r.git r2',
+            'export DEVELOPER_DIR=/Xcode HF_HUB_OFFLINE=1; cd /y; make install',
+            f'f() {{ {lifecycle} watch "$@"; }}; git fetch -q']
+        host = self.claude_host(['go'] + [(f'2026-10-14T02:00:0{index}Z', f'h{index}', 2 ** index, [bash(command)])
+                                          for index, command in enumerate(commands)])
+        result = self.report('--host', str(host), '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')
+        self.assertEqual({key: value['output'] for key, value in result['host']['by_activity'].items()},
+                         {'lifecycle:ack': 1, 'lifecycle:status': 2, 'lifecycle:record': 4, 'lifecycle:gate': 8,
+                          'read': 16, 'command:gh': 32, 'git:clone': 64, 'command:make': 128, 'git:fetch': 256})
+
 if __name__ == '__main__':
     unittest.main()
