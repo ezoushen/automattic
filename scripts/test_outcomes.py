@@ -115,5 +115,20 @@ class OutcomeLedger(unittest.TestCase):
             'e2e-runner': {'sonnet': {'successes': 0, 'failures': 0, 'pending': 1}}})
 
 
+    def test_lifecycle_states_import_once_and_a_damaged_source_does_not_stop_the_rest(self):
+        self.attempt('t1/1', acceptance={'decision': 'accepted', 'commit': 'm', 'evidence': ['git log m']})
+        self.attempt('t2/1', candidate='glm', status='failed', acceptance={'decision': 'deferred', 'reason': 'n/a'})
+        damaged = self.root / 'damaged-decisions.jsonl'
+        damaged.write_text('{"event": "decision"\n')
+        os.environ['XDG_STATE_HOME'] = str(self.root / 'other-state')
+        result = self.run_script(OUTCOMES, 'import', str(damaged), str(self.state), code=1)
+        self.assertEqual((result['imported'], result['already']), (2, 0))
+        self.assertEqual(list(result['errors']), [str(damaged)])
+        self.assertEqual(self.summary(), {'implementer': {
+            'sonnet': {'successes': 1, 'failures': 0, 'pending': 0},
+            'glm': {'successes': 0, 'failures': 1, 'pending': 0}}})
+        self.assertEqual(self.run_script(OUTCOMES, 'import', str(self.state)), {'imported': 0, 'already': 2})
+
+
 if __name__ == '__main__':
     unittest.main()

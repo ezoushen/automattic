@@ -2,7 +2,7 @@
 """Keep each worker attempt's outcome across efforts and summarise it per role and candidate.
 
 The worker lifecycle writes an attempt's result, acceptance or decline, and later reverts.
-`import` adds past decision journals once. Implementers succeed when accepted; other roles
+`import` adds past decision journals and lifecycle state files once. Implementers succeed when accepted; other roles
 when their work completed. A revert, a decline or a failed or blocked result is a failure.
 """
 
@@ -16,6 +16,12 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import decision_journal  # noqa: E402
+
+
+# A collected lifecycle status as an outcome, and later quality signals as metric names.
+STATUSES = {'completed': 'succeeded', 'failed': 'failed', 'blocked': 'failed', 'cancelled': 'unknown'}
+METRICS = {'review-defect': 'review_defects', 'repair-round': 'repair_rounds',
+           'revert': 'reverts', 'owner-defect': 'owner_defects'}
 
 
 def ledger_path():
@@ -75,6 +81,37 @@ def summary(role=None):
     return roles
 
 
+def attempt_row(db, saved, source):
+    """A collected lifecycle attempt's outcome, with the quality signals attributed to it."""
+    counts = {}
+    for (payload,) in db.execute("SELECT payload FROM events WHERE attempt = ? AND kind = 'attribution'",
+                                 (saved['attempt'],)):
+        signal = json.loads(payload)
+        counts[METRICS[signal['kind']]] = counts.get(METRICS[signal['kind']], 0) + signal['count']
+    execution = saved.get('execution_snapshot', {})
+    actual = saved.get('observed') or saved['requested']
+    return dict(source=source, attempt=saved['attempt'], assignment=saved['assignment'], repo=saved['repo'],
+                role=saved['role'], candidate=execution.get('candidate') or actual.get('model'),
+                model=actual.get('model'), effort=actual.get('effort'), runtime=saved['runtime'],
+                selection_source=execution.get('selection_source'),
+                shadow_choice=(execution.get('shadow_selection') or {}).get('choice'),
+                status=STATUSES[saved['result']['status']], accepted=bool(saved.get('accepted')),
+                declined=bool(saved.get('declined')), **counts)
+
+
+def state_rows(path):
+    """Collected attempts from a lifecycle state file, keyed as the lifecycle keys them."""
+    source = str(Path(path).resolve())
+    db = sqlite3.connect(f'file:{source}?mode=ro', uri=True, timeout=30)
+    try:
+        for (data,) in db.execute('SELECT data FROM attempts ORDER BY id'):
+            saved = json.loads(data)
+            if saved.get('result'):
+                yield f"{source}#{saved['attempt']}", attempt_row(db, saved, source)
+    finally:
+        db.close()
+
+
 def journal_rows(path):
     """Worker-selection outcomes from a decision journal, keyed by journal and decision."""
     rows = decision_journal.read(path)
@@ -105,22 +142,28 @@ def journal_rows(path):
             'reverts': outcome.get('metrics', {}).get('reverts', 0)}
 
 
-def import_journals(paths):
+def import_sources(paths):
     db = connect()
     try:
         known = {key for (key,) in db.execute('SELECT key FROM outcomes')}
     finally:
         db.close()
     imported = already = 0
+    errors = {}
     for path in paths:
-        for key, row in journal_rows(path):
+        try:
+            rows = list(state_rows(path) if Path(path).suffix == '.sqlite' else journal_rows(path))
+        except (OSError, ValueError, KeyError, sqlite3.Error) as error:
+            errors[str(path)] = str(error)
+            continue
+        for key, row in rows:
             if key in known:
                 already += 1
                 continue
             put(key, row)
             known.add(key)
             imported += 1
-    return {'imported': imported, 'already': already}
+    return {'imported': imported, 'already': already, **({'errors': errors} if errors else {})}
 
 
 def main():
@@ -128,17 +171,18 @@ def main():
     commands = parser.add_subparsers(dest='command', required=True)
     report = commands.add_parser('summary', help='successes, failures and pending attempts per role and candidate')
     report.add_argument('--role')
-    load = commands.add_parser('import', help='add past decision journals once')
-    load.add_argument('journals', nargs='+', type=Path)
+    load = commands.add_parser('import', help='add past decision journals and lifecycle state files once')
+    load.add_argument('sources', nargs='+', type=Path, help='decisions .jsonl or lifecycle workers .sqlite files')
     args = parser.parse_args()
     try:
         if args.command == 'summary':
             result = {'ledger': str(ledger_path()), 'roles': summary(args.role)}
         else:
-            result = import_journals(args.journals)
+            result = import_sources(args.sources)
     except (OSError, ValueError, sqlite3.Error) as error:
         parser.exit(2, f'{error}\n')
     print(json.dumps(result, indent=2))
+    sys.exit(1 if result.get('errors') else 0)
 
 
 if __name__ == '__main__':

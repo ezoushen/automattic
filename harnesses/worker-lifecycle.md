@@ -268,8 +268,8 @@ to a machine-wide ledger, `$XDG_STATE_HOME/automattic/outcomes.sqlite`, with its
 candidate and role, whatever routed it. `scripts/outcomes.py summary` counts
 successes, failures and pending attempts per role and candidate: an implementer
 succeeds when accepted, other roles when completed; a decline, revert, failed or
-blocked result fails. `outcomes.py import <decisions.jsonl>...` adds past decision
-journals once. A failed ledger write is reported as `ledger` and never blocks the record.
+blocked result fails. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
+past decision journals and lifecycle state files once and lists any it could not read. A failed ledger write is reported as `ledger` and never blocks the record.
 
 Later evidence about collected work goes back to its attempt:
 `attribute --state ... --attempt <collected attempt> --kind review-defect|revert|owner-defect

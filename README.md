@@ -194,7 +194,8 @@ transcripts.
 
 `scripts/outcomes.py summary [--role <role>]` counts each candidate's accepted,
 failed and pending attempts across efforts from the lifecycle's outcome ledger;
-`scripts/outcomes.py import <decisions.jsonl>...` adds past decision journals once.
+`scripts/outcomes.py import <decisions.jsonl | workers.sqlite>...` adds past decision
+journals and lifecycle state files once.
 
 ## Configure workers
 

@@ -186,7 +186,7 @@ def report_intact(data):
 
 
 # A collected assignment status as the routing decision's outcome.
-OUTCOMES = {'completed': 'succeeded', 'failed': 'failed', 'blocked': 'failed', 'cancelled': 'unknown'}
+OUTCOMES = outcomes.STATUSES
 
 
 def linked_decision(execution):
@@ -216,8 +216,7 @@ def annotate(saved, kind, **fields):
 
 
 # Later quality signals about an attempt's work, as outcome metric names.
-ATTRIBUTIONS = {'review-defect': 'review_defects', 'repair-round': 'repair_rounds',
-                'revert': 'reverts', 'owner-defect': 'owner_defects'}
+ATTRIBUTIONS = outcomes.METRICS
 
 
 def attribute(db, attempt, kind, count, evidence):
@@ -247,26 +246,11 @@ def attribute(db, attempt, kind, count, evidence):
 
 def ledger(db, saved):
     """Write a collected attempt's outcome to the machine-wide ledger; a failed write is reported, never fatal."""
-    result = saved.get('result')
-    if not result:
+    if not saved.get('result'):
         return None
-    counts = {}
-    for (payload,) in db.execute("SELECT payload FROM events WHERE attempt = ? AND kind = 'attribution'",
-                                 (saved['attempt'],)):
-        signal = json.loads(payload)
-        counts[ATTRIBUTIONS[signal['kind']]] = counts.get(ATTRIBUTIONS[signal['kind']], 0) + signal['count']
-    execution = saved.get('execution_snapshot', {})
-    actual = saved.get('observed') or saved['requested']
-    state = db.execute('PRAGMA database_list').fetchone()[2]
-    row = dict(source=state, attempt=saved['attempt'], assignment=saved['assignment'], repo=saved['repo'],
-               role=saved['role'], candidate=execution.get('candidate') or actual.get('model'),
-               model=actual.get('model'), effort=actual.get('effort'), runtime=saved['runtime'],
-               selection_source=execution.get('selection_source'),
-               shadow_choice=(execution.get('shadow_selection') or {}).get('choice'),
-               status=OUTCOMES[result['status']], accepted=bool(saved.get('accepted')),
-               declined=bool(saved.get('declined')), **counts)
+    state = str(Path(db.execute('PRAGMA database_list').fetchone()[2]).resolve())
     try:
-        outcomes.put(f"{state}#{saved['attempt']}", row)
+        outcomes.put(f"{state}#{saved['attempt']}", outcomes.attempt_row(db, saved, state))
     except (OSError, ValueError, sqlite3.Error) as error:
         return f'not recorded: {error}'
     return None
