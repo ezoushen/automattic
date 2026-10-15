@@ -191,7 +191,7 @@ class Decisions(unittest.TestCase):
             self.assertNotIn('calibration_stale',
                              [w['code'] for w in decisions.calibration_status(self.policy)])
 
-    def test_decision_request_and_scoring_edits_stale_calibration(self):
+    def test_comment_only_edits_leave_calibration_current(self):
         for name in ('decisions.py', 'decision_images.py'):
             with self.subTest(script=name):
                 root = self.plugin_root()
@@ -199,6 +199,17 @@ class Decisions(unittest.TestCase):
                     self.baseline()
                     path = root / 'scripts' / name
                     path.write_text(path.read_text() + '\n# probe\n')
+                    self.assertNotIn('calibration_stale',
+                                     [w['code'] for w in decisions.calibration_status(self.policy)])
+
+    def test_decision_request_and_scoring_edits_stale_calibration(self):
+        for name in ('decisions.py', 'decision_images.py'):
+            with self.subTest(script=name):
+                root = self.plugin_root()
+                with patch.object(decisions, 'ROOT', root):
+                    self.baseline()
+                    path = root / 'scripts' / name
+                    path.write_text(path.read_text() + '\n_CACHE = {}\n')
                     self.assertIn('calibration_stale',
                                   [w['code'] for w in decisions.calibration_status(self.policy)])
 

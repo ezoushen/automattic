@@ -2,6 +2,7 @@
 """Bounded workflow recommendations and explicit, labeled calibration replays."""
 
 import argparse
+import ast
 import fcntl
 import hashlib
 import http.client
@@ -194,7 +195,7 @@ def digest(value):
 
 
 def fingerprint(policy, context):
-    code = {name: hashlib.sha256((ROOT / 'scripts' / name).read_bytes()).hexdigest()
+    code = {name: hashlib.sha256(ast.dump(ast.parse((ROOT / 'scripts' / name).read_text())).encode()).hexdigest()
             for name in ('decisions.py', 'decision_images.py')}
     return digest({'backend': policy['backend'], 'enabled': policy['enabled'],
                    'context': context or {}, 'implementation': code})
