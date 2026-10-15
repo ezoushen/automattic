@@ -392,7 +392,7 @@ def record(db, data):
         else:
             saved = get(db, attempt)
             require((saved['runtime'], saved['native_session']) not in closed_sessions(db)
-                    or kind in ('ruling', 'accepted'), 'Native conversation already closed')
+                    or kind in ('ruling', 'accepted', 'declined'), 'Native conversation already closed')
             if kind == 'startup':
                 observed = data.get('observed')
                 require(isinstance(observed, dict) and not set(observed) - {'runtime', 'model', 'effort'}
@@ -442,6 +442,13 @@ def record(db, data):
                 require(not saved.get('declined'), 'Attempt was declined; accept a new attempt instead')
                 require(text(data.get('commit')), 'Acceptance requires the integrated commit')
                 saved['accepted'] = data
+            elif kind == 'declined':
+                require(saved.get('result', {}).get('status') == 'completed',
+                        'Declining requires a collected completed result')
+                require(not saved.get('accepted'), 'Attempt already accepted')
+                require(not saved.get('declined'), 'Attempt already declined')
+                require(text(data.get('reason')), 'Declining requires a reason')
+                saved['declined'] = data
             elif kind in ('retain', 'closed'):
                 if kind == 'closed':
                     final_retirement(db, saved)
@@ -521,7 +528,7 @@ def record(db, data):
             journal = dict(journal or {}, **assessed)
     repaired = (attribute(db, data['repairs'], 'repair-round', 1, [f'repair attempt {attempt}'])
                 if kind == 'register' and 'repairs' in data else None)
-    unrecorded = ledger(db, saved) if kind in ('result', 'accepted', 'closed') else None
+    unrecorded = ledger(db, saved) if kind in ('result', 'accepted', 'declined', 'closed') else None
     return {'event_id': event_id, 'attempt': attempt, 'verified': saved['verified'],
             **({'journal': journal} if journal else {}), **({'repairs': repaired} if repaired else {}),
             **({'ledger': unrecorded} if unrecorded else {})}

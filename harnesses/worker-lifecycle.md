@@ -227,10 +227,14 @@ contains `status`, checked `head`, existing immutable `report`, verification
   "report": "/absolute/retained-report.md", "evidence": ["native-result-and-checks"],
   "disposition": {
     "kind": "retire", "session": "explicit-owned-herdr-session", "pane": "returned-pane-id",
-    "jobs_evidence": ["owned-jobs-and-waits-reconciled"]
+    "jobs_evidence": ["owned-jobs-and-waits-reconciled"],
+    "acceptance": {"decision": "deferred", "reason": "acceptance checks not run yet"}
   }
 }
 ```
+
+For a completed implementer, `acceptance` goes inside `disposition` (see acceptance
+below); other roles omit it.
 
 Collection persists the report and its digest, acknowledges only that attempt's
 wait/result receipts, then performs the chosen disposition. A completed collection
@@ -256,12 +260,16 @@ after the worker's session closed, once per attempt. Acceptance is the
 orchestrator's judgement, not the worker's `completed` claim; the
 [effort spend report](../docs/effort-spend.md) counts accepted tickets from it.
 
-Closing or retiring a completed implementer attempt that has neither settles it:
-the `closed` record, `retire` request or `collect` retire disposition carries
-`"acceptance": {"decision": "accepted", "commit": "...", "evidence": [...]}`,
-or `{"decision": "deferred" | "declined", "reason": "..."}`. A missing decision is
-refused before the pane closes. A deferred attempt asks for `record acceptance or
-decline` in `status` until `accepted` is recorded; a declined one cannot be accepted.
+Closing or retiring a completed implementer attempt that is neither accepted nor
+declined settles it: the `closed` record, the `retire` input and the `collect`
+retire `disposition` each carry `"acceptance": {"decision": "accepted", "commit":
+"...", "evidence": ["..."]}` (nonempty evidence) once integrated, `{"decision":
+"declined", "reason": "..."}` when its criteria are unmet, or `{"decision":
+"deferred", "reason": "..."}` when acceptance checks are still to run, which is
+usual when retiring at collection. A missing decision is refused before the pane
+closes. A deferred attempt asks for `record acceptance or decline` in `status` until
+`accepted` or `declined` (with `reason` and evidence) is recorded; both are allowed
+after the session closed, and each excludes the other.
 
 Each collected attempt's outcome (result, acceptance or decline, reverts) also goes
 to a machine-wide ledger, `$XDG_STATE_HOME/automattic/outcomes.sqlite`, with its
@@ -269,7 +277,10 @@ candidate and role, whatever routed it. `scripts/outcomes.py summary` counts
 successes, failures and pending attempts per role and candidate: an implementer
 succeeds when accepted, other roles when completed; a decline, revert, failed or
 blocked result fails. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
-past decision journals and lifecycle state files once and lists any it could not read. A failed ledger write is reported as `ledger` and never blocks the record.
+past decision journals and lifecycle state files once; journal decisions the
+lifecycle annotated come from its state file instead, and a journal's `succeeded`
+counts as accepted. Sources it cannot read are listed under `errors` with exit 1;
+the others are still imported. A failed ledger write is reported as `ledger` and never blocks the record.
 
 Later evidence about collected work goes back to its attempt:
 `attribute --state ... --attempt <collected attempt> --kind review-defect|revert|owner-defect

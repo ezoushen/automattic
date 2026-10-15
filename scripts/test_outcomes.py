@@ -95,13 +95,18 @@ class OutcomeLedger(unittest.TestCase):
                 ('t1/1', 'implementer', None, 'succeeded', {}),
                 ('t2/1', 'implementer', 'option_1', 'failed', {}),
                 ('t3/1', 'implementer', None, 'succeeded', {'reverts': 1}),
-                ('t4/1', 'e2e-runner', None, None, {})):
+                ('t4/1', 'e2e-runner', None, None, {}),
+                # The lifecycle writes its own attempts to the ledger; their journal copies are not imported.
+                ('t5/1', 'implementer', 'lifecycle', 'succeeded', {})):
             trace = decision_journal.trace_config(journal, self.root, assignment)
             result = decisions.decide(policy, {'family': 'worker-selection', 'state': f'Role: {role}\n',
                                                'instruction': 'Choose a worker.', 'options': options},
                                       trace=trace, transport=transport)
             did = result['decision_id']
-            decision_journal.record(journal, {'event': 'action', 'decision_id': did, 'actor': 'host',
+            lifecycle = chosen == 'lifecycle'
+            chosen = None if lifecycle else chosen
+            decision_journal.record(journal, {'event': 'action', 'decision_id': did,
+                                              'actor': 'worker-lifecycle' if lifecycle else 'host',
                                               'disposition': 'overridden' if chosen else 'accepted',
                                               'choice': chosen or 'option_0', 'reason': 'host choice'})
             if status:

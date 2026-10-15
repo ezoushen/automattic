@@ -61,9 +61,10 @@ registered model ID. Replace illustrative local IDs with installed catalog value
 
 A model may also state `cost` (`subscription`, `free` or `local`) and `data`
 (`local`, `no-retention`, `provider` or `trains`). A model whose `data` is `trains`
-uses prompts to train the provider's models, so it is unavailable, and listed in
-`unavailable_candidates` with that reason, unless a configuration layer sets
-top-level `"allow_training": true`. Set that only in the `.automattic/executors.json`
+uses prompts to train the provider's models, so it is unavailable unless a
+configuration layer sets top-level `"allow_training": true`: a pool lists it in
+`unavailable_candidates` with that reason, and a role pinned to it fails. The last
+layer that sets `allow_training` wins; set it only in the `.automattic/executors.json`
 of a repository whose code may be used that way.
 
 `models.<name>.runtimes` lists supported worker runtimes: `claude`, `codex`, `pi`,
@@ -307,7 +308,7 @@ or recursively select itself. No provider-specific dependency is required by cor
 
 ### Shadow selection
 
-Every pooled route also returns `shadow_selection`: what a cost-aware policy would
+Every route from a pool of catalog models also returns `shadow_selection`: what a cost-aware policy would
 have chosen, without changing the route. For every candidate this host can reach
 through any runtime, except those the host excluded or training endpoints the
 repository does not allow, it draws a
@@ -318,7 +319,8 @@ retry draws the same, and subtracts `cost_weight` (0.15) when the model's `cost`
 with the actual route. A candidate without outcomes keeps a wide prior, so it is
 sometimes chosen: that is the exploration. The lifecycle keeps the shadow choice
 with each attempt's outcome so the two policies can be compared before routing
-switches to it.
+switches to it. An unreadable ledger gives `{"status": "unavailable", "error": ...}`
+and never fails the route.
 
 ## Decision-model router
 

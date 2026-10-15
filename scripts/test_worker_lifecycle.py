@@ -433,6 +433,18 @@ class WorkerLifecycle(unittest.TestCase):
         self.assertIn('record acceptance or decline', deferred['attention'])
         self.record('accepted', 'ticket-2/1', commit='merge-2', evidence=['git log merge-2'])
         self.assertEqual(self.cli('status', '--attempt', 'ticket-2/1')['attempts'][0]['attention'], [])
+        # A deferred attempt may also be declined once its checks fail.
+        self.register('ticket-4/1', 'ticket-4', 'native-4', 'pane-4')
+        self.ready('ticket-4/1')
+        self.collect('ticket-4/1')
+        self.acknowledge()
+        self.record('closed', 'ticket-4/1', evidence=['native session exited'],
+                    acceptance={'decision': 'deferred', 'reason': 'integration gate still running'})
+        self.assertIn('reason', self.record('declined', 'ticket-4/1', evidence=['gate log'], code=2))
+        self.record('declined', 'ticket-4/1', reason='integration gate failed', evidence=['gate log'])
+        self.assertEqual(self.cli('status', '--attempt', 'ticket-4/1')['attempts'][0]['attention'], [])
+        self.assertIn('declined', self.record('accepted', 'ticket-4/1', commit='m', evidence=['log'], code=2))
+        self.assertIn('already accepted', self.record('declined', 'ticket-2/1', reason='late', evidence=['x'], code=2))
         # A declined attempt is settled and cannot be accepted later.
         self.register('ticket-3/1', 'ticket-3', 'native-3', 'pane-3')
         self.ready('ticket-3/1')

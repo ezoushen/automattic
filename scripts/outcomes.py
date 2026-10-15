@@ -127,6 +127,8 @@ def journal_rows(path):
         if not state.startswith('Role: '):
             continue
         events = latest.get(row['decision_id'], {})
+        if events.get('action', {}).get('actor') == 'worker-lifecycle':
+            continue  # A lifecycle attempt: the lifecycle and its state file are the ledger's source.
         choice = events.get('action', {}).get('choice') or (row.get('result') or {}).get('choice')
         option = request.get('options', {}).get(choice)
         if not option:
