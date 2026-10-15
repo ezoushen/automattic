@@ -412,8 +412,20 @@ independently; dispatch applies it before review, and PR preparation checks
 for remaining work. It reuses code-comments for source documentation. Cleanup
 does not delete unrelated files, retire branches or replace the review gate.
 
-The [shared review procedure](skills/review/workflow.md) owns the only review/repair
-loop and reuses Matt's grilling, code-review, diagnosis and TDD where applicable.
+[remediate](skills/remediate/SKILL.md) finds and proves `tautological-tests`,
+`misleading-comments` or a free-form goal. Invoke `/automattic:remediate [goal] [scope]`
+in Claude, `$automattic:remediate [goal] [scope]` in Codex, or
+`/skill:remediate [goal] [scope]` in Pi; OpenCode uses its native skill discovery.
+It runs only when explicitly requested. Scope defaults to the established diff;
+named paths repair after proof, while whole-project scans report first and wait
+for confirmation before repairs. It changes tests/comments only and reports a
+suspected runtime bug when a corrected test fails on the real implementation.
+The [comment audit](skills/remediate/SKILL.md#comment-audit) lists added plain
+comment lines as review candidates, with language and syntax limits documented
+there. Remediation supplies its own proof and test-first repair procedure.
+
+The [shared review procedure](skills/review/workflow.md) owns the review workflow's
+repair loop and reuses Matt's grilling, code-review, diagnosis and TDD where applicable.
 `/automattic:review`, `/automattic:walkthrough` and `/automattic:dispatch` retain
 `disable-model-invocation: true`. Manual review forwards its target and flags;
 walkthrough hands off when requested, and dispatch runs the same procedure after
