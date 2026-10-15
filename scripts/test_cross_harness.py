@@ -313,6 +313,7 @@ def check_pi_native():
 
 
 if __name__ == '__main__':
+    native_environment = dict(os.environ)
     with tempfile.TemporaryDirectory(prefix='automattic cross harness state ') as state:
         os.environ.update(XDG_STATE_HOME=str(Path(state) / 'state'),
                           XDG_CONFIG_HOME=str(Path(state) / 'config'),
@@ -323,7 +324,9 @@ if __name__ == '__main__':
         check_build_lock()
         run(sys.executable, '-B', str(PLUGIN / 'scripts/test_run_check.py'))
         print('cross-harness regressions: ok (scheduler, hooks, package, remediate, build lock, check runner)')
-        if '--native' in sys.argv:
-            check_native()
-        if '--native-pi' in sys.argv:
-            check_pi_native()
+    os.environ.clear()
+    os.environ.update(native_environment)
+    if '--native' in sys.argv:
+        check_native()
+    if '--native-pi' in sys.argv:
+        check_pi_native()
