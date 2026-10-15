@@ -58,9 +58,11 @@ def put(key, row):
 
 def verdict(row):
     """'success', 'failure' or 'pending' for one attempt's outcome."""
+    if row.get('reverts') or row.get('declined'):
+        return 'failure'
     if row.get('result') == 'blocked':
         return 'pending'
-    if row.get('reverts') or row.get('declined') or row.get('status') == 'failed':
+    if row.get('status') == 'failed':
         return 'failure'
     if row.get('status') != 'succeeded':
         return 'pending'
@@ -167,18 +169,20 @@ def import_sources(paths):
     imported = already = 0
     errors = {}
     for path in paths:
+        state = Path(path).suffix == '.sqlite'
         try:
-            rows = list(state_rows(path) if Path(path).suffix == '.sqlite' else journal_rows(path))
+            rows = list(state_rows(path) if state else journal_rows(path))
         except (OSError, ValueError, KeyError, sqlite3.Error) as error:
             errors[str(path)] = str(error)
             continue
         for key, row in rows:
-            if key in known:
-                already += 1
+            seen = key in known
+            already += seen
+            imported += not seen
+            if seen and not state:
                 continue
-            put(key, row)
-            known.add(key)
-            imported += 1
+            put(key, row)  # A state file is the attempt's record, so it refreshes an earlier row.
+            known |= {key, row.get('decision')} - {None}
     return {'imported': imported, 'already': already, **({'errors': errors} if errors else {})}
 
 

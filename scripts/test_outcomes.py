@@ -92,10 +92,14 @@ class OutcomeLedger(unittest.TestCase):
         # A blocked attempt waits on something outside the worker; it does not count against the model.
         self.attempt('r2/1', role='spec-reviewer', candidate='opus', status='blocked')
         self.attempt('r3/1', role='spec-reviewer', candidate='opus', status='failed')
+        # A revert still fails it.
+        self.attempt('r4/1', role='spec-reviewer', candidate='opus', status='blocked')
+        self.run_script(LIFECYCLE, 'attribute', '--state', str(self.state), '--attempt', 'r4/1', '--kind', 'revert',
+                        '--count', '1', '--evidence', 'revert commit r-4')
         self.assertEqual(self.summary(), {
             'implementer': {'sonnet': {'successes': 1, 'failures': 2, 'pending': 1},
                             'glm': {'successes': 0, 'failures': 1, 'pending': 0}},
-            'spec-reviewer': {'opus': {'successes': 1, 'failures': 1, 'pending': 1}}})
+            'spec-reviewer': {'opus': {'successes': 1, 'failures': 2, 'pending': 1}}})
         # A later acceptance settles the deferred attempt.
         self.record('accepted', 't3/1', commit='merge-3', evidence=['git log merge-3'])
         self.assertEqual(self.summary('--role', 'implementer')['implementer']['sonnet'],
@@ -179,6 +183,21 @@ class OutcomeLedger(unittest.TestCase):
         self.assertEqual(self.summary(), {'implementer': {'sonnet': {'successes': 0, 'failures': 0, 'pending': 2}}})
         self.run_script(OUTCOMES, 'import', str(self.state))
         self.assertEqual(self.summary(), expected)
+        # Both in one call, state first, still count each attempt once.
+        os.environ['XDG_STATE_HOME'] = str(self.root / 'third-state')
+        self.run_script(OUTCOMES, 'import', str(self.state), str(journal))
+        self.assertEqual(self.summary(), expected)
+
+    def test_reimporting_a_state_file_refreshes_its_rows(self):
+        self.attempt('t1/1', acceptance={'decision': 'deferred', 'reason': 'gate running'})
+        with sqlite3.connect(Path(os.environ['XDG_STATE_HOME']) / 'automattic/outcomes.sqlite') as db:
+            key, data = db.execute('SELECT key, data FROM outcomes').fetchone()
+            row = json.loads(data)
+            row.update(result=None, status='failed')  # As an earlier version wrote it.
+            db.execute('UPDATE outcomes SET data = ? WHERE key = ?', (json.dumps(row), key))
+        self.assertEqual(self.summary()['implementer']['sonnet']['failures'], 1)
+        self.assertEqual(self.run_script(OUTCOMES, 'import', str(self.state)), {'imported': 0, 'already': 1})
+        self.assertEqual(self.summary(), {'implementer': {'sonnet': {'successes': 0, 'failures': 0, 'pending': 1}}})
 
 
 if __name__ == '__main__':

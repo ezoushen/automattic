@@ -280,7 +280,9 @@ result fails, and a blocked result, which waits on something outside the worker,
 counts neither way. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
 past decision journals and lifecycle state files once. A lifecycle attempt replaces
 the journal copy of its routing decision, whichever is imported first, and a
-journal's `succeeded` counts as accepted only when the host recorded it. Sources it cannot read are listed under `errors` with exit 1;
+journal's `succeeded` counts as accepted only when the host recorded it. A journal
+cannot tell a blocked result from a failed one, so prefer the state file;
+re-importing a state file refreshes its rows. Sources it cannot read are listed under `errors` with exit 1;
 the others are still imported. A failed ledger write is reported as `ledger` and never blocks the record.
 
 Later evidence about collected work goes back to its attempt:
