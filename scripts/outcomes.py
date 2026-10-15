@@ -41,11 +41,16 @@ def connect():
 
 
 def put(key, row):
-    """Write one attempt's current outcome; the latest write for a key wins."""
+    """Write one attempt's current outcome; the latest write for a key wins. A lifecycle attempt replaces
+    the copy of its routing decision imported from a journal."""
     db = connect()
     try:
-        db.execute('INSERT OR REPLACE INTO outcomes VALUES (?, ?)',
-                   (key, json.dumps(dict(row, recorded_at=time.time()))))
+        with db:
+            db.execute('BEGIN IMMEDIATE')
+            if row.get('decision'):
+                db.execute('DELETE FROM outcomes WHERE key = ?', (row['decision'],))
+            db.execute('INSERT OR REPLACE INTO outcomes VALUES (?, ?)',
+                       (key, json.dumps(dict(row, recorded_at=time.time()))))
     finally:
         db.close()
 
@@ -90,7 +95,11 @@ def attempt_row(db, saved, source):
         counts[METRICS[signal['kind']]] = counts.get(METRICS[signal['kind']], 0) + signal['count']
     execution = saved.get('execution_snapshot', {})
     actual = saved.get('observed') or saved['requested']
-    return dict(source=source, attempt=saved['attempt'], assignment=saved['assignment'], repo=saved['repo'],
+    # States from before the lifecycle kept the link still hold it in the resolved route.
+    routed = execution.get('decision_model') or {}
+    link = saved.get('decision') or (routed if routed.get('decision_id') and routed.get('journal') else {})
+    return dict(decision=f"{Path(link['journal']).resolve()}#{link['decision_id']}" if link else None,
+                source=source, attempt=saved['attempt'], assignment=saved['assignment'], repo=saved['repo'],
                 role=saved['role'], candidate=execution.get('candidate') or actual.get('model'),
                 model=actual.get('model'), effort=actual.get('effort'), runtime=saved['runtime'],
                 selection_source=execution.get('selection_source'),
@@ -127,8 +136,6 @@ def journal_rows(path):
         if not state.startswith('Role: '):
             continue
         events = latest.get(row['decision_id'], {})
-        if events.get('action', {}).get('actor') == 'worker-lifecycle':
-            continue  # A lifecycle attempt: the lifecycle and its state file are the ledger's source.
         choice = events.get('action', {}).get('choice') or (row.get('result') or {}).get('choice')
         option = request.get('options', {}).get(choice)
         if not option:
@@ -139,17 +146,20 @@ def journal_rows(path):
         yield f"{Path(path).resolve()}#{row['decision_id']}", {
             'source': str(Path(path).resolve()), 'attempt': row.get('assignment'), 'role': role,
             'candidate': json.loads(option)['candidate'], 'status': status,
-            # A journal records success when the host accepted the work.
-            'accepted': role == 'implementer' and status == 'succeeded' or None,
+            # A host records success when it accepted the work; the lifecycle records it at completion.
+            'accepted': (role == 'implementer' and status == 'succeeded'
+                         and events.get('action', {}).get('actor') != 'worker-lifecycle') or None,
             'reverts': outcome.get('metrics', {}).get('reverts', 0)}
 
 
 def import_sources(paths):
     db = connect()
     try:
-        known = {key for (key,) in db.execute('SELECT key FROM outcomes')}
+        rows = list(db.execute('SELECT key, data FROM outcomes'))
     finally:
         db.close()
+    # Journal decisions a lifecycle attempt already carries count as known.
+    known = {key for key, _ in rows} | {json.loads(data).get('decision') for _, data in rows} - {None}
     imported = already = 0
     errors = {}
     for path in paths:

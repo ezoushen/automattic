@@ -277,9 +277,9 @@ candidate and role, whatever routed it. `scripts/outcomes.py summary` counts
 successes, failures and pending attempts per role and candidate: an implementer
 succeeds when accepted, other roles when completed; a decline, revert, failed or
 blocked result fails. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
-past decision journals and lifecycle state files once; journal decisions the
-lifecycle annotated come from its state file instead, and a journal's `succeeded`
-counts as accepted. Sources it cannot read are listed under `errors` with exit 1;
+past decision journals and lifecycle state files once. A lifecycle attempt replaces
+the journal copy of its routing decision, whichever is imported first, and a
+journal's `succeeded` counts as accepted only when the host recorded it. Sources it cannot read are listed under `errors` with exit 1;
 the others are still imported. A failed ledger write is reported as `ledger` and never blocks the record.
 
 Later evidence about collected work goes back to its attempt:

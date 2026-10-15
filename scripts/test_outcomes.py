@@ -4,6 +4,7 @@
 import json
 import os
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -36,11 +37,13 @@ class OutcomeLedger(unittest.TestCase):
         path.write_text(json.dumps(dict(kind=kind, attempt=attempt, **fields)))
         return self.run_script(LIFECYCLE, 'record', '--state', str(self.state), '--input', str(path))
 
-    def attempt(self, attempt, role='implementer', candidate='sonnet', status='completed', **closure):
+    def attempt(self, attempt, role='implementer', candidate='sonnet', status='completed', decision=None, **closure):
         """Register, run and collect one attempt; close it with the given fields when any are given."""
         execution = self.root / f'{attempt.replace("/", "-")}.execution.json'
         execution.write_text(json.dumps({'harness': 'claude', 'role': role, 'candidate': candidate,
-                                         'settings': {'model': candidate, 'effort': 'high'}}))
+                                         'settings': {'model': candidate, 'effort': 'high'},
+                                         **({'selection_source': 'decision-model', 'decision_model': decision}
+                                            if decision else {})}))
         number = len(list(self.root.glob('*.execution.json')))
         self.record('register', attempt, assignment=attempt.split('/')[0], repo=str(self.root),
                     worktree=str(self.root), head='head-1', execution=str(execution), runtime='claude',
@@ -55,6 +58,23 @@ class OutcomeLedger(unittest.TestCase):
             self.run_script(LIFECYCLE, 'ack', '--state', str(self.state), '--event-id', str(receipt['id']))
         if closure:
             self.record('closed', attempt, evidence=['native session exited'], **closure)
+
+    def decide(self, journal, assignment, role='implementer'):
+        """Journal a recommended worker-selection decision for sonnet or haiku, choosing sonnet."""
+        options = {f'option_{index}': json.dumps({'candidate': name, 'model': name, 'runtime': 'claude'})
+                   for index, name in enumerate(('sonnet', 'haiku'))}
+
+        def transport(backend, payload):
+            qid, question = next(iter(payload['questions'].items()))
+            return {'model': backend['model'], 'answers': {qid: {
+                'type': 'choice', 'choice': 'option_0',
+                'probabilities': {key: float(key == 'option_0') for key in question['criteria']}}}}
+        policy = {'enabled': ['worker-selection'], 'backend': {
+            'protocol': 'systemone', 'endpoint': 'http://localhost:1241/v1/systemone', 'model': 'test-model'}}
+        trace = decision_journal.trace_config(journal, self.root, assignment)
+        return decisions.decide(policy, {'family': 'worker-selection', 'state': f'Role: {role}\n',
+                                         'instruction': 'Choose a worker.', 'options': options},
+                                trace=trace, transport=transport)
 
     def summary(self, *args):
         return self.run_script(OUTCOMES, 'summary', *args)['roles']
@@ -96,7 +116,7 @@ class OutcomeLedger(unittest.TestCase):
                 ('t2/1', 'implementer', 'option_1', 'failed', {}),
                 ('t3/1', 'implementer', None, 'succeeded', {'reverts': 1}),
                 ('t4/1', 'e2e-runner', None, None, {}),
-                # The lifecycle writes its own attempts to the ledger; their journal copies are not imported.
+                # The lifecycle records success at completion, so its journal outcome is not an acceptance.
                 ('t5/1', 'implementer', 'lifecycle', 'succeeded', {})):
             trace = decision_journal.trace_config(journal, self.root, assignment)
             result = decisions.decide(policy, {'family': 'worker-selection', 'state': f'Role: {role}\n',
@@ -112,10 +132,10 @@ class OutcomeLedger(unittest.TestCase):
             if status:
                 decision_journal.record(journal, {'event': 'outcome', 'decision_id': did, 'status': status,
                                                   'evidence': ['report.md'], 'metrics': metrics})
-        self.assertEqual(self.run_script(OUTCOMES, 'import', str(journal)), {'imported': 4, 'already': 0})
-        self.assertEqual(self.run_script(OUTCOMES, 'import', str(journal)), {'imported': 0, 'already': 4})
+        self.assertEqual(self.run_script(OUTCOMES, 'import', str(journal)), {'imported': 5, 'already': 0})
+        self.assertEqual(self.run_script(OUTCOMES, 'import', str(journal)), {'imported': 0, 'already': 5})
         self.assertEqual(self.summary(), {
-            'implementer': {'sonnet': {'successes': 1, 'failures': 1, 'pending': 0},
+            'implementer': {'sonnet': {'successes': 1, 'failures': 1, 'pending': 1},
                             'haiku': {'successes': 0, 'failures': 1, 'pending': 0}},
             'e2e-runner': {'sonnet': {'successes': 0, 'failures': 0, 'pending': 1}}})
 
@@ -133,6 +153,30 @@ class OutcomeLedger(unittest.TestCase):
             'sonnet': {'successes': 1, 'failures': 0, 'pending': 0},
             'glm': {'successes': 0, 'failures': 1, 'pending': 0}}})
         self.assertEqual(self.run_script(OUTCOMES, 'import', str(self.state)), {'imported': 0, 'already': 2})
+
+
+    def test_a_lifecycle_attempt_counts_once_whichever_of_its_journal_or_state_is_imported(self):
+        journal = self.root / 'decisions.jsonl'
+        for name, closure in (('t1/1', {'decision': 'declined', 'reason': 'criteria unmet'}),
+                              ('t2/1', {'decision': 'deferred', 'reason': 'gate running'})):
+            decision = dict(self.decide(journal, name), journal=str(journal))
+            self.attempt(name, decision=decision, acceptance=closure)
+        expected = {'implementer': {'sonnet': {'successes': 0, 'failures': 1, 'pending': 1}}}
+        self.assertEqual(self.summary(), expected)
+        self.assertEqual(self.run_script(OUTCOMES, 'import', str(journal)), {'imported': 0, 'already': 2})
+        self.assertEqual(self.summary(), expected)
+        # Imported the other way round, the state file replaces its journal copies, including a state
+        # from before the lifecycle kept the link, which still holds it in the resolved route.
+        with sqlite3.connect(self.state) as db:
+            for attempt, data in list(db.execute('SELECT id, data FROM attempts')):
+                saved = json.loads(data)
+                saved.pop('decision', None)
+                db.execute('UPDATE attempts SET data = ? WHERE id = ?', (json.dumps(saved), attempt))
+        os.environ['XDG_STATE_HOME'] = str(self.root / 'other-state')
+        self.run_script(OUTCOMES, 'import', str(journal))
+        self.assertEqual(self.summary(), {'implementer': {'sonnet': {'successes': 0, 'failures': 0, 'pending': 2}}})
+        self.run_script(OUTCOMES, 'import', str(self.state))
+        self.assertEqual(self.summary(), expected)
 
 
 if __name__ == '__main__':

@@ -312,5 +312,27 @@ class EffortSpend(unittest.TestCase):
                          {'lifecycle:ack': 1, 'lifecycle:status': 2, 'lifecycle:record': 4, 'lifecycle:gate': 8,
                           'read': 16, 'command:gh': 32, 'git:clone': 64, 'command:make': 128, 'git:fetch': 256})
 
+    def test_wrappers_heredocs_and_continuations_do_not_hide_the_command(self):
+        self.attempt('t1/1', 't1', 'sess-a')
+        bash = lambda command: {'type': 'tool_use', 'name': 'Bash', 'input': {'command': command}}
+        lifecycle = '/a/scripts/worker-lifecycle.py'
+        commands = [
+            f'nohup /v/bin/python {lifecycle} submit --state /s/w.sqlite --input /t/w.json > /t/o 2>&1 &',
+            f'timeout 60 python3 {lifecycle} status --state /s/w.sqlite',
+            f"cat > /t/n.md <<'EOF'\nthe worker's report\nEOF\npython3 {lifecycle} record --input /t/r.json",
+            f"python3 - <<'EOF'\nprint(x.decode().strip())\nEOF\npython3 {lifecycle} retire --input /t/r.json",
+            "cat > /t/a.txt <<'EOF'\nport the fork's cache\nEOF\n"
+            '.venv/bin/python -B scripts/agent-models.py --role implementer --route --assignment /t/a.txt',
+            f'python3 {lifecycle} --help 2>&1 | head -5',
+            'case "$x" in\n  a) echo one ;;\n  *) gh pr list ;;\nesac',
+            'for f in a.proto \\\n  b.proto; do curl -sO "$f"; done']
+        host = self.claude_host(['go'] + [(f'2026-10-14T02:00:0{index}Z', f'h{index}', 2 ** index, [bash(command)])
+                                          for index, command in enumerate(commands)])
+        result = self.report('--host', str(host), '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')
+        self.assertEqual({key: value['output'] for key, value in result['host']['by_activity'].items()},
+                         {'lifecycle:submit': 1, 'lifecycle:status': 2, 'lifecycle:record': 4, 'lifecycle:retire': 8,
+                          'routing': 16, 'lifecycle:?': 32, 'command:echo': 64, 'command:curl': 128})
+
+
 if __name__ == '__main__':
     unittest.main()

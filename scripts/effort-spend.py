@@ -73,15 +73,32 @@ def uncommented(command):
     return ''.join(kept)
 
 
+HEREDOC = re.compile(r'(?<!<)<<(?!<)-?\s*([\'"]?)([A-Za-z_][\w.-]*)\1')
+
+
+def without_heredocs(command):
+    """The command without here-document bodies, which are data rather than commands."""
+    kept, pending = [], []
+    for line in command.split('\n'):
+        if pending:
+            if line.strip() == pending[0]:
+                pending.pop(0)
+            continue
+        kept.append(line)
+        pending += [match.group(2) for match in HEREDOC.finditer(line)]
+    return '\n'.join(kept)
+
+
 def words(command):
     """Shell words, with separators, subshell brackets and newlines as their own tokens."""
-    command = uncommented(command)
+    command = uncommented(without_heredocs(command.replace('\\\n', ' ')))
     lexer = shlex.shlex(command, posix=True, punctuation_chars=SEPARATORS)
     lexer.whitespace, lexer.whitespace_split, lexer.commenters = ' \t\r', True, ''
     try:
         return list(lexer)
     except ValueError:
-        return command.split()
+        # An unbalanced quote: keep separators apart so each simple command is still found.
+        return re.findall(r'[;&|()\n]+|[^\s;&|()]+', command)
 
 
 def segments(tokens):
@@ -96,6 +113,10 @@ def segments(tokens):
 
 
 ASSIGNMENT = re.compile(r'([A-Za-z_][A-Za-z0-9_]*)=(.*)', re.S)
+IDENTIFIER = re.compile(r'[A-Za-z_][\w-]*')
+# Programs that run the command after them, and their duration arguments.
+WRAPPERS = {'nohup', 'timeout', 'env', 'nice', 'time', 'caffeinate', 'command', 'exec', 'stdbuf'}
+DURATION = re.compile(r'\d+(\.\d+)?[smhd]?')
 # Words that open or continue a compound command; the program follows them.
 PREFIXES = {'do', 'then', 'else', 'elif', '{', '!', 'time'}
 # Shell keywords and builtins that run no program of their own.
@@ -105,9 +126,9 @@ BUILTINS = {'for', 'while', 'until', 'if', 'case', 'select', 'in', 'done', 'fi',
 
 
 def simple_commands(command):
-    """Each simple command's words without leading assignments, skipping function bodies, with the
-    names that hold the lifecycle script: variables assigned it and functions that run it."""
-    aliases, commands, body = set(), [], None
+    """Each simple command's words without leading assignments, skipping function bodies and case
+    patterns, with the names that hold the lifecycle script: variables assigned it and functions that run it."""
+    aliases, commands, body, cases = set(), [], None, 0
     for segment, separator in segments(words(command)):
         while segment and segment[0] in PREFIXES:
             segment = segment[1:]
@@ -122,9 +143,12 @@ def simple_commands(command):
             elif any(token.endswith('worker-lifecycle.py') for token in segment):
                 aliases.add(body)
             continue
-        if separator == '()' and len(segment) == 1:
+        if separator == '()' and len(segment) == 1 and IDENTIFIER.fullmatch(segment[0]):
             body = segment[0]  # A definition; its body runs only when called.
             continue
+        cases += (segment[:1] == ['case']) - (segment[:1] == ['esac'])
+        if cases and separator == ')':
+            continue  # A case pattern.
         if segment:
             commands.append(segment)
     return aliases, commands
@@ -136,7 +160,8 @@ def script_index(segment, runs):
     for index, token in enumerate(segment):
         if runs(index, token):
             prefix = segment[:index]
-            return index if all(word.startswith(('-', '$')) or 'python' in Path(word).name
+            return index if all(word.startswith(('-', '$')) or 'python' in Path(word).name or word in WRAPPERS
+                                or DURATION.fullmatch(word) or ASSIGNMENT.fullmatch(word)
                                 for word in prefix) else None
     return None
 
@@ -152,6 +177,8 @@ def lifecycle_action(segment, aliases):
     while rest[:1] == ['--state']:
         rest = rest[2:]
     action = next((word for word in rest if not word.startswith('-')), '?')
+    if '>' in action or '<' in action:
+        return '?'  # A redirection, not an action.
     return None if action.startswith('$') else action
 
 
