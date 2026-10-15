@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import shutil
 import tempfile
 import subprocess
 import sys
@@ -172,6 +173,34 @@ class Decisions(unittest.TestCase):
                 warnings = decisions.calibration_status(policy, context=context)
                 self.assertIn('calibration_stale', [w['code'] for w in warnings])
                 self.assertEqual(len(self.calls), before)
+
+    def plugin_root(self):
+        """A disposable copy of the decision scripts, so fingerprint probes never touch the checkout."""
+        root = self.root / 'plugin'
+        (root / 'scripts').mkdir(parents=True, exist_ok=True)
+        for name in ('decisions.py', 'agent-models.py', 'decision_images.py'):
+            shutil.copy(decisions.ROOT / 'scripts' / name, root / 'scripts' / name)
+        return root
+
+    def test_config_reader_edits_leave_calibration_current(self):
+        root = self.plugin_root()
+        with patch.object(decisions, 'ROOT', root):
+            self.baseline()
+            path = root / 'scripts/agent-models.py'
+            path.write_text(path.read_text() + '\n# routing tweak\n')
+            self.assertNotIn('calibration_stale',
+                             [w['code'] for w in decisions.calibration_status(self.policy)])
+
+    def test_decision_request_and_scoring_edits_stale_calibration(self):
+        for name in ('decisions.py', 'decision_images.py'):
+            with self.subTest(script=name):
+                root = self.plugin_root()
+                with patch.object(decisions, 'ROOT', root):
+                    self.baseline()
+                    path = root / 'scripts' / name
+                    path.write_text(path.read_text() + '\n# probe\n')
+                    self.assertIn('calibration_stale',
+                                  [w['code'] for w in decisions.calibration_status(self.policy)])
 
     def test_probe_outage_is_not_reported_as_quality_drift(self):
         self.baseline()
