@@ -22,6 +22,20 @@
     "agents": { "$ref": "#/$defs/agents" },
     "router": { "$ref": "#/$defs/router" },
     "decisions": { "$ref": "#/$defs/decisions" },
+    "capacity": {
+      "description": "Concurrent worker slots per local backend, shared by every effort on this machine.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "slots": { "type": "integer", "minimum": 1 },
+          "health": { "type": "string", "pattern": "^https?://[^\\s]+$" },
+          "min_free_memory_percent": { "type": "number", "minimum": 0, "maximum": 100 }
+        },
+        "required": ["slots"], "additionalProperties": false
+      }
+    },
     "allow_training": {
       "description": "Permit models whose data policy is trains. Set it in a repository's .automattic/executors.json only where its code may train a provider's models.",
       "type": "boolean"
@@ -188,6 +202,10 @@
         "cost": {
           "description": "What a worker spends: a subscription allowance, nothing (a free hosted endpoint), or local machine capacity.",
           "enum": ["subscription", "free", "local"]
+        },
+        "backend": {
+          "description": "The local model server this model runs on; its slots are shared through top-level capacity.",
+          "$ref": "#/$defs/identifier"
         },
         "data": {
           "description": "Where prompts go: a local model, a provider that retains nothing, a provider under its usual terms, or one that trains on prompts. Training endpoints need allow_training.",

@@ -914,5 +914,40 @@ class Router(unittest.TestCase):
         self.assertEqual(weights, {'sol': 1.0, 'luna': 1.0, 'opus': 0.15, 'glm': 0.0})
 
 
+    def test_a_full_local_backend_makes_its_candidates_unavailable_and_routes_carry_the_lease(self):
+        self.free_and_local()
+        self.data['models']['glm']['backend'] = 'dgx'
+        self.data['capacity'] = {'dgx': {'slots': 1, 'health': 'http://127.0.0.1:9/health'}}
+        self.save()
+        route = self.resolve(candidate='glm')
+        self.assertEqual((route['backend'], route['capacity']['slots']), ('dgx', 1))
+        import capacity
+        state = self.root / 'effort/workers.sqlite'
+        state.parent.mkdir()
+        import sqlite3
+        with sqlite3.connect(state) as db:
+            db.execute('CREATE TABLE attempts (id TEXT PRIMARY KEY, data TEXT NOT NULL)')
+            db.execute('INSERT INTO attempts VALUES (?, ?)', ('t1/1', json.dumps({'attempt': 't1/1'})))
+        db = capacity.connect()
+        db.execute('INSERT INTO leases VALUES (?, ?, ?, ?)', (str(state), 't1/1', 'dgx', 0))
+        db.close()
+        listed = self.resolve(list_candidates=True)
+        self.assertIn('dgx is at capacity (1/1)', listed['unavailable_candidates']['glm'])
+        with self.assertRaisesRegex(ValueError, 'not eligible'):
+            self.resolve(candidate='glm')
+        # A role pinned to the model fails the same way.
+        self.data['agents']['implementer'] = {'model': 'glm'}
+        self.save()
+        with self.assertRaisesRegex(ValueError, 'dgx is at capacity'):
+            self.resolve()
+        self.data['capacity']['dgx']['slots'] = 2
+        self.save()
+        self.assertEqual(self.resolve()['backend'], 'dgx')
+        self.data['capacity']['dgx']['slots'] = 0
+        self.save()
+        with self.assertRaises(ValueError):
+            self.resolve(list_candidates=True)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -11,6 +11,7 @@ import sqlite3
 import tempfile
 import time
 import allowance
+import capacity
 import decisions
 import outcomes
 
@@ -352,6 +353,19 @@ def shadow_selection(names, catalog, role, seed, levels=None):
             'candidates': scored, 'choice': choice}
 
 
+def backend_full(definition, backends):
+    """Why a model's local backend has no free slot, or None."""
+    backend = definition.get('backend')
+    if backend not in backends:
+        return None
+    try:
+        held = capacity.in_use(backend)
+    except (OSError, ValueError, sqlite3.Error):
+        return None  # The lease is still checked when the worker registers.
+    slots = backends[backend]['slots']
+    return f'Backend {backend} is at capacity ({held}/{slots})' if held >= slots else None
+
+
 def weight(runtime, levels):
     return PRESSURE_WEIGHTS.get(levels.get(runtime), COST_WEIGHT)
 
@@ -516,9 +530,10 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                 'decision_policy': decision_policy, **session}
     catalog = {name: (definition, f'{path}:models.{name}')
                for path, data in layers for name, definition in data.get('models', {}).items()}
-    allow_training = False
+    allow_training, backends = False, {}
     for _, data in layers:
         allow_training = data.get('allow_training', allow_training)
+        backends.update(data.get('capacity', {}))
     runtimes = {name: (definition, f'{path}:runtimes.{name}')
                 for path, data in layers for name, definition in data.get('runtimes', {}).items()}
     executor_types = {name: (definition, f'{path}:executor_types.{name}')
@@ -578,11 +593,19 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
                 unavailable[name] = TRAINING
                 continue
+            full = backend_full(catalog[name][0] if name in catalog else {}, backends)
+            if full:
+                unavailable[name] = full
+                continue
             resolved, detail = expand_model(name, catalog, runtimes, host, target_runtime)
             if resolved is None:
                 unavailable[name] = detail
             else:
                 expanded[name], definitions[name] = resolved, detail
+                backend = catalog[name][0].get('backend')
+                if backend in backends:
+                    # The lifecycle takes this backend's lease when the worker registers.
+                    definitions[name].update(backend=backend, capacity=backends[backend])
         metadata['unavailable_candidates'] = unavailable
         metadata['candidate_routes'] = definitions
         instance = dict(instance, candidates=expanded)
@@ -590,10 +613,16 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         name = instance['model']
         if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
             raise ValueError(f'Model {name!r}: {TRAINING}')
+        full = backend_full(catalog[name][0] if name in catalog else {}, backends)
+        if full:
+            raise ValueError(f'Model {name!r}: {full}')
         instance, detail = expand_model(name, catalog, runtimes, host, target_runtime)
         if instance is None:
             raise ValueError(f'Model {name!r}: {detail}')
         metadata.update(detail)
+        backend = catalog[name][0].get('backend')
+        if backend in backends:
+            metadata.update(backend=backend, capacity=backends[backend])
     if pooled:
         expanded = {}
         for name, value in instance['candidates'].items():
@@ -637,7 +666,8 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         competing = {}
         for name in configured_candidates:
             if ((eligible_candidates is None or name in eligible_candidates) and name in catalog
-                    and (catalog[name][0].get('data') != 'trains' or allow_training)):
+                    and (catalog[name][0].get('data') != 'trains' or allow_training)
+                    and not backend_full(catalog[name][0], backends)):
                 reachable, route = expand_model(name, catalog, runtimes, host)
                 if reachable is not None:
                     competing[name] = route['target_runtime']

@@ -17,6 +17,7 @@ import uuid
 
 # Find the sibling decision modules even under an isolated interpreter (python -I).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import capacity  # noqa: E402
 import decision_journal  # noqa: E402
 import decisions  # noqa: E402
 import outcomes  # noqa: E402
@@ -244,11 +245,15 @@ def attribute(db, attempt, kind, count, evidence):
             **({'ledger': unrecorded} if unrecorded else {})}
 
 
+def state_path(db):
+    return str(Path(db.execute('PRAGMA database_list').fetchone()[2]).resolve())
+
+
 def ledger(db, saved):
     """Write a collected attempt's outcome to the machine-wide ledger; a failed write is reported, never fatal."""
     if not saved.get('result'):
         return None
-    state = str(Path(db.execute('PRAGMA database_list').fetchone()[2]).resolve())
+    state = state_path(db)
     try:
         outcomes.put(f"{state}#{saved['attempt']}", outcomes.attempt_row(db, saved, state))
     except (OSError, ValueError, sqlite3.Error) as error:
@@ -389,6 +394,10 @@ def record(db, data):
             if 'repairs' in data:
                 require(text(data['repairs']), 'repairs names the attempt whose work this one repairs')
                 require(get(db, data['repairs']).get('result'), 'A repaired attempt must be collected first')
+            if execution.get('backend'):
+                # A local backend's slot is shared by every effort on this machine.
+                capacity.acquire(execution['backend'], execution.get('capacity') or {},
+                                 state_path(db), attempt)
         else:
             saved = get(db, attempt)
             require((saved['runtime'], saved['native_session']) not in closed_sessions(db)
@@ -529,6 +538,11 @@ def record(db, data):
     repaired = (attribute(db, data['repairs'], 'repair-round', 1, [f'repair attempt {attempt}'])
                 if kind == 'register' and 'repairs' in data else None)
     unrecorded = ledger(db, saved) if kind in ('result', 'accepted', 'declined', 'closed') else None
+    if kind in ('result', 'closed') and saved.get('execution_snapshot', {}).get('backend'):
+        try:
+            capacity.release(state_path(db), attempt)
+        except (OSError, ValueError, sqlite3.Error):
+            pass  # A lease of a finished attempt is reclaimed by the next acquisition.
     return {'event_id': event_id, 'attempt': attempt, 'verified': saved['verified'],
             **({'journal': journal} if journal else {}), **({'repairs': repaired} if repaired else {}),
             **({'ledger': unrecorded} if unrecorded else {})}
