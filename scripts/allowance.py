@@ -4,7 +4,8 @@
 Codex readings come from the newest rollout's `token_count.rate_limits`. Claude readings come from
 a snapshot that `record-claude` writes from the status line's JSON input, for example by adding
 `printf '%s' "$JSON" | python3 <plugin>/scripts/allowance.py record-claude` to the status-line script.
-A window's projected use at reset counts once a quarter of it has passed. Levels: `elevated` from
+A window's projected use at reset counts once a quarter of it has passed and while the reading is under
+15 minutes old; an older reading counts only what was already used. Levels: `elevated` from
 80% used or projected and `critical` from 90%; they fall only below 65% and 80% respectively and
 after five minutes at the level, remembered between `status` and `record-claude` runs. No reading is
 `unknown`, never zero.
@@ -22,6 +23,7 @@ ENTER = {'elevated': 80, 'critical': 90}
 LEAVE = {'elevated': 65, 'critical': 80}
 DWELL = 300
 TRUSTED_ELAPSED = 0.25
+STALE_SECONDS = 900
 CLAUDE_WINDOWS = {'five_hour': 300, 'seven_day': 10080}
 
 
@@ -30,6 +32,10 @@ def state_dir():
     if not state.is_absolute():
         raise ValueError('XDG_STATE_HOME must be an absolute directory')
     return state / 'automattic'
+
+
+def codex_sessions():
+    return Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions'
 
 
 def write_json(path, value):
@@ -46,7 +52,7 @@ def record_claude(stream, now, codex_root):
         limits = json.load(stream).get('rate_limits')
         if isinstance(limits, dict) and limits:
             write_json(state_dir() / 'claude-allowance.json', {'recorded_at': now, 'rate_limits': limits})
-            status(codex_root, now)
+            status(codex_root or codex_sessions(), now)
     except (OSError, ValueError, AttributeError, KeyError):
         pass
 
@@ -118,6 +124,11 @@ def status(codex_root, now, persist=True):
         if not reading:
             providers[name] = {'level': 'unknown', 'reason': 'no reading'}
             continue
+        # Use never falls before a reset, so a stale reading still sets a floor; its rate is unknown.
+        reading['stale'] = reading['age_seconds'] > STALE_SECONDS
+        if reading['stale']:
+            for item in reading['windows']:
+                item['projected_percent'] = None
         if not reading['windows']:
             providers[name] = dict(reading, level='unknown', reason='no current window')
             continue
@@ -139,10 +150,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest='command', required=True)
     report = commands.add_parser('status', help='windows, projections and pressure level per provider')
-    report.add_argument('--codex-root', type=Path, default=Path.home() / '.codex/sessions')
+    report.add_argument('--codex-root', type=Path, help='default: $CODEX_HOME/sessions or ~/.codex/sessions')
     report.add_argument('--now', type=float, help=argparse.SUPPRESS)
     record = commands.add_parser('record-claude', help='keep the rate limits from status-line JSON on stdin')
-    record.add_argument('--codex-root', type=Path, default=Path.home() / '.codex/sessions')
+    record.add_argument('--codex-root', type=Path, help='default: $CODEX_HOME/sessions or ~/.codex/sessions')
     record.add_argument('--now', type=float, help=argparse.SUPPRESS)
     args = parser.parse_args()
     now = args.now if args.now is not None else time.time()
@@ -150,7 +161,7 @@ def main():
         record_claude(sys.stdin, now, args.codex_root)
         return
     try:
-        print(json.dumps(status(args.codex_root, now), indent=2))
+        print(json.dumps(status(args.codex_root or codex_sessions(), now), indent=2))
     except (OSError, ValueError) as error:
         parser.exit(2, f'{error}\n')
 

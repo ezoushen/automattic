@@ -327,7 +327,9 @@ and never fails the route.
 
 `scripts/allowance.py status` reports the Claude Code and Codex subscription windows:
 used share, reset time, elapsed share, use projected at reset (once a quarter of the
-window has passed) and a pressure level. `elevated` starts at 80% used or projected
+window has passed, from a reading under 15 minutes old) and a pressure level. An
+older reading is marked `stale` and counts only what was already used, since use
+never falls before a reset. `elevated` starts at 80% used or projected
 and `critical` at 90%; they end only below 65% and 80% and after five minutes at the
 level. Codex readings come from the newest rollout under `$CODEX_HOME/sessions`.
 Claude readings come from the status line: add
@@ -350,8 +352,9 @@ backend's `slots` with an optional `health` URL and `min_free_memory_percent`:
 Slots are shared by every effort on the machine: the worker lifecycle takes a lease
 when it registers an attempt on that backend, after the health and free-memory
 checks, and refuses registration when the backend is full or unhealthy; the lease
-ends when the attempt's result is collected or it closes. Routes list a full
-backend's candidates in `unavailable_candidates`, and a route to such a backend
+ends when the attempt's result is collected or it closes. Routes list the candidates
+of a backend that is full, fails its health check or lacks free memory in
+`unavailable_candidates`, and a route to such a backend
 carries `backend` and `capacity` for the lifecycle. Route to the next candidate
 rather than waiting.
 

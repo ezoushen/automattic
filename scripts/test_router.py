@@ -919,6 +919,9 @@ class Router(unittest.TestCase):
         self.data['models']['glm']['backend'] = 'dgx'
         self.data['capacity'] = {'dgx': {'slots': 1, 'health': 'http://127.0.0.1:9/health'}}
         self.save()
+        self.assertIn('dgx is unhealthy', self.resolve(list_candidates=True)['unavailable_candidates']['glm'])
+        del self.data['capacity']['dgx']['health']
+        self.save()
         route = self.resolve(candidate='glm')
         self.assertEqual((route['backend'], route['capacity']['slots']), ('dgx', 1))
         import capacity

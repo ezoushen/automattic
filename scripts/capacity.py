@@ -83,7 +83,7 @@ def check(backend, config):
     """Refuse a backend whose health endpoint fails or whose machine is short of free memory."""
     if config.get('health'):
         try:
-            with urllib.request.urlopen(config['health'], timeout=3) as response:
+            with urllib.request.urlopen(config['health'], timeout=2) as response:
                 healthy = response.status == 200
         except (OSError, urllib.error.URLError, ValueError) as error:
             raise ValueError(f'Backend {backend} is unhealthy: {error}') from error

@@ -94,5 +94,27 @@ class Allowance(unittest.TestCase):
         self.assertEqual(level(60.0, NOW + 600), 'normal')
 
 
+    def test_a_stale_reading_counts_only_what_was_already_used(self):
+        # Use never falls before a reset, so an old reading is a floor; its rate is no longer known.
+        self.rollout('old', NOW - 3600, self.window(50.0, 10080, 2520), self.window(85.0, 300, 60))
+        codex = self.status()['providers']['codex']
+        self.assertTrue(codex['stale'])
+        self.assertEqual([w['projected_percent'] for w in codex['windows']], [None, None])
+        self.assertEqual(codex['level'], 'elevated')
+        self.rollout('fresh', NOW - 60, self.window(50.0, 10080, 2520))
+        self.assertFalse(self.status()['providers']['codex']['stale'])
+
+    def test_codex_home_sets_where_rollouts_are_read(self):
+        self.rollout('a', NOW - 10, self.window(95.0, 300, 10))
+        process = subprocess.run([sys.executable, '-B', str(SCRIPT), 'status', '--now', str(NOW)],
+                                 capture_output=True, text=True, env=dict(os.environ, CODEX_HOME=str(self.root / 'h')))
+        self.assertEqual(json.loads(process.stdout)['providers']['codex']['level'], 'unknown')
+        (self.root / 'h').mkdir()
+        self.codex.rename(self.root / 'h/sessions')
+        process = subprocess.run([sys.executable, '-B', str(SCRIPT), 'status', '--now', str(NOW)],
+                                 capture_output=True, text=True, env=dict(os.environ, CODEX_HOME=str(self.root / 'h')))
+        self.assertEqual(json.loads(process.stdout)['providers']['codex']['level'], 'critical')
+
+
 if __name__ == '__main__':
     unittest.main()

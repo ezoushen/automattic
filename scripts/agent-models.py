@@ -320,9 +320,8 @@ PRESSURE_WEIGHTS = {'normal': COST_WEIGHT, 'elevated': 0.4, 'critical': 1.0}
 
 def allowance_levels():
     """Each subscription provider's pressure level; a reader failure leaves every provider unknown."""
-    root = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions'
     try:
-        readings = allowance.status(root, time.time(), persist=False)['providers']  # Routing stays read-only.
+        readings = allowance.status(allowance.codex_sessions(), time.time(), persist=False)['providers']  # Routing stays read-only.
         return {name: value['level'] for name, value in readings.items()}
     except (OSError, ValueError, KeyError) as error:
         return {'error': str(error)}
@@ -353,17 +352,22 @@ def shadow_selection(names, catalog, role, seed, levels=None):
             'candidates': scored, 'choice': choice}
 
 
-def backend_full(definition, backends):
-    """Why a model's local backend has no free slot, or None."""
+def backend_unavailable(definition, backends):
+    """Why a model's local backend cannot take a worker now (no free slot, unhealthy, short of memory), or None."""
     backend = definition.get('backend')
     if backend not in backends:
         return None
     try:
         held = capacity.in_use(backend)
-    except (OSError, ValueError, sqlite3.Error):
+        slots = backends[backend]['slots']
+        if held >= slots:
+            return f'Backend {backend} is at capacity ({held}/{slots})'
+        capacity.check(backend, backends[backend])
+    except ValueError as error:
+        return str(error)
+    except (OSError, sqlite3.Error):
         return None  # The lease is still checked when the worker registers.
-    slots = backends[backend]['slots']
-    return f'Backend {backend} is at capacity ({held}/{slots})' if held >= slots else None
+    return None
 
 
 def weight(runtime, levels):
@@ -593,7 +597,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
                 unavailable[name] = TRAINING
                 continue
-            full = backend_full(catalog[name][0] if name in catalog else {}, backends)
+            full = backend_unavailable(catalog[name][0] if name in catalog else {}, backends)
             if full:
                 unavailable[name] = full
                 continue
@@ -613,7 +617,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         name = instance['model']
         if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
             raise ValueError(f'Model {name!r}: {TRAINING}')
-        full = backend_full(catalog[name][0] if name in catalog else {}, backends)
+        full = backend_unavailable(catalog[name][0] if name in catalog else {}, backends)
         if full:
             raise ValueError(f'Model {name!r}: {full}')
         instance, detail = expand_model(name, catalog, runtimes, host, target_runtime)
@@ -667,7 +671,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         for name in configured_candidates:
             if ((eligible_candidates is None or name in eligible_candidates) and name in catalog
                     and (catalog[name][0].get('data') != 'trains' or allow_training)
-                    and not backend_full(catalog[name][0], backends)):
+                    and not backend_unavailable(catalog[name][0], backends)):
                 reachable, route = expand_model(name, catalog, runtimes, host)
                 if reachable is not None:
                     competing[name] = route['target_runtime']
