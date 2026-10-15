@@ -192,6 +192,10 @@ and coordinator tokens by its accepted tickets, and shows which triggers and
 activities the coordinator's tokens went to. It reads Claude, Codex and Pi
 transcripts.
 
+`scripts/allowance.py status` reports the Claude Code and Codex allowance windows and
+their pressure levels; see [selection](harnesses/selection.md#allowance) for the
+status-line line that feeds Claude's.
+
 `scripts/outcomes.py summary [--role <role>]` counts each candidate's accepted,
 failed and pending attempts across efforts from the lifecycle's outcome ledger;
 `scripts/outcomes.py import <decisions.jsonl | workers.sqlite>...` adds past decision

@@ -314,13 +314,46 @@ through any runtime, except those the host excluded or training endpoints the
 repository does not allow, it draws a
 sample from a Beta(1 + successes, 1 + failures) acceptance rate for this role in the
 [outcome ledger](worker-lifecycle.md), seeded by the assignment ID or text so a
-retry draws the same, and subtracts `cost_weight` (0.15) when the model's `cost` is
-`subscription` or unstated. The highest utility is its `choice`; `agrees` compares it
+retry draws the same, and subtracts a cost weight when the model's `cost` is
+`subscription` or unstated: 0.15, rising to 0.4 when its provider's allowance is
+`elevated` and 1.0 when `critical` (see below); `allowance` shows the levels used. The highest utility is its `choice`; `agrees` compares it
 with the actual route. A candidate without outcomes keeps a wide prior, so it is
 sometimes chosen: that is the exploration. The lifecycle keeps the shadow choice
 with each attempt's outcome so the two policies can be compared before routing
 switches to it. An unreadable ledger gives `{"status": "unavailable", "error": ...}`
 and never fails the route.
+
+### Allowance
+
+`scripts/allowance.py status` reports the Claude Code and Codex subscription windows:
+used share, reset time, elapsed share, use projected at reset (once a quarter of the
+window has passed) and a pressure level. `elevated` starts at 80% used or projected
+and `critical` at 90%; they end only below 65% and 80% and after five minutes at the
+level. Codex readings come from the newest rollout under `$CODEX_HOME/sessions`.
+Claude readings come from the status line: add
+`printf '%s' "$JSON" | python3 <plugin_root>/scripts/allowance.py record-claude`
+to the status-line script, where `$JSON` is its input. A provider without a current
+reading is `unknown` and keeps the base weight. Routing reads the levels without
+changing them.
+
+### Local capacity
+
+A model may name the local `backend` it runs on, and top-level `capacity` gives each
+backend's `slots` with an optional `health` URL and `min_free_memory_percent`:
+
+```json
+{"models": {"glm": {"description": "...", "cost": "local", "data": "local", "backend": "dgx",
+                    "runtimes": {"pi": {"id": "dgx/glm"}}}},
+ "capacity": {"dgx": {"slots": 4, "health": "http://dgx.local:8000/health"}}}
+```
+
+Slots are shared by every effort on the machine: the worker lifecycle takes a lease
+when it registers an attempt on that backend, after the health and free-memory
+checks, and refuses registration when the backend is full or unhealthy; the lease
+ends when the attempt's result is collected or it closes. Routes list a full
+backend's candidates in `unavailable_candidates`, and a route to such a backend
+carries `backend` and `capacity` for the lifecycle. Route to the next candidate
+rather than waiting.
 
 ## Decision-model router
 
