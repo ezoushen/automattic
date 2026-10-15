@@ -190,6 +190,28 @@ def check_package():
             assert f'/harnesses/{other}/' not in context
 
 
+def check_remediate_catalog():
+    import re
+    path = PLUGIN / 'skills/remediate/SKILL.md'
+    source = path.read_text()
+    metadata = source.split('---', 2)[1]
+    assert re.search(r'^name: remediate$', metadata, re.M)
+    assert re.search(r'^disable-model-invocation: true$', metadata, re.M)
+    hint = re.search(r'^argument-hint: (.+)$', metadata, re.M).group(1)
+    assert '[goal]' in hint and '[scope]' in hint, hint
+    ui = (path.parent / 'agents/openai.yaml').read_text()
+    assert 'allow_implicit_invocation: false' in ui
+    assert '$automattic:remediate' in ui
+    for host in ('claude', 'codex', 'pi', 'opencode'):
+        assert (PLUGIN / 'harnesses' / host / 'adapter.md').is_file()
+    assert json.loads((PLUGIN / '.codex-plugin/plugin.json').read_text())['skills'] == './skills/'
+    for kind in ('tautological-tests', 'misleading-comments'):
+        definition = path.parent / 'kinds' / f'{kind}.md'
+        assert definition.is_file()
+        assert f'kinds/{kind}.md' in source
+    assert 'mattpocock' not in source.lower()
+
+
 def check_build_lock():
     with tempfile.TemporaryDirectory(prefix='automattic mutex ') as tmp:
         env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='0')
@@ -291,12 +313,17 @@ def check_pi_native():
 
 
 if __name__ == '__main__':
-    check_scheduler()
-    check_package()
-    check_build_lock()
-    run(sys.executable, '-B', str(PLUGIN / 'scripts/test_run_check.py'))
-    print('cross-harness regressions: ok (scheduler, hooks, package, build lock, check runner)')
-    if '--native' in sys.argv:
-        check_native()
-    if '--native-pi' in sys.argv:
-        check_pi_native()
+    with tempfile.TemporaryDirectory(prefix='automattic cross harness state ') as state:
+        os.environ.update(XDG_STATE_HOME=str(Path(state) / 'state'),
+                          XDG_CONFIG_HOME=str(Path(state) / 'config'),
+                          CODEX_HOME=str(Path(state) / 'codex'))
+        check_scheduler()
+        check_package()
+        check_remediate_catalog()
+        check_build_lock()
+        run(sys.executable, '-B', str(PLUGIN / 'scripts/test_run_check.py'))
+        print('cross-harness regressions: ok (scheduler, hooks, package, remediate, build lock, check runner)')
+        if '--native' in sys.argv:
+            check_native()
+        if '--native-pi' in sys.argv:
+            check_pi_native()
