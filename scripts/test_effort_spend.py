@@ -325,13 +325,16 @@ class EffortSpend(unittest.TestCase):
             '.venv/bin/python -B scripts/agent-models.py --role implementer --route --assignment /t/a.txt',
             f'python3 {lifecycle} --help 2>&1 | head -5',
             'case "$x" in\n  a) echo one ;;\n  *) gh pr list ;;\nesac',
-            'for f in a.proto \\\n  b.proto; do curl -sO "$f"; done']
-        host = self.claude_host(['go'] + [(f'2026-10-14T02:00:0{index}Z', f'h{index}', 2 ** index, [bash(command)])
+            'for f in a.proto \\\n  b.proto; do curl -sO "$f"; done',
+            f'echo $((1 << n))\npython3 {lifecycle} watch --input /t/w.json',
+            f'python3 -c "print(1 << bits)"\npython3 {lifecycle} ack --event-id 2']
+        host = self.claude_host(['go'] + [(f'2026-10-14T02:00:{index:02}Z', f'h{index}', 2 ** index, [bash(command)])
                                           for index, command in enumerate(commands)])
         result = self.report('--host', str(host), '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')
         self.assertEqual({key: value['output'] for key, value in result['host']['by_activity'].items()},
                          {'lifecycle:submit': 1, 'lifecycle:status': 2, 'lifecycle:record': 4, 'lifecycle:retire': 8,
-                          'routing': 16, 'lifecycle:?': 32, 'command:echo': 64, 'command:curl': 128})
+                          'routing': 16, 'lifecycle:?': 32, 'command:echo': 64, 'command:curl': 128,
+                          'lifecycle:watch': 256, 'lifecycle:ack': 512})
 
 
 if __name__ == '__main__':

@@ -73,7 +73,31 @@ def uncommented(command):
     return ''.join(kept)
 
 
-HEREDOC = re.compile(r'(?<!<)<<(?!<)-?\s*([\'"]?)([A-Za-z_][\w.-]*)\1')
+HEREDOC = re.compile(r'<<-?\s*([\'"]?)([A-Za-z_][\w.-]*)\1')
+
+
+def heredoc_delimiters(line):
+    """Here-document delimiters a line opens: a `<<` outside quotes and shell arithmetic."""
+    found, quote, depth, index = [], None, 0, 0
+    while index < len(line):
+        char = line[index]
+        if quote:
+            quote = None if char == quote else quote
+        elif char in '\'"':
+            quote = char
+        elif line.startswith('$((', index):
+            depth, index = depth + 1, index + 2
+        elif depth and line.startswith('))', index):
+            depth, index = depth - 1, index + 1
+        elif not depth and line.startswith('<<', index) and not line.startswith('<<<', index):
+            match = HEREDOC.match(line, index)
+            if match:
+                found.append(match.group(2))
+                index = match.end() - 1
+            else:
+                index += 1
+        index += 1
+    return found
 
 
 def without_heredocs(command):
@@ -85,7 +109,7 @@ def without_heredocs(command):
                 pending.pop(0)
             continue
         kept.append(line)
-        pending += [match.group(2) for match in HEREDOC.finditer(line)]
+        pending += heredoc_delimiters(line)
     return '\n'.join(kept)
 
 
