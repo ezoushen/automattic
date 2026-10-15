@@ -17,8 +17,10 @@ reportable result, not authorization to change runtime behavior.
 
 Resolve the goal as [tautological-tests](kinds/tautological-tests.md),
 [misleading-comments](kinds/misleading-comments.md), or the user's free-form goal.
-Read only the selected kind. If the goal is missing, ask for it before detection.
-For a free-form goal, write its signal, independent source of intended behavior,
+Read only the selected kind. If no goal is given, run all built-in kinds
+([tautological-tests](kinds/tautological-tests.md) and
+[misleading-comments](kinds/misleading-comments.md)) in one pass instead of
+asking. For a free-form goal, write its signal, independent source of intended behavior,
 deciding proof, allowed repair and exclusions before scanning. Apply the same
 proof bar as the built-in kinds; an unclear contract stays unresolved.
 
@@ -50,8 +52,11 @@ report that boundary for a separate implementation task.
    finding sections. Record candidates with IDs, file/line, the precise disputed
    assertion or claim, its contract source and counter-evidence. For comment
    diffs, run the [comment audit](#comment-audit) and inspect its output in context;
-   its candidates alone prove no violation. Also read changed doc comments, which
-   the audit intentionally excludes. Detection makes no source edits.
+   its candidates alone prove no violation; it lists only comments added in the
+   diff, and also read changed doc comments, which the audit intentionally
+   excludes. A whole-project or paths scan discovers existing comments and
+   docstrings by inventorying the source (language tokenizer/AST where available,
+   otherwise careful reading). Detection makes no source edits.
 2. **Prove.** Apply the kind's Proof to each candidate. Retain the pinned inputs,
    exact command/trace or contract-to-code comparison and deciding observation.
    Run temporary negative controls in isolation, restore them after saving proof,
