@@ -34,7 +34,38 @@ try {
     const extension = loaded.extensions[0];
     assert.equal(extension.tools.size, 0);
     assert.equal(extension.commands.size, 0);
-    assert.deepEqual([...extension.handlers.keys()], ["before_agent_start", "agent_settled", "agent_before_settle"]);
+    assert.deepEqual([...extension.handlers.keys()],
+      ["before_agent_start", "agent_settled", "agent_before_settle", "tool_call", "tool_result"]);
+    // Loop guard: the same call returning the same result three times in a row is blocked next time.
+    const call = extension.handlers.get("tool_call")[0];
+    const toolResult = extension.handlers.get("tool_result")[0];
+    let id = 0;
+    const step = async (command, output) => {
+      const toolCallId = `${pass}-${id++}`;
+      const input = { command };
+      const verdict = await call({ type: "tool_call", toolCallId, toolName: "bash", input }, {});
+      await toolResult({ type: "tool_result", toolCallId, toolName: "bash", input,
+        content: [{ type: "text", text: verdict?.block ? verdict.reason : output }], isError: !!verdict?.block }, {});
+      return verdict;
+    };
+    for (let i = 0; i < 3; i++) assert.equal(await step("pwd; ls", "/repo"), undefined);
+    const blocked = await step("pwd; ls", "/repo");
+    assert.equal(blocked.block, true);
+    assert.match(blocked.reason, /same result 3 times/);
+    assert.notEqual(blocked.terminate, true);
+    assert.equal((await step("pwd; ls", "/repo")).terminate, true);
+    // A different call resets it, and polling whose output changes is never blocked.
+    assert.equal(await step("git status", "clean"), undefined);
+    for (let i = 0; i < 5; i++) assert.equal(await step("herdr agent get w", `working ${i}`), undefined);
+    const previousGuard = process.env.AUTOMATTIC_LOOP_GUARD;
+    process.env.AUTOMATTIC_LOOP_GUARD = "off";
+    try {
+      for (let i = 0; i < 5; i++) assert.equal(await step("pwd", "/repo"), undefined);
+    } finally {
+      if (previousGuard === undefined) delete process.env.AUTOMATTIC_LOOP_GUARD;
+      else process.env.AUTOMATTIC_LOOP_GUARD = previousGuard;
+    }
+    await step("reset", "x");
     const handlers = extension.handlers.get("before_agent_start");
     assert.equal(handlers.length, 1);
     const result = await handlers[0]({ systemPrompt: "existing instructions" }, {});

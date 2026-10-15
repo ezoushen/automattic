@@ -47,4 +47,33 @@ export default function (pi) {
       + `a failed or cancelled result whose report says what was lost) before stopping (${root}/harnesses/worker-lifecycle.md).`;
     return { entries: [{ type: "custom_message", customType: "automattic_yield_gate", content, display: true }], continue: true };
   });
+
+  // Loop guard: a call that returned the same result three times in a row is blocked when repeated,
+  // and a second blocked repeat stops the turn. Polling whose output changes is never blocked.
+  const REPEATS = 3;
+  let last = { call: "", output: "", streak: 0, blocked: 0 };
+  const guarded = new Set();
+  pi.on("tool_call", (event) => {
+    if (process.env.AUTOMATTIC_LOOP_GUARD === "off") return undefined;
+    const call = `${event.toolName}\u0000${JSON.stringify(event.input)}`;
+    if (call !== last.call || last.streak < REPEATS) return undefined;
+    last.blocked += 1;
+    guarded.add(event.toolCallId);
+    return {
+      block: true,
+      terminate: last.blocked > 1,
+      reason: `This exact ${event.toolName} call returned the same result ${last.streak} times in a row. `
+        + "Repeating it will not change anything: use the output you have, try a different approach, "
+        + "or report that you are blocked and why.",
+    };
+  });
+  pi.on("tool_result", (event) => {
+    if (guarded.delete(event.toolCallId)) return undefined;
+    const call = `${event.toolName}\u0000${JSON.stringify(event.input)}`;
+    const output = JSON.stringify([event.content, event.isError]);
+    last = call === last.call && output === last.output
+      ? { ...last, streak: last.streak + 1 }
+      : { call, output, streak: 1, blocked: 0 };
+    return undefined;
+  });
 }
