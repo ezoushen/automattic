@@ -26,7 +26,8 @@ class Catalog(unittest.TestCase):
         self.project = self.root / '.automattic/executors.json'
         self.project.parent.mkdir()
         env = patch.dict(os.environ, {'HERDR_ENV': '', 'AUTOMATTIC_PROFILE': '',
-                                     'AUTOMATTIC_SESSION': '', 'XDG_STATE_HOME': str(self.root / 'state')})
+                                     'AUTOMATTIC_SESSION': '', 'XDG_STATE_HOME': str(self.root / 'state'),
+                                     'CODEX_HOME': str(self.root / 'codex-home')})
         env.start()
         self.addCleanup(env.stop)
         self.data = {'runtimes': {

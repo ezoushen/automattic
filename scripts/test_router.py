@@ -28,7 +28,8 @@ class Router(unittest.TestCase):
         self.project = self.root / '.automattic/executors.json'
         self.project.parent.mkdir()
         env = patch.dict(os.environ, {'HERDR_ENV': '1', 'AUTOMATTIC_PROFILE': '',
-                                     'AUTOMATTIC_SESSION': '', 'XDG_STATE_HOME': str(self.root / 'state')})
+                                     'AUTOMATTIC_SESSION': '', 'XDG_STATE_HOME': str(self.root / 'state'),
+                                     'CODEX_HOME': str(self.root / 'codex-home')})
         env.start()
         self.addCleanup(env.stop)
         self.data = {
@@ -888,6 +889,29 @@ class Router(unittest.TestCase):
         samples = {self.resolve(target_runtime='codex', assignment=f'Implement ticket {n}.')['shadow_selection']['candidates']
                    ['glm']['sample'] for n in range(2, 8)}
         self.assertGreater(len(samples), 1)
+
+
+    def test_shadow_cost_weight_follows_each_providers_allowance_pressure(self):
+        self.free_and_local()
+        codex = self.root / 'codex-home'
+        rollout = codex / 'sessions/2026/10/15/rollout-a.jsonl'
+        rollout.parent.mkdir(parents=True)
+        now = __import__('time').time()
+        rollout.write_text(json.dumps({'type': 'event_msg', 'payload': {'type': 'token_count', 'rate_limits': {
+            'limit_id': 'codex', 'primary': {'used_percent': 95.0, 'window_minutes': 300,
+                                             'resets_at': now + 600}}}}) + '\n')
+        claude = self.root / 'state/automattic/claude-allowance.json'
+        claude.parent.mkdir(parents=True)
+        claude.write_text(json.dumps({'recorded_at': now, 'rate_limits': {
+            'five_hour': {'used_percentage': 10, 'resets_at': now + 600}}}))
+        self.profile({'codex': {'candidate': 'sol'}})
+        self.data['models']['opus']['cost'] = 'subscription'
+        self.save()
+        with patch.dict(os.environ, {'CODEX_HOME': str(codex)}):
+            shadow = self.resolve(target_runtime='codex', assignment='Implement ticket 1.')['shadow_selection']
+        self.assertEqual(shadow['allowance'], {'claude': 'normal', 'codex': 'critical'})
+        weights = {name: round(value['sample'] - value['utility'], 3) for name, value in shadow['candidates'].items()}
+        self.assertEqual(weights, {'sol': 1.0, 'luna': 1.0, 'opus': 0.15, 'glm': 0.0})
 
 
 if __name__ == '__main__':

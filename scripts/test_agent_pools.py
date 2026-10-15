@@ -30,7 +30,8 @@ class Pools(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.env = patch.dict(os.environ, {'AUTOMATTIC_PROFILE': '', 'HERDR_ENV': '',
                                           'AUTOMATTIC_SESSION': '',
-                                          'XDG_STATE_HOME': str(self.root / 'state')})
+                                          'XDG_STATE_HOME': str(self.root / 'state'),
+                                     'CODEX_HOME': str(self.root / 'codex-home')})
         self.env.start()
         self.addCleanup(self.env.stop)
         self.user = self.root / 'user.json'

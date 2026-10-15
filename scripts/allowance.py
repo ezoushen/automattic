@@ -6,7 +6,8 @@ a snapshot that `record-claude` writes from the status line's JSON input, for ex
 `printf '%s' "$JSON" | python3 <plugin>/scripts/allowance.py record-claude` to the status-line script.
 A window's projected use at reset counts once a quarter of it has passed. Levels: `elevated` from
 80% used or projected and `critical` from 90%; they fall only below 65% and 80% respectively and
-after five minutes at the level. No reading is `unknown`, never zero.
+after five minutes at the level, remembered between `status` and `record-claude` runs. No reading is
+`unknown`, never zero.
 """
 
 import argparse
@@ -38,13 +39,15 @@ def write_json(path, value):
     temporary.replace(path)
 
 
-def record_claude(stream, now):
-    """Keep the status line's rate limits; anything unreadable is ignored so the status line never fails."""
+def record_claude(stream, now, codex_root):
+    """Keep the status line's rate limits and refresh the levels' memory; anything unreadable is ignored so
+    the status line never fails."""
     try:
         limits = json.load(stream).get('rate_limits')
         if isinstance(limits, dict) and limits:
             write_json(state_dir() / 'claude-allowance.json', {'recorded_at': now, 'rate_limits': limits})
-    except (OSError, ValueError, AttributeError):
+            status(codex_root, now)
+    except (OSError, ValueError, AttributeError, KeyError):
         pass
 
 
@@ -103,7 +106,8 @@ def settle(previous, score, now):
     return 'elevated' if score >= LEAVE['elevated'] else 'normal'
 
 
-def status(codex_root, now):
+def status(codex_root, now, persist=True):
+    """Readings and levels per provider; `persist` keeps the levels for the next call's hysteresis."""
     path = state_dir() / 'allowance-levels.json'
     try:
         stored = json.loads(path.read_text())
@@ -123,10 +127,11 @@ def status(codex_root, now):
         if level != previous.get('level'):
             stored[name] = {'level': level, 'since': now}
         providers[name] = dict(reading, level=level)
-    try:
-        write_json(path, stored)
-    except OSError:
-        pass  # The levels still apply; only their hysteresis memory is lost.
+    if persist:
+        try:
+            write_json(path, stored)
+        except OSError:
+            pass  # The levels still apply; only their hysteresis memory is lost.
     return {'providers': providers}
 
 
@@ -137,11 +142,12 @@ def main():
     report.add_argument('--codex-root', type=Path, default=Path.home() / '.codex/sessions')
     report.add_argument('--now', type=float, help=argparse.SUPPRESS)
     record = commands.add_parser('record-claude', help='keep the rate limits from status-line JSON on stdin')
+    record.add_argument('--codex-root', type=Path, default=Path.home() / '.codex/sessions')
     record.add_argument('--now', type=float, help=argparse.SUPPRESS)
     args = parser.parse_args()
     now = args.now if args.now is not None else time.time()
     if args.command == 'record-claude':
-        record_claude(sys.stdin, now)
+        record_claude(sys.stdin, now, args.codex_root)
         return
     try:
         print(json.dumps(status(args.codex_root, now), indent=2))

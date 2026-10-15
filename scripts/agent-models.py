@@ -9,6 +9,8 @@ from pathlib import Path
 import random
 import sqlite3
 import tempfile
+import time
+import allowance
 import decisions
 import outcomes
 
@@ -308,13 +310,25 @@ def decision_model_selection(router, candidates, definitions, role, host, assign
                 reason=f'System One selected {record["choice"]} using {record["model"]}.'), record
 
 
-# Shadow scoring: what a worker spends, as a weight against its chance of acceptance.
+# Shadow scoring: what a worker spends, as a weight against its chance of acceptance. A subscription's
+# weight rises with its provider's allowance pressure; an unknown reading keeps the base weight.
 COSTS = {'subscription': 1.0, 'free': 0.0, 'local': 0.0}
 COST_WEIGHT = 0.15
+PRESSURE_WEIGHTS = {'normal': COST_WEIGHT, 'elevated': 0.4, 'critical': 1.0}
+
+
+def allowance_levels():
+    """Each subscription provider's pressure level; a reader failure leaves every provider unknown."""
+    root = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex') / 'sessions'
+    try:
+        readings = allowance.status(root, time.time(), persist=False)['providers']  # Routing stays read-only.
+        return {name: value['level'] for name, value in readings.items()}
+    except (OSError, ValueError, KeyError) as error:
+        return {'error': str(error)}
 TRAINING = 'Model trains on prompts; this repository does not allow training endpoints (allow_training)'
 
 
-def shadow_selection(names, catalog, role, seed):
+def shadow_selection(names, catalog, role, seed, levels=None):
     """What a cost-aware policy would choose: per candidate, a Thompson sample of its acceptance rate in this
     role's recorded outcomes, less the cost weight for subscription spend. It never changes the route."""
     try:
@@ -332,9 +346,14 @@ def shadow_selection(names, catalog, role, seed):
         draw = random.Random(f'{seed}|{name}').betavariate(1 + successes, 1 + failures)
         scored[name] = {'cost': cost or 'unknown', 'successes': successes, 'failures': failures,
                         'mean': round((1 + successes) / (2 + successes + failures), 3), 'sample': round(draw, 3),
-                        'utility': round(draw - COST_WEIGHT * COSTS.get(cost, 1.0), 3)}
+                        'utility': round(draw - weight(names[name], levels or {}) * COSTS.get(cost, 1.0), 3)}
     choice = max(scored, key=lambda name: scored[name]['utility']) if scored else None
-    return {'policy': 'thompson-cost-v1', 'cost_weight': COST_WEIGHT, 'candidates': scored, 'choice': choice}
+    return {'policy': 'thompson-cost-v1', 'cost_weight': COST_WEIGHT, 'allowance': levels or {},
+            'candidates': scored, 'choice': choice}
+
+
+def weight(runtime, levels):
+    return PRESSURE_WEIGHTS.get(levels.get(runtime), COST_WEIGHT)
 
 
 def select_candidate(pool, candidate, recommendation, eligible_candidates, task,
@@ -615,10 +634,13 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         metadata['candidate_pool'] = instance
         pool = instance
         # Shadow scoring weighs every reachable candidate the host did not exclude, whatever the route's runtime.
-        competing = [name for name in configured_candidates
-                     if (eligible_candidates is None or name in eligible_candidates) and name in catalog
-                     and (catalog[name][0].get('data') != 'trains' or allow_training)
-                     and expand_model(name, catalog, runtimes, host)[0] is not None]
+        competing = {}
+        for name in configured_candidates:
+            if ((eligible_candidates is None or name in eligible_candidates) and name in catalog
+                    and (catalog[name][0].get('data') != 'trains' or allow_training)):
+                reachable, route = expand_model(name, catalog, runtimes, host)
+                if reachable is not None:
+                    competing[name] = route['target_runtime']
         if eligible_candidates is not None:
             eligible_candidates = [name for name in eligible_candidates if name in pool['candidates']]
         decision_requested = (router['type'] == 'decision-model' and assignment is not None
@@ -710,7 +732,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                                             else 'decision-model')
         if isinstance(configured_candidates, list) and configured_candidates:
             shadow = shadow_selection(competing, catalog, role,
-                                      f'{role}|{assignment_id or assignment or ""}')
+                                      f'{role}|{assignment_id or assignment or ""}', allowance_levels())
             if shadow.get('choice') is not None:
                 shadow['agrees'] = shadow['choice'] == info['candidate']
             metadata['shadow_selection'] = shadow
