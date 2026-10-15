@@ -275,8 +275,9 @@ Each collected attempt's outcome (result, acceptance or decline, reverts) also g
 to a machine-wide ledger, `$XDG_STATE_HOME/automattic/outcomes.sqlite`, with its
 candidate and role, whatever routed it. `scripts/outcomes.py summary` counts
 successes, failures and pending attempts per role and candidate: an implementer
-succeeds when accepted, other roles when completed; a decline, revert, failed or
-blocked result fails. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
+succeeds when accepted, other roles when completed; a decline, revert or failed
+result fails, and a blocked result, which waits on something outside the worker,
+counts neither way. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
 past decision journals and lifecycle state files once. A lifecycle attempt replaces
 the journal copy of its routing decision, whichever is imported first, and a
 journal's `succeeded` counts as accepted only when the host recorded it. Sources it cannot read are listed under `errors` with exit 1;

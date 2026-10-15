@@ -89,11 +89,13 @@ class OutcomeLedger(unittest.TestCase):
         self.run_script(LIFECYCLE, 'attribute', '--state', str(self.state), '--attempt', 't5/1', '--kind', 'revert',
                         '--count', '1', '--evidence', 'revert commit r-1')
         self.attempt('r1/1', role='spec-reviewer', candidate='opus')
+        # A blocked attempt waits on something outside the worker; it does not count against the model.
         self.attempt('r2/1', role='spec-reviewer', candidate='opus', status='blocked')
+        self.attempt('r3/1', role='spec-reviewer', candidate='opus', status='failed')
         self.assertEqual(self.summary(), {
             'implementer': {'sonnet': {'successes': 1, 'failures': 2, 'pending': 1},
                             'glm': {'successes': 0, 'failures': 1, 'pending': 0}},
-            'spec-reviewer': {'opus': {'successes': 1, 'failures': 1, 'pending': 0}}})
+            'spec-reviewer': {'opus': {'successes': 1, 'failures': 1, 'pending': 1}}})
         # A later acceptance settles the deferred attempt.
         self.record('accepted', 't3/1', commit='merge-3', evidence=['git log merge-3'])
         self.assertEqual(self.summary('--role', 'implementer')['implementer']['sonnet'],

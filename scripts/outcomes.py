@@ -3,7 +3,8 @@
 
 The worker lifecycle writes an attempt's result, acceptance or decline, and later reverts.
 `import` adds past decision journals and lifecycle state files once. Implementers succeed when accepted; other roles
-when their work completed. A revert, a decline or a failed or blocked result is a failure.
+when their work completed. A revert, a decline or a failed result is a failure; a blocked
+result waits on something outside the worker and counts neither way.
 """
 
 import argparse
@@ -57,6 +58,8 @@ def put(key, row):
 
 def verdict(row):
     """'success', 'failure' or 'pending' for one attempt's outcome."""
+    if row.get('result') == 'blocked':
+        return 'pending'
     if row.get('reverts') or row.get('declined') or row.get('status') == 'failed':
         return 'failure'
     if row.get('status') != 'succeeded':
@@ -104,7 +107,8 @@ def attempt_row(db, saved, source):
                 model=actual.get('model'), effort=actual.get('effort'), runtime=saved['runtime'],
                 selection_source=execution.get('selection_source'),
                 shadow_choice=(execution.get('shadow_selection') or {}).get('choice'),
-                status=STATUSES[saved['result']['status']], accepted=bool(saved.get('accepted')),
+                result=saved['result']['status'], status=STATUSES[saved['result']['status']],
+                accepted=bool(saved.get('accepted')),
                 declined=bool(saved.get('declined')), **counts)
 
 
