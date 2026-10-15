@@ -6,8 +6,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import random
+import sqlite3
 import tempfile
 import decisions
+import outcomes
 
 from decisions import systemone_request
 
@@ -305,6 +308,32 @@ def decision_model_selection(router, candidates, definitions, role, host, assign
                 reason=f'System One selected {record["choice"]} using {record["model"]}.'), record
 
 
+# Shadow scoring: what a worker spends, as a weight against its chance of acceptance.
+COSTS = {'subscription': 1.0, 'free': 0.0, 'local': 0.0}
+COST_WEIGHT = 0.15
+TRAINING = 'Model trains on prompts; this repository does not allow training endpoints (allow_training)'
+
+
+def shadow_selection(names, catalog, role, seed):
+    """What a cost-aware policy would choose: per candidate, a Thompson sample of its acceptance rate in this
+    role's recorded outcomes, less the cost weight for subscription spend. It never changes the route."""
+    try:
+        counts = outcomes.summary(role).get(role, {})
+    except (OSError, ValueError, sqlite3.Error) as error:
+        return {'status': 'unavailable', 'error': str(error)}
+    scored = {}
+    for name in names:
+        successes = counts.get(name, {}).get('successes', 0)
+        failures = counts.get(name, {}).get('failures', 0)
+        cost = catalog[name][0].get('cost') if name in catalog else None
+        draw = random.Random(f'{seed}|{name}').betavariate(1 + successes, 1 + failures)
+        scored[name] = {'cost': cost or 'unknown', 'successes': successes, 'failures': failures,
+                        'mean': round((1 + successes) / (2 + successes + failures), 3), 'sample': round(draw, 3),
+                        'utility': round(draw - COST_WEIGHT * COSTS.get(cost, 1.0), 3)}
+    choice = max(scored, key=lambda name: scored[name]['utility']) if scored else None
+    return {'policy': 'thompson-cost-v1', 'cost_weight': COST_WEIGHT, 'candidates': scored, 'choice': choice}
+
+
 def select_candidate(pool, candidate, recommendation, eligible_candidates, task,
                      *, overrides=None, definitions=None, target_runtime=None, configured_candidates=None):
     """Validate a recommendation or pin; never infer runtime support from model names."""
@@ -465,6 +494,9 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                 'decision_policy': decision_policy, **session}
     catalog = {name: (definition, f'{path}:models.{name}')
                for path, data in layers for name, definition in data.get('models', {}).items()}
+    allow_training = False
+    for _, data in layers:
+        allow_training = data.get('allow_training', allow_training)
     runtimes = {name: (definition, f'{path}:runtimes.{name}')
                 for path, data in layers for name, definition in data.get('runtimes', {}).items()}
     executor_types = {name: (definition, f'{path}:executor_types.{name}')
@@ -521,6 +553,9 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
     if pooled and isinstance(instance['candidates'], list):
         expanded, unavailable = {}, {}
         for name in instance['candidates']:
+            if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
+                unavailable[name] = TRAINING
+                continue
             resolved, detail = expand_model(name, catalog, runtimes, host, target_runtime)
             if resolved is None:
                 unavailable[name] = detail
@@ -531,6 +566,8 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         instance = dict(instance, candidates=expanded)
     elif instance is not None and 'model' in instance:
         name = instance['model']
+        if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
+            raise ValueError(f'Model {name!r}: {TRAINING}')
         instance, detail = expand_model(name, catalog, runtimes, host, target_runtime)
         if instance is None:
             raise ValueError(f'Model {name!r}: {detail}')
@@ -663,6 +700,12 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         if decision_requested:
             metadata['selection_source'] = ('sole-option' if metadata['decision_model']['status'] == 'skipped'
                                             else 'decision-model')
+        if isinstance(configured_candidates, list) and configured_candidates:
+            shadow = shadow_selection(info['eligible_candidates'], catalog, role,
+                                      f'{role}|{assignment_id or assignment or ""}')
+            if shadow.get('choice') is not None:
+                shadow['agrees'] = shadow['choice'] == info['candidate']
+            metadata['shadow_selection'] = shadow
         source += '.candidates.' + info['candidate']
         if recommended_thinking is not None:
             if adaptive_thinking is not None:

@@ -56,7 +56,11 @@ def verdict(row):
 
 
 def summary(role=None):
-    db = connect()
+    """Read-only: a missing ledger has no outcomes yet."""
+    path = ledger_path()
+    if not path.is_file():
+        return {}
+    db = sqlite3.connect(f'file:{path}?mode=ro', uri=True, timeout=30)
     try:
         rows = [json.loads(data) for (data,) in db.execute('SELECT data FROM outcomes ORDER BY key')]
     finally:

@@ -833,5 +833,56 @@ class Router(unittest.TestCase):
         self.assertEqual(result['candidate'], 'opus')
 
 
+    def free_and_local(self):
+        """Add a training endpoint and a local model to the implementer pool."""
+        for name, cost, data in (('muse', 'free', 'trains'), ('glm', 'local', 'local')):
+            self.data['models'][name] = {'description': name, 'cost': cost, 'data': data,
+                                         'runtimes': {'codex': {'id': 'codex/' + name}}}
+        for name in ('luna', 'sol'):
+            self.data['models'][name]['cost'] = 'subscription'
+        self.data['agents']['implementer']['candidates'] += ['muse', 'glm']
+        self.save()
+
+    def test_training_endpoints_are_unavailable_unless_a_config_layer_allows_them(self):
+        self.free_and_local()
+        listed = self.resolve(list_candidates=True)
+        self.assertIn('trains on prompts', listed['unavailable_candidates']['muse'])
+        self.assertNotIn('muse', listed['candidates'])
+        self.assertIn('glm', listed['candidates'])
+        with self.assertRaisesRegex(ValueError, 'not eligible'):
+            self.resolve(candidate='muse')
+        self.project.write_text(json.dumps({'allow_training': True}))
+        self.assertEqual(self.resolve(candidate='muse')['candidate'], 'muse')
+        self.data['models']['muse']['cost'] = 'cheap'
+        self.save()
+        with self.assertRaises(ValueError):
+            self.resolve(list_candidates=True)
+
+    def test_each_route_reports_a_cost_aware_shadow_choice_without_changing_it(self):
+        self.free_and_local()
+        import outcomes
+        for index in range(9):
+            outcomes.put(f'seed#sol-{index}', {'role': 'implementer', 'candidate': 'sol', 'status': 'succeeded',
+                                               'accepted': True})
+        outcomes.put('seed#glm-0', {'role': 'implementer', 'candidate': 'glm', 'status': 'failed'})
+        self.profile({'codex': {'candidate': 'sol'}})
+        result = self.resolve(target_runtime='codex', assignment='Implement ticket 1.')
+        self.assertEqual((result['candidate'], result['selection_source']), ('sol', 'profile'))
+        shadow = result['shadow_selection']
+        self.assertEqual(set(shadow['candidates']), {'luna', 'sol', 'glm'})  # muse stays behind the boundary
+        sol, glm = shadow['candidates']['sol'], shadow['candidates']['glm']
+        self.assertEqual((sol['cost'], sol['successes'], sol['failures'], sol['mean']), ('subscription', 9, 0, 0.909))
+        self.assertEqual((glm['cost'], glm['successes'], glm['failures'], glm['mean']), ('local', 0, 1, 0.333))
+        self.assertAlmostEqual(sol['utility'], sol['sample'] - shadow['cost_weight'], places=3)
+        self.assertAlmostEqual(glm['utility'], glm['sample'], places=3)
+        self.assertEqual(shadow['choice'], max(shadow['candidates'], key=lambda n: shadow['candidates'][n]['utility']))
+        self.assertEqual(shadow['agrees'], shadow['choice'] == 'sol')
+        # The same assignment draws the same samples; another assignment draws its own.
+        self.assertEqual(self.resolve(target_runtime='codex', assignment='Implement ticket 1.')['shadow_selection'], shadow)
+        samples = {self.resolve(target_runtime='codex', assignment=f'Implement ticket {n}.')['shadow_selection']['candidates']
+                   ['glm']['sample'] for n in range(2, 8)}
+        self.assertGreater(len(samples), 1)
+
+
 if __name__ == '__main__':
     unittest.main()

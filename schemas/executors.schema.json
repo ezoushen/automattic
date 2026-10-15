@@ -22,6 +22,10 @@
     "agents": { "$ref": "#/$defs/agents" },
     "router": { "$ref": "#/$defs/router" },
     "decisions": { "$ref": "#/$defs/decisions" },
+    "allow_training": {
+      "description": "Permit models whose data policy is trains. Set it in a repository's .automattic/executors.json only where its code may train a provider's models.",
+      "type": "boolean"
+    },
     "profiles": {
       "type": "object",
       "propertyNames": { "type": "string", "minLength": 1, "not": { "pattern": "[\\s\\u0000-\\u001f]" } },
@@ -181,6 +185,14 @@
       "type": "object",
       "properties": {
         "description": { "type": "string", "pattern": "\\S" },
+        "cost": {
+          "description": "What a worker spends: a subscription allowance, nothing (a free hosted endpoint), or local machine capacity.",
+          "enum": ["subscription", "free", "local"]
+        },
+        "data": {
+          "description": "Where prompts go: a local model, a provider that retains nothing, a provider under its usual terms, or one that trains on prompts. Training endpoints need allow_training.",
+          "enum": ["local", "no-retention", "provider", "trains"]
+        },
         "runtimes": {
           "type": "object",
           "minProperties": 1,
