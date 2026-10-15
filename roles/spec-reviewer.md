@@ -54,6 +54,28 @@ including documentation-only diffs. Check claims against the accepted contract,
 implementation and callers using code-comments, including missing documentation
 needed for the changed contract or required by project conventions.
 
+Review changed tests using
+[tautological-tests](../skills/remediate/kinds/tautological-tests.md). Trace expected
+values to an independent contract or oracle. For each suspected tautology, retain
+an isolated relevant wrong implementation, evidence the operation executes, and
+the test command/output showing it still passes. A test that rejects that defect
+is not a finding; setup failures, skips and unrelated mutations prove nothing.
+
+For added comments, run `python3 <plugin_root>/scripts/comment-audit.py --repo
+<worktree> --base <diff_base> --head <head>` on the pinned reviewed diff and retain
+the JSON output as evidence. Its entries are candidates, not verdicts; inspect
+changed comments outside its supported syntax too. Apply code-comments and the
+project's documented convention: function/interface docs are allowed; other
+comments require a constraint that cannot be encoded as a type, assertion, test
+or lint rule after trying to encode it. For each violation, cite the exact added
+comment, applicable rule and proof (for example, the statements it merely narrates
+or an executable encoding of its constraint). Audit output alone is not proof.
+
+Report only proven violations of these test/comment rules as findings. Drop
+unproven candidates from findings, recording the dropped count and reason;
+retain UNVERIFIED evidence gaps separately without treating them as confirmed
+violations or a passed check. Request unavailable proof through the orchestrator.
+
 A stale, false, contradictory, materially incomplete or broken documented contract
 is a hard blocker, never a cosmetic nit or deferred follow-up when caused by this
 change. Cite the exact claim in context, its assumptions and the conflicting
