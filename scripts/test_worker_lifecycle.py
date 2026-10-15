@@ -13,6 +13,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 import decision_journal
 import decisions
@@ -26,6 +27,8 @@ class WorkerLifecycle(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(prefix='automattic worker ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
+        # Outcomes go to a ledger under the state home; keep the user's ledger out of tests.
+        self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'state')}))
         self.state = self.root / 'workers.sqlite'
         self.execution = self.root / 'execution.json'
         self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'implementer',

@@ -19,6 +19,7 @@ import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import decision_journal  # noqa: E402
 import decisions  # noqa: E402
+import outcomes  # noqa: E402
 
 
 spec = importlib.util.spec_from_file_location('native_settings', Path(__file__).with_name('native-settings.py'))
@@ -236,10 +237,39 @@ def attribute(db, attempt, kind, count, evidence):
     for row in signals:
         counts[ATTRIBUTIONS[row['kind']]] = counts.get(ATTRIBUTIONS[row['kind']], 0) + row['count']
     result = saved['result']
+    unrecorded = ledger(db, saved)
     journal = annotate(saved, 'outcome', status='failed' if counts.get('reverts') else OUTCOMES[result['status']],
                        revision=result['head'], metrics=dict(result.get('metrics', {}), **counts),
                        evidence=[result['report'], *result['evidence'], *(x for row in signals for x in row['evidence'])])
-    return {'event_id': event_id, 'attempt': attempt, 'signals': counts, **({'journal': journal} if journal else {})}
+    return {'event_id': event_id, 'attempt': attempt, 'signals': counts, **({'journal': journal} if journal else {}),
+            **({'ledger': unrecorded} if unrecorded else {})}
+
+
+def ledger(db, saved):
+    """Write a collected attempt's outcome to the machine-wide ledger; a failed write is reported, never fatal."""
+    result = saved.get('result')
+    if not result:
+        return None
+    counts = {}
+    for (payload,) in db.execute("SELECT payload FROM events WHERE attempt = ? AND kind = 'attribution'",
+                                 (saved['attempt'],)):
+        signal = json.loads(payload)
+        counts[ATTRIBUTIONS[signal['kind']]] = counts.get(ATTRIBUTIONS[signal['kind']], 0) + signal['count']
+    execution = saved.get('execution_snapshot', {})
+    actual = saved.get('observed') or saved['requested']
+    state = db.execute('PRAGMA database_list').fetchone()[2]
+    row = dict(source=state, attempt=saved['attempt'], assignment=saved['assignment'], repo=saved['repo'],
+               role=saved['role'], candidate=execution.get('candidate') or actual.get('model'),
+               model=actual.get('model'), effort=actual.get('effort'), runtime=saved['runtime'],
+               selection_source=execution.get('selection_source'),
+               shadow_choice=(execution.get('shadow_selection') or {}).get('choice'),
+               status=OUTCOMES[result['status']], accepted=bool(saved.get('accepted')),
+               declined=bool(saved.get('declined')), **counts)
+    try:
+        outcomes.put(f"{state}#{saved['attempt']}", row)
+    except (OSError, ValueError, sqlite3.Error) as error:
+        return f'not recorded: {error}'
+    return None
 
 
 def decisions_journal(saved):
@@ -507,8 +537,10 @@ def record(db, data):
             journal = dict(journal or {}, **assessed)
     repaired = (attribute(db, data['repairs'], 'repair-round', 1, [f'repair attempt {attempt}'])
                 if kind == 'register' and 'repairs' in data else None)
+    unrecorded = ledger(db, saved) if kind in ('result', 'accepted', 'closed') else None
     return {'event_id': event_id, 'attempt': attempt, 'verified': saved['verified'],
-            **({'journal': journal} if journal else {}), **({'repairs': repaired} if repaired else {})}
+            **({'journal': journal} if journal else {}), **({'repairs': repaired} if repaired else {}),
+            **({'ledger': unrecorded} if unrecorded else {})}
 
 
 def stop(process):

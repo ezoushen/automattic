@@ -2,11 +2,13 @@
 """Exercise the effort spend report through its CLI over recorded lifecycle state and transcripts."""
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).with_name('effort-spend.py')
@@ -18,6 +20,8 @@ class EffortSpend(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(prefix='automattic spend ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
+        # Outcomes go to a ledger under the state home; keep the user's ledger out of tests.
+        self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'state')}))
         self.state = self.root / 'workers.sqlite'
         self.claude = self.root / 'claude'
         self.codex = self.root / 'codex'

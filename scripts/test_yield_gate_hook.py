@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / 'hooks' / 'yield-gate.py'
@@ -19,6 +20,8 @@ class YieldGateHook(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix='automattic yield ')
         self.addCleanup(self.tmp.cleanup)
+        # Outcomes go to a ledger under the state home; keep the user's ledger out of tests.
+        self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state')}))
         self.repo = Path(self.tmp.name).resolve() / 'project'
         self.repo.mkdir()
         subprocess.run(['git', 'init', '-q', str(self.repo)], check=True)
