@@ -7,6 +7,13 @@ for experiments, queued builds, teardown and completion.
 Before implementing, read [code-comments](../skills/code-comments/SKILL.md) once
 and apply it while writing code/comments. Load it without waiting for a separate
 user invocation; it owns the shared writing guidance.
+When writing or changing tests, read and apply
+[tautological-tests](../skills/remediate/kinds/tautological-tests.md): derive expected
+values from an independent contract, worked example or trusted oracle. In an
+isolated copy, prove each changed test rejects a deliberately wrong implementation
+of the behavior it claims to cover at the intended assertion, then passes with
+the real implementation. Retain the mutation and red/green commands/output;
+setup errors, skips and unrelated mutations are not proof.
 Before editing maintained docs, apply [housekeeping's documentation policy](../skills/housekeeping/SKILL.md#keep-affected-documentation-current).
 
 Common inputs include absolute `adapter`, `role_file`, `plugin_root` and `repo`.
