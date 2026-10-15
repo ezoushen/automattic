@@ -862,8 +862,9 @@ class Router(unittest.TestCase):
         self.free_and_local()
         import outcomes
         for index in range(9):
-            outcomes.put(f'seed#sol-{index}', {'role': 'implementer', 'candidate': 'sol', 'status': 'succeeded',
-                                               'accepted': True})
+            # Attempts registered without a candidate name are known by their model ID.
+            outcomes.put(f'seed#sol-{index}', {'role': 'implementer', 'candidate': 'codex/sol' if index else 'sol',
+                                               'status': 'succeeded', 'accepted': True})
         outcomes.put('seed#glm-0', {'role': 'implementer', 'candidate': 'glm', 'status': 'failed'})
         self.profile({'codex': {'candidate': 'sol'}})
         result = self.resolve(target_runtime='codex', assignment='Implement ticket 1.')

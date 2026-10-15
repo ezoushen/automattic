@@ -323,9 +323,12 @@ def shadow_selection(names, catalog, role, seed):
         return {'status': 'unavailable', 'error': str(error)}
     scored = {}
     for name in names:
-        successes = counts.get(name, {}).get('successes', 0)
-        failures = counts.get(name, {}).get('failures', 0)
-        cost = catalog[name][0].get('cost') if name in catalog else None
+        definition = catalog[name][0] if name in catalog else {}
+        # Attempts registered without a candidate name are known by their model ID.
+        known = {name} | {binding['id'] for binding in definition.get('runtimes', {}).values()}
+        successes = sum(counts.get(key, {}).get('successes', 0) for key in known)
+        failures = sum(counts.get(key, {}).get('failures', 0) for key in known)
+        cost = definition.get('cost')
         draw = random.Random(f'{seed}|{name}').betavariate(1 + successes, 1 + failures)
         scored[name] = {'cost': cost or 'unknown', 'successes': successes, 'failures': failures,
                         'mean': round((1 + successes) / (2 + successes + failures), 3), 'sample': round(draw, 3),
