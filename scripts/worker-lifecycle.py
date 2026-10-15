@@ -293,6 +293,30 @@ def assess_wake(db, saved, report):
         return {'assessment': f'not recorded: {error}'}
 
 
+def unsettled(saved):
+    """A completed implementer attempt with neither an acceptance nor a decline on record."""
+    return (saved.get('role') == 'implementer' and saved.get('result', {}).get('status') == 'completed'
+            and not saved.get('accepted') and not saved.get('declined'))
+
+
+def settle(saved, acceptance):
+    """Apply the acceptance decision a closure carries for a completed implementer attempt."""
+    if not unsettled(saved):
+        return
+    message = ('Settle acceptance of a completed implementer before closing it: record `accepted`, or pass '
+               'acceptance {"decision": "accepted", "commit", "evidence"} or {"decision": "deferred" or '
+               '"declined", "reason"}')
+    require(isinstance(acceptance, dict), message)
+    decision = acceptance.get('decision')
+    if decision == 'accepted':
+        require(text(acceptance.get('commit')) and isinstance(acceptance.get('evidence'), list)
+                and acceptance['evidence'] and all(text(x) for x in acceptance['evidence']), message)
+        saved['accepted'] = {'commit': acceptance['commit'], 'evidence': acceptance['evidence']}
+    else:
+        require(decision in ('deferred', 'declined') and text(acceptance.get('reason')), message)
+        saved['declined' if decision == 'declined' else 'acceptance_deferred'] = {'reason': acceptance['reason']}
+
+
 def submitted_at(db, attempt):
     times = [json.loads(row[0])['recorded_at'] for row in db.execute(
         "SELECT payload FROM events WHERE attempt = ? AND kind IN ('submitted', 'wait-started')", (attempt,))]
@@ -401,6 +425,7 @@ def record(db, data):
                 require(saved.get('result', {}).get('status') == 'completed',
                         'Acceptance requires a collected completed result')
                 require(not saved.get('accepted'), 'Attempt already accepted')
+                require(not saved.get('declined'), 'Attempt was declined; accept a new attempt instead')
                 require(text(data.get('commit')), 'Acceptance requires the integrated commit')
                 saved['accepted'] = data
             elif kind in ('retain', 'closed'):
@@ -413,6 +438,7 @@ def record(db, data):
                 require(report_intact(saved), 'Retain an intact report before retaining or closing')
                 if kind == 'closed':
                     require(saved['owned'], 'Existing user worker is not a cleanup target')
+                    settle(saved, data.get('acceptance'))
                     saved['closed'] = data
                 else:
                     require(text(data.get('next_use')) and text(data.get('reason')),
@@ -787,6 +813,7 @@ def retire(db, state, attempt, request):
         return {'attempt': attempt, 'closed': True, 'native_closed_by': closure['attempt'],
                 'evidence': closure['closed']['evidence']}
     final_retirement(db, saved)
+    settle(dict(saved), request.get('acceptance'))  # Refuse before the pane closes, not after.
     previous = saved.get('retirement_requested')
     if previous:
         require(previous['session'] == session and previous['pane'] == pane,
@@ -831,7 +858,8 @@ def retire(db, state, attempt, request):
     proof = directory / (uuid.uuid4().hex + '.json')
     proof.write_text(json.dumps(dict(session=session, pane=pane, confirmation=response,
                                      jobs_evidence=evidence), indent=2) + '\n')
-    record(db, dict(kind='closed', attempt=attempt, evidence=[str(proof), *evidence]))
+    record(db, dict(kind='closed', attempt=attempt, evidence=[str(proof), *evidence],
+                    **({'acceptance': request['acceptance']} if 'acceptance' in request else {})))
     return {'attempt': attempt, 'closed': True, 'evidence': str(proof)}
 
 
@@ -888,11 +916,14 @@ def status(db, attempt=None):
                 attention.append('close owned worker or record same-assignment retention')
             if saved.get('retirement_requested'):
                 attention.append('reconcile native retirement')
+        if saved.get('acceptance_deferred') and unsettled(saved):
+            attention.append('record acceptance or decline')
         if any(row['payload'].get('notify') and row['payload'].get('delivery', {}).get('state') != 'sent'
                for row in pending(db, saved['attempt'])):
             attention.append('inspect parent and recover pending notification')
         summary = {key: saved[key] for key in ('attempt', 'assignment', 'role', 'worker', 'native_session',
-                   'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'accepted', 'retained', 'closed',
+                   'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'accepted', 'declined',
+                   'acceptance_deferred', 'retained', 'closed',
                    'retirement_requested') if key in saved}
         result.append(dict(summary, attention=attention,
                            **({'native_closed_by': closure['attempt']} if closure else {})))

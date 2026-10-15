@@ -398,12 +398,59 @@ class WorkerLifecycle(unittest.TestCase):
         self.record('reconciled', evidence=['native worker idle with its report'])
         self.collect()
         self.acknowledge()
-        self.record('closed', evidence=['native session exited'])
+        self.record('closed', evidence=['native session exited'], acceptance={'decision': 'deferred', 'reason': 'acceptance checks pending'})
         self.assertIn('commit', self.record('accepted', 'ticket-1/1', evidence=['log'], code=2))
         self.record('accepted', commit='merge-1', evidence=['git log merge-1'])
         accepted = self.cli('status')['attempts'][0]['accepted']
         self.assertEqual((accepted['commit'], accepted['evidence']), ('merge-1', ['git log merge-1']))
         self.assertIn('already accepted', self.record('accepted', commit='merge-2', evidence=['log'], code=2))
+
+    def test_closing_a_completed_implementer_settles_its_acceptance(self):
+        self.register()
+        self.ready()
+        self.collect()
+        self.acknowledge()
+        error = self.record('closed', evidence=['native session exited'], code=2)
+        self.assertIn('acceptance', error)
+        self.assertIn('Settle acceptance', self.record(
+            'closed', evidence=['native session exited'], acceptance={'decision': 'deferred'}, code=2))
+        self.record('closed', evidence=['native session exited'],
+                    acceptance={'decision': 'accepted', 'commit': 'merge-1', 'evidence': ['git log merge-1']})
+        attempt = self.cli('status')['attempts'][0]
+        self.assertEqual(attempt['accepted']['commit'], 'merge-1')
+        self.assertEqual(attempt['attention'], [])
+        # Acceptance can wait for checks; until then the attempt asks for it.
+        self.register('ticket-2/1', 'ticket-2', 'native-2', 'pane-2')
+        self.ready('ticket-2/1')
+        self.collect('ticket-2/1')
+        self.acknowledge()
+        self.record('closed', 'ticket-2/1', evidence=['native session exited'],
+                    acceptance={'decision': 'deferred', 'reason': 'integration gate still running'})
+        deferred = self.cli('status', '--attempt', 'ticket-2/1')['attempts'][0]
+        self.assertIn('record acceptance or decline', deferred['attention'])
+        self.record('accepted', 'ticket-2/1', commit='merge-2', evidence=['git log merge-2'])
+        self.assertEqual(self.cli('status', '--attempt', 'ticket-2/1')['attempts'][0]['attention'], [])
+        # A declined attempt is settled and cannot be accepted later.
+        self.register('ticket-3/1', 'ticket-3', 'native-3', 'pane-3')
+        self.ready('ticket-3/1')
+        self.collect('ticket-3/1')
+        self.acknowledge()
+        self.record('closed', 'ticket-3/1', evidence=['native session exited'],
+                    acceptance={'decision': 'declined', 'reason': 'criteria 2 unmet; replaced by attempt 2'})
+        declined = self.cli('status', '--attempt', 'ticket-3/1')['attempts'][0]
+        self.assertEqual((declined['declined']['reason'], declined['attention']),
+                         ('criteria 2 unmet; replaced by attempt 2', []))
+        self.assertIn('declined', self.record('accepted', 'ticket-3/1', commit='m', evidence=['log'], code=2))
+
+    def test_other_roles_close_without_an_acceptance_decision(self):
+        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'spec-reviewer',
+                                             'settings': {'model': 'sonnet', 'effort': 'high'}}))
+        self.register()
+        self.ready()
+        self.collect()
+        self.acknowledge()
+        self.record('closed', evidence=['native session exited'])
+        self.assertEqual(self.cli('status')['attempts'][0]['attention'], [])
 
     def test_each_notified_wake_is_triaged_in_shadow_and_a_direct_collection_labels_it(self):
         execution = json.loads(self.execution.read_text())
@@ -622,13 +669,32 @@ else: sys.exit(3)
         request = self.root / 'collect.json'
         request.write_text(json.dumps({'status': 'completed', 'head': 'head-1', 'report': str(report),
             'evidence': ['current report checked'], 'disposition': {'kind': 'retire',
-            'session': 'fixture-session', 'pane': 'pane-1', 'jobs_evidence': ['owned jobs stopped']}}))
+            'session': 'fixture-session', 'pane': 'pane-1', 'jobs_evidence': ['owned jobs stopped'],
+            'acceptance': {'decision': 'deferred', 'reason': 'acceptance checks pending'}}}))
         self.cli('collect', '--attempt', 'ticket-1/1', '--input', str(request))
         self.assertTrue((self.root / 'native-closed').is_file())
         status = self.cli('status')
         self.assertTrue(status['attempts'][0]['closed'])
         self.assertEqual(status['pending'], [])
         self.assertTrue(report.is_file())
+
+    def test_retiring_a_completed_implementer_settles_acceptance_before_closing_the_pane(self):
+        self.register()
+        self.ready()
+        self.collect()
+        self.acknowledge()
+        self.herdr_fixture()
+        request = self.root / 'retire.json'
+        retire = {'session': 'fixture-session', 'pane': 'pane-1', 'jobs_evidence': ['owned jobs stopped']}
+        request.write_text(json.dumps(retire))
+        self.assertIn('acceptance', self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request), code=2))
+        self.assertFalse((self.root / 'native-closed').exists())
+        request.write_text(json.dumps(dict(retire, acceptance={
+            'decision': 'accepted', 'commit': 'merge-1', 'evidence': ['topic fast-forwarded to merge-1']})))
+        self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request))
+        attempt = self.cli('status')['attempts'][0]
+        self.assertEqual((attempt['accepted']['commit'], attempt['closed']['acceptance']['decision']),
+                         ('merge-1', 'accepted'))
 
     def test_collect_rejects_missing_disposition_before_recording_result(self):
         self.register()
@@ -668,7 +734,7 @@ else: sys.exit(3)
         self.herdr_fixture(native_session='different-native-session')
         request = self.root / 'retire.json'
         request.write_text(json.dumps({'session': 'fixture-session', 'pane': 'pane-1',
-                                       'jobs_evidence': ['owned jobs inspected']}))
+                                       'jobs_evidence': ['owned jobs inspected'], 'acceptance': {'decision': 'deferred', 'reason': 'acceptance checks pending'}}))
         error = self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
         self.assertIn('conversation no longer matches', error)
         self.assertFalse((self.root / 'native-closed').exists())
@@ -699,7 +765,8 @@ else: sys.exit(3)
         request = self.root / 'collect.json'
         request.write_text(json.dumps({'status': 'completed', 'head': 'head-1', 'report': str(report),
             'evidence': ['checked report'], 'disposition': {'kind': 'retire',
-            'session': 'fixture-session', 'pane': 'pane-1', 'jobs_evidence': ['owned jobs stopped']}}))
+            'session': 'fixture-session', 'pane': 'pane-1', 'jobs_evidence': ['owned jobs stopped'],
+            'acceptance': {'decision': 'deferred', 'reason': 'acceptance checks pending'}}}))
         self.cli('collect', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
         status = self.cli('status')
         self.assertIn('result', status['attempts'][0])
@@ -724,7 +791,8 @@ else: sys.exit(3)
         self.herdr_fixture()
         request = self.root / 'retire.json'
         request.write_text(json.dumps({'session': 'fixture-session', 'pane': 'pane-1',
-                                       'jobs_evidence': ['final same-assignment use, jobs stopped']}))
+                                       'jobs_evidence': ['final same-assignment use, jobs stopped'],
+                                       'acceptance': {'decision': 'deferred', 'reason': 'acceptance checks pending'}}))
         self.cli('retire', '--attempt', 'ticket-1/2', '--input', str(request))
         status = self.cli('status')
         self.assertEqual(status['attempts'][0]['native_closed_by'], 'ticket-1/2')
@@ -1104,7 +1172,7 @@ else: sys.exit(3)
         self.cli('gate', '--attempt', 'ticket-1/1', '--stage', 'accept', '--revision', 'head-1', code=1)
         self.record('closed', code=2, evidence=['native pane closure confirmed'])
         report.write_text('Verified assignment report at head-1\n')
-        self.record('closed', evidence=['native pane closure confirmed'])
+        self.record('closed', evidence=['native pane closure confirmed'], acceptance={'decision': 'deferred', 'reason': 'acceptance checks pending'})
         self.cli('gate', '--attempt', 'ticket-1/1', '--stage', 'work', code=1)
 
     def test_existing_user_worker_cannot_be_recorded_as_closed(self):
