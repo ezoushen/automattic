@@ -952,5 +952,30 @@ class Router(unittest.TestCase):
             self.resolve(list_candidates=True)
 
 
+    def test_each_backend_is_checked_once_per_route(self):
+        self.free_and_local()
+        hits = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                hits.append(self.path)
+                self.send_response(200)
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        for name in ('glm', 'muse'):
+            self.data['models'][name]['backend'] = 'lane'
+        self.data['capacity'] = {'lane': {'slots': 4, 'health': f'http://127.0.0.1:{server.server_port}/health'}}
+        self.project.write_text(json.dumps({'allow_training': True}))
+        self.profile({'codex': {'candidate': 'sol'}})
+        self.resolve(target_runtime='codex', assignment='Implement ticket 1.')
+        self.assertEqual(hits, ['/health'])
+
+
 if __name__ == '__main__':
     unittest.main()

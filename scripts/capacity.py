@@ -11,12 +11,14 @@ from pathlib import Path
 import re
 import sqlite3
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.request
 
 # A lease taken while its attempt is still being registered must not look abandoned.
 REGISTRATION_GRACE = 60
+HEALTH_SECONDS = 2
 
 
 def ledger_path():
@@ -82,13 +84,21 @@ def free_memory_percent():
 def check(backend, config):
     """Refuse a backend whose health endpoint fails or whose machine is short of free memory."""
     if config.get('health'):
-        try:
-            with urllib.request.urlopen(config['health'], timeout=2) as response:
-                healthy = response.status == 200
-        except (OSError, urllib.error.URLError, ValueError) as error:
-            raise ValueError(f'Backend {backend} is unhealthy: {error}') from error
-        if not healthy:
-            raise ValueError(f'Backend {backend} is unhealthy: health returned {response.status}')
+        answer = {}
+
+        def probe():
+            try:
+                with urllib.request.urlopen(config['health'], timeout=HEALTH_SECONDS) as response:
+                    answer['status'] = response.status
+            except (OSError, urllib.error.URLError, ValueError) as error:
+                answer['error'] = str(error)
+        # A thread bounds the whole check, including a host name that never resolves.
+        thread = threading.Thread(target=probe, daemon=True)
+        thread.start()
+        thread.join(HEALTH_SECONDS)
+        if answer.get('status') != 200:
+            reason = answer.get('error') or (f"health returned {answer['status']}" if answer else 'timed out')
+            raise ValueError(f'Backend {backend} is unhealthy: {reason}')
     minimum = config.get('min_free_memory_percent')
     if minimum is not None:
         free = free_memory_percent()

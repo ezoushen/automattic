@@ -352,11 +352,16 @@ def shadow_selection(names, catalog, role, seed, levels=None):
             'candidates': scored, 'choice': choice}
 
 
-def backend_unavailable(definition, backends):
-    """Why a model's local backend cannot take a worker now (no free slot, unhealthy, short of memory), or None."""
+def backend_unavailable(definition, backends, checked=None):
+    """Why a model's local backend cannot take a worker now (no free slot, unhealthy, short of memory), or None.
+    `checked` keeps each backend's answer for the rest of one route."""
     backend = definition.get('backend')
     if backend not in backends:
         return None
+    if checked is not None:
+        if backend not in checked:
+            checked[backend] = backend_unavailable(definition, backends)
+        return checked[backend]
     try:
         held = capacity.in_use(backend)
         slots = backends[backend]['slots']
@@ -534,7 +539,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                 'decision_policy': decision_policy, **session}
     catalog = {name: (definition, f'{path}:models.{name}')
                for path, data in layers for name, definition in data.get('models', {}).items()}
-    allow_training, backends = False, {}
+    allow_training, backends, checked = False, {}, {}
     for _, data in layers:
         allow_training = data.get('allow_training', allow_training)
         backends.update(data.get('capacity', {}))
@@ -597,7 +602,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
                 unavailable[name] = TRAINING
                 continue
-            full = backend_unavailable(catalog[name][0] if name in catalog else {}, backends)
+            full = backend_unavailable(catalog[name][0] if name in catalog else {}, backends, checked)
             if full:
                 unavailable[name] = full
                 continue
@@ -617,7 +622,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         name = instance['model']
         if name in catalog and catalog[name][0].get('data') == 'trains' and not allow_training:
             raise ValueError(f'Model {name!r}: {TRAINING}')
-        full = backend_unavailable(catalog[name][0] if name in catalog else {}, backends)
+        full = backend_unavailable(catalog[name][0] if name in catalog else {}, backends, checked)
         if full:
             raise ValueError(f'Model {name!r}: {full}')
         instance, detail = expand_model(name, catalog, runtimes, host, target_runtime)
@@ -671,7 +676,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         for name in configured_candidates:
             if ((eligible_candidates is None or name in eligible_candidates) and name in catalog
                     and (catalog[name][0].get('data') != 'trains' or allow_training)
-                    and not backend_unavailable(catalog[name][0], backends)):
+                    and not backend_unavailable(catalog[name][0], backends, checked)):
                 reachable, route = expand_model(name, catalog, runtimes, host)
                 if reachable is not None:
                     competing[name] = route['target_runtime']
