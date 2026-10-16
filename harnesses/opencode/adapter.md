@@ -45,8 +45,9 @@ opencode api POST /api/session/<id>/model -H x-opencode-directory:<worktree> \
 ```
 
 Use `build` unless the assignment names another agent; a user's default agent may
-be an orchestrator that delegates. The next turn uses both; confirm them from a
-fresh `opencode session export <id>` before productive submission. `opencode mini
+be an orchestrator that delegates. The switch takes effect on the next turn, so send
+a second read-only probe, then export the session (`opencode session export <id>`)
+and submit with that export: its latest assistant turn must show both settings. `opencode mini
 --model <provider/model>#<variant>` applies settings at launch, but Herdr cannot
 observe `mini`'s activity, so it does not suit lifecycle workers.
 
