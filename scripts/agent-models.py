@@ -704,8 +704,9 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                 raise ValueError('router consult "after-failure" needs a fallback_profile as its rule route')
             rule = profiles[rule_profile][0].get(role, {})
             usable = [runtime for runtime, entry in rule.items()
-                      if entry.get('candidate') in (eligible_candidates or pool['candidates'])]
-            rule_runtime = host if host in usable or len(usable) != 1 else usable[0]
+                      if entry.get('candidate') in (eligible_candidates or pool['candidates'])
+                      and definitions.get(entry['candidate'], {}).get('target_runtime') == runtime]
+            rule_runtime = host if host in usable else usable[0] if len(usable) == 1 else None
             try:
                 settled = select_candidate(pool, None, None, eligible_candidates, task, overrides=rule,
                                            definitions=definitions, target_runtime=target_runtime,

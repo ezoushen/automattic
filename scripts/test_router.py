@@ -574,6 +574,12 @@ class Router(unittest.TestCase):
                              excluded_candidates={'opus': 'Claude weekly allowance critical.'})
         self.assertEqual((mixed['candidate'], mixed['selection_source']), ('sol', 'rule-profile'))
         self.assertEqual(self.requests, [])
+        # A rule entry applies only where its candidate actually routes to that runtime.
+        self.data['models']['sol']['runtimes']['claude'] = {'id': 'claude/sol'}
+        self.save()
+        rerouted = self.resolve(host='claude', assignment='Implement ticket 1.',
+                                excluded_candidates={'opus': 'Claude weekly allowance critical.'})
+        self.assertNotEqual(rerouted['selection_source'], 'rule-profile')
 
     def test_partial_fallback_profile_still_returns_host_selection(self):
         self.fallback_router()
