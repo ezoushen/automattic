@@ -671,6 +671,12 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
     if pooled:
         metadata['candidate_pool'] = instance
         pool = instance
+        if isinstance(excluded_candidates, dict):
+            both = [name for name in eligible_candidates or [] if name in excluded_candidates]
+            if both:
+                raise ValueError('candidates cannot be both eligible and excluded: ' + ', '.join(both))
+            if eligible_candidates is None:
+                eligible_candidates = [name for name in configured_candidates if name not in excluded_candidates]
         # Shadow scoring weighs every reachable candidate the host did not exclude, whatever the route's runtime.
         competing = {}
         for name in configured_candidates:
@@ -976,7 +982,8 @@ def main():
                         help='compact assignment text file for the decision-model router; requires --route')
     parser.add_argument('--eligible-candidates', help='inline JSON array of candidate IDs, e.g. ["luna","sol"]')
     parser.add_argument('--excluded-candidates',
-                        help='JSON object giving a reason for each configured candidate left out of --eligible-candidates')
+                        help='JSON object giving a reason for each configured candidate left out of --eligible-candidates; '
+                             'alone, it removes those candidates')
     parser.add_argument('--eligible-thinking',
                         help='JSON candidate-to-thinking-level lists from runtime preflight; null means inherited')
     parser.add_argument('--session', help='root session ID; defaults to AUTOMATTIC_SESSION, requires --route')

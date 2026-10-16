@@ -230,7 +230,8 @@ bypasses profile overrides; an explicit thinking pin wins over profile thinking.
    `--excluded-candidates '{"sol":"<task fit, tools, context, permission or availability fact>"}'`.
    Convenience or habit is not a reason, and neither is "no registered profile" when
    the inherited-effort path in the host adapter can launch the pair. A missing
-   reason fails the call. The
+   reason fails the call. Given alone, `--excluded-candidates` leaves every other
+   configured candidate eligible; naming a candidate in both lists fails. The
    reasons travel with the decision request and its journal record. This optional map narrows
    configured thinking choices for the current assignment. Omitted candidates keep
    their configured choices, `[]` excludes a candidate and `[null]` permits only

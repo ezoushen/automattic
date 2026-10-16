@@ -117,6 +117,24 @@ class Router(unittest.TestCase):
         self.assertNotIn('Run one worker.', str(self.requests[0]))
         self.assertNotIn(str(self.root), str(self.requests[0]))
 
+    def test_excluded_candidates_alone_leave_the_decision_and_shadow(self):
+        self.decision_router()
+        result = self.resolve(assignment='Implement the agreed bounded fix.',
+                              excluded_candidates={'luna': 'Codex xhigh quota exhausted today.',
+                                                   'opus': 'Claude weekly allowance critical.'})
+        self.assertEqual(result['candidate'], 'sol')
+        offered = {option['candidate'] for option in result['decision_model']['options'].values()}
+        self.assertEqual(offered, {'sol'})
+        self.assertIn('opus: Claude weekly allowance critical.', self.requests[0]['state'])
+        self.assertEqual(set(result['shadow_selection']['candidates']), {'sol'})
+
+    def test_a_candidate_cannot_be_both_eligible_and_excluded(self):
+        self.decision_router()
+        with self.assertRaisesRegex(ValueError, 'both eligible and excluded: opus'):
+            self.resolve(assignment='Implement the agreed bounded fix.', eligible_candidates=['sol', 'opus'],
+                         excluded_candidates={'luna': 'Quota exhausted.', 'opus': 'Allowance critical.'})
+        self.assertEqual(self.requests, [])
+
     def test_host_narrowed_pool_needs_a_reason_for_each_excluded_candidate(self):
         self.decision_router()
         with self.assertRaisesRegex(ValueError, 'reason.*luna'):
