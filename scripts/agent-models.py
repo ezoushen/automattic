@@ -579,6 +579,12 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                 or any(not isinstance(name, str) or name not in configured_candidates for name in eligible_candidates)
                 or len(set(eligible_candidates)) != len(eligible_candidates)):
             raise ValueError('eligible candidates must be a unique list of configured candidate IDs')
+        if isinstance(excluded_candidates, dict):
+            both = [name for name in eligible_candidates or [] if name in excluded_candidates]
+            if both:
+                raise ValueError('candidates cannot be both eligible and excluded: ' + ', '.join(both))
+            if eligible_candidates is None:
+                eligible_candidates = [name for name in configured_candidates if name not in excluded_candidates]
         for runtime, override in overrides.items():
             name = override.get('candidate')
             if name is None:
@@ -678,12 +684,6 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
     if pooled:
         metadata['candidate_pool'] = instance
         pool = instance
-        if isinstance(excluded_candidates, dict):
-            both = [name for name in eligible_candidates or [] if name in excluded_candidates]
-            if both:
-                raise ValueError('candidates cannot be both eligible and excluded: ' + ', '.join(both))
-            if eligible_candidates is None:
-                eligible_candidates = [name for name in configured_candidates if name not in excluded_candidates]
         # Shadow scoring weighs every reachable candidate the host did not exclude, whatever the route's runtime.
         competing = {}
         for name in configured_candidates:

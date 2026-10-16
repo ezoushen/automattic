@@ -128,6 +128,16 @@ class Router(unittest.TestCase):
         self.assertIn('opus: Claude weekly allowance critical.', self.requests[0]['state'])
         self.assertEqual(set(result['shadow_selection']['candidates']), {'sol'})
 
+    def test_exclusions_apply_before_thinking_preflight_and_recommendation_pins(self):
+        self.decision_router()
+        result = self.resolve(assignment='Implement the agreed bounded fix.', eligible_thinking={'sol': ['medium']},
+                              excluded_candidates={'luna': 'Quota exhausted.', 'opus': 'Allowance critical.'})
+        self.assertEqual(result['candidate'], 'sol')
+        self.profile({'codex': {'candidate': 'sol'}, 'claude': {'candidate': 'opus'}})
+        result = self.resolve(selection=self.choose('opus'), excluded_candidates={'opus': 'Allowance critical.'})
+        self.assertEqual(result['status'], 'selection_required')
+        self.assertIn('sol', result['eligible_candidates'])
+
     def test_a_candidate_cannot_be_both_eligible_and_excluded(self):
         self.decision_router()
         with self.assertRaisesRegex(ValueError, 'both eligible and excluded: opus'):
