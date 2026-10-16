@@ -538,6 +538,23 @@ class Router(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'fallback_profile'):
             self.resolve(assignment='Implement ticket 3.', target_runtime='codex')
 
+    def test_rule_first_router_settles_a_cross_runtime_pool_by_the_host_runtime(self):
+        self.decision_router()
+        self.data['profiles'] = {'balanced': {'implementer': {'codex': {'candidate': 'sol'},
+                                                              'claude': {'candidate': 'opus'}}}}
+        self.data['router'].update(fallback_profile='balanced', consult='after-failure')
+        self.save()
+        routine = self.resolve(host='claude', assignment='Implement ticket 1.')
+        self.assertEqual((routine['candidate'], routine['selection_source']), ('opus', 'rule-profile'))
+        from_codex = self.resolve(host='codex', assignment='Implement ticket 1.')
+        self.assertEqual((from_codex['candidate'], from_codex['selection_source']), ('sol', 'rule-profile'))
+        self.assertEqual(self.requests, [])
+        # With the host runtime's choice excluded, the remaining runtime's rule applies.
+        narrowed = self.resolve(host='claude', assignment='Implement ticket 1.',
+                                excluded_candidates={'opus': 'Claude weekly allowance critical.'})
+        self.assertEqual((narrowed['candidate'], narrowed['selection_source']), ('sol', 'rule-profile'))
+        self.assertEqual(self.requests, [])
+
     def test_partial_fallback_profile_still_returns_host_selection(self):
         self.fallback_router()
         self.data['profiles']['balanced']['implementer']['codex'] = {'thinking': 'high'}

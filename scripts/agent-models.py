@@ -380,8 +380,13 @@ def weight(runtime, levels):
 
 
 def select_candidate(pool, candidate, recommendation, eligible_candidates, task,
-                     *, overrides=None, definitions=None, target_runtime=None, configured_candidates=None):
-    """Validate a recommendation or pin; never infer runtime support from model names."""
+                     *, overrides=None, definitions=None, target_runtime=None, configured_candidates=None,
+                     default_runtime=None):
+    """Validate a recommendation or pin; never infer runtime support from model names.
+
+    Profile overrides are keyed by worker runtime; a rule route over a pool spanning runtimes
+    uses the host's (`default_runtime`), while a plain profile router never guesses one.
+    """
     candidates = pool['candidates']
     eligible = list(candidates) if eligible_candidates is None else eligible_candidates
     if (not isinstance(eligible, list) or any(not isinstance(name, str) or name not in candidates
@@ -426,6 +431,8 @@ def select_candidate(pool, candidate, recommendation, eligible_candidates, task,
         possible = {definitions.get(name, {}).get('target_runtime') for name in eligible}
         if len(possible) == 1:
             runtime = possible.pop()
+        elif candidate is None:
+            runtime = default_runtime
     override = (overrides or {}).get(runtime, {}) if not pinned else {}
     if 'candidate' in override:
         preferred = override['candidate']
@@ -699,7 +706,8 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             try:
                 settled = select_candidate(pool, None, None, eligible_candidates, task, overrides=rule,
                                            definitions=definitions, target_runtime=target_runtime,
-                                           configured_candidates=configured_candidates)[2]
+                                           configured_candidates=configured_candidates,
+                                           default_runtime=host)[2]
             except ValueError:
                 settled = {}  # The rule cannot route this assignment; consult as usual.
             if settled.get('selection_source') == 'profile':
@@ -760,7 +768,8 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         instance, recommended_thinking, info = select_candidate(
             pool, candidate, selection, eligible_candidates, task,
             overrides=overrides, definitions=definitions, target_runtime=target_runtime,
-            configured_candidates=configured_candidates)
+            configured_candidates=configured_candidates,
+            default_runtime=host if metadata.get('rule_route') else None)
         metadata.update(info)
         if info.get('status') == 'selection_required':
             return dict(metadata, host_harness=host, role=role, route_source=source,
