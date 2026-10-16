@@ -82,7 +82,8 @@ the supported native wait/collection path when those controls are unavailable.
    ```
 
    `native` is the registered session's Claude/Pi JSONL, Codex rollout JSONL, or
-   a current `opencode export` JSON file. Obtain it from the installed native
+   a current OpenCode export JSON file (`opencode session export <id>` in OpenCode 2,
+   `opencode export` in OpenCode 1). Obtain it from the installed native
    interface, not a worker-authored settings claim. The helper binds the session
    and worktree, reads actual model/effort, and retains a minimal snapshot with the
    source prefix length and SHA-256; it does not copy conversation contents.
@@ -106,7 +107,11 @@ the supported native wait/collection path when those controls are unavailable.
    Submission reobserves controls, checks design holds and reserves one productive
    invocation per attempt before starting an independent durable wait. A mismatch,
    unknown requested control, wrong session/worktree or incomplete record exits 2
-   without invoking the command. Reconciliation never authorizes resubmitting the
+   without invoking the command. The submit `argv` must succeed only once the worker
+   shows activity on the prompt, as Herdr's `agent prompt --wait` does; its exit 0
+   then records `submitted` with the wait log as evidence. Any other exit leaves
+   the attempt unsubmitted: inspect the worker and record `submitted` only with
+   evidence of activity. Reconciliation never authorizes resubmitting the
    same attempt; inspect the native worker and use `watch` for continued monitoring.
    Further same-assignment work requires a collected, retained previous attempt.
 

@@ -15,32 +15,44 @@ def observe(path, runtime, session, worktree):
         exported = json.loads(raw)
         if not isinstance(exported, dict) or not isinstance(exported.get('info'), dict):
             raise ValueError('Unsupported native export schema')
-        info = exported['info']
-        if not isinstance(exported.get('messages'), list) or any(
-                not isinstance(item, dict) or not isinstance(item.get('info'), dict)
-                for item in exported['messages']):
+        info, messages = exported['info'], exported.get('messages')
+        if not isinstance(messages, list) or any(not isinstance(item, dict) for item in messages):
             raise ValueError('Unsupported native message schema')
-        latest = next((item['info'] for item in reversed(exported['messages'])
-                       if item['info'].get('role') == 'assistant'), None)
-        if info.get('id') != session or latest is None or latest.get('sessionID') != session:
+        if all(isinstance(item.get('info'), dict) for item in messages):
+            # OpenCode 1 `export`: each message wraps its metadata in `info` and its parts beside it.
+            turn = [dict(role=item['info'].get('role'), session=item['info'].get('sessionID'),
+                         provider=item['info'].get('providerID'), model=item['info'].get('modelID'),
+                         variant=item['info'].get('variant'), error=item['info'].get('error'),
+                         parts=item.get('parts', [])) for item in messages]
+            directory = info.get('directory')
+        elif all(isinstance(item.get('type'), str) for item in messages):
+            # OpenCode 2 `session export`: flat typed messages; the session ID lives only in `info`.
+            turn = [dict(role=item['type'], session=info.get('id'), provider=model.get('providerID'),
+                         model=model.get('id'), variant=model.get('variant'), error=item.get('error'),
+                         parts=item.get('content', []))
+                    for item in messages
+                    for model in [item.get('model') if isinstance(item.get('model'), dict) else {}]]
+            directory = (info.get('location') or {}).get('directory')
+        else:
+            raise ValueError('Unsupported native message schema')
+        latest = next((item for item in reversed(turn) if item['role'] == 'assistant'), None)
+        if info.get('id') != session or latest is None or latest['session'] != session:
             raise ValueError('Native evidence does not belong to the registered session')
-        if latest.get('error'):
+        if latest['error']:
             raise ValueError('OpenCode has a failed native response; inspect the provider before work')
-        turn = exported['messages']
         for index in range(len(turn) - 1, -1, -1):
-            if turn[index]['info'].get('role') == 'user':
+            if turn[index]['role'] == 'user':
                 turn = turn[index + 1:]
                 break
-        if any(part.get('type') == 'tool' and part.get('state', {}).get('status') == 'error'
-               for item in turn if item['info'].get('role') == 'assistant'
-               for part in item.get('parts', [])):
+        if any(isinstance(part, dict) and part.get('type') == 'tool'
+               and part.get('state', {}).get('status') == 'error'
+               for item in turn if item['role'] == 'assistant' for part in item['parts']):
             raise ValueError('OpenCode startup has a failed tool call; inspect it before work')
-        if not isinstance(info.get('directory'), str) or Path(info['directory']).resolve() != Path(worktree).resolve():
+        if not isinstance(directory, str) or Path(directory).resolve() != Path(worktree).resolve():
             raise ValueError('Native evidence worktree does not match the assignment')
-        model = latest.get('modelID')
-        provider = latest.get('providerID')
+        provider, model = latest['provider'], latest['model']
         settings = {'runtime': runtime, 'model': provider + '/' + model if provider and model else None,
-                    'effort': latest.get('variant')}
+                    'effort': latest['variant']}
         settings = {key: value for key, value in settings.items() if isinstance(value, str) and value.strip()}
         return {'observed': settings, 'session': session, 'worktree': str(Path(worktree).resolve()),
                 'source': str(path), 'source_bytes': len(raw), 'source_sha256': hashlib.sha256(raw).hexdigest()}

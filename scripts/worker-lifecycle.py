@@ -788,6 +788,10 @@ def watch(db, state, attempt, request, *, productive=False):
         db.execute('BEGIN IMMEDIATE')
         saved = get(db, attempt)
         saved['monitor']['state'] = 'finished'
+        if productive and code == 0:
+            # The submit argv is activity-gated (e.g. Herdr `agent prompt --wait`), so success proves acceptance.
+            saved['submitted'] = dict(argv=argv, evidence=[str(log)], source='submit')
+            event(db, attempt, 'submitted', saved['submitted'])
         save(db, saved)
         receipt = dict(token=token, exit_code=code, reason=reason, log=str(log),
                        **({'notify': notify} if notify else {}))

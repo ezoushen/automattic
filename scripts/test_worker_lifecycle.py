@@ -979,6 +979,76 @@ else: sys.exit(3)
         self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request))
         self.assertTrue((self.root / 'productive-work').exists())
 
+    def opencode_v2_export(self, *content, directory=None, session='native-1'):
+        """An `opencode session export` document as OpenCode 2 writes it."""
+        model = {'providerID': 'opencode', 'id': 'deepseek-v4.1-flash-free', 'variant': 'high'}
+        native = self.root / 'native-v2.json'
+        native.write_text(json.dumps({
+            'info': {'id': session, 'model': {'providerID': 'opencode', 'id': 'session-default'},
+                     'location': {'directory': str(directory or self.root)}},
+            'messages': [{'id': 'm1', 'type': 'user', 'text': 'probe'},
+                         *({'id': f'a{index}', 'type': 'assistant', 'agent': 'build', 'model': model,
+                            'content': list(parts)} for index, parts in enumerate(content)),
+                         {'id': 'idle', 'type': 'idle', 'outcome': 'succeeded'}]}))
+        return native
+
+    def submit_opencode_v2(self, native, code=0):
+        request = self.root / 'submit.json'
+        request.write_text(json.dumps({'native': str(native), 'timeout': 2,
+            'argv': [sys.executable, '-c', 'from pathlib import Path; Path("productive-work").touch()']}))
+        return self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request), code=code)
+
+    def test_submit_reads_opencode_2_export_controls(self):
+        self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
+            'settings': {'model': 'opencode/deepseek-v4.1-flash-free', 'effort': 'high'}}))
+        self.register(runtime='opencode')
+        self.submit_opencode_v2(self.opencode_v2_export([{'type': 'text', 'text': 'ready'}]))
+        self.assertEqual(self.cli('status')['attempts'][0]['observed'],
+                         {'runtime': 'opencode', 'model': 'opencode/deepseek-v4.1-flash-free', 'effort': 'high'})
+        self.assertTrue((self.root / 'productive-work').exists())
+
+    def test_submit_refuses_opencode_2_tool_error_and_foreign_session(self):
+        self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
+            'settings': {'model': 'opencode/deepseek-v4.1-flash-free'}}))
+        self.register(runtime='opencode')
+        failed = {'type': 'tool', 'name': 'read', 'state': {'status': 'error', 'error': {'message': 'denied'}}}
+        ready = [{'type': 'text', 'text': 'ready'}]
+        for content, options, reason in ((([failed], [{'type': 'text', 'text': 'Read was denied.'}]), {},
+                                          'failed tool call'),
+                                         ((ready,), {'session': 'other'}, 'registered session'),
+                                         ((ready,), {'directory': '/elsewhere'}, 'worktree')):
+            native = self.opencode_v2_export(*content, **options)
+            self.assertIn(reason, self.submit_opencode_v2(native, code=2))
+            self.assertFalse((self.root / 'productive-work').exists())
+
+    def test_submit_records_submitted_when_the_activity_gated_prompt_succeeds(self):
+        self.register()
+        native = self.root / 'native.jsonl'
+        native.write_text(json.dumps({'type': 'assistant', 'sessionId': 'native-1', 'cwd': str(self.root),
+                                      'message': {'model': 'sonnet'}, 'effort': 'high'}) + '\n')
+        request = self.root / 'submit.json'
+        request.write_text(json.dumps({'native': str(native), 'timeout': 2,
+                                      'argv': [sys.executable, '-c', 'print("prompted")']}))
+        self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request))
+        self.acknowledge()
+        self.record('reconciled', evidence=['native.jsonl:3:idle after prompt'])
+        # Completion requires an accepted prompt; the host recorded nothing by hand.
+        self.collect()
+        self.assertEqual(self.cli('status')['attempts'][0]['result']['status'], 'completed')
+
+    def test_submit_leaves_a_failed_prompt_unsubmitted_for_inspection(self):
+        self.register()
+        native = self.root / 'native.jsonl'
+        native.write_text(json.dumps({'type': 'assistant', 'sessionId': 'native-1', 'cwd': str(self.root),
+                                      'message': {'model': 'sonnet'}, 'effort': 'high'}) + '\n')
+        request = self.root / 'submit.json'
+        request.write_text(json.dumps({'native': str(native), 'timeout': 2,
+                                      'argv': [sys.executable, '-c', 'raise SystemExit(1)']}))
+        self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request), code=1)
+        self.assertNotIn('submitted', self.cli('status')['attempts'][0])
+        # The host inspects the worker and records acceptance itself.
+        self.record('submitted', evidence=['native.jsonl:2:accepted prompt'])
+
     def test_submit_refuses_opencode_provider_error_even_when_settings_match(self):
         self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
                                              'settings': {'model': 'opencode/muse-spark-1.3-contributor-free'}}))
