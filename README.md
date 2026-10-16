@@ -462,38 +462,24 @@ development symlink.
 
 ## Verification
 
-`scripts/test-all.sh` runs every `scripts/test_*.py` below in parallel (about 35 s)
-and exits 1 on any failure. To run it before each commit:
-`git config core.hooksPath .githooks`. The individual and `--native` commands:
+`scripts/test-all.sh` runs every `tests/test_*.py` file in parallel (about 15 s)
+with the plugin environment's `.venv` and exits 1 on any failure. To run it before
+each commit: `git config core.hooksPath .githooks`. Tests are `unittest` cases, so
+one file, class or test runs on its own, and the native checks are opt-in:
 
 ```sh
-python3 -B scripts/test_next_tickets.py
-python3 -B scripts/test_review_target.py
-python3 -B scripts/test_cross_harness.py
-python3 -B scripts/test_agent_models.py
-python3 -B scripts/test_worker_lifecycle.py
-python3 -B scripts/test_agent_model_hook.py
-python3 -B scripts/test_pr_body_hook.py
-python3 -B scripts/test_yield_gate_hook.py
-python3 -B scripts/test_lint_pr_body.py
-python3 -B scripts/test_run_check.py
-python3 -B scripts/test_claude_effort.py
-# After installing requirements.txt in the plugin environment:
-.venv/bin/python -B scripts/test_executors.py
-.venv/bin/python -B scripts/test_agent_pools.py
-.venv/bin/python -B scripts/test_model_catalog.py
-.venv/bin/python -B scripts/test_router.py
-python3 -B scripts/test_claude_usage.py
-.venv/bin/python -B scripts/test_decisions.py
-.venv/bin/python -B scripts/test_decision_journal.py
-.venv/bin/python -B scripts/test_decision_images.py
-# Installed CLI discovery and native effort via a local fake API; no paid inference:
-python3 -B scripts/test_cross_harness.py --native
+.venv/bin/python -B tests/test_router_profiles.py
+.venv/bin/python -B -m unittest discover -s tests -t tests
+# Installed CLI discovery, OpenCode 2 and Claude profile readers; no model calls:
+AUTOMATTIC_NATIVE=1 .venv/bin/python -B tests/test_cross_harness.py
+AUTOMATTIC_NATIVE=1 .venv/bin/python -B tests/test_agent_models.py
 # Pi SDK discovery and bootstrap, isolated from user extensions; no model calls:
-python3 -B scripts/test_cross_harness.py --native-pi
-# Native Claude/OpenCode profile readers, in temporary projects; no model calls:
-python3 -B scripts/test_agent_models.py --native
+AUTOMATTIC_NATIVE_PI=1 .venv/bin/python -B tests/test_cross_harness.py
 ```
+
+`tests/support.py` locates and loads the scripts and builds an environment whose
+Automattic state, configuration and Codex home are temporary; use it for a new test
+that runs a script which writes machine state.
 
 The regression check uses temporary Git repositories, files and locks. It covers
 scoping, cross-effort locking/capacity, unknown arguments, mutation boundaries,
@@ -506,7 +492,7 @@ Use the [dispatch recovery rehearsal](docs/dispatch-rehearsal.md) to check execu
 completion, failed waits, state reconciliation and automatic review continuation.
 
 Native package checks validate discovery, invocation metadata and registration.
-When this source is installed in Claude, `--native` also checks that the installed
+When this source is installed in Claude, the native check also verifies that the installed
 development plugin is enabled and has no loading errors, including missing dependencies.
 Pi's isolated SDK check also exercises bootstrap startup/reload. These checks do
 not launch workers or establish that native hooks are trusted in a live session.

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Run every scripts/test_*.py regression script in parallel.
+# Run every tests/test_*.py regression script in parallel.
 #
 #   scripts/test-all.sh
 #
 # Uses the plugin environment's .venv (the main checkout's, from a worktree) unless
 # PYTHON names another interpreter. Prints each failing script's output tail and
-# exits 1 when any script fails. The --native checks in the README stay separate.
+# exits 1 when any script fails. Native checks (AUTOMATTIC_NATIVE=1) stay opt-in; see the README.
 set -uo pipefail
 # A Git hook exports these; the tests' temporary repositories must not inherit them.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
@@ -19,7 +19,7 @@ done
 logs=$(mktemp -d)
 trap 'rm -rf "$logs"' EXIT
 jobs=()
-for test in "$root"/scripts/test_*.py; do
+for test in "$root"/tests/test_*.py; do
   name=$(basename "$test" .py)
   "$python" -B "$test" >"$logs/$name.log" 2>&1 &
   jobs+=("$!:$name")

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Candidate selection and session isolation, without personal configuration or model calls."""
 
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,10 +10,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import support
 
-spec = importlib.util.spec_from_file_location('models', Path(__file__).with_name('agent-models.py'))
-models = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(models)
+
+models = support.load_script('agent-models.py', 'models')
 
 
 def worker(model, default='medium', allowed=('medium', 'high'), executor=None):

@@ -15,6 +15,8 @@ import threading
 import unittest
 from unittest.mock import patch
 
+import support
+
 import decisions
 import decision_journal as journal
 
@@ -442,7 +444,7 @@ class CheckpointCLI(unittest.TestCase):
         self.assertFalse(self.thread.is_alive())
 
     def cli(self, script, *args, code=0):
-        result = subprocess.run([sys.executable, '-B', str(Path(__file__).with_name(script)), *map(str, args)],
+        result = subprocess.run([sys.executable, '-B', str(support.script(script)), *map(str, args)],
                                 env=self.env, capture_output=True, text=True, timeout=20)
         self.assertEqual(result.returncode, code, result.stdout + result.stderr)
         return json.loads(result.stdout) if result.stdout else result.stderr
@@ -556,7 +558,6 @@ class CheckpointCLI(unittest.TestCase):
     def test_failure_cause_shadow_hides_the_label_until_the_host_assesses(self):
         result = self.classify(self.failed_check())
         self.assertEqual(len(self.calls), 1)
-        question = self.calls[0]['questions']['failure-cause']
         self.assertIn('exit_source: command', self.calls[0]['state'])
         self.assertIn('FileNotFoundError: fixtures/sample.json', self.calls[0]['state'])
         self.assertEqual(result['status'], 'recorded')

@@ -15,6 +15,8 @@ from unittest.mock import patch
 from PIL import Image
 from jsonschema import Draft202012Validator
 
+import support
+
 import decisions
 import decision_journal as journal
 

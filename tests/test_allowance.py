@@ -10,8 +10,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import support
 
-SCRIPT = Path(__file__).with_name('allowance.py')
+
+SCRIPT = support.script('allowance.py')
 NOW = 1792000000  # A fixed clock for every reading.
 
 

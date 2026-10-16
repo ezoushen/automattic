@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""Routed decisions, acceptance and quality signals recorded through the lifecycle."""
+
+import json
+import sys
+import unittest
+
+from lifecycle_case import WorkerLifecycleCase
+import decision_journal
+
+
+class Outcomes(WorkerLifecycleCase):
+    def test_lifecycle_records_the_routed_decision_through_its_outcome(self):
+        decision_id = self.routed()
+        self.register()
+        self.assertEqual([(row['event'], row['disposition'], row['choice']) for row in self.annotations(decision_id)],
+                         [('action', 'accepted', 'option_0')])
+        self.ready()
+        execution = self.annotations(decision_id)[-1]
+        self.assertEqual((execution['event'], execution['requested'], execution['observed'], execution['revision']),
+                         ('execution', {'model': 'sonnet', 'effort': 'high', 'runtime': 'claude'},
+                          {'runtime': 'claude', 'model': 'sonnet', 'effort': 'high'}, 'head-1'))
+        self.watch()
+        self.record('reconciled', evidence=['native worker idle with its report'])
+        report = self.collect()
+        outcome = self.annotations(decision_id)[-1]
+        self.assertEqual((outcome['event'], outcome['status'], outcome['revision']), ('outcome', 'succeeded', 'head-1'))
+        self.assertEqual(outcome['evidence'], [str(report), 'checks.log@head-1'])
+        self.assertGreaterEqual(outcome['metrics']['worker_seconds'], 0)
+        self.assertTrue(decision_journal.check(self.journal, decision_id, 'completion', 'head-1')['complete'])
+
+    def test_journal_capture_failure_is_reported_without_blocking_the_worker(self):
+        decision_id = self.routed(runtime='executor-defined')
+        self.register()
+        result = self.record('startup', observed={'runtime': 'claude', 'model': 'sonnet', 'effort': 'high'},
+                             evidence=['native.jsonl:1'])
+        self.assertTrue(result['verified'])
+        self.assertIn('not recorded: Requested settings must match', result['journal']['execution'])
+        self.assertEqual([row['event'] for row in self.annotations(decision_id)], ['action'])
+
+    def test_later_quality_signals_update_the_routed_outcome(self):
+        decision_id = self.routed()
+        self.register()
+        self.ready()
+        self.watch()
+        self.record('reconciled', evidence=['native worker idle with its report'])
+        self.collect()
+        self.cli('attribute', '--attempt', 'ticket-1/1', '--kind', 'review-defect', '--count', '2',
+                 '--evidence', 'spec-review.md#F-01')
+        self.register('ticket-1/repair-1', 'ticket-1-repair', 'native-2', 'pane-2', repairs='ticket-1/1')
+        self.cli('attribute', '--attempt', 'ticket-1/1', '--kind', 'revert', '--evidence', 'revert of head-1')
+        outcome = self.annotations(decision_id)[-1]
+        self.assertEqual((outcome['event'], outcome['status'], outcome['revision']), ('outcome', 'failed', 'head-1'))
+        self.assertEqual({key: value for key, value in outcome['metrics'].items() if key != 'worker_seconds'},
+                         {'review_defects': 2, 'repair_rounds': 1, 'reverts': 1})
+        self.assertIn('spec-review.md#F-01', outcome['evidence'])
+        self.register('ticket-2/1', 'ticket-2', 'native-3', 'pane-3')
+        error = self.cli('attribute', '--attempt', 'ticket-2/1', '--kind', 'owner-defect',
+                         '--evidence', 'owner report', code=2)
+        self.assertIn('collected attempt', error)
+        self.register('ticket-3/1', 'ticket-3', 'native-4', 'pane-4', repairs='ticket-2/1', code=2)
+
+    def test_acceptance_is_recorded_once_on_a_completed_collected_attempt(self):
+        self.register()
+        self.ready()
+        error = self.record('accepted', commit='merge-1', evidence=['git log merge-1'], code=2)
+        self.assertIn('completed result', error)
+        self.watch()
+        self.record('reconciled', evidence=['native worker idle with its report'])
+        self.collect()
+        self.acknowledge()
+        self.record('closed', evidence=['native session exited'], acceptance={'decision': 'deferred', 'reason': 'acceptance checks pending'})
+        self.assertIn('commit', self.record('accepted', 'ticket-1/1', evidence=['log'], code=2))
+        self.record('accepted', commit='merge-1', evidence=['git log merge-1'])
+        accepted = self.cli('status')['attempts'][0]['accepted']
+        self.assertEqual((accepted['commit'], accepted['evidence']), ('merge-1', ['git log merge-1']))
+        self.assertIn('already accepted', self.record('accepted', commit='merge-2', evidence=['log'], code=2))
+
+    def test_closing_a_completed_implementer_settles_its_acceptance(self):
+        self.register()
+        self.ready()
+        self.collect()
+        self.acknowledge()
+        error = self.record('closed', evidence=['native session exited'], code=2)
+        self.assertIn('acceptance', error)
+        self.assertIn('Settle acceptance', self.record(
+            'closed', evidence=['native session exited'], acceptance={'decision': 'deferred'}, code=2))
+        self.record('closed', evidence=['native session exited'],
+                    acceptance={'decision': 'accepted', 'commit': 'merge-1', 'evidence': ['git log merge-1']})
+        attempt = self.cli('status')['attempts'][0]
+        self.assertEqual(attempt['accepted']['commit'], 'merge-1')
+        self.assertEqual(attempt['attention'], [])
+        # Acceptance can wait for checks; until then the attempt asks for it.
+        self.register('ticket-2/1', 'ticket-2', 'native-2', 'pane-2')
+        self.ready('ticket-2/1')
+        self.collect('ticket-2/1')
+        self.acknowledge()
+        self.record('closed', 'ticket-2/1', evidence=['native session exited'],
+                    acceptance={'decision': 'deferred', 'reason': 'integration gate still running'})
+        deferred = self.cli('status', '--attempt', 'ticket-2/1')['attempts'][0]
+        self.assertIn('record acceptance or decline', deferred['attention'])
+        self.record('accepted', 'ticket-2/1', commit='merge-2', evidence=['git log merge-2'])
+        self.assertEqual(self.cli('status', '--attempt', 'ticket-2/1')['attempts'][0]['attention'], [])
+        # A deferred attempt may also be declined once its checks fail.
+        self.register('ticket-4/1', 'ticket-4', 'native-4', 'pane-4')
+        self.ready('ticket-4/1')
+        self.collect('ticket-4/1')
+        self.acknowledge()
+        self.record('closed', 'ticket-4/1', evidence=['native session exited'],
+                    acceptance={'decision': 'deferred', 'reason': 'integration gate still running'})
+        self.assertIn('reason', self.record('declined', 'ticket-4/1', evidence=['gate log'], code=2))
+        self.record('declined', 'ticket-4/1', reason='integration gate failed', evidence=['gate log'])
+        self.assertEqual(self.cli('status', '--attempt', 'ticket-4/1')['attempts'][0]['attention'], [])
+        self.assertIn('declined', self.record('accepted', 'ticket-4/1', commit='m', evidence=['log'], code=2))
+        self.assertIn('already accepted', self.record('declined', 'ticket-2/1', reason='late', evidence=['x'], code=2))
+        # A declined attempt is settled and cannot be accepted later.
+        self.register('ticket-3/1', 'ticket-3', 'native-3', 'pane-3')
+        self.ready('ticket-3/1')
+        self.collect('ticket-3/1')
+        self.acknowledge()
+        self.record('closed', 'ticket-3/1', evidence=['native session exited'],
+                    acceptance={'decision': 'declined', 'reason': 'criteria 2 unmet; replaced by attempt 2'})
+        declined = self.cli('status', '--attempt', 'ticket-3/1')['attempts'][0]
+        self.assertEqual((declined['declined']['reason'], declined['attention']),
+                         ('criteria 2 unmet; replaced by attempt 2', []))
+        self.assertIn('declined', self.record('accepted', 'ticket-3/1', commit='m', evidence=['log'], code=2))
+
+    def test_other_roles_close_without_an_acceptance_decision(self):
+        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'spec-reviewer',
+                                             'settings': {'model': 'sonnet', 'effort': 'high'}}))
+        self.register()
+        self.ready()
+        self.collect()
+        self.acknowledge()
+        self.record('closed', evidence=['native session exited'])
+        self.assertEqual(self.cli('status')['attempts'][0]['attention'], [])
+
+    def test_each_notified_wake_is_triaged_in_shadow_and_a_direct_collection_labels_it(self):
+        execution = json.loads(self.execution.read_text())
+        execution['decision_policy'] = {'enabled': ['wake-triage'], 'backend': self.system_one()}
+        self.execution.write_text(json.dumps(execution))
+        journal = self.root / 'decisions.jsonl'
+        self.register(journal=str(journal))
+        self.ready()
+        report = self.root / 'report.md'
+        report.write_text('Implemented at head-1; all checks pass.\n')
+        parent = self.root / 'parent.jsonl'
+        request = self.root / 'wait.json'
+        request.write_text(json.dumps({'argv': [sys.executable, '-c', 'print("idle")'], 'timeout': 2,
+            'notify': {'argv': [sys.executable, '-c',
+                                f'import sys; open({str(parent)!r}, "a").write(sys.argv[1] + "\\n")', '{receipt}'],
+                       'timeout': 2},
+            'capture': [sys.executable, '-c', 'print("Implemented; report written. All checks pass.")']}))
+        receipt = self.cli('watch', '--attempt', 'ticket-1/1', '--input', str(request))
+        triage = self.cli('status')['pending'][0]['payload']['triage']
+        self.assertEqual(triage['status'], 'recorded')
+        decision = [row for row in decision_journal.read(journal) if row['event'] == 'decision'][0]
+        self.assertEqual(decision['decision_id'], triage['decision_id'])
+        self.assertEqual(decision['request']['family'], 'wake-triage')
+        self.assertEqual(decision['assignment'], f"ticket-1/1/wake-{receipt['event_id']}")
+        self.assertIn('All checks pass.', decision['request']['state'])
+        # The host is woken with the receipt alone; the label stays hidden.
+        self.assertNotIn('triage', parent.read_text())
+        self.record('reconciled', evidence=['native worker idle with its report'])
+        self.collect(report=report)
+        assessment = [row for row in decision_journal.read(journal) if row['event'] == 'assessment'][0]
+        self.assertEqual((assessment['expected'], assessment['source'], assessment['evidence']),
+                         (['done'], 'objective', [str(report)]))
+
+    def test_retiring_a_completed_implementer_settles_acceptance_before_closing_the_pane(self):
+        self.register()
+        self.ready()
+        self.collect()
+        self.acknowledge()
+        self.herdr_fixture()
+        request = self.root / 'retire.json'
+        retire = {'session': 'fixture-session', 'pane': 'pane-1', 'jobs_evidence': ['owned jobs stopped']}
+        request.write_text(json.dumps(retire))
+        self.assertIn('acceptance', self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request), code=2))
+        self.assertFalse((self.root / 'native-closed').exists())
+        request.write_text(json.dumps(dict(retire, acceptance={
+            'decision': 'accepted', 'commit': 'merge-1', 'evidence': ['topic fast-forwarded to merge-1']})))
+        self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request))
+        attempt = self.cli('status')['attempts'][0]
+        self.assertEqual((attempt['accepted']['commit'], attempt['closed']['acceptance']['decision']),
+                         ('merge-1', 'accepted'))
+
+
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -10,9 +10,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import support
 
-SCRIPT = Path(__file__).with_name('effort-spend.py')
-LIFECYCLE = Path(__file__).with_name('worker-lifecycle.py')
+
+SCRIPT = support.script('effort-spend.py')
+LIFECYCLE = support.script('worker-lifecycle.py')
 
 
 class EffortSpend(unittest.TestCase):

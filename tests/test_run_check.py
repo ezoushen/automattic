@@ -12,9 +12,11 @@ import tempfile
 import time
 import unittest
 
+import support
 
-RUNNER = Path(__file__).with_name('run-check.py')
-LOCK = Path(__file__).with_name('build-lock.sh')
+
+RUNNER = support.script('run-check.py')
+LOCK = support.script('build-lock.sh')
 
 
 class RunCheckTests(unittest.TestCase):

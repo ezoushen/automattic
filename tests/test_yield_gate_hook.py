@@ -11,7 +11,9 @@ import time
 import unittest
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
+import support
+
+ROOT = support.ROOT
 HOOK = ROOT / 'hooks' / 'yield-gate.py'
 LIFECYCLE = ROOT / 'scripts' / 'worker-lifecycle.py'
 

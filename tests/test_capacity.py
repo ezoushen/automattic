@@ -12,8 +12,10 @@ import threading
 import unittest
 from unittest.mock import patch
 
+import support
 
-LIFECYCLE = Path(__file__).with_name('worker-lifecycle.py')
+
+LIFECYCLE = support.script('worker-lifecycle.py')
 
 
 class Capacity(unittest.TestCase):

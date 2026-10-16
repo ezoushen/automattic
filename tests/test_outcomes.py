@@ -11,12 +11,14 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import support
+
 import decision_journal
 import decisions
 
 
-LIFECYCLE = Path(__file__).with_name('worker-lifecycle.py')
-OUTCOMES = Path(__file__).with_name('outcomes.py')
+LIFECYCLE = support.script('worker-lifecycle.py')
+OUTCOMES = support.script('outcomes.py')
 
 
 class OutcomeLedger(unittest.TestCase):

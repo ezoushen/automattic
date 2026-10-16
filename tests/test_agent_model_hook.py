@@ -8,7 +8,9 @@ import sys
 import tempfile
 import unittest
 
-HOOK = Path(__file__).resolve().parents[1] / 'hooks' / 'agent-model.py'
+import support
+
+HOOK = support.HOOKS / 'agent-model.py'
 
 
 class AgentModelHook(unittest.TestCase):

@@ -8,7 +8,9 @@ import sys
 import tempfile
 import unittest
 
-SCRIPT = Path(__file__).with_name('lint-pr-body.py')
+import support
+
+SCRIPT = support.script('lint-pr-body.py')
 
 GOOD = """## Summary
 **Each build now reads one packaged value store.** Android APK shrinks by 1.5%.

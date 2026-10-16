@@ -12,6 +12,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import support
+
 import decisions
 import decision_journal as journal
 
@@ -496,7 +498,7 @@ class DecisionJournal(unittest.TestCase):
         self.assertEqual(hosted['confusion'], {'environment': {'environment': 1}})
 
     def test_adversarial_suite_matches_the_production_request_shape(self):
-        suite = decisions.load_suite(Path(__file__).parents[1] / 'benchmarks/shadow-adversarial.json')
+        suite = decisions.load_suite(support.ROOT / 'benchmarks/shadow-adversarial.json')
         self.assertEqual(suite['kind'], 'synthetic')
         families = {case['request']['family'] for case in suite['cases']}
         self.assertEqual(families, {'failure-cause', 'wake-triage'})

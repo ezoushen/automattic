@@ -1,0 +1,188 @@
+"""Shared fixture for the test_worker_*.py files: a temporary lifecycle state driven through its CLI."""
+
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import threading
+import unittest
+from unittest.mock import patch
+
+import support
+
+import decision_journal
+import decisions
+
+
+SCRIPT = support.script('worker-lifecycle.py')
+
+
+class WorkerLifecycleCase(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='automattic worker ')
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        # Outcomes go to a ledger under the state home; keep the user's ledger out of tests.
+        self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'state')}))
+        self.state = self.root / 'workers.sqlite'
+        self.execution = self.root / 'execution.json'
+        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'implementer',
+                                             'settings': {'model': 'sonnet', 'effort': 'high'}}))
+
+    def cli(self, action, *args, code=0):
+        process = subprocess.run([sys.executable, '-B', str(SCRIPT), action,
+                                  '--state', str(self.state), *args], capture_output=True, text=True,
+                                 env=getattr(self, 'native_env', None))
+        self.assertEqual(process.returncode, code, process.stdout + process.stderr)
+        return json.loads(process.stdout) if process.stdout else process.stderr
+
+    def record(self, kind, attempt='ticket-1/1', code=0, **fields):
+        path = self.root / 'event.json'
+        path.write_text(json.dumps(dict(kind=kind, attempt=attempt, **fields)))
+        return self.cli('record', '--input', str(path), code=code)
+
+    def register(self, attempt='ticket-1/1', assignment='ticket-1', session='native-1',
+                 worker='pane-1', code=0, owned=True, runtime='claude', **fields):
+        return self.record('register', attempt, code=code, assignment=assignment,
+                           repo=str(self.root), worktree=str(self.root), head='head-1',
+                           execution=str(self.execution), runtime=runtime,
+                           worker=worker, native_session=session, owned=owned, **fields)
+
+    def ready(self, attempt='ticket-1/1'):
+        self.record('startup', attempt, observed={'runtime': 'claude', 'model': 'sonnet',
+                                                'effort': 'high'}, evidence=['native.jsonl:1'])
+        self.record('submitted', attempt, evidence=['native.jsonl:2:accepted prompt'])
+
+    def watch(self, attempt='ticket-1/1', script='print("idle")', code=0, timeout=2):
+        path = self.root / 'wait.json'
+        path.write_text(json.dumps({'argv': [sys.executable, '-c', script], 'timeout': timeout}))
+        return self.cli('watch', '--attempt', attempt, '--input', str(path), code=code)
+
+    def collect(self, attempt='ticket-1/1', report=None):
+        if report is None:
+            report = self.root / (attempt.replace('/', '-') + '.md')
+            report.write_text('Verified assignment report at head-1\n')
+        self.record('result', attempt, status='completed', head='head-1', report=str(report),
+                    evidence=['checks.log@head-1'])
+        return report
+
+    def acknowledge(self):
+        for receipt in self.cli('status')['pending']:
+            self.cli('ack', '--event-id', str(receipt['id']))
+
+    def routed(self, assignment='ticket-1/route', runtime='claude'):
+        """Journal a recommended worker-selection decision and register its resolved route."""
+        self.journal = self.root / 'decisions.jsonl'
+        option = json.dumps({'candidate': 'sonnet', 'model': 'sonnet', 'runtime': runtime, 'thinking': 'high'})
+
+        def transport(backend, payload):
+            qid, question = next(iter(payload['questions'].items()))
+            return {'model': backend['model'], 'answers': {qid: {
+                'type': 'choice', 'choice': 'option_0',
+                'probabilities': {key: float(key == 'option_0') for key in question['criteria']}}}}
+        policy = {'enabled': ['worker-selection'], 'backend': {
+            'protocol': 'systemone', 'endpoint': 'http://localhost:1241/v1/systemone', 'model': 'test-model'}}
+        trace = decision_journal.trace_config(self.journal, self.root, assignment)
+        result = decisions.decide(policy, {'family': 'worker-selection', 'state': 'Role: implementer\n',
+                                           'instruction': 'Choose a worker.', 'options': {'option_0': option}},
+                                  trace=trace, transport=transport)
+        execution = json.loads(self.execution.read_text())
+        execution.update(selection_source='decision-model',
+                         decision_model=dict(result, journal=str(self.journal)))
+        self.execution.write_text(json.dumps(execution))
+        return result['decision_id']
+
+    def system_one(self):
+        """Serve a local System One endpoint that answers each question's first option."""
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self):
+                payload = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                qid, question = next(iter(payload['questions'].items()))
+                choice = next(iter(question['criteria']))
+                body = json.dumps({'model': payload['model'], 'answers': {qid: {
+                    'type': 'choice', 'choice': choice,
+                    'probabilities': {key: float(key == choice) for key in question['criteria']}}}}).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        self.native_env = dict(os.environ, XDG_STATE_HOME=str(self.root / 'state'))
+        return {'protocol': 'systemone', 'model': 'local/test',
+                'endpoint': f'http://127.0.0.1:{server.server_port}/v1/systemone'}
+
+    def annotations(self, decision_id):
+        return [row for row in decision_journal.read(self.journal)
+                if row['decision_id'] == decision_id and row['event'] != 'decision']
+
+    def escalate(self, risk='possible-breach', attempt='ticket-1/1', **fields):
+        criteria = self.root / 'criteria.md'
+        if not criteria.exists():
+            criteria.write_text('Accepted: preserve public API; compatible engineering is authorized.\n')
+        brief = self.root / 'decision.md'
+        brief.write_text('Evidence, alternatives and recommendation; dependent work paused.\n')
+        request = self.root / 'escalate.json'
+        request.write_text(json.dumps(dict(risk=risk, reason='Model uncertain about compatibility',
+            brief=str(brief), criteria=str(criteria), evidence=['native blocker report'], **fields)))
+        return self.cli('escalate', '--attempt', attempt, '--input', str(request))
+
+    def herdr_fixture(self, native_session='native-1', verify_error='pane_not_found', caller=None):
+        directory = self.root / 'bin'
+        directory.mkdir(exist_ok=True)
+        executable = directory / 'herdr'
+        executable.write_text('#!' + sys.executable + '\n' + f'''
+import json,sys
+from pathlib import Path
+marker=Path({str(self.root / 'native-closed')!r})
+args=sys.argv[1:]
+assert args[:2]==['--session','fixture-session']
+if args[2:]==['pane','current','--current']:
+    if {caller!r} is None:
+        print(json.dumps({{'error':{{'code':'pane_not_found'}}}}),file=sys.stderr);sys.exit(1)
+    print(json.dumps({{'result':{{'pane':{{'pane_id':{caller!r}}}}}}}))
+elif args[2:]==['agent','get','pane-1']:
+    if marker.exists():
+        print(json.dumps({{'error':{{'code':'agent_not_found'}}}}),file=sys.stderr);sys.exit(1)
+    print(json.dumps({{'result':{{'agent':{{'agent':'claude','pane_id':'pane-1','agent_status':'idle',
+        'agent_session':{{'kind':'id','value':{native_session!r}}}}}}}}}))
+elif args[2:]==['pane','close','pane-1']:
+    marker.write_text(marker.read_text()+'closed'+chr(10) if marker.exists() else 'closed'+chr(10))
+    print(json.dumps({{'result':{{'type':'ok'}}}}))
+elif args[2:]==['pane','get','pane-1']:
+    if marker.exists():
+        print(json.dumps({{'error':{{'code':{verify_error!r}}}}}),file=sys.stderr);sys.exit(1)
+    print(json.dumps({{'result':{{'pane':{{'pane_id':'pane-1'}}}}}}))
+else: sys.exit(3)
+''')
+        executable.chmod(0o700)
+        self.native_env = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ['PATH'],
+                               HERDR_PANE_ID='caller-pane')
+
+    def opencode_v2_export(self, *content, directory=None, session='native-1'):
+        """An `opencode session export` document as OpenCode 2 writes it."""
+        model = {'providerID': 'opencode', 'id': 'deepseek-v4.1-flash-free', 'variant': 'high'}
+        native = self.root / 'native-v2.json'
+        native.write_text(json.dumps({
+            'info': {'id': session, 'model': {'providerID': 'opencode', 'id': 'session-default'},
+                     'location': {'directory': str(directory or self.root)}},
+            'messages': [{'id': 'm1', 'type': 'user', 'text': 'probe'},
+                         *({'id': f'a{index}', 'type': 'assistant', 'agent': 'build', 'model': model,
+                            'content': list(parts)} for index, parts in enumerate(content)),
+                         {'id': 'idle', 'type': 'idle', 'outcome': 'succeeded'}]}))
+        return native
+
+    def submit_opencode_v2(self, native, code=0):
+        request = self.root / 'submit.json'
+        request.write_text(json.dumps({'native': str(native), 'timeout': 2,
+            'argv': [sys.executable, '-c', 'from pathlib import Path; Path("productive-work").touch()']}))
+        return self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request), code=code)

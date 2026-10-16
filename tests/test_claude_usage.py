@@ -8,8 +8,10 @@ import sys
 import tempfile
 import unittest
 
+import support
 
-SCRIPT = Path(__file__).with_name('claude-usage.py')
+
+SCRIPT = support.script('claude-usage.py')
 
 
 class ClaudeUsage(unittest.TestCase):

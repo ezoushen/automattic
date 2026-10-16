@@ -8,7 +8,9 @@ import sys
 import tempfile
 import unittest
 
-HOOK = Path(__file__).resolve().parents[1] / 'hooks' / 'pr-body.py'
+import support
+
+HOOK = support.HOOKS / 'pr-body.py'
 GOOD = '## Why\n\nLookups fall back to the shipped bundle when the feed is empty.\n'
 
 
