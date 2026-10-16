@@ -14,8 +14,8 @@ SCRIPT = Path(__file__).with_name("next-tickets.py")
 nt = {"__file__": str(SCRIPT)}
 exec(compile(SCRIPT.read_text().replace('if __name__ == "__main__":\n    main(sys.argv[1:])', ""),
              str(SCRIPT), "exec"), nt)
-ready, can_verify, counts, last, report_problems, MAX_LIVE = (
-    nt["ready"], nt["can_verify"], nt["counts"], nt["last"], nt["report_problems"], nt["MAX_LIVE"])
+ready, can_verify, counts, report_problems, MAX_LIVE = (
+    nt["ready"], nt["can_verify"], nt["counts"], nt["report_problems"], nt["MAX_LIVE"])
 
 
 def ticket(name, status, touches, devices=(), blocked=()):
@@ -72,13 +72,6 @@ assert can_verify(spec_union, "v/01") is False
 
 # The count line names every bucket, zeros included, so the goal evaluator can read "0 ready".
 assert counts({"a/01": ticket("a/01", "done", ["x"])}) == "1 done · 0 blocked · 0 ready · 0 live", counts({"a/01": ticket("a/01", "done", ["x"])})
-
-# The spec lane waits for every sibling, and a blocked sibling holds it: an incomplete spec is never reviewed.
-lane = {"w/01": ticket("w/01", "done", ["a"]), "w/02": ticket("w/02", "blocked", ["b"]),
-        "w/03": ticket("w/03", "implementing", ["c"])}
-assert last(lane, "w/03") is False
-lane["w/02"]["status"] = "done"
-assert last(lane, "w/03") is True
 
 # The accept check is structural and deterministic: a report without base, section or checkboxes is not evidence.
 good = "base: `" + "a" * 40 + "`\n## Implemented\n- [x] done\n"

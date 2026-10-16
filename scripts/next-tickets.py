@@ -4,7 +4,7 @@
   next-tickets.py --repo /path/to/repo [slug] [--max-live N] [action]
 
 No action: JSON candidates. No slug: all efforts. Other efforts still hold locks.
-Actions: --board, --counts, --check, --last TICKET, --accept TICKET,
+Actions: --board, --counts, --check, --accept TICKET,
          --can-verify TICKET, --delivery, --set TICKET status=VALUE (or implementer=ID).
 Only --set may be combined with --counts.
 
@@ -184,17 +184,6 @@ def can_verify(tickets, name):
     return True
 
 
-def last(tickets, name):
-    """The spec lane (review, E2E) starts only when every sibling is done — a blocked sibling holds it."""
-    others = {t: fm["status"] for t, fm in tickets.items() if spec_of(t) == spec_of(name) and t != name}
-    open_ = {t: s for t, s in others.items() if s not in TERMINAL}
-    if open_:
-        print(f"{name}: not last, {', '.join(f'{t} is {s}' for t, s in sorted(open_.items()))}")
-        return False
-    print(f"{name}: last of {spec_of(name)}, spec lane may start")
-    return True
-
-
 def report_problems(text):
     """The structural half of the Implementer exit criterion: what a report must carry before anyone reads it."""
     problems = []
@@ -273,13 +262,12 @@ def main(argv):
     actions.add_argument("--check", action="store_true")
     actions.add_argument("--board", action="store_true")
     actions.add_argument("--accept", metavar="TICKET")
-    actions.add_argument("--last", metavar="TICKET")
     actions.add_argument("--can-verify", metavar="TICKET")
     actions.add_argument("--delivery", action="store_true", help="require done tickets and current review/E2E evidence")
     actions.add_argument("--set", nargs=2, metavar=("TICKET", "ASSIGNMENT"))
     parser.add_argument("--counts", action="store_true")
     args = parser.parse_args(argv)
-    if args.counts and any((args.check, args.board, args.accept, args.last, args.can_verify, args.delivery)):
+    if args.counts and any((args.check, args.board, args.accept, args.can_verify, args.delivery)):
         parser.error("--counts may only be combined with --set")
     if args.max_live < 1:
         parser.error("--max-live must be positive")
@@ -295,7 +283,7 @@ def main(argv):
     selected = {t: fm for t, fm in tickets.items() if not args.slug or spec_of(t) == args.slug}
     if not selected:
         parser.error(f"no tickets in requested scope under {ISSUES}")
-    for name in (args.accept, args.last, args.can_verify, args.set[0] if args.set else None):
+    for name in (args.accept, args.can_verify, args.set[0] if args.set else None):
         if name and name not in selected:
             parser.error(f"{name}: no such ticket in requested scope")
     if args.board:
@@ -320,7 +308,7 @@ def main(argv):
             sys.exit('delivery incomplete or stale: ' + ', '.join(bad))
         print('delivery evidence matches selected effort heads; inspect the recorded artifacts')
         return
-    for name, fn in ((args.accept, accept), (args.last, last), (args.can_verify, can_verify)):
+    for name, fn in ((args.accept, accept), (args.can_verify, can_verify)):
         if name:
             sys.exit(0 if fn(tickets, name) else 1)
     if args.counts:

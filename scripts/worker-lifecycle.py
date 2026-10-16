@@ -990,7 +990,6 @@ def main():
     parser.add_argument('--criteria')
     parser.add_argument('--brief')
     parser.add_argument('--reason')
-    parser.add_argument('--phase', choices=('alignment', 'recovery'), default='alignment')
     parser.add_argument('--evidence', action='append', default=[])
     parser.add_argument('--kind', choices=tuple(ATTRIBUTIONS), help='attribute: the quality signal')
     parser.add_argument('--count', type=int, default=1, help='attribute: how many of that signal')
@@ -1001,7 +1000,7 @@ def main():
             if args.action in ('record', 'watch', 'submit', 'collect', 'retire', 'deliver', 'escalate'):
                 if args.action == 'escalate' and not args.input:
                     data = dict(risk=args.risk, criteria=args.criteria, brief=args.brief,
-                                reason=args.reason, phase=args.phase, evidence=args.evidence)
+                                reason=args.reason, evidence=args.evidence)
                 else:
                     require(args.input, 'This operation requires --input')
                     data = read_object(args.input)
