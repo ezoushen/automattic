@@ -4,10 +4,12 @@
 import importlib.util
 import json
 import os
+import socket
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 from unittest.mock import patch
 
 
@@ -128,6 +130,32 @@ def check():
     print('worker preferences: no opt-in writes, precedence, reset, validation, profiles: ok')
 
 
+def check_opencode_profile(root, env, name):
+    """Read the loaded profile from an isolated OpenCode 2 service (no model calls)."""
+    def opencode(*args):
+        return subprocess.run(['opencode', *args], cwd=root, env=env, capture_output=True, text=True, timeout=60)
+    # The CLI talks to a background service on a fixed port the user's own service already holds.
+    with socket.socket() as probe:
+        probe.bind(('127.0.0.1', 0))
+        port = probe.getsockname()[1]
+    assert opencode('service', 'set', 'port', str(port)).returncode == 0
+    try:
+        # A directory's first request can answer before its agents load; built-in `build` marks loaded.
+        for _ in range(20):
+            result = opencode('api', 'GET', '/api/agent', '-H', f'x-opencode-directory:{root}')
+            assert result.returncode == 0, result.stdout + result.stderr
+            agents = {agent['id']: agent for agent in json.loads(result.stdout)['data']}
+            if 'build' in agents:
+                break
+            time.sleep(0.5)
+        assert name in agents, (name, sorted(agents))
+        loaded = agents[name]
+        assert loaded['model'] == {'providerID': 'openai', 'id': 'gpt-5', 'variant': 'high'}, loaded
+        assert loaded['mode'] == 'subagent' and 'role_file' in loaded['system']
+    finally:
+        opencode('service', 'stop')
+
+
 def check_native():
     with tempfile.TemporaryDirectory(prefix='automattic native models ') as tmp:
         root = Path(tmp)
@@ -149,17 +177,11 @@ def check_native():
                         profile = models.native_profile({'harness': harness, 'role': role, 'settings': partial})
                         (root / profile['path']).write_text(profile['content'])
                 if harness == 'opencode':
-                    result = subprocess.run(['opencode', '--pure', 'debug', 'agent', profile['name']],
-                                            cwd=root, env=env, capture_output=True, text=True, timeout=30)
-                    assert result.returncode == 0, result.stderr
-                    loaded = json.loads(result.stdout)
-                    assert loaded['model'] == {'providerID': 'openai', 'modelID': 'gpt-5'}
-                    assert loaded['variant'] == 'high' and loaded['mode'] == 'subagent'
-                    assert 'role_file' in loaded['prompt']
+                    check_opencode_profile(root, env, profile['name'])
         result = subprocess.run(['claude', 'plugin', 'validate', '--strict', str(root / '.claude/agents')],
                                 cwd=root, env=env, capture_output=True, text=True, timeout=30)
         assert result.returncode == 0, result.stdout + result.stderr
-    print('native profiles: Claude validation and OpenCode model/variant loading: ok (no model calls)')
+    print('native profiles: Claude validation and OpenCode 2 model/variant loading: ok (no model calls)')
 
 
 if __name__ == '__main__':

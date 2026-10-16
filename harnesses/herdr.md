@@ -36,13 +36,15 @@ user invocation; keep its longer scenario in a supplied file. Use the Skill tool
 only where the skill permits model invocation. Retain the actual source/result.
 Session-local settings isolation must preserve required installed dependencies
 and Herdr's native identity hook; verify both before accepting the launch.
-OpenCode's `--pure` disables external plugins, including the Herdr identity
-reporter. For guarded retirement, omit it and use an isolated configuration that
+Launch an OpenCode worker as `mini --model <provider/model>#<variant>` (OpenCode 2);
+its full TUI cannot set the model. For guarded retirement, use an isolated configuration that
 preserves the installed server plugin and, for the full TUI, its native TUI session
 reporter. Reproduce the installer's current TUI configuration in the isolated
 config directory, including its referenced module; a server-plugin entry alone
 does not load the TUI reporter. Use the supported configuration filename (for
-example, `tui.jsonc`) rather than assuming another file is read.
+example, `tui.jsonc`) rather than assuming another file is read. An isolated
+OpenCode 2 configuration also needs its own service port (`opencode service set
+port <free port>`); otherwise it collides with the user's background service.
 Check `integration status` and the actual `agent_session` before productive work;
 a current server alone does not establish that its integration is loaded.
 If startup returns before the native input UI finishes loading, wait for its
