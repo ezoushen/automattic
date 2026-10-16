@@ -465,7 +465,9 @@ development symlink.
 `scripts/test-all.sh` runs every `tests/test_*.py` file in parallel (about 15 s)
 with the plugin environment's `.venv` and exits 1 on any failure. To run it before
 each commit: `git config core.hooksPath .githooks`. Tests are `unittest` cases, so
-one file, class or test runs on its own, and the native checks are opt-in:
+one file, class or test runs on its own. The default suite needs an installed `claude`
+for `test_claude_effort.py`, which runs it against a local fake API; the package and
+profile readers of the installed CLIs are opt-in:
 
 ```sh
 .venv/bin/python -B tests/test_router_profiles.py
