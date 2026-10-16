@@ -13,8 +13,8 @@ Runtime lifecycle belongs in the host adapter or explicitly selected executor.
 - **A finding needs concrete evidence.** Use an executed repro or a traced failure
   path; the review role defines evidence for scoped design and documentation issues.
 - **Scope every review and verify the range first.** Supply the pinned base/head,
-  assigned checkout and accepted scope to the reviewer and its Matt dependency;
-  a dependency's default range or working directory does not establish this target.
+  assigned checkout and accepted scope to the reviewer;
+  a tool's default range or working directory does not establish this target.
 - **Waiting is not completion.** Follow the host's wait lifecycle while a build
   mutex or worker remains active; report success only after its result is verified.
   A missing user decision or resource grant follows

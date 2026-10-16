@@ -91,12 +91,12 @@ human-authorized merge by the orchestrator.
 
 ## Matt Pocock's skills underneath
 
-Dependency: `mattpocock-skills`. Reuse `tdd`, `code-review`, `research`,
+Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
 `diagnosing-bugs`, `domain-modeling`, `prototype` and `grilling` for their respective
 work. Planning uses [mandate's question policy](../mandate/SKILL.md#filter-questions)
 with grilling's internal design-tree reasoning. The review skill supplies scope,
 priority and allowed mutation
-context; it preserves Matt’s Standards/Spec axes. Simplicity is part of that review.
+context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
 Honor each dependency's actual invocation
 policy in the active catalog; never bypass a denied invocation by copying its body.
 For PR descriptions, the [PR writing guide](../pr/writing.md) owns structure,

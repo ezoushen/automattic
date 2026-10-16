@@ -150,9 +150,9 @@ from the start and verify report links resolve before accepting a result. A
 `report_transport: return` worker returns evidence for the orchestrator to persist
 within its permissions. Experiments still execute in the assigned worktree.
 Pass the actual brief/spec when one exists; do not invent a spec or require tickets
-for someone else's PR. Resolve Matt's exact namespaced dependency through the
-bootstrap and pass its identity. Use that review once for the eligible implementation
-batch; preserve both axes while Automattic owns coverage, evidence and disposition.
+for someone else's PR. Apply the [implementation review method](method.md) once for
+the eligible implementation batch; preserve both axes while Automattic owns coverage,
+evidence and disposition.
 The shared reviewer's documentation gate is mandatory: code comments and API docs
 are source contracts, including unchanged docs invalidated by the diff. Record
 their coverage and `documentation_status` for the pinned head. Confirmed in-scope

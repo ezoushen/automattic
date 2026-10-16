@@ -20,7 +20,7 @@ skill, not a shell command. Use the active adapter's invocation mechanism. Share
 roles own behavior; host adapters and selected executors own runtime operations.
 Resolve dependency identity from the active catalog once per session: for Matt use
 the exact `mattpocock-skills:<name>` entry (or its verified host alias/path), never
-a bare colliding name such as `code-review`. Carry that resolved identity into
+a bare colliding name such as `tdd`. Carry that resolved identity into
 workers; an unavailable dependency is a gap, not permission to substitute a
 similarly named bundled skill. Refresh discovery after installation changes.
 Memory and copied alignment are discovery hints for runner capabilities; verify

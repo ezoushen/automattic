@@ -41,14 +41,13 @@ that implementation batch.
 
 ## One owner of implementation review
 
-Assign one implementation-review owner for the eligible batch. That owner resolves
-and invokes Matt's exact catalog `mattpocock-skills:code-review` dependency once,
-with the accepted boundary and prior coverage. Use its Standards and Spec method
-as the review itself, rather than doing a complete manual pass before invoking it.
+Assign one implementation-review owner for the eligible batch. That owner applies
+the [implementation review method](method.md) once, with the accepted boundary and
+prior coverage; its Standards and Spec axes are the review itself.
 The assigned reviewer completes its axes directly. Additional independent scope
 assignments belong to the orchestrator, within available capacity and selected
 executor settings; a worker does not create a nested review team. Serial execution
-preserves the same two axes. Preserve both complete axis reports. An upstream
+preserves the same two axes. Preserve both complete axis reports. A return
 summary word limit applies to the summary, never to findings or coverage evidence.
 
 ## Reopen only affected coverage

@@ -6,7 +6,7 @@ for experiments, queued builds, teardown and completion.
 
 Inputs: absolute adapter, role_file, plugin_root, repo, worktree and report; pinned
 base/diff_base/head; changed files; scope/priority sources; settled direction and
-blast radius, eligible implementation coverage, resolved Matt dependency; brief/spec if any.
+blast radius, eligible implementation coverage; brief/spec if any.
 Read the adapter and `## Scope and priorities` in the report before acting.
 Verify worktree and HEAD match the assignment. Never switch the user's checkout,
 edit production code, push, merge, change tickets, or expand the review scope.
@@ -22,12 +22,11 @@ report files or relax permissions. Report unavailable experiments as evidence ga
 and request any necessary reproduction through the orchestrator.
 
 Follow [review layers](../skills/review/layers.md), including blocked dependencies
-and incremental invalidation. As implementation-review owner, read the resolved
-`mattpocock-skills:code-review` and apply its method in this worker to the exact
-fixed point, spec, eligible coverage and standards supplied. If assigned only an
+and incremental invalidation. As implementation-review owner, apply the
+[implementation review method](../skills/review/method.md) in this worker to the exact
+pinned range, spec, eligible coverage and standards supplied. If assigned only an
 axis/partition, execute that part of the method and return evidence without starting
-another full review. Preserve Standards and Spec;
-keep Matt's smell catalog upstream. Explain the Automattic assignment: the changed
+another full review. Preserve Standards and Spec. Explain the Automattic assignment: the changed
 range and demonstrated effects on its consumers are the review boundary, not all
 improvements the repository could use. Preserve complete axis reports even when
 the return summary is short. Missing spec → explicit limitation, never invented
@@ -35,10 +34,9 @@ requirements. A PR description is evidence of intent, not an approved standard.
 
 Complete the assigned axes directly. Request any independent partition or
 reproduction from the orchestrator, which owns additional worker assignments.
-Before invoking a dependency, provide the task's read-only scope and known
-context; don't run unrelated setup/install flows to satisfy a generic template.
-If a real dependency/capability is absent, record that coverage gap. Never report
-an omitted axis as passed or bypass a denied skill invocation.
+Don't run unrelated setup/install flows. If a required capability is absent,
+record that coverage gap. Never report an omitted axis as passed or bypass a
+denied tool invocation.
 
 Account for each changed file and affected behavior in `## Coverage`. Follow
 callers and entry points to understand impact; do not turn context-reading into
@@ -108,7 +106,7 @@ An old pattern repeated in newly added code does not make the new defect
 pre-existing. Keep the new instance in scope and the independent old ones in follow-ups.
 
 Within scope, judge design against actual requirements and existing mechanisms.
-Name a concrete simpler alternative and its tradeoffs. Matt's smells are prompts
+Name a concrete simpler alternative and its tradeoffs. Simplicity findings are prompts
 to investigate, not mandates to extract abstractions, add dependencies or rename
 working code. Retain necessary boundary validation, accessibility and meaningful
 tests. Personal taste is not a blocking defect.

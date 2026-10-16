@@ -317,8 +317,8 @@ independent evaluator. Simulate evidence; no real repository or external actions
    and which prior conclusions can be reused. Classify the new documentation issue.
 3. The host catalog exposes `code-review` and `mattpocock-skills:code-review`.
    An implementation reviewer has the accepted direction and scope, plus twelve
-   confirmed findings and a short return-summary limit. State dependency selection,
-   partition ownership and what the report/summary contain.
+   confirmed findings and a short return-summary limit. State which review method
+   applies, partition ownership and what the report/summary contain.
 
 ### Assessment
 
@@ -329,8 +329,9 @@ independent evaluator. Simulate evidence; no real repository or external actions
   then reviews delta plus affected callers/docs. Direction stays settled unless
   contradicted. Repair-introduced contract failure remains a hard gate; invalidated
   checks rerun, unaffected checks retain provenance. No ritual full-PR pass.
-- Case 3 selects the verified Matt entry, one implementation review owner, complete
-  Standards/Spec findings and coverage, no top-N truncation or nested full review.
+- Case 3 applies Automattic's own review method, not either catalog skill; one
+  implementation review owner, complete Standards/Spec findings and coverage, no
+  top-N truncation or nested full review.
 
 ## Planning and briefing cases
 

@@ -425,7 +425,8 @@ comment lines as review candidates, with language and syntax limits documented
 there. Remediation supplies its own proof and test-first repair procedure.
 
 The [shared review procedure](skills/review/workflow.md) owns the review workflow's
-repair loop and reuses Matt's grilling, code-review, diagnosis and TDD where applicable.
+repair loop with its own [Standards/Spec method](skills/review/method.md) and reuses Matt's
+grilling, diagnosis and TDD where applicable.
 `/automattic:review`, `/automattic:walkthrough` and `/automattic:dispatch` retain
 `disable-model-invocation: true`. Manual review forwards its target and flags;
 walkthrough hands off when requested, and dispatch runs the same procedure after
