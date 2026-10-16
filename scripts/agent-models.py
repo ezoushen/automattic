@@ -385,7 +385,7 @@ def select_candidate(pool, candidate, recommendation, eligible_candidates, task,
     """Validate a recommendation or pin; never infer runtime support from model names.
 
     Profile overrides are keyed by worker runtime; a rule route over a pool spanning runtimes
-    uses the host's (`default_runtime`), while a plain profile router never guesses one.
+    passes the runtime whose entry applies (`default_runtime`); a plain profile router passes none.
     """
     candidates = pool['candidates']
     eligible = list(candidates) if eligible_candidates is None else eligible_candidates
@@ -703,11 +703,14 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             if rule_profile is None:
                 raise ValueError('router consult "after-failure" needs a fallback_profile as its rule route')
             rule = profiles[rule_profile][0].get(role, {})
+            usable = [runtime for runtime, entry in rule.items()
+                      if entry.get('candidate') in (eligible_candidates or pool['candidates'])]
+            rule_runtime = host if host in usable or len(usable) != 1 else usable[0]
             try:
                 settled = select_candidate(pool, None, None, eligible_candidates, task, overrides=rule,
                                            definitions=definitions, target_runtime=target_runtime,
                                            configured_candidates=configured_candidates,
-                                           default_runtime=host)[2]
+                                           default_runtime=rule_runtime)[2]
             except ValueError:
                 settled = {}  # The rule cannot route this assignment; consult as usual.
             if settled.get('selection_source') == 'profile':
@@ -769,7 +772,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             pool, candidate, selection, eligible_candidates, task,
             overrides=overrides, definitions=definitions, target_runtime=target_runtime,
             configured_candidates=configured_candidates,
-            default_runtime=host if metadata.get('rule_route') else None)
+            default_runtime=rule_runtime if metadata.get('rule_route') else None)
         metadata.update(info)
         if info.get('status') == 'selection_required':
             return dict(metadata, host_harness=host, role=role, route_source=source,

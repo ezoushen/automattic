@@ -435,7 +435,8 @@ replace the saved baseline or consume worker attempts.
 Add `"consult": "after-failure"` to route by rule first; it requires a
 `fallback_profile`, which then settles routine routes with no service call and
 reports `selection_source: rule-profile`. When the eligible pool spans worker
-runtimes and none is targeted, the rule uses the host runtime's entry. The service
+runtimes and none is targeted, the rule uses the host runtime's entry, or else the
+only entry that names an eligible candidate. The service
 is consulted only when the profile has no eligible route for that runtime, or when the host retries after
 a failed or rejected attempt with `--after-failure "<failure evidence>"`, which the
 request states. The default, `"always"`, consults on every `--assignment`.

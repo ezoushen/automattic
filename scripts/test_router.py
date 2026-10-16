@@ -554,6 +554,16 @@ class Router(unittest.TestCase):
                                 excluded_candidates={'opus': 'Claude weekly allowance critical.'})
         self.assertEqual((narrowed['candidate'], narrowed['selection_source']), ('sol', 'rule-profile'))
         self.assertEqual(self.requests, [])
+        # Another runtime without a rule entry in the pool: the one eligible rule entry still settles it.
+        self.data['runtimes']['pi'] = {'executors': {'herdr': {'type': 'skill', 'config': {
+            'skill': 'herdr', 'instruction': 'Run one worker.'}}}}
+        self.data['models']['glm'] = {'description': 'glm', 'runtimes': {'pi': {'id': 'dgx/glm'}}}
+        self.data['agents']['implementer']['candidates'].append('glm')
+        self.save()
+        mixed = self.resolve(host='claude', assignment='Implement ticket 1.',
+                             excluded_candidates={'opus': 'Claude weekly allowance critical.'})
+        self.assertEqual((mixed['candidate'], mixed['selection_source']), ('sol', 'rule-profile'))
+        self.assertEqual(self.requests, [])
 
     def test_partial_fallback_profile_still_returns_host_selection(self):
         self.fallback_router()
