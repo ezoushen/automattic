@@ -81,8 +81,9 @@ each alternative at the same depth. Measure a backend with the
 [shadow evidence](#evaluate-shadow-evidence) and calibration tools before enabling
 more families.
 
-`failure-cause` and `wake-triage` are shadow measurements ([failure cause](#failure-cause-shadow-pilot),
-[wake triage](#wake-triage-shadow-pilot)), not phase boundaries: they need no
+`failure-cause`, `wake-triage`, `test-shape` and `defect-effect` are shadow measurements
+([failure cause](#failure-cause-shadow-pilot), [wake triage](#wake-triage-shadow-pilot),
+[test effectiveness](#test-effectiveness-shadow-pilots)), not phase boundaries: they need no
 checkpoint or skip and never change the host's action.
 
 ### Apply a checkpoint
@@ -395,6 +396,68 @@ source: a retained report for `done`, an answered prompt for `needs-input`, a
 provider error for `error`, resumed output for `working`. A `done` label never
 establishes completion: the lifecycle's report, revision and acceptance checks
 still decide.
+
+## Test-effectiveness shadow pilots
+
+These opt-in pilots measure whether System One can help the
+[tautological-tests](../skills/remediate/kinds/tautological-tests.md) check. Enable
+them by adding `test-shape` and/or `defect-effect` to `decisions.enabled`. The host
+writes the evidence as JSON and runs:
+
+```bash
+<plugin_root>/.venv/bin/python -B <plugin_root>/scripts/decisions.py classify-test \
+  --repo <canonical-project> --input <absolute-evidence.json> \
+  --journal <absolute-session-decisions.jsonl> --assignment-id <review/head/test-n>
+```
+
+`test-shape` records how one added or modified test checks its claim:
+
+```json
+{"family": "test-shape",
+ "claim": "One sentence: the behavior this test protects.",
+ "test": "The test body and the helpers it calls, comments removed.",
+ "code": "The functions it calls directly, comments removed.",
+ "facts": ["line 4: expected value comes from discounted(), the function under test"]}
+```
+
+`defect-effect` records whether a defect the test survived changed that behavior:
+
+```json
+{"family": "defect-effect",
+ "claim": "The same sentence.",
+ "defect": "The defect diff, comments removed.",
+ "checks": "Only the test's assertions, with their lines.",
+ "outputs": {"real": "Observable output on the real code.", "defect": "The same with the defect."}}
+```
+
+Every field is required; an unknown or missing field, a blank value or an oversized
+one exits 2 without inference. Limits: claim 600 characters; test and code 6,000
+each; facts at most 20 items and 2,000 characters in total; defect and checks 3,000
+each; the two outputs 6,000 together. Trim to the relevant lines rather than
+truncating evidence. Facts are observations that cite a line, not conclusions.
+Remove comments and documentation blocks first, in whatever syntax the language uses:
+they state conclusions the model copies.
+Skip a defect that changes only whitespace or comments.
+
+The helper puts the claim first and the facts or outputs last, frames code and
+outputs as untrusted text, and scores both option orders. For `defect-effect` it
+sends only the output lines that differ between the two runs, so supply complete
+outputs; the journal keeps them as given. `test-shape` chooses among
+`independent-check`, `derived-from-code`, `mock-echo`, `assertion-never-runs`,
+`checks-other-behaviour`, `partial-check` and `accepts-any-failure`; `defect-effect`
+between `claimed-behaviour-changed` and `claimed-behaviour-intact`; either may
+abstain. As with failure cause, output omits the label, a rerun of the same
+assignment reuses the record, a disabled family neither calls the backend nor
+writes, and the host continues the check unchanged.
+
+Record the established label with the `assessment` command above. Execution is the
+`objective` source: for `test-shape`, a test that failed at an assertion on every
+relevant defect is `independent-check`, and a confirmed tautological test takes the
+shape that explains it (repeat `--expected` for every applicable shape); for
+`defect-effect`, a later rewrite that fails on the defect establishes
+`claimed-behaviour-changed`, and identical observable output establishes
+`claimed-behaviour-intact`. A reviewer's judgment of a difference against the claim
+is `independent` or `host`.
 
 ## Evaluate shadow evidence
 

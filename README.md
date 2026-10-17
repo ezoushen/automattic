@@ -422,6 +422,10 @@ It runs only when explicitly requested. Scope defaults to the established diff;
 named paths repair after proof, while whole-project scans report first and wait
 for confirmation before repairs. It changes tests/comments only and reports a
 suspected runtime bug when a corrected test fails on the real implementation.
+A test is [tautological](skills/remediate/kinds/tautological-tests.md) when a defect in
+the behavior it claims leaves it passing; review applies the same check to every
+added or modified test, using the project's own test command: a revert check for
+new behavior, then small defects whose observed outputs decide each survivor.
 The [comment audit](skills/remediate/SKILL.md#comment-audit) lists added plain
 comment lines as review candidates, with language and syntax limits documented
 there. Remediation supplies its own proof and test-first repair procedure.

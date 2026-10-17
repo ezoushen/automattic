@@ -18,7 +18,7 @@ EVENTS = {'decision', 'action', 'execution', 'outcome', 'assessment', 'checkpoin
 CATEGORIES = {'context', 'prompt', 'options', 'model', 'host', 'execution', 'none', 'unknown'}
 # Who established an assessment label: a rerun/later observed state, an independent reviewer, or the host.
 SOURCES = ('objective', 'independent', 'host')
-SHADOW_FAMILIES = ('failure-cause', 'wake-triage')
+SHADOW_FAMILIES = ('failure-cause', 'wake-triage', 'test-shape', 'defect-effect')
 
 
 def text(value):
@@ -285,7 +285,7 @@ def inspect(path, decision_id=None):
         execution = latest.get('execution')
         family = decision['request']['family']
         required = (['action', 'execution', 'outcome'] if family == 'worker-selection'
-                    else ['assessment'] if family in ('failure-cause', 'wake-triage') else ['action', 'outcome'])
+                    else ['assessment'] if family in SHADOW_FAMILIES else ['action', 'outcome'])
         summaries.append({
             'decision_id': decision['decision_id'], 'assignment': decision['assignment'],
             'family': decision['request']['family'], 'model': decision['backend']['model'],
@@ -315,7 +315,7 @@ def _check(rows, decision_id, stage, revision=None):
     if stage not in ('launch', 'startup', 'completion'):
         raise ValueError('Check stage must be launch, startup or completion')
     decision, latest = _current_annotations(rows, decision_id, revision)
-    if decision['request']['family'] in ('failure-cause', 'wake-triage'):
+    if decision['request']['family'] in SHADOW_FAMILIES:
         # Shadow labels have no host action; completion needs the independent assessment.
         missing = ['assessment'] if stage == 'completion' and 'assessment' not in latest else []
         return {'decision_id': decision_id, 'stage': stage, 'complete': not missing,
