@@ -425,8 +425,7 @@ suspected runtime bug when a corrected test fails on the real implementation.
 A test is [tautological](skills/remediate/kinds/tautological-tests.md) when a defect in
 the behavior it claims leaves it passing; review applies the same check to every
 added or modified test by reading: an assertion checklist, routing by the decision
-model, and a code trace for expected failures checked only by code. Confirmation runs
-in temporary worktrees are optional, for projects whose tests allow them.
+model, and a code trace for expected failures checked only by code.
 The [comment audit](skills/remediate/SKILL.md#comment-audit) lists added plain
 comment lines as review candidates, with language and syntax limits documented
 there. Remediation supplies its own proof and test-first repair procedure.

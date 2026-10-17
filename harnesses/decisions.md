@@ -450,7 +450,7 @@ The model chooses among `independent-check`, `derived-from-code`, `mock-echo`,
 `accepts-any-failure`, or abstains. Its answer routes work, so unlike the shadow
 families it is returned. It is journaled as before and a rerun of the same assignment
 reuses it. Record the established label with the `assessment` command above:
-`objective` for a confirmation run, `independent` or `host` for a reviewer's reading.
+`independent` for another reviewer's reading, `host` for your own.
 These keep measuring the 0.8 threshold.
 
 ## Evaluate shadow evidence

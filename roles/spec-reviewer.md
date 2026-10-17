@@ -55,8 +55,7 @@ needed for the changed contract or required by project conventions.
 Check every added or modified test with
 [tautological-tests](../skills/remediate/kinds/tautological-tests.md): write its
 checklist, route it, trace masked rules and re-read flags, dismissing false alarms
-with cited evidence. Confirm by running only where the project allows it. Report a
-finding only with that kind's cited proof, and say which findings a run confirmed.
+with cited evidence. Report a finding only with that kind's cited proof.
 
 For added comments, run `python3 <plugin_root>/scripts/comment-audit.py --repo
 <worktree> --base <diff_base> --head <head>` on the pinned reviewed diff and retain
