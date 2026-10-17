@@ -2,7 +2,7 @@
 name: remediate
 description: "Find, prove and repair tautological tests, misleading comments or a specified goal within a chosen scope."
 disable-model-invocation: true
-argument-hint: "[goal] [scope] — scope defaults to diff; paths or whole project on request"
+argument-hint: "[tautological-tests|misleading-comments|<goal>] [--base <ref> [--head <ref>] | <path>... | --project] — defaults: both kinds on the current diff"
 ---
 
 # remediate
@@ -12,6 +12,21 @@ Run only on the user's explicit invocation. This procedure supplies its own
 detection, proof and test-first repair loop; no external skill is required.
 Remediation changes tests and documentation only. A suspected runtime bug is a
 reportable result, not authorization to change runtime behavior.
+
+## Arguments
+
+| Argument | Meaning |
+|---|---|
+| `tautological-tests`, `misleading-comments` | One built-in kind. Omitted: both kinds. |
+| `"<goal>"` | A free-form goal, quoted. |
+| `--base <ref>` [`--head <ref>`] | **Diff** scope from base. Without `--head`: base against the working tree. |
+| `<path>...` | **Paths** scope: the named files or directories. |
+| `--project` | **Whole project** scope; findings are reported before any repair. |
+| none | **Diff** scope against the established review target; asks for `--base` if none. |
+
+Examples: `remediate tautological-tests tests/`,
+`remediate misleading-comments --base main`, `remediate --project`.
+Equivalent plain-language scope in the request is accepted.
 
 ## Establish goal and scope
 

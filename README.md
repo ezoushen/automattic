@@ -413,9 +413,11 @@ for remaining work. It reuses code-comments for source documentation. Cleanup
 does not delete unrelated files, retire branches or replace the review gate.
 
 [remediate](skills/remediate/SKILL.md) finds and proves `tautological-tests`,
-`misleading-comments` or a free-form goal. Invoke `/automattic:remediate [goal] [scope]`
-in Claude, `$automattic:remediate [goal] [scope]` in Codex, or
-`/skill:remediate [goal] [scope]` in Pi; OpenCode uses its native skill discovery.
+`misleading-comments` or a free-form goal. Invoke
+`/automattic:remediate [kind|"goal"] [--base <ref> | <path>... | --project]` in Claude,
+`$automattic:remediate ...` in Codex or `/skill:remediate ...` in Pi; OpenCode uses
+its native skill discovery. The skill's [arguments](skills/remediate/SKILL.md#arguments)
+table lists each value and its default.
 It runs only when explicitly requested. Scope defaults to the established diff;
 named paths repair after proof, while whole-project scans report first and wait
 for confirmation before repairs. It changes tests/comments only and reports a

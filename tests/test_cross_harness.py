@@ -210,7 +210,12 @@ class CrossHarness(unittest.TestCase):
         assert re.search(r'^name: remediate$', metadata, re.M)
         assert re.search(r'^disable-model-invocation: true$', metadata, re.M)
         hint = re.search(r'^argument-hint: (.+)$', metadata, re.M).group(1)
-        assert '[goal]' in hint and '[scope]' in hint, hint
+        for value in ('tautological-tests', 'misleading-comments', '--base <ref>',
+                      '--head <ref>', '<path>...', '--project'):
+            assert value in hint, (value, hint)
+        assert '[scope]' not in hint, hint
+        for value in ('--base', '--head', '--project'):
+            assert f'`{value}' in source, value
         ui = (path.parent / 'agents/openai.yaml').read_text()
         assert 'allow_implicit_invocation: false' in ui
         assert '$automattic:remediate' in ui
