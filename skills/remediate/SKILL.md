@@ -85,9 +85,10 @@ report that boundary for a separate implementation task.
 3. **Repair confirmed findings.** Enforce the scope's confirmation rule first.
    Use a [repair worker](../../roles/repair.md) when delegated, supplying confirmed
    IDs, accepted seams, test/comment-only boundaries and this procedure. Otherwise
-   apply the same bounded steps directly. For tests: derive an independent expected
-   result, show the corrected test fails on the deliberately wrong implementation,
-   remove the temporary mutation, then run it against the real implementation.
+   apply the same bounded steps directly. For tests: follow the kind's Repair, with an
+   expected result from an independent source and, for an expected failure, a check
+   of the claimed rule's own reason; then run it against the real implementation.
+   Production code is never altered to prove the rewrite.
    If it fails there, stop repairs and report a suspected runtime bug with the
    failing command/output; preserve the corrected test and evidence for handoff.
    Runtime behavior stays unchanged. For comments: use the kind's contract proof
