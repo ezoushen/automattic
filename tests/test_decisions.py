@@ -814,20 +814,27 @@ sys.stdout.write((root / name).read_text())
         flagged = self.classify_test(self.shape(), 'r/2')
         self.assertEqual((flagged['route'], flagged['shape'], flagged['orders_agree']), ('flagged', 'mock-echo', True))
 
-    def probabilities(self, independent, abstain=0.0):
-        rest = (1 - independent - abstain) / 6
-        shapes = ('derived-from-code', 'mock-echo', 'assertion-never-runs', 'checks-other-behaviour',
-                  'partial-check', 'accepts-any-failure')
-        return {'independent-check': independent, 'abstain': abstain, **{shape: rest for shape in shapes}}
+    @staticmethod
+    def probabilities(independent=0.0, abstain=0.0, **shapes):
+        names = ('derived-from-code', 'mock-echo', 'assertion-never-runs', 'checks-other-behaviour',
+                 'partial-check', 'accepts-any-failure')
+        return {'independent-check': independent, 'abstain': abstain, **{name: shapes.get(name.replace('-', '_'), 0.0)
+                                                                       for name in names}}
 
-    def test_only_answers_at_least_point_eight_on_one_side_settle_a_test(self):
-        for n, (independent, route) in enumerate(((.81, 'protected'), (.79, 'escalate'), (.19, 'flagged'),
-                                                  (.21, 'escalate'))):
-            self.fixed_probabilities = self.probabilities(independent)
-            self.assertEqual(self.classify_test(self.shape(), f'r/{n}')['route'], route, independent)
+    def test_only_answers_at_least_point_eight_on_the_agreed_side_settle_a_test(self):
+        cases = ((dict(independent=.81, mock_echo=.19), 'protected'), (dict(independent=.79, mock_echo=.21), 'escalate'),
+                 (dict(independent=.17, abstain=.03, mock_echo=.8), 'flagged'),
+                 (dict(independent=.21, mock_echo=.79), 'escalate'),
+                 # Hollow shapes hold .81 in total, but both orders chose independent-check: not a flag.
+                 (dict(independent=.19, **{name: .135 for name in ('derived_from_code', 'mock_echo', 'assertion_never_runs',
+                                                                  'checks_other_behaviour', 'partial_check',
+                                                                  'accepts_any_failure')}), 'escalate'))
+        for n, (fields, route) in enumerate(cases):
+            self.fixed_probabilities = self.probabilities(**fields)
+            self.assertEqual(self.classify_test(self.shape(), f'r/{n}')['route'], route, fields)
 
     def test_abstaining_answers_escalate_and_never_count_as_hollow(self):
-        self.fixed_probabilities = self.probabilities(.05, abstain=.9)
+        self.fixed_probabilities = self.probabilities(independent=.05, abstain=.9, mock_echo=.05)
         result = self.classify_test(self.shape())
         self.assertEqual((result['route'], result['hollow_probability']), ('escalate', .05))
 

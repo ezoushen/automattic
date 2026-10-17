@@ -662,12 +662,16 @@ def classify_test(policy, data, *, context=None, trace=None):
     probabilities = recorded['probabilities']
     # The routing question is protected versus hollow; abstention counts toward neither side.
     protected = probabilities['independent-check']
-    hollow = 1 - protected - probabilities['abstain']
+    hollow = sum(probabilities[shape] for shape in TEST_SHAPES if shape != 'independent-check')
     passes = recorded.get('pass_choices') or [recorded['choice']]
-    sides = {'abstain' if choice == 'abstain' else choice == 'independent-check' for choice in passes}
+    sides = {'abstain' if choice == 'abstain' else 'protected' if choice == 'independent-check' else 'hollow'
+             for choice in passes}
     agree = len(sides) == 1 and 'abstain' not in sides
-    route = ('protected' if agree and protected >= ROUTE_CONFIDENCE else
-             'flagged' if agree and hollow >= ROUTE_CONFIDENCE else 'escalate')
+
+    def settles(side, probability):  # each side settles only when both orders chose it
+        return sides == {side} and probability >= ROUTE_CONFIDENCE - 1e-9
+
+    route = 'protected' if settles('protected', protected) else 'flagged' if settles('hollow', hollow) else 'escalate'
     return {'route': route, 'shape': recorded['choice'], 'pass_shapes': passes, 'hollow_probability': round(hollow, 4),
             'orders_agree': agree, **{key: recorded[key] for key in ('decision_id', 'reused', 'warnings') if key in recorded}}
 

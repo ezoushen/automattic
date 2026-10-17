@@ -54,14 +54,15 @@ def stop(process):
 def run(command, cwd, timeout):
     """Return (exit code or None, output tail, seconds); None means it timed out or could not start."""
     started = time.monotonic()
-    if STOPPING.is_set():
-        return None, 'stopped before running', 0.0
-    try:
-        process = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                   start_new_session=True)
-    except OSError as error:
-        return None, f'could not start the command: {error}', time.monotonic() - started
+    # Starting and registering under the lock: a termination request either sees this process or prevents it.
     with LOCK:
+        if STOPPING.is_set():
+            return None, 'stopped before running', 0.0
+        try:
+            process = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                       start_new_session=True)
+        except OSError as error:
+            return None, f'could not start the command: {error}', time.monotonic() - started
         LIVE.add(process)
     try:
         output, _ = process.communicate(timeout=timeout)
@@ -143,6 +144,10 @@ def main():
             results = list(pool.map(lambda item: {'id': item[1]['id'], **confirm(item[0], item[1], baselines)},
                                     enumerate(flags)))
     finally:
+        # A second termination request must not cut the cleanup short.
+        for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+            signal.signal(signum, signal.SIG_IGN)
+        STOPPING.set()
         with LOCK:
             for process in list(LIVE):
                 stop(process)
