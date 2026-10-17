@@ -53,11 +53,10 @@ implementation and callers using code-comments, including missing documentation
 needed for the changed contract or required by project conventions.
 
 Check every added or modified test with
-[tautological-tests](../skills/remediate/kinds/tautological-tests.md): state its
-claim, run the revert check for new behavior, run its defects and judge survivors
-by their observed outputs. Report a finding only with that kind's retained proof.
-A test that fails at an assertion on the defect is not a finding; setup failures,
-skips and equivalent or unrelated defects prove nothing.
+[tautological-tests](../skills/remediate/kinds/tautological-tests.md): write its
+checklist, route it, trace masked rules and re-read flags, dismissing false alarms
+with cited evidence. Confirm by running only where the project allows it. Report a
+finding only with that kind's cited proof, and say which findings a run confirmed.
 
 For added comments, run `python3 <plugin_root>/scripts/comment-audit.py --repo
 <worktree> --base <diff_base> --head <head>` on the pinned reviewed diff and retain

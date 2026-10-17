@@ -406,6 +406,7 @@ class CheckpointCLI(unittest.TestCase):
                                            'instruction': 'Choose the next investigation.',
                                            'options': {'trace-owner': 'Trace affected ownership before repairs.'}}))
         self.calls = []
+        self.fixed_choice = None
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -413,7 +414,7 @@ class CheckpointCLI(unittest.TestCase):
                 payload = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
                 owner.calls.append(payload)
                 qid, question = next(iter(payload['questions'].items()))
-                choice = next(iter(question['criteria']))
+                choice = owner.fixed_choice or next(iter(question['criteria']))
                 body = json.dumps({'model': payload['model'], 'answers': {qid: {
                     'type': 'choice', 'choice': choice,
                     'probabilities': {key: float(key == choice) for key in question['criteria']}}}}).encode()
@@ -765,95 +766,63 @@ sys.stdout.write((root / name).read_text())
         return self.cli('decisions.py', 'classify-test', '--repo', self.repo, '--user-executors', self.user,
                         '--input', path, '--journal', self.journal, '--assignment-id', assignment, code=code)
 
-    SHAPE = {'family': 'test-shape', 'claim': 'Silver members pay 85 percent of the price.',
-             'test': 'expected = discounted(100, "Silver")\nassert discounted(100, "Silver") == expected',
-             'code': 'def discounted(price, tier):\n    return price * (1 - RATES[tier])',
-             'facts': ['line 2: expected value comes from discounted(), the function under test']}
-    EFFECT = {'family': 'defect-effect', 'claim': 'Retirement never closes the caller pane.',
-              'defect': "-    require(pane != caller, 'Caller pane is not a cleanup target')\n+    pass",
-              'checks': "self.cli('retire', ..., code=2)\nself.assertFalse(closed.exists())",
-              'outputs': {'real': 'register exit 0\nready exit 0\nack exit 0\nretire exit 2: Caller pane is not a cleanup target',
-                          'defect': 'register exit 0\nready exit 0\nack exit 0\n'
-                                    'retire exit 2: Settle acceptance of a completed implementer before closing it'}}
+    @staticmethod
+    def assertion(**fields):
+        return {'lines': '2', 'checks': 'discounted price equals expected', 'expected_source': 'literal',
+                'can_run': 'yes', 'failure_expected': 'no', 'failure_reason_checked': 'n/a',
+                'collection_compared': 'n/a', 'about_claimed_result': 'yes', **fields}
 
-    def test_test_shape_puts_the_claim_first_and_facts_last_and_hides_its_label(self):
-        result = self.classify_test(self.SHAPE)
-        self.assertEqual((result['status'], result['family'], result['shadow']), ('recorded', 'test-shape', True))
-        self.assertNotIn('choice', json.dumps(result))
-        state = self.calls[0]['state']
-        self.assertTrue(state.startswith('Claim: Silver members pay 85 percent of the price.'))
-        self.assertLess(state.index('expected = discounted'), state.index('def discounted'))
-        self.assertTrue(state.rstrip().endswith('the function under test'))
-        criteria = self.calls[0]['questions']['test-shape']['criteria']
-        self.assertEqual(set(criteria), {'independent-check', 'derived-from-code', 'mock-echo', 'assertion-never-runs',
-                                         'checks-other-behaviour', 'partial-check', 'accepts-any-failure', 'abstain'})
-        # Both option orders are scored, as for worker selection.
-        self.assertEqual(len(self.calls), 2)
-        self.assertEqual([key for key in self.calls[1]['questions']['test-shape']['criteria'] if key != 'abstain'],
-                         list(reversed([key for key in criteria if key != 'abstain'])))
-        self.assertEqual(journal.inspect(self.journal)['decisions'][0]['missing_evidence'], ['assessment'])
-        recorded = journal.inspect(self.journal, result['decision_id'])['decision']['result']['probabilities']
-        self.assertEqual((recorded['independent-check'], recorded['accepts-any-failure']), (.5, .5))
+    def shape(self, *assertions):
+        return {'family': 'test-shape', 'claim': 'Silver members pay 85 percent of the price.',
+                'test': 'expected = discounted(100, "Silver")\nassert discounted(100, "Silver") == expected',
+                'code': 'def discounted(price, tier):\n    return price * (1 - RATES[tier])',
+                'assertions': list(assertions) or [self.assertion(expected_source='code-under-test')]}
 
-    def test_defect_effect_keeps_changes_in_count_and_order(self):
-        self.classify_test(dict(self.EFFECT, outputs={'real': 'notification sent',
-                                                      'defect': 'notification sent\nnotification sent'}))
-        self.classify_test(dict(self.EFFECT, outputs={'real': 'debit\ncredit', 'defect': 'credit\ndebit'}),
-                           'review/head-a/test-2')
-        self.assertIn('+notification sent', self.calls[0]['state'])
-        # A moved line keeps its neighbors, so debit-before-credit and debit-after-credit stay distinguishable.
-        real = 'start\ndebit\ncredit\naudit'
-        self.classify_test(dict(self.EFFECT, outputs={'real': real, 'defect': 'debit\nstart\ncredit\naudit'}),
-                           'review/head-a/test-3')
-        self.classify_test(dict(self.EFFECT, outputs={'real': real, 'defect': 'start\ncredit\naudit\ndebit'}),
-                           'review/head-a/test-4')
-        self.assertNotEqual(self.calls[4]['state'], self.calls[6]['state'])
-
-    def test_defect_effect_rejects_a_diff_over_the_request_budget_with_a_trim_hint(self):
-        # Every field is within its own bound; diff markers and context push the composed request over.
-        data = dict(self.EFFECT, defect='- emit(A)\n+ emit(B)\n' * 150, checks="assert value == 'A'\n" * 150,
-                    outputs={'real': 'A\n' * 1500, 'defect': 'B\n\n\n' * 750})
-        self.assertIn('trim the outputs', self.classify_test(data, code=2))
+    def test_a_failure_checked_only_by_code_goes_to_the_trace_without_inference(self):
+        data = self.shape(self.assertion(lines='7', checks='retire exits 2', failure_expected='yes',
+                                         failure_reason_checked='type-or-code-only'))
+        result = self.classify_test(data)
+        self.assertEqual((result['route'], result['expectations']), ('trace', ['7']))
         self.assertEqual(self.calls, [])
         self.assertFalse(self.journal.exists())
 
-    def test_defect_effect_shows_both_runs_and_needs_an_assessment(self):
-        result = self.classify_test(self.EFFECT)
+    def test_test_shape_puts_the_claim_first_and_the_checklist_last(self):
+        result = self.classify_test(self.shape())
         state = self.calls[0]['state']
-        self.assertTrue(state.startswith('Claim: Retirement never closes the caller pane.'))
-        self.assertLess(state.index('Caller pane is not a cleanup target'), state.index('Settle acceptance'))
-        # Changed lines go with two lines of context; distant shared output adds length, not evidence.
-        self.assertIn(' ack exit 0', state)
-        self.assertNotIn('register exit 0', state)
-        self.assertEqual(set(self.calls[0]['questions']['defect-effect']['criteria']),
-                         {'claimed-behaviour-changed', 'claimed-behaviour-intact', 'abstain'})
-        # The fake service picks the first listed option, so each order yields a different certain answer.
-        recorded = journal.inspect(self.journal, result['decision_id'])['decision']['result']['probabilities']
-        self.assertEqual((recorded['claimed-behaviour-changed'], recorded['claimed-behaviour-intact']), (.5, .5))
-        assessed = self.cli('decision_journal.py', 'assessment', '--journal', self.journal,
-                            '--decision-id', result['decision_id'], '--actor', 'test host', '--source', 'objective',
-                            '--expected', 'claimed-behaviour-changed', '--evidence', 'mutant.log',
-                            '--reason', 'The defect closed the caller pane in a valid fixture.')
-        self.assertTrue(assessed['handoff']['complete'])
-        self.assertEqual(self.classify_test(self.EFFECT)['decision_id'], result['decision_id'])
+        self.assertTrue(state.startswith('Claim: Silver members pay 85 percent of the price.'))
+        self.assertLess(state.index('def discounted'), state.index('expected from code-under-test'))
+        self.assertEqual(set(self.calls[0]['questions']['test-shape']['criteria']),
+                         {'independent-check', 'derived-from-code', 'mock-echo', 'assertion-never-runs',
+                          'checks-other-behaviour', 'partial-check', 'accepts-any-failure', 'abstain'})
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(journal.inspect(self.journal)['decisions'][0]['missing_evidence'], ['assessment'])
+        # The fake service picks the first listed option, so the two orders disagree: the agent re-reads.
+        self.assertEqual((result['route'], result['orders_agree'], result['hollow_probability']), ('escalate', False, .5))
+        self.assertEqual(self.classify_test(self.shape())['decision_id'], result['decision_id'])
         self.assertEqual(len(self.calls), 2)
 
-    def test_classify_test_rejects_bad_input_offline_and_is_opt_in(self):
-        for bad in ({**self.SHAPE, 'claim': ' '}, {**self.SHAPE, 'family': 'recovery'},
-                    {**self.SHAPE, 'notes': 'extra'}, {**self.SHAPE, 'test': 'x' * 6001},
-                    {**self.SHAPE, 'facts': ['f'] * 21}, {**self.EFFECT, 'outputs': {'real': 'same'}},
-                    {**self.SHAPE, 'claim': []}, {**self.SHAPE, 'test': {}}, {**self.EFFECT, 'checks': ['x']},
-                    {**self.SHAPE, 'facts': 'line 1: one fact'}, {**self.EFFECT, 'outputs': {'real': 'a', 'defect': 2}},
-                    {k: v for k, v in self.EFFECT.items() if k != 'defect'}):
+    def test_agreeing_confident_answers_settle_the_test(self):
+        self.fixed_choice = 'independent-check'
+        self.assertEqual(self.classify_test(self.shape(), 'r/1')['route'], 'protected')
+        self.fixed_choice = 'mock-echo'
+        flagged = self.classify_test(self.shape(), 'r/2')
+        self.assertEqual((flagged['route'], flagged['shape'], flagged['orders_agree']), ('flagged', 'mock-echo', True))
+
+    def test_classify_test_rejects_bad_input_offline_and_escalates_when_disabled(self):
+        for bad in ({**self.shape(), 'claim': ' '}, {**self.shape(), 'family': 'defect-effect'},
+                    {**self.shape(), 'notes': 'extra'}, {**self.shape(), 'test': 'x' * 6001},
+                    {**self.shape(), 'claim': []}, {**self.shape(), 'assertions': []},
+                    {**self.shape(), 'assertions': [self.assertion()] * 41},
+                    self.shape(self.assertion(can_run='maybe')), self.shape({'lines': '2'}),
+                    self.shape({**self.assertion(), 'extra': 'x'}), self.shape(self.assertion(checks='x' * 301))):
             self.classify_test(bad, code=2)
         self.assertEqual(self.calls, [])
         self.assertFalse(self.journal.exists())
         self.config['decisions']['enabled'] = ['worker-selection']
         self.user.write_text(json.dumps(self.config))
-        self.assertEqual(self.classify_test(self.SHAPE)['status'], 'disabled')
+        self.assertEqual(self.classify_test(self.shape())['route'], 'escalate')
         self.assertEqual(self.calls, [])
         self.phase('test-shape', 'review/head-a', '--request', self.request, code=2)
-
 
 if __name__ == '__main__':
     unittest.main()

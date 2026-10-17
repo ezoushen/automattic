@@ -75,7 +75,7 @@
         "backend": { "$ref": "#/$defs/decisionBackend" },
         "enabled": {
           "type": "array", "uniqueItems": true,
-          "items": { "enum": ["mandate", "alignment", "refinement", "worker-selection", "review-triage", "recovery", "delivery", "failure-cause", "wake-triage", "test-shape", "defect-effect"] }
+          "items": { "enum": ["mandate", "alignment", "refinement", "worker-selection", "review-triage", "recovery", "delivery", "failure-cause", "wake-triage", "test-shape"] }
         },
         "shadow_auto_accept": {
           "type": "object",

@@ -3,7 +3,7 @@
   "title": "Automattic bounded decision request",
   "type": "object",
   "properties": {
-    "family": {"enum": ["mandate", "alignment", "refinement", "worker-selection", "review-triage", "recovery", "delivery", "failure-cause", "wake-triage", "test-shape", "defect-effect"]},
+    "family": {"enum": ["mandate", "alignment", "refinement", "worker-selection", "review-triage", "recovery", "delivery", "failure-cause", "wake-triage", "test-shape"]},
     "state": {"type": "string", "pattern": "\\S", "maxLength": 16000},
     "instruction": {"type": "string", "pattern": "\\S", "maxLength": 16000},
     "images": {

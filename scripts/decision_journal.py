@@ -18,7 +18,7 @@ EVENTS = {'decision', 'action', 'execution', 'outcome', 'assessment', 'checkpoin
 CATEGORIES = {'context', 'prompt', 'options', 'model', 'host', 'execution', 'none', 'unknown'}
 # Who established an assessment label: a rerun/later observed state, an independent reviewer, or the host.
 SOURCES = ('objective', 'independent', 'host')
-SHADOW_FAMILIES = ('failure-cause', 'wake-triage', 'test-shape', 'defect-effect')
+SHADOW_FAMILIES = ('failure-cause', 'wake-triage', 'test-shape')
 
 
 def text(value):
