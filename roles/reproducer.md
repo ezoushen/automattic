@@ -18,6 +18,7 @@ alternatives; a successful workaround alone does not establish the root cause.
 Run and minimize the evidence in isolation under [check execution](../harnesses/checks.md),
 with stable input identity and only necessary resource coordination. Preserve original production
 files; remove only your temporary experimental edits after saving evidence.
+When the assigned proof steps are reading-only, edit and run nothing.
 
 Append CONFIRMED with the repro/trace, FALSE-POSITIVE with disproof, or UNVERIFIED
 with the exact missing capability and attempted commands. Inability to reproduce

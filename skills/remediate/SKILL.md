@@ -74,11 +74,13 @@ report that boundary for a separate implementation task.
    otherwise careful reading). Detection makes no source edits.
 2. **Prove.** Apply the kind's Proof to each candidate. Retain the pinned inputs,
    exact command/trace or contract-to-code comparison and deciding observation.
-   Run temporary negative controls in isolation, restore them after saving proof,
-   and reconcile owned processes under [check execution](../../harnesses/checks.md).
-   Send disputed findings to a [reproducer](../../roles/reproducer.md) through normal
-   routing, with the kind's proof steps, diagnosis-only scope and counter-evidence.
-   A clean independent verification can replace a disputed initial claim.
+   Run experiments only where the kind's Proof calls for them: temporary negative
+   controls in isolation, restored after saving proof, with owned processes reconciled
+   under [check execution](../../harnesses/checks.md). A candidate the kind's Proof
+   confirms needs no further run.
+   Send disputed or UNVERIFIED findings to a [reproducer](../../roles/reproducer.md)
+   through normal routing, with the kind's proof steps, diagnosis-only scope and
+   counter-evidence. A clean independent verification can replace a disputed initial claim.
    Mark each candidate CONFIRMED, FALSE-POSITIVE or UNVERIFIED. Drop disproven
    and unproven claims from repairs; report their counts and reasons. Missing
    tools or inability to reproduce leave proof incomplete, never confirmed.

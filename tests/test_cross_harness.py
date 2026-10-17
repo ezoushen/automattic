@@ -228,6 +228,20 @@ class CrossHarness(unittest.TestCase):
             assert f'kinds/{kind}.md' in source
         assert 'mattpocock' not in source.lower()
 
+    def test_remediate_proof_experiments_follow_the_kind(self):
+        import re
+        skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
+        prove = re.search(r'^2\. \*\*Prove\.\*\*(.+?)^3\. ', skill, re.M | re.S).group(1)
+        prove = ' '.join(prove.split())
+        assert "only where the kind's Proof calls for them" in prove, prove
+        assert 'Send disputed or UNVERIFIED findings to a [reproducer]' in prove, prove
+        assert 'needs no further run' in prove, prove
+        kind = (PLUGIN / 'skills/remediate/kinds/tautological-tests.md').read_text()
+        proof = ' '.join(re.search(r'^## Proof$(.+?)^## Repair$', kind, re.M | re.S).group(1).split())
+        assert 'Confirming a finding changes no code and runs no test' in proof, proof
+        role = ' '.join((PLUGIN / 'roles/reproducer.md').read_text().split())
+        assert 'When the assigned proof steps are reading-only, edit and run nothing' in role, role
+
     def test_build_lock_excludes_releases_and_keeps_exit_status(self):
         with tempfile.TemporaryDirectory(prefix='automattic mutex ') as tmp:
             env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='0')

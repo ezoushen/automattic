@@ -42,7 +42,8 @@ Work per test by reading; nothing here changes code or depends on the language.
    fail. False alarms are expected here; dismissing them is part of this step.
 Mark each candidate CONFIRMED (a cited trace or re-read shows the defect passes),
 FALSE-POSITIVE (dismissed with cited evidence) or UNVERIFIED (no checklist, or no
-traceable rejection).
+traceable rejection). Confirming a finding changes no code and runs no test; a
+reproducer for a disputed or UNVERIFIED candidate repeats these reading steps.
 
 ## Repair
 
