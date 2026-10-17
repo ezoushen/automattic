@@ -68,7 +68,7 @@ class Retirement(WorkerLifecycleCase):
         self.cli('collect', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
         self.assertNotIn('result', self.cli('status')['attempts'][0])
 
-    def test_retirement_rejects_user_owned_and_caller_panes(self):
+    def test_retirement_rejects_a_user_owned_pane(self):
         self.register(owned=False)
         self.ready()
         self.collect()
@@ -77,14 +77,23 @@ class Retirement(WorkerLifecycleCase):
         request = self.root / 'retire.json'
         request.write_text(json.dumps({'session': 'fixture-session', 'pane': 'pane-1',
                                        'jobs_evidence': ['owned jobs inspected']}))
-        self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
+        error = self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
+        self.assertIn('Existing user worker is not a cleanup target', error)
         self.assertFalse((self.root / 'native-closed').exists())
-        self.register('ticket-2/1', 'ticket-2', 'native-2', 'pane-2')
-        self.ready('ticket-2/1')
-        self.collect('ticket-2/1')
+
+    def test_retirement_rejects_the_caller_pane(self):
+        self.register()
+        self.ready()
+        self.collect()
         self.acknowledge()
+        self.herdr_fixture()
         self.native_env['HERDR_PANE_ID'] = 'pane-1'
-        self.cli('retire', '--attempt', 'ticket-2/1', '--input', str(request), code=2)
+        request = self.root / 'retire.json'
+        request.write_text(json.dumps({'session': 'fixture-session', 'pane': 'pane-1',
+                                       'jobs_evidence': ['owned jobs stopped'],
+                                       'acceptance': {'decision': 'deferred', 'reason': 'acceptance pending'}}))
+        error = self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
+        self.assertIn('Caller pane is not a cleanup target', error)
         self.assertFalse((self.root / 'native-closed').exists())
 
     def test_retirement_rejects_a_replaced_native_conversation(self):

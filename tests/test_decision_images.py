@@ -73,8 +73,8 @@ class DecisionImages(unittest.TestCase):
         result = self.checkpoint()
         self.assertEqual(result['status'], 'recommended')
         payload = self.calls[0]
-        for url, source in zip(payload['images'], (other, self.image)):
-            self.assertEqual(base64.b64decode(url.split(',', 1)[1]), source.read_bytes())
+        self.assertEqual([base64.b64decode(url.split(',', 1)[1]) for url in payload['images']],
+                         [other.read_bytes(), self.image.read_bytes()])
         self.assertLess(payload['state'].index('1. Expected appearance'),
                         payload['state'].index('2. Actual after resize'))
         self.assertNotIn(str(self.root), json.dumps(payload))
