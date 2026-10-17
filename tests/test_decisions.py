@@ -407,6 +407,8 @@ class CheckpointCLI(unittest.TestCase):
                                            'options': {'trace-owner': 'Trace affected ownership before repairs.'}}))
         self.calls = []
         self.fixed_choice = None
+        self.fixed_probabilities = None
+        self.skip_first = ()
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -414,10 +416,14 @@ class CheckpointCLI(unittest.TestCase):
                 payload = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
                 owner.calls.append(payload)
                 qid, question = next(iter(payload['questions'].items()))
-                choice = owner.fixed_choice or next(iter(question['criteria']))
+                if owner.fixed_probabilities:
+                    probabilities = dict(owner.fixed_probabilities)
+                    choice = max(probabilities, key=probabilities.get)
+                else:
+                    choice = owner.fixed_choice or next(key for key in question['criteria'] if key not in owner.skip_first)
+                    probabilities = {key: float(key == choice) for key in question['criteria']}
                 body = json.dumps({'model': payload['model'], 'answers': {qid: {
-                    'type': 'choice', 'choice': choice,
-                    'probabilities': {key: float(key == choice) for key in question['criteria']}}}}).encode()
+                    'type': 'choice', 'choice': choice, 'probabilities': probabilities}}}).encode()
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('Content-Length', str(len(body)))
@@ -807,6 +813,29 @@ sys.stdout.write((root / name).read_text())
         self.fixed_choice = 'mock-echo'
         flagged = self.classify_test(self.shape(), 'r/2')
         self.assertEqual((flagged['route'], flagged['shape'], flagged['orders_agree']), ('flagged', 'mock-echo', True))
+
+    def probabilities(self, independent, abstain=0.0):
+        rest = (1 - independent - abstain) / 6
+        shapes = ('derived-from-code', 'mock-echo', 'assertion-never-runs', 'checks-other-behaviour',
+                  'partial-check', 'accepts-any-failure')
+        return {'independent-check': independent, 'abstain': abstain, **{shape: rest for shape in shapes}}
+
+    def test_only_answers_at_least_point_eight_on_one_side_settle_a_test(self):
+        for n, (independent, route) in enumerate(((.81, 'protected'), (.79, 'escalate'), (.19, 'flagged'),
+                                                  (.21, 'escalate'))):
+            self.fixed_probabilities = self.probabilities(independent)
+            self.assertEqual(self.classify_test(self.shape(), f'r/{n}')['route'], route, independent)
+
+    def test_abstaining_answers_escalate_and_never_count_as_hollow(self):
+        self.fixed_probabilities = self.probabilities(.05, abstain=.9)
+        result = self.classify_test(self.shape())
+        self.assertEqual((result['route'], result['hollow_probability']), ('escalate', .05))
+
+    def test_different_hollow_shapes_in_each_order_are_both_reported(self):
+        self.skip_first = ('independent-check',)
+        result = self.classify_test(self.shape())
+        self.assertEqual((result['route'], sorted(result['pass_shapes'])),
+                         ('flagged', ['accepts-any-failure', 'derived-from-code']))
 
     def test_classify_test_rejects_bad_input_offline_and_escalates_when_disabled(self):
         for bad in ({**self.shape(), 'claim': ' '}, {**self.shape(), 'family': 'defect-effect'},

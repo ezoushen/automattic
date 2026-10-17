@@ -42,14 +42,16 @@ Work per test by reading; nothing here changes code or depends on the language.
    fail. False alarms are expected here; dismissing them is part of this step.
 5. **Confirm by running**, only when the project's instructions allow its tests to run
    in a temporary worktree without extra setup. For each remaining flag, write a diff
-   that removes the rejecting check (or introduces the defect a pattern flag predicts)
-   and run [confirm-flags](#confirm-flags). For a test added with new behavior, a diff
-   that reverts the implementation change is the same kind of check.
+   that removes the rejecting check (or introduces the defect a pattern flag predicts),
+   name the text the test runner prints when the assertion fails, and run
+   [confirm-flags](#confirm-flags). For a test added with new behavior, a diff that
+   reverts the implementation change is the same kind of check.
 
 Mark each candidate CONFIRMED (a cited trace or re-read shows the defect passes, or a
 confirmation run did), FALSE-POSITIVE (dismissed with evidence, or a confirmation run
-failed the test) or UNVERIFIED (no checklist, no traceable rejection, or a confirmation
-run that could not decide). Say which findings were confirmed by running.
+failed at the expected assertion) or UNVERIFIED (no checklist, no traceable rejection, a
+failure before any assertion, or a confirmation run that could not decide). Say which
+findings were confirmed by running.
 
 ## Repair
 
@@ -74,12 +76,15 @@ python3 <plugin_root>/scripts/confirm-flags.py --repo <repo> --input <flags.json
   [--ref <head>] [--jobs <n>] [--timeout <seconds>]
 ```
 
-The input lists `{"id", "command", "diff"}`: the project's command for one test as an
-argument list, and a unified diff against `--ref`. Each flag runs in its own temporary
-detached worktree; the checkout is never modified and worktrees are removed afterwards.
-The unchanged test must pass first. `confirmed` means the test still passes with the
-diff applied, `dismissed` that it fails, `unverified` that the baseline failed, the diff
-did not apply or the run timed out.
+The input lists `{"id", "command", "diff", "fails_with"}`: the project's command for one
+test as an argument list, a unified diff against `--ref`, and optionally the text the
+runner prints when that assertion fails. Each flag runs in its own temporary detached
+worktree; the checkout is never modified, and worktrees and the commands' process groups
+are removed afterwards, also on interruption. The unchanged test must pass first.
+`confirmed` means the test still passes with the diff applied; `dismissed` that it fails
+and prints `fails_with`; `failed` that it fails otherwise, so read `output_tail` before
+deciding; `unverified` that the baseline failed, the diff did not apply, the command could
+not start or the run timed out.
 
 ## Not a finding
 

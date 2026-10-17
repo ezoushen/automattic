@@ -81,10 +81,10 @@ each alternative at the same depth. Measure a backend with the
 [shadow evidence](#evaluate-shadow-evidence) and calibration tools before enabling
 more families.
 
-`failure-cause`, `wake-triage` and `test-shape` are measured families
-([failure cause](#failure-cause-shadow-pilot), [wake triage](#wake-triage-shadow-pilot),
-[test effectiveness](#test-effectiveness-routing)), not phase boundaries: they need no
-checkpoint or skip and never change the host's action.
+`failure-cause` and `wake-triage` are shadow measurements ([failure cause](#failure-cause-shadow-pilot),
+[wake triage](#wake-triage-shadow-pilot)): they never change the host's action.
+`test-shape` [routes test review](#test-effectiveness-routing) and is measured the same way.
+None of the three is a phase boundary: they need no checkpoint or skip.
 
 ### Apply a checkpoint
 
@@ -436,10 +436,14 @@ Results, by `route`:
 - `trace`: an expected failure is checked only by code or type. Another rule may satisfy
   it, and only a code trace decides that, so no model is called. `expectations` lists
   the lines to trace. Measured: the model separated these no better than chance.
-- `protected` or `flagged`: both option orders agree and the averaged answer is at least
-  0.8 confident; `shape` names the pattern for a flag.
-- `escalate`: low confidence, disagreeing orders, a backend failure or a disabled
-  `test-shape` family. The agent re-reads the cited lines.
+- `protected`: both option orders chose `independent-check` and its averaged probability
+  is at least 0.8.
+- `flagged`: both orders chose a hollow shape (they may name different ones; `pass_shapes`
+  lists both, `shape` the averaged top choice) and the hollow shapes' averaged probability,
+  excluding abstention, is at least 0.8. The question that routes is protected versus
+  hollow; the threshold was measured on that quantity.
+- `escalate`: anything else, including an abstention in either order, a backend failure
+  or a disabled `test-shape` family. The agent re-reads the cited lines.
 
 The model chooses among `independent-check`, `derived-from-code`, `mock-echo`,
 `assertion-never-runs`, `checks-other-behaviour`, `partial-check` and

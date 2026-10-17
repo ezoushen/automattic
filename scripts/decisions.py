@@ -659,13 +659,17 @@ def classify_test(policy, data, *, context=None, trace=None):
     if 'probabilities' not in recorded:
         return {'route': 'escalate', 'reason': recorded.get('error', 'no answer'),
                 **{key: recorded[key] for key in ('decision_id', 'warnings') if key in recorded}}
-    hollow = 1 - recorded['probabilities']['independent-check']
+    probabilities = recorded['probabilities']
+    # The routing question is protected versus hollow; abstention counts toward neither side.
+    protected = probabilities['independent-check']
+    hollow = 1 - protected - probabilities['abstain']
     passes = recorded.get('pass_choices') or [recorded['choice']]
-    agree = len({choice == 'independent-check' for choice in passes}) == 1
-    confident = agree and max(hollow, 1 - hollow) >= ROUTE_CONFIDENCE
-    route = 'escalate' if not confident else 'protected' if hollow < .5 else 'flagged'
-    return {'route': route, 'shape': recorded['choice'], 'hollow_probability': round(hollow, 4), 'orders_agree': agree,
-            **{key: recorded[key] for key in ('decision_id', 'reused', 'warnings') if key in recorded}}
+    sides = {'abstain' if choice == 'abstain' else choice == 'independent-check' for choice in passes}
+    agree = len(sides) == 1 and 'abstain' not in sides
+    route = ('protected' if agree and protected >= ROUTE_CONFIDENCE else
+             'flagged' if agree and hollow >= ROUTE_CONFIDENCE else 'escalate')
+    return {'route': route, 'shape': recorded['choice'], 'pass_shapes': passes, 'hollow_probability': round(hollow, 4),
+            'orders_agree': agree, **{key: recorded[key] for key in ('decision_id', 'reused', 'warnings') if key in recorded}}
 
 
 def herdr_pane(pane, capture_path):
