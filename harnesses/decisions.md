@@ -458,7 +458,8 @@ Results, by `route`:
   excluding abstention, is at least 0.8. The question that routes is protected versus
   hollow; the threshold was measured on that quantity.
 - `escalate`: anything else, including an abstention in either order, a backend failure
-  or a disabled `test-shape` family. Collect what the answer lacked once, as `context`:
+  or a disabled `test-shape` family. A flagged test is not resubmitted; only an
+  escalation gets a second round. Collect what the answer lacked once, as `context`:
   the code of the default path, of other checks that could give the same result, and of
   helpers the test calls. Resubmit under the same assignment ID with `/round-2` appended.
   When nothing new can be collected, or round 2 escalates again, the agent re-reads the

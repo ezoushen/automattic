@@ -49,9 +49,10 @@ that looks fine at a glance is where hollow checks hide.
    check that rejects the test's input, remove it in your head and follow the same
    input onward. It is masked if another check still produces a failure the test
    accepts and no later assertion notices. Cite the rejecting and backup checks.
-4. **Re-read.** For a flagged or escalated test, read the cited lines again. Dismiss a
-   flag only with concrete contrary evidence, such as the line where the test would
-   fail. False alarms are expected here; dismissing them is part of this step.
+4. **Re-read.** For a flagged or escalated test, read the cited lines again. Dismiss
+   an escalation only with concrete contrary evidence, such as the line where the test
+   would fail. A flag you would dismiss is disputed: the reproducer decides it, given
+   your contrary evidence and the flagged shape. False alarms are expected here.
 Mark each candidate CONFIRMED (a cited trace or re-read shows the defect passes),
 FALSE-POSITIVE (dismissed with cited evidence) or UNVERIFIED (no checklist, or no
 traceable rejection). Confirming a finding changes no code and runs no test; a
