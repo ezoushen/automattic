@@ -437,7 +437,8 @@ Results, by `route`:
   it, and only a code trace decides that, so no model is called. `expectations` lists
   the lines to trace. Measured: the model separated these no better than chance.
 - `protected`: both option orders chose `independent-check` and its averaged probability
-  is at least 0.8.
+  is at least 0.8. It clears a test only when the agent's checklist raised no doubt;
+  a test the agent already suspects is re-read.
 - `flagged`: both orders chose a hollow shape (they may name different ones; `pass_shapes`
   lists both, `shape` the averaged top choice) and the hollow shapes' averaged probability,
   excluding abstention, is at least 0.8. The question that routes is protected versus

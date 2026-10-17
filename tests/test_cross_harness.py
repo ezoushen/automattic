@@ -242,6 +242,18 @@ class CrossHarness(unittest.TestCase):
         role = ' '.join((PLUGIN / 'roles/reproducer.md').read_text().split())
         assert 'When the assigned proof steps are reading-only, edit and run nothing' in role, role
 
+    def test_remediate_detection_covers_every_test(self):
+        import re
+        kind = (PLUGIN / 'skills/remediate/kinds/tautological-tests.md').read_text()
+        proof = ' '.join(re.search(r'^## Proof$(.+?)^## Repair$', kind, re.M | re.S).group(1).split())
+        assert 'every test in scope, not only the ones you suspect' in proof, proof
+        assert '`protected` clears a test only when its checklist raised no doubt' in proof, proof
+        skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
+        detect = ' '.join(re.search(r'^1\. \*\*Detect read-only\.\*\*(.+?)^2\. ', skill, re.M | re.S).group(1).split())
+        assert "run them for every test in scope during detection, before selecting candidates" in detect, detect
+        assert 'For a paths or whole-project scan, reconcile the file inventory' in detect, detect
+        assert 'scan every file no worker accounted for' in detect, detect
+
     def test_build_lock_excludes_releases_and_keeps_exit_status(self):
         with tempfile.TemporaryDirectory(prefix='automattic mutex ') as tmp:
             env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='0')

@@ -71,7 +71,11 @@ report that boundary for a separate implementation task.
    diff, and also read changed doc comments, which the audit intentionally
    excludes. A whole-project or paths scan discovers existing comments and
    docstrings by inventorying the source (language tokenizer/AST where available,
-   otherwise careful reading). Detection makes no source edits.
+   otherwise careful reading). When the kind's Proof has steps for every test,
+   run them for every test in scope during detection, before selecting candidates.
+   For a paths or whole-project scan, reconcile the file inventory against the
+   workers' coverage file by file, and scan every file no worker accounted for.
+   Detection makes no source edits.
 2. **Prove.** Apply the kind's Proof to each candidate. Retain the pinned inputs,
    exact command/trace or contract-to-code comparison and deciding observation.
    Run experiments only where the kind's Proof calls for them: temporary negative

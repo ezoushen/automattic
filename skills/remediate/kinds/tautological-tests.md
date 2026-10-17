@@ -21,6 +21,8 @@ Look for these shapes, then trace the actual assertions and setup before judging
 ## Proof
 
 Work per test by reading; nothing here changes code or depends on the language.
+Steps 1 and 2 apply to every test in scope, not only the ones you suspect: a test
+that looks fine at a glance is where hollow checks hide.
 
 1. **Checklist.** State the claim in one sentence, then record every assertion,
    including those made inside helpers the test calls, with the fields of the
@@ -30,7 +32,8 @@ Work per test by reading; nothing here changes code or depends on the language.
    collection is compared whole. Record observations with line numbers, not verdicts.
 2. **Route.** Run `classify-test` with the checklist. An expected failure checked
    only by code or type routes to the trace without a model call. Otherwise the
-   decision model answers: `protected` needs nothing more, `flagged` names a shape,
+   decision model answers: `protected` clears a test only when its checklist raised no
+   doubt (a test you already suspect is re-read whatever the route), `flagged` names a shape,
    and `escalate` (low confidence, orders disagree, or the model is disabled)
    means you decide by reading the cited lines.
 3. **Trace a masked rule.** For each expected failure on the `trace` route, find the
