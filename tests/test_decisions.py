@@ -772,8 +772,9 @@ sys.stdout.write((root / name).read_text())
     EFFECT = {'family': 'defect-effect', 'claim': 'Retirement never closes the caller pane.',
               'defect': "-    require(pane != caller, 'Caller pane is not a cleanup target')\n+    pass",
               'checks': "self.cli('retire', ..., code=2)\nself.assertFalse(closed.exists())",
-              'outputs': {'real': 'register exit 0\nretire exit 2: Caller pane is not a cleanup target',
-                          'defect': 'register exit 0\nretire exit 2: Settle acceptance of a completed implementer before closing it'}}
+              'outputs': {'real': 'register exit 0\nready exit 0\nack exit 0\nretire exit 2: Caller pane is not a cleanup target',
+                          'defect': 'register exit 0\nready exit 0\nack exit 0\n'
+                                    'retire exit 2: Settle acceptance of a completed implementer before closing it'}}
 
     def test_test_shape_puts_the_claim_first_and_facts_last_and_hides_its_label(self):
         result = self.classify_test(self.SHAPE)
@@ -799,16 +800,22 @@ sys.stdout.write((root / name).read_text())
                                                       'defect': 'notification sent\nnotification sent'}))
         self.classify_test(dict(self.EFFECT, outputs={'real': 'debit\ncredit', 'defect': 'credit\ndebit'}),
                            'review/head-a/test-2')
-        duplicate, reordered = self.calls[0]['state'], self.calls[2]['state']
-        self.assertEqual(duplicate.split('Only with the defect')[1].count('notification sent'), 1)
-        self.assertNotIn('(nothing)', reordered.split('Only with the defect')[1])
+        self.assertIn('+notification sent', self.calls[0]['state'])
+        # A moved line keeps its neighbors, so debit-before-credit and debit-after-credit stay distinguishable.
+        real = 'start\ndebit\ncredit\naudit'
+        self.classify_test(dict(self.EFFECT, outputs={'real': real, 'defect': 'debit\nstart\ncredit\naudit'}),
+                           'review/head-a/test-3')
+        self.classify_test(dict(self.EFFECT, outputs={'real': real, 'defect': 'start\ncredit\naudit\ndebit'}),
+                           'review/head-a/test-4')
+        self.assertNotEqual(self.calls[4]['state'], self.calls[6]['state'])
 
     def test_defect_effect_shows_both_runs_and_needs_an_assessment(self):
         result = self.classify_test(self.EFFECT)
         state = self.calls[0]['state']
         self.assertTrue(state.startswith('Claim: Retirement never closes the caller pane.'))
         self.assertLess(state.index('Caller pane is not a cleanup target'), state.index('Settle acceptance'))
-        # Only the lines that differ between the runs are sent; shared output adds length, not evidence.
+        # Changed lines go with two lines of context; distant shared output adds length, not evidence.
+        self.assertIn(' ack exit 0', state)
         self.assertNotIn('register exit 0', state)
         self.assertEqual(set(self.calls[0]['questions']['defect-effect']['criteria']),
                          {'claimed-behaviour-changed', 'claimed-behaviour-intact', 'abstain'})

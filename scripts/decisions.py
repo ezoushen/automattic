@@ -638,16 +638,13 @@ def test_request(data):
                  + ('\n'.join(f'- {fact}' for fact in facts) if facts else '- none recorded'))
         return {'family': family, 'state': state, 'options': dict(TEST_SHAPES),
                 'instruction': 'Classify how this test checks the claimed behavior.'}
-    real, defect = outputs['real'].splitlines(), outputs['defect'].splitlines()
-    # Only differing lines, in order and with repeats: shared output dilutes the difference the judgment rests on.
-    changes = difflib.SequenceMatcher(None, real, defect, autojunk=False).get_opcodes()
-    only_real = '\n'.join(line for tag, i, j, _, _ in changes if tag != 'equal' for line in real[i:j]) or '(nothing)'
-    only_defect = '\n'.join(line for tag, _, _, i, j in changes if tag != 'equal' for line in defect[i:j]) or '(nothing)'
+    # Changed lines with two lines of context keep order, repeats and position; distant shared output only dilutes.
+    diff = list(difflib.unified_diff(outputs['real'].splitlines(), outputs['defect'].splitlines(), lineterm='', n=2))[2:]
     state = (f"Claim: {data['claim']}\n\nDefect applied to the code under test {untrusted}:\n```diff\n"
              f"{data['defect']}\n```\n\nThe test's assertions {untrusted}:\n```\n{data['checks']}\n```\n\n"
-             'The test passed in both runs. Output lines that differ between them:\n'
-             f"Only on the real code {untrusted}:\n{only_real}\n\n"
-             f"Only with the defect {untrusted}:\n{only_defect}")
+             'The test passed in both runs. Output diff from the real code to the defect, where - lines appear only '
+             f"on the real code and + lines only with the defect {untrusted}:\n```diff\n"
+             + ('\n'.join(diff) or '(no difference)') + '\n```')
     return {'family': family, 'state': state, 'options': dict(DEFECT_EFFECTS),
             'instruction': 'Decide whether the defect changed the behavior the claim describes.'}
 

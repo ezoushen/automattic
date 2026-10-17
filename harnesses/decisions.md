@@ -441,8 +441,8 @@ Skip a defect that changes only whitespace or comments.
 
 The helper puts the claim first and the facts or outputs last, frames code and
 outputs as untrusted text, and scores both option orders. For `defect-effect` it
-sends only the output lines that differ between the two runs, keeping their order
-and repeats, so supply complete outputs. The journal records the request as sent;
+sends a line diff of the two runs with two lines of context, so supply complete
+outputs. The journal records the request as sent;
 keep the input file with the review evidence. `test-shape` chooses among
 `independent-check`, `derived-from-code`, `mock-echo`, `assertion-never-runs`,
 `checks-other-behaviour`, `partial-check` and `accepts-any-failure`; `defect-effect`
