@@ -52,7 +52,7 @@ def stop(process):
 
 
 def run(command, cwd, timeout):
-    """Return (exit code or None, output tail, seconds); None means it timed out or could not start."""
+    """Return (exit code or None, full output, seconds); None means it timed out or could not start."""
     started = time.monotonic()
     # Starting and registering under the lock: a termination request either sees this process or prevents it.
     with LOCK:
@@ -66,7 +66,7 @@ def run(command, cwd, timeout):
         LIVE.add(process)
     try:
         output, _ = process.communicate(timeout=timeout)
-        return process.returncode, output[-1500:], time.monotonic() - started
+        return process.returncode, output, time.monotonic() - started
     except subprocess.TimeoutExpired:
         stop(process)
         process.communicate()
@@ -120,7 +120,7 @@ def main():
         code, output, seconds = baselines[tuple(flag['command'])]
         if code != 0:
             return {'status': 'unverified', 'reason': f'baseline {output}' if code is None else 'the baseline run of the unchanged test fails',
-                    'exit': code, 'seconds': round(seconds, 2), 'output_tail': output}
+                    'exit': code, 'seconds': round(seconds, 2), 'output_tail': output[-1500:]}
         path = worktree(f'flag-{index}')
         applied = git(path, 'apply', '--whitespace=nowarn', '-', input=flag['diff'] if flag['diff'].endswith('\n')
                       else flag['diff'] + '\n')
@@ -135,7 +135,7 @@ def main():
             status, reason = 'dismissed', 'the test fails at the expected point without the check'
         else:
             status, reason = 'failed', 'the test fails; read the output to see whether an assertion failed'
-        return {'status': status, 'reason': reason, 'exit': code, 'seconds': round(seconds, 2), 'output_tail': output}
+        return {'status': status, 'reason': reason, 'exit': code, 'seconds': round(seconds, 2), 'output_tail': output[-1500:]}
 
     try:
         commands = list(dict.fromkeys(tuple(flag['command']) for flag in flags))

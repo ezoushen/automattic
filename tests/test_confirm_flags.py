@@ -97,6 +97,17 @@ class ConfirmFlags(unittest.TestCase):
         self.assertEqual({key: row['status'] for key, row in results.items()}, {'import-error': 'failed', 'no-marker': 'failed'})
         self.assertIn('AttributeError', results['import-error']['output_tail'])
 
+    def test_the_failure_text_is_found_even_before_a_long_output_tail(self):
+        (self.repo / 'test_verbose.py').write_text(
+            "import sys, app\ntry:\n    app.size(101)\nexcept ValueError:\n    sys.exit(0)\n"
+            "print('ASSERTION FAILED')\nprint('x' * 5000)\nsys.exit(1)\n")
+        subprocess.run(['git', '-C', str(self.repo), 'add', '.'], check=True)
+        subprocess.run(['git', '-C', str(self.repo), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'verbose'],
+                       check=True)
+        results = self.confirm([self.flag('verbose', 'test_verbose.py', "raise ValueError('too big')",
+                                          fails_with='ASSERTION FAILED')])
+        self.assertEqual(results['verbose']['status'], 'dismissed')
+
     def test_only_the_supplied_diff_changes_the_worktree(self):
         results = self.confirm([{'id': 'tracked', 'command': [sys.executable, '-B', 'test_keeps_tracked_file.py'],
                                  'diff': delete_line('too big')}])
