@@ -28,14 +28,20 @@ that looks fine at a glance is where hollow checks hide.
    including those made inside helpers the test calls, with the fields of the
    [checklist contract](../../../harnesses/decisions.md#test-effectiveness-routing):
    where its expected value comes from, whether it can run, whether an expected
-   failure is checked by its reason or only by code or type, and whether a
-   collection is compared whole. Record observations with line numbers, not verdicts.
+   failure (any rejection, including a refused or degraded state) is checked by its
+   reason or only by code or type, how strictly it compares, and what it would see
+   if the claimed rule were removed: read the default path and the other checks the
+   same input reaches. Record observations with line numbers, not verdicts.
 2. **Route.** Run `classify-test` with the checklist. An expected failure checked
-   only by code or type routes to the trace without a model call. Otherwise the
-   decision model answers: `protected` clears a test only when its checklist raised no
-   doubt (a test you already suspect is re-read whatever the route), `flagged` names a shape,
-   and `escalate` (low confidence, orders disagree, or the model is disabled)
-   means you decide by reading the cited lines.
+   only by code or type routes to the trace, and a checklist where no claim assertion
+   tells the rule apart is flagged, both without a model call. Otherwise the decision
+   model answers: `protected` clears a test only when its checklist raised no doubt
+   (a test you already suspect is re-read whatever the route), `flagged` names a
+   shape, and `escalate` (low confidence, orders disagree, or the model is disabled)
+   gets one more round with the context it lacked, as the
+   [routing contract](../../../harnesses/decisions.md#test-effectiveness-routing)
+   describes. When nothing new can be collected or round 2 escalates, decide by
+   reading the cited lines.
 3. **Trace a masked rule.** For each expected failure on the `trace` route, find the
    check that rejects the test's input, remove it in your head and follow the same
    input onward. It is masked if another check still produces a failure the test

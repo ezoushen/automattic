@@ -776,7 +776,7 @@ sys.stdout.write((root / name).read_text())
     def assertion(**fields):
         return {'lines': '2', 'checks': 'discounted price equals expected', 'expected_source': 'literal',
                 'can_run': 'yes', 'failure_expected': 'no', 'failure_reason_checked': 'n/a',
-                'collection_compared': 'n/a', 'about_claimed_result': 'yes', **fields}
+                'comparison': 'exact', 'same_result_without_rule': 'no', 'about_claimed_result': 'yes', **fields}
 
     def shape(self, *assertions):
         return {'family': 'test-shape', 'claim': 'Silver members pay 85 percent of the price.',
@@ -799,13 +799,47 @@ sys.stdout.write((root / name).read_text())
         self.assertLess(state.index('def discounted'), state.index('expected from code-under-test'))
         self.assertEqual(set(self.calls[0]['questions']['test-shape']['criteria']),
                          {'independent-check', 'derived-from-code', 'mock-echo', 'assertion-never-runs',
-                          'checks-other-behaviour', 'partial-check', 'accepts-any-failure', 'abstain'})
+                          'checks-other-behaviour', 'partial-check', 'accepts-any-failure', 'same-as-default',
+                          'abstain'})
+        self.assertIn('without the claimed rule: the result changes', state)
+        self.assertIn('comparison: exact', state)
         self.assertEqual(len(self.calls), 2)
         self.assertEqual(journal.inspect(self.journal)['decisions'][0]['missing_evidence'], ['assessment'])
         # The fake service picks the first listed option, so the two orders disagree: the agent re-reads.
         self.assertEqual((result['route'], result['orders_agree'], result['hollow_probability']), ('escalate', False, .5))
         self.assertEqual(self.classify_test(self.shape())['decision_id'], result['decision_id'])
         self.assertEqual(len(self.calls), 2)
+
+    def test_a_checklist_showing_no_assertion_tells_the_rule_apart_is_flagged_without_inference(self):
+        data = self.shape(self.assertion(lines='3', same_result_without_rule='default'),
+                          self.assertion(lines='4', same_result_without_rule='other-rule'),
+                          self.assertion(lines='5', same_result_without_rule='no', about_claimed_result='no'))
+        result = self.classify_test(data)
+        self.assertEqual((result['route'], result['source'], result['lines']), ('flagged', 'checklist', ['3', '4']))
+        self.assertEqual(self.calls, [])
+
+    def test_protected_needs_a_claim_assertion_that_the_rule_changes(self):
+        self.fixed_choice = 'independent-check'
+        unknown = self.shape(self.assertion(same_result_without_rule='unknown'),
+                             self.assertion(lines='3', same_result_without_rule='default'))
+        self.assertEqual(self.classify_test(unknown, 'r/1')['route'], 'escalate')
+        self.assertEqual(self.classify_test(self.shape(self.assertion()), 'r/2')['route'], 'protected')
+        unchecked = self.shape(self.assertion(comparison='n/a'))
+        self.assertEqual(self.classify_test(unchecked, 'r/3')['route'], 'escalate')
+
+    def test_a_second_round_adds_the_collected_context_before_the_checklist(self):
+        data = {**self.shape(), 'context': 'def default_rate():\n    return 0.15'}
+        self.classify_test(data, 'r/round-2')
+        state = self.calls[0]['state']
+        self.assertIn('Further context', state)
+        self.assertLess(state.index('def discounted'), state.index('def default_rate'))
+        self.assertLess(state.index('def default_rate'), state.index('Assertion checklist'))
+        self.classify_test({**self.shape(), 'context': 'x' * 6001}, 'r/round-3', code=2)
+
+    def test_the_instruction_states_what_protects_a_claim(self):
+        self.classify_test(self.shape())
+        self.assertIn('would fail if the claimed rule were removed',
+                      self.calls[0]['questions']['test-shape']['instructions'])
 
     def test_agreeing_confident_answers_settle_the_test(self):
         self.fixed_choice = 'independent-check'
@@ -817,7 +851,7 @@ sys.stdout.write((root / name).read_text())
     @staticmethod
     def probabilities(independent=0.0, abstain=0.0, **shapes):
         names = ('derived-from-code', 'mock-echo', 'assertion-never-runs', 'checks-other-behaviour',
-                 'partial-check', 'accepts-any-failure')
+                 'partial-check', 'accepts-any-failure', 'same-as-default')
         return {'independent-check': independent, 'abstain': abstain, **{name: shapes.get(name.replace('-', '_'), 0.0)
                                                                        for name in names}}
 
@@ -826,12 +860,24 @@ sys.stdout.write((root / name).read_text())
                  (dict(independent=.17, abstain=.03, mock_echo=.8), 'flagged'),
                  (dict(independent=.21, mock_echo=.79), 'escalate'),
                  # Hollow shapes hold .81 in total, but both orders chose independent-check: not a flag.
-                 (dict(independent=.19, **{name: .135 for name in ('derived_from_code', 'mock_echo', 'assertion_never_runs',
-                                                                  'checks_other_behaviour', 'partial_check',
-                                                                  'accepts_any_failure')}), 'escalate'))
+                 (dict(independent=.19, **{name: .81 / 7 for name in ('derived_from_code', 'mock_echo',
+                                                                     'assertion_never_runs', 'checks_other_behaviour',
+                                                                     'partial_check', 'accepts_any_failure',
+                                                                     'same_as_default')}), 'escalate'))
         for n, (fields, route) in enumerate(cases):
             self.fixed_probabilities = self.probabilities(**fields)
             self.assertEqual(self.classify_test(self.shape(), f'r/{n}')['route'], route, fields)
+
+    def test_an_answer_recorded_before_an_option_existed_still_routes(self):
+        self.fixed_probabilities = self.probabilities(independent=.9, mock_echo=.1)
+        self.assertEqual(self.classify_test(self.shape())['route'], 'protected')
+        records = [json.loads(line) for line in self.journal.read_text().splitlines()]
+        for record in records:  # as journaled before same-as-default was an option
+            record['result']['probabilities'].pop('same-as-default')
+        self.journal.write_text(''.join(json.dumps(record) + '\n' for record in records))
+        reused = self.classify_test(self.shape())
+        self.assertEqual((reused['route'], reused['reused']), ('protected', True))
+        self.assertEqual(len(self.calls), 2)
 
     def test_abstaining_answers_escalate_and_never_count_as_hollow(self):
         self.fixed_probabilities = self.probabilities(independent=.05, abstain=.9, mock_echo=.05)
@@ -842,7 +888,7 @@ sys.stdout.write((root / name).read_text())
         self.skip_first = ('independent-check',)
         result = self.classify_test(self.shape())
         self.assertEqual((result['route'], sorted(result['pass_shapes'])),
-                         ('flagged', ['accepts-any-failure', 'derived-from-code']))
+                         ('flagged', ['derived-from-code', 'same-as-default']))
 
     def test_classify_test_rejects_bad_input_offline_and_escalates_when_disabled(self):
         for bad in ({**self.shape(), 'claim': ' '}, {**self.shape(), 'family': 'defect-effect'},
@@ -850,6 +896,9 @@ sys.stdout.write((root / name).read_text())
                     {**self.shape(), 'claim': []}, {**self.shape(), 'assertions': []},
                     {**self.shape(), 'assertions': [self.assertion()] * 41},
                     self.shape(self.assertion(can_run='maybe')), self.shape({'lines': '2'}),
+                    self.shape(self.assertion(comparison='whole')),
+                    self.shape(self.assertion(same_result_without_rule='maybe')),
+                    self.shape({**self.assertion(), 'collection_compared': 'n/a'}),
                     self.shape({**self.assertion(), 'extra': 'x'}), self.shape(self.assertion(checks='x' * 301))):
             self.classify_test(bad, code=2)
         self.assertEqual(self.calls, [])
