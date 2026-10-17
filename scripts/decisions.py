@@ -645,6 +645,9 @@ def test_request(data):
              'The test passed in both runs. Output diff from the real code to the defect, where - lines appear only '
              f"on the real code and + lines only with the defect {untrusted}:\n```diff\n"
              + ('\n'.join(diff) or '(no difference)') + '\n```')
+    if len(state) > 16000:
+        raise ValueError(f'The output diff makes the request {len(state)} characters, over 16000; '
+                         'trim the outputs to the lines around the difference')
     return {'family': family, 'state': state, 'options': dict(DEFECT_EFFECTS),
             'instruction': 'Decide whether the defect changed the behavior the claim describes.'}
 

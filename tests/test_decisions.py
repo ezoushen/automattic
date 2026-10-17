@@ -809,6 +809,14 @@ sys.stdout.write((root / name).read_text())
                            'review/head-a/test-4')
         self.assertNotEqual(self.calls[4]['state'], self.calls[6]['state'])
 
+    def test_defect_effect_rejects_a_diff_over_the_request_budget_with_a_trim_hint(self):
+        # Every field is within its own bound; diff markers and context push the composed request over.
+        data = dict(self.EFFECT, defect='- emit(A)\n+ emit(B)\n' * 150, checks="assert value == 'A'\n" * 150,
+                    outputs={'real': 'A\n' * 1500, 'defect': 'B\n\n\n' * 750})
+        self.assertIn('trim the outputs', self.classify_test(data, code=2))
+        self.assertEqual(self.calls, [])
+        self.assertFalse(self.journal.exists())
+
     def test_defect_effect_shows_both_runs_and_needs_an_assessment(self):
         result = self.classify_test(self.EFFECT)
         state = self.calls[0]['state']
