@@ -45,10 +45,14 @@ here depends on the language.
    protects that behavior. A setup error, import error, skip or crash before any
    assertion proves nothing. Passing makes the defect a survivor.
 5. **Judge survivors.** A survivor is a finding only if the defect changed the
-   claimed behavior. Compare the two runs' outputs against the claim: identical
-   output, or a difference outside the claim, means the defect is equivalent for
-   this test; drop it. When the `defect-effect` shadow pilot is enabled, record the
-   survivor with it before judging.
+   claimed behavior. Compare the two runs' outputs against the claim. A difference
+   outside the claim means the defect is equivalent for this test; drop it. Output
+   that is identical, or that still fails for another reason, can also mean another
+   rule decided the result and masked the claimed one. Then run one probe: the same
+   operation with an input that only the claimed rule should reject or change, every
+   other precondition valid. If the defect changes the probe's result, the test is
+   masked and the finding stands; if not, drop the defect. When the `defect-effect`
+   shadow pilot is enabled, record the survivor with it before judging.
 
 Retain for each candidate the claim, defect diff, commands, outputs and input
 identity. Mark it CONFIRMED (revert check passed, or a survivor changed the claimed
