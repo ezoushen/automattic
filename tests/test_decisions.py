@@ -784,12 +784,24 @@ sys.stdout.write((root / name).read_text())
         self.assertLess(state.index('expected = discounted'), state.index('def discounted'))
         self.assertTrue(state.rstrip().endswith('the function under test'))
         criteria = self.calls[0]['questions']['test-shape']['criteria']
-        self.assertEqual(set(criteria), set(decisions.TEST_SHAPES) | {'abstain'})
+        self.assertEqual(set(criteria), {'independent-check', 'derived-from-code', 'mock-echo', 'assertion-never-runs',
+                                         'checks-other-behaviour', 'partial-check', 'accepts-any-failure', 'abstain'})
         # Both option orders are scored, as for worker selection.
         self.assertEqual(len(self.calls), 2)
         self.assertEqual([key for key in self.calls[1]['questions']['test-shape']['criteria'] if key != 'abstain'],
                          list(reversed([key for key in criteria if key != 'abstain'])))
         self.assertEqual(journal.inspect(self.journal)['decisions'][0]['missing_evidence'], ['assessment'])
+        recorded = journal.inspect(self.journal, result['decision_id'])['decision']['result']['probabilities']
+        self.assertEqual((recorded['independent-check'], recorded['accepts-any-failure']), (.5, .5))
+
+    def test_defect_effect_keeps_changes_in_count_and_order(self):
+        self.classify_test(dict(self.EFFECT, outputs={'real': 'notification sent',
+                                                      'defect': 'notification sent\nnotification sent'}))
+        self.classify_test(dict(self.EFFECT, outputs={'real': 'debit\ncredit', 'defect': 'credit\ndebit'}),
+                           'review/head-a/test-2')
+        duplicate, reordered = self.calls[0]['state'], self.calls[2]['state']
+        self.assertEqual(duplicate.split('Only with the defect')[1].count('notification sent'), 1)
+        self.assertNotIn('(nothing)', reordered.split('Only with the defect')[1])
 
     def test_defect_effect_shows_both_runs_and_needs_an_assessment(self):
         result = self.classify_test(self.EFFECT)
@@ -799,7 +811,10 @@ sys.stdout.write((root / name).read_text())
         # Only the lines that differ between the runs are sent; shared output adds length, not evidence.
         self.assertNotIn('register exit 0', state)
         self.assertEqual(set(self.calls[0]['questions']['defect-effect']['criteria']),
-                         set(decisions.DEFECT_EFFECTS) | {'abstain'})
+                         {'claimed-behaviour-changed', 'claimed-behaviour-intact', 'abstain'})
+        # The fake service picks the first listed option, so each order yields a different certain answer.
+        recorded = journal.inspect(self.journal, result['decision_id'])['decision']['result']['probabilities']
+        self.assertEqual((recorded['claimed-behaviour-changed'], recorded['claimed-behaviour-intact']), (.5, .5))
         assessed = self.cli('decision_journal.py', 'assessment', '--journal', self.journal,
                             '--decision-id', result['decision_id'], '--actor', 'test host', '--source', 'objective',
                             '--expected', 'claimed-behaviour-changed', '--evidence', 'mutant.log',
@@ -812,6 +827,8 @@ sys.stdout.write((root / name).read_text())
         for bad in ({**self.SHAPE, 'claim': ' '}, {**self.SHAPE, 'family': 'recovery'},
                     {**self.SHAPE, 'notes': 'extra'}, {**self.SHAPE, 'test': 'x' * 6001},
                     {**self.SHAPE, 'facts': ['f'] * 21}, {**self.EFFECT, 'outputs': {'real': 'same'}},
+                    {**self.SHAPE, 'claim': []}, {**self.SHAPE, 'test': {}}, {**self.EFFECT, 'checks': ['x']},
+                    {**self.SHAPE, 'facts': 'line 1: one fact'}, {**self.EFFECT, 'outputs': {'real': 'a', 'defect': 2}},
                     {k: v for k, v in self.EFFECT.items() if k != 'defect'}):
             self.classify_test(bad, code=2)
         self.assertEqual(self.calls, [])
