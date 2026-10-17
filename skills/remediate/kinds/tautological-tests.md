@@ -31,7 +31,10 @@ that looks fine at a glance is where hollow checks hide.
    failure (any rejection, including a refused or degraded state) is checked by its
    reason or only by code or type, how strictly it compares, and what it would see
    if the claimed rule were removed: read the default path and the other checks the
-   same input reaches. Record observations with line numbers, not verdicts.
+   same input reaches. Record observations with line numbers, not verdicts. A
+   script may extract test bodies and code, but each field is what you observed by
+   reading that test; a generated or default value is not an observation. Answer
+   `unknown` only when the code does not settle it.
 2. **Route.** Run `classify-test` with the checklist. An expected failure checked
    only by code or type routes to the trace, and a checklist where no claim assertion
    tells the rule apart is flagged, both without a model call. Otherwise the decision

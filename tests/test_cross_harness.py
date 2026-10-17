@@ -248,6 +248,8 @@ class CrossHarness(unittest.TestCase):
         proof = ' '.join(re.search(r'^## Proof$(.+?)^## Repair$', kind, re.M | re.S).group(1).split())
         assert 'every test in scope, not only the ones you suspect' in proof, proof
         assert '`protected` clears a test only when its checklist raised no doubt' in proof, proof
+        assert 'a generated or default value is not an observation' in proof, proof
+        assert '`unknown` only when the code does not settle it' in proof, proof
         skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
         detect = ' '.join(re.search(r'^1\. \*\*Detect read-only\.\*\*(.+?)^2\. ', skill, re.M | re.S).group(1).split())
         assert "run them for every test in scope during detection, before selecting candidates" in detect, detect
