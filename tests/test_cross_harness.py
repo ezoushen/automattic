@@ -166,7 +166,7 @@ class CrossHarness(unittest.TestCase):
             ui = (path.parent / 'agents/openai.yaml').read_text()
             assert f'policy:\n  allow_implicit_invocation: {str(implicit).lower()}\n' in ui, path
         # Agent and job structure is checked by agent_defs (tests/test_agent_definitions.py).
-        for folder in ('skills', 'harnesses', 'agents', 'addons', 'flows', 'standards', 'runtime', 'hosts'):
+        for folder in ('skills', 'agents', 'addons', 'flows', 'standards', 'runtime', 'hosts'):
             for path in (PLUGIN / folder).rglob('*.md'):
                 for link in re.findall(r'\]\(([^)]+)\)', path.read_text()):
                     if '://' not in link and '<' not in link:

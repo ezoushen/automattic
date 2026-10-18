@@ -10,7 +10,6 @@ import unittest
 from unittest.mock import patch
 
 import support
-import journal_store
 from router_case import RouterCase, models
 
 

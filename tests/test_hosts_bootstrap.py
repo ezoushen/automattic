@@ -69,7 +69,7 @@ class Bootstrap(unittest.TestCase):
                     self.assertTrue(has_heading(ROOT / path, anchor), (trigger, named))
 
     def test_no_lower_document_links_the_bootstrap(self):
-        for folder in ('harnesses', 'hosts', 'agents', 'addons', 'flows', 'standards', 'runtime'):
+        for folder in ('hosts', 'agents', 'addons', 'flows', 'standards', 'runtime'):
             for path in (ROOT / folder).rglob('*.md'):
                 for line in path.read_text().splitlines():
                     for _, link in check_docs.links(line):
@@ -85,8 +85,7 @@ class Bootstrap(unittest.TestCase):
 
     def test_the_bootstrap_and_hosts_carry_no_recorded_debt(self):
         debt = json.loads((CHECKER / 'architecture.json').read_text())['debt']
-        owned = ('bootstrap.md', 'harnesses/README', 'hosts/', 'harnesses/claude/', 'harnesses/codex/',
-                 'harnesses/pi/', 'harnesses/opencode/', 'harnesses/herdr', 'harnesses/executors/')
+        owned = ('bootstrap.md', 'hosts/')
         self.assertEqual([link for link in debt['links'] if any(part.startswith(owned) for part in link.split(' -> '))], [])
 
 
