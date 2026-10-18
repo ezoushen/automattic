@@ -32,6 +32,7 @@
     "tests/test_pre_push_signals.py",
     "tests/hook_case.py",
     "tests/test_agent_definitions.py",
+    "tests/test_architecture_docs.py",
     "tests/test_architecture_rules.py",
     "tests/test_import_direction.py",
     "tests/test_fold_check.py"

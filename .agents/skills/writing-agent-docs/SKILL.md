@@ -11,6 +11,7 @@ Run the checker on every change, then apply the [practices](#practices) to what 
 Contents:
 - [Run the checker](#run-the-checker)
 - [Fix what it reports](#fix-what-it-reports)
+- [Extend the architecture](#extend-the-architecture)
 - [Practices](#practices)
 - [Sources](#sources)
 
@@ -66,6 +67,36 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `stale-name` | Text names a `.md` file that exists nowhere | Link the doc that now holds it, or add a generic project name to `known_names` |
 | `dated`, `backslash`, `person` | Time-bound wording, Windows path, first/second-person description | Reword |
 | `description-budget` | Skill descriptions over the local budget in config | Shorten descriptions |
+
+## Extend the architecture
+
+Layers, top first: skills and hooks; `bootstrap.md`; flows (`flows/<flow>/`);
+`agents/`; `standards/`; `hosts/`; `runtime/` modules; add-ons. A doc or script depends
+on its own module or a lower level, never on a sibling or a higher level, and a skill
+links no other skill. **Strict:** these direction rules, the first-read budget, the host
+shape and unmapped docs are errors with no recorded debt. **Room:** a new module
+joins `architecture.json` in a level of its own or beside siblings that need not link
+each other, so the order grows without loosening a rule. Run the checker and
+`scripts/test-all.sh` after each addition.
+
+- **Add a host:** create `hosts/<host>/` holding exactly `session.md` (read at session
+  start) and `workers.md` (read when launching); add the name to `HARNESSES` in
+  `scripts/agent_models.py`, register its session hint in the bootstrap or hook, and
+  never link the host files from shared docs (the `hosts` module is `unlinked`).
+- **Add an executor:** write `hosts/executors/<type>.md` and list it in that folder's
+  README; shared docs name an executor only through the configuration.
+- **Add an agent:** write `agents/<name>.md` with permissions, principles ending in
+  `shown by:` and core skills; the agent holds only what every one of its jobs shares.
+- **Add a job:** write `flows/<flow>/jobs/<job>.md` naming its agent, inputs, finish
+  line and return; the name is unique across flows. Detail only some jobs need
+  belongs here, not in the agent.
+- **Add a kind:** write `standards/kinds/<kind>.md` and link it from the agent or
+  job that applies it.
+- **Add a standard:** write `standards/<name>.md`, mapped to the `standards` module,
+  and link it from the agents and flows that follow it.
+- **Add a flow:** create `flows/<flow>/` with a procedure and a folder index, add the
+  module to `architecture.json` at its level, name the flow in the pipeline map, and
+  keep its skill a thin entry that links the procedure.
 
 ## Practices
 

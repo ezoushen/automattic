@@ -11,6 +11,7 @@ Contents:
 - [The outer loop](#the-outer-loop)
 - [Failure modes and where the loop catches them](#failure-modes-and-where-the-loop-catches-them)
 - [Re-entry](#re-entry)
+- [Flows](#flows)
 - [Matt Pocock's skills underneath](#matt-pococks-skills-underneath)
 - [Left to the human](#left-to-the-human)
 - [Delivery composition](#delivery-composition)
@@ -99,6 +100,17 @@ human-authorized merge by the orchestrator.
   row.
 - A veto or a steering answer is recorded where `/automattic:mandate` establishes authority, so the
   same question is decided, not asked, next time.
+
+## Flows
+
+Each phase skill is a thin entry over a flow folder; shared runtime rules sit below the flows.
+
+- [Planning](../../flows/planning/authority.md): authority, the question filter, the ledger record and refinement.
+- [Board](../../flows/board/board.md): tracker conventions, scope and the project loop.
+- [Delivery](../../flows/delivery/dispatch.md): dispatch, housekeeping, PR and the ticket and merge-conflict jobs.
+- [Review](../../flows/review/review.md): the shared review procedure and its jobs.
+- [Remediation](../../flows/remediation/procedure.md): the audit procedure and job.
+- [Setup](../../flows/setup/procedure.md): the configuration procedure.
 
 ## Matt Pocock's skills underneath
 

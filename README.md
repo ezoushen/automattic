@@ -12,9 +12,11 @@ separate copies of skills or scripts.
 
 | Path | Owns |
 |---|---|
-| `skills/` | Explicit workflow, briefing and settings skills; automatically selectable decision, routing, writing and housekeeping skills |
+| `skills/` | Thin entry skills: explicit workflow, briefing and settings skills; automatically selectable decision, routing, writing and housekeeping skills. A skill names its flow or runtime doc and links no other skill |
 | `scripts/` | Scheduler, optional build mutex, worker/decision resolution, calibration and runnable checks |
 | `bootstrap.md` | Session rules every host reads first, with the triggers table for rules that fire outside their owner |
+| `flows/delivery/`, `flows/review/`, `flows/remediation/` | Procedures by phase with their job files (`jobs/`): dispatch, housekeeping and PR; shared review; remediation audit |
+| `standards/` | What good looks like: PR description, code comments, documentation and the remediation kinds (`kinds/`) |
 | `hosts/claude/` | Claude session part and worker part (lifecycle and native settings controls) |
 | `hosts/codex/` | Codex session part, worker part (lifecycle and capacity) and hook registration |
 | `hosts/pi/` | Pi session part, worker part (shared-agent delegation) and bootstrap extension |
@@ -29,15 +31,29 @@ separate copies of skills or scripts.
 | `hooks/` | Shared session-start hook; Claude hook registration |
 | `plugin.json`, `.claude-plugin/`, `.codex-plugin/` | Portable metadata and compatibility registration |
 
-The harness bootstrap injects the paths of `bootstrap.md` and the active host's session
+The host bootstrap injects the paths of `bootstrap.md` and the active host's session
 part. Phase skills load them before acting; code-comments and housekeeping also work independently. Codex workers use their native child-agent tools with an
 explicit agent and job paths; no imported agent copies or orchestration server is
-needed. All three workflow harnesses load the same shared skill files.
+needed. All three workflow hosts load the same shared skill files.
 
 Codex planning loads a short session part; worker lifecycle and peer messaging are
 loaded only for dispatch or worker assignments. Children can exchange concrete
 findings through native messaging while the orchestrator retains ownership of
 scheduling and integration.
+
+## Architecture
+
+The Markdown is layered so a reader follows links in one direction. Entry skills and
+hooks sit on top; below them come `bootstrap.md`, the flows (delivery and remediation, review,
+planning, board and setup), `agents/`, `standards/`, `hosts/` and the `runtime/` modules
+(workers, checks, routing, resources, decisions, config). A doc links only its own module or
+a lower one, no skill links another, and `scripts/` and `hooks/` import under the same order.
+`.agents/skills/writing-agent-docs/architecture.json` records the order; the doc checker
+and `tests/test_import_direction.py` enforce it with no recorded debt.
+
+To add a host, executor, agent, job, kind, standard or flow, follow
+[extend the architecture](.agents/skills/writing-agent-docs/SKILL.md#extend-the-architecture),
+which holds the rules for agents and contributors alike.
 
 ## Requirements and usage
 
@@ -59,7 +75,7 @@ its required presentation reference is packaged with the plugin.
 
 Default sub-agent execution requires native child tools (Pi uses
 pi-subagents); configured executors require their selected tools/skills instead.
-All harnesses apply the shared resolver's model/thinking settings and retain native
+All hosts apply the shared resolver's model/thinking settings and retain native
 defaults for omitted fields. Adapters translate settings into native controls;
 workload labels do not select models.
 
@@ -114,7 +130,7 @@ codex plugin add automattic@automattic-dev
 The installer copies a snapshot. For development on this machine,
 `~/.codex/plugins/cache/automattic-dev/automattic/0.3.0` is a real directory whose
 workflow directories are symlinks into this checkout, including `skills`, `agents`,
-`harnesses`, `hosts`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`, and
+`flows`, `runtime`, `standards`, `hosts`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`, and
 the top-level `bootstrap.md` file is a symlink too.
 Its `.codex-plugin/` directory and
 small `plugin.json` registration are regular files/directories, copied from this
@@ -129,7 +145,7 @@ session to refresh loaded instructions and hooks; existing conversations
 may retain earlier instructions. Review any native hook-trust prompt. A reinstall
 or version change may replace the links; verify them afterward. Refresh the small
 registration when the Codex manifest changes and add a link when introducing a new
-top-level package entry; `hosts/` and `bootstrap.md` are such entries, so link both in an
+top-level package entry; `flows/`, `runtime/`, `standards/`, `hosts/` and `bootstrap.md` are such entries, so link each in an
 existing cache directory before starting a session. Check installation with
 `codex plugin list --marketplace automattic-dev --json` and the native readers below.
 Also check runtime `skills/list` and `hooks/list`: a listed installation alone does
@@ -148,7 +164,7 @@ Keep an existing matching symlink; do not overwrite a different installation.
 For the earlier link to this repository's root, retarget only that verified
 development symlink to `skills/`. Pi discovers skills recursively; restricting the
 link prevents optional add-on skills elsewhere in the repository from loading.
-Re-point an extension symlink that still targets the earlier `harnesses/pi/bootstrap.ts`.
+Re-point an extension symlink that does not target `hosts/pi/bootstrap.ts`.
 Run `/reload` in Pi, then `/skill:dispatch <scope> --autofix` or
 `/skill:walkthrough <target>`. The extension supplies the bootstrap and Pi's session part before
 each turn; it registers no tools or commands. With explicit extension loading

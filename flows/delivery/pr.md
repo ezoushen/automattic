@@ -40,7 +40,7 @@ before proceeding. Preserve artifacts used by the PR's claims.
    `.scratch/<slug>/pr.md`, run its self-check, and present it as a brief. Carry forward existing
    description/publication approval; obtain only a still-required decision.
    An unrelated reply or silence is not approval.
-4. **Push and open.** Record the approval path above. When publication is authorized, run
+4. **Push and open.** Record the [approval path](../board/approval-path.md). When publication is authorized, run
    `git push -u origin feat/<slug>` directly. Verify the remote branch matches the
    reviewed local tip, then run
    `gh pr create --base main --head feat/<slug> --title "<type>: <goal in one line>" --body-file .scratch/<slug>/pr.md`.
