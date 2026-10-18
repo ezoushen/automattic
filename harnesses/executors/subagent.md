@@ -4,7 +4,7 @@
 `"config": {}` are equivalent; provide `config.agent` only for a named delegate.
 
 Use the current host's delegation tool and lifecycle from its adapter. With empty
-`executor_config`, use its normal shared-role worker. A configured `agent` selects
+`executor_config`, use its normal profile for the job's agent. A configured `agent` selects
 that exact native profile/agent instead. Verify it exists and can fulfill the
 assignment before starting; do not substitute a generic worker on failure. Report
 availability failures to the coordinator for [pool recovery](../routing/recovery.md#feedback-and-recovery).

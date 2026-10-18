@@ -133,7 +133,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
 
 ## Definition of Ready
 
-An implementer with an empty context can build the ticket using its story,
+A builder with an empty context can build the ticket using its story,
 criteria with verifying commands/tests, dependency edges, accepted brief and
 applicable project instructions, with `CONTEXT.md` for vocabulary. The assignment
 fits one context window. Before reporting readiness, reconcile all
@@ -153,7 +153,7 @@ blocked_by: []
 touches: [<area>]
 devices: []
 model: standard
-implementer:
+worker:
 ---
 # NN: <title, a behaviour not a component>
 
@@ -173,6 +173,6 @@ implementer:
 
 ## Then
 
-`/automattic:dispatch` schedules the tickets on `blocked_by` and `touches`; its implementers
-follow the [implementer](../../roles/implementer.md) procedure, using `alignment.md`
+`/automattic:dispatch` schedules the tickets on `blocked_by` and `touches`; its builders
+follow the [ticket](../dispatch/jobs/ticket.md) job, using `alignment.md`
 as the spec.

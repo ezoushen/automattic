@@ -137,15 +137,15 @@ before choosing an investigation or finding grouping. Identify the layer and hea
 in its phase assignment and check that record before leaving the layer. This also
 applies without autofix; a clean, fully covered layer records an evidenced skip.
 
-Supply the [shared reviewer](../../roles/spec-reviewer.md) with absolute adapter,
-role, plugin, repo, worktree, report and scope-source paths; pinned base, diff_base,
+Assign a reviewer the [diff-review](jobs/diff-review.md) job with absolute adapter,
+agent, job, plugin, repo, worktree, report and scope-source paths; pinned base, diff_base,
 head, the full changed-file list, allowed behavior boundary and priority sources.
 Keep static reads pinned to Git objects or a stable checkout for the whole review.
 Do not share a mutable checkout with E2E that switches base/candidate or changes
 experimental inputs; a single startup HEAD check cannot protect subsequent reads.
 Dynamic checks need their own reserved stable view and restoration evidence.
 Assign one absolute evidence directory outside disposable worktrees and pass it
-to reviewers, reproducers, repairers and E2E runners. Write retained evidence there
+to every worker. Write retained evidence there
 from the start and verify report links resolve before accepting a result. A
 `report_transport: return` worker returns evidence for the orchestrator to persist
 within its permissions. Experiments still execute in the assigned worktree.
@@ -153,7 +153,7 @@ Pass the actual brief/spec when one exists; do not invent a spec or require tick
 for someone else's PR. Apply the [implementation review method](method.md) once for
 the eligible implementation batch; preserve both axes while Automattic owns coverage,
 evidence and disposition.
-The shared reviewer's documentation gate is mandatory: code comments and API docs
+The diff-review job's documentation gate is mandatory: code comments and API docs
 are source contracts, including unchanged docs invalidated by the diff. Record
 their coverage and `documentation_status` for the pinned head. Confirmed in-scope
 documentation defects block approval/delivery for every review; priority determines
@@ -174,7 +174,7 @@ checked under the layer dependencies. Record blocked dependent coverage explicit
 it cannot count as reviewed. Reopen only affected coverage when new evidence lands.
 Short progress updates do not replace the consolidated result.
 
-Use the [reproducer](../../roles/reproducer.md) for difficult/disputed findings.
+Assign a reviewer the [reproduce](jobs/reproduce.md) job for difficult/disputed findings.
 No source fixes during validation. Tests and experiments use the isolated worktree;
 retain evidence outside it and remove only the experiment edits you introduced.
 Record the command, working directory, exit status and diagnostic. A missing file
@@ -208,7 +208,7 @@ not scheduled" in a status message is not a decision.
 ## Optional repair
 
 Only with `--autofix`, assign confirmed in-scope findings in the agreed priority
-order to [repair](../../roles/repair.md). Include the exact allowed files/behaviors,
+order to a builder's [repair](jobs/repair.md) job. Include the exact allowed files/behaviors,
 priority authority and accepted test seams. No automatic fix for unverified claims,
 follow-ups, personal taste or unresolved design decisions. A materially wider fix
 returns for human alignment; meanwhile finish independent permitted work.
@@ -260,7 +260,7 @@ Record `review_base` and `review_diff_base` too; a changed base invalidates scop
 For `--autofix`, continue here in the same invocation. A clean review is an
 intermediate result, not a reason to stop and ask the user to run pipeline or PR.
 The orchestrator owns remaining gates after analytical and repair workers return;
-a read-only reviewer's role boundary does not transfer verification to the user.
+a read-only reviewer's permissions do not transfer verification to the user.
 
 Determine applicable gates from the accepted scope, project verification commands
 and, when present, the project loop file and selected tickets' `touches` union.
@@ -291,7 +291,7 @@ checkout. Finish intended tracked housekeeping changes before pinning that head.
 
 Prepare the per-check reuse/execute plan using
 [plan and accept checks](../../harnesses/checks/plan.md#plan-and-accept-checks), including
-implementation, review and repair evidence. Pass that plan to the E2E runner;
+implementation, review and repair evidence. Pass that plan to the e2e-gate job;
 preserve justified reuse in its assignment rather than replacing it with a demand
 for fresh execution of every gate. Missing run preconditions require fresh evidence
 from the affected checks; recomputing old results cannot establish them. Schedule
@@ -300,8 +300,8 @@ remains. A runtime estimate alone is not a permission boundary; honor explicit
 user budgets and resource limits. Ask for a decision only when a concrete boundary
 blocks execution or the user proposes an exception, keeping missing proof visible.
 
-For checks requiring execution, use the existing [E2E runner](../../roles/e2e-runner.md), supplying absolute adapter,
-role, plugin, repo, worktree, project-instruction and report paths, the reviewed
+For checks requiring execution, assign a verifier the [e2e-gate](jobs/e2e-gate.md) job, supplying absolute adapter,
+agent, job, plugin, repo, worktree, project-instruction and report paths, the reviewed
 head, applicable checks, and reusable evidence. Follow the same adapter, permission
 and native capacity checks as review workers. With no worker tools, run
 locally where permitted. Reserve required devices through the configured
@@ -325,12 +325,12 @@ Write the check-by-check evidence, reuse reasons, exclusions and gaps under `## 
 Before accepting a pass, verify the scenario's expected versus observed activity
 and invalid-run conditions, not just its exit code or the worker's summary.
 On resumption, apply [resume interrupted checks](../../harnesses/checks/plan.md#resume-interrupted-checks).
-Give each unfinished gate its next action and responsible role, or the concrete
+Give each unfinished gate its next action and responsible job, or the concrete
 blocker that prevents progress. "Awaiting stakeholder decision" needs an identified
 decision beyond executing already authorized verification.
 Set `e2e_status: passed` only when every applicable gate is satisfied or has an
 explicit project-approved omission; a verified absence of applicable E2E checks
-needs a reason. Set `e2e_head` to the validated head, `e2e_by` to the E2E runner run (or the
+needs a reason. Set `e2e_head` to the validated head, `e2e_by` to the e2e-gate run (or the
 orchestrator's run log where it ran the checks itself), and retain original execution
 heads for reused checks. Any unresolved failed check makes the aggregate `failed`;
 otherwise missing evidence/access or unresolved requirements make it `incomplete`.

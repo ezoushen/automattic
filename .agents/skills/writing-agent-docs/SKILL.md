@@ -1,6 +1,6 @@
 ---
 name: writing-agent-docs
-description: Checks and guides changes to the agent-facing Markdown in this repository (skills, roles, harness docs and adapters). Use when adding, splitting, moving or editing these docs or their links, and before committing such changes.
+description: Checks and guides changes to the agent-facing Markdown in this repository (skills, agents, jobs, harness docs and adapters). Use when adding, splitting, moving or editing these docs or their links, and before committing such changes.
 ---
 
 # Writing agent docs
@@ -70,11 +70,19 @@ possible: skill → bootstrap and adapter → leaf.
 **Link the file you mean.** Retarget a link when you move its text, and re-read the
 sentence around it: a link that used to name a whole file must now name the leaf
 that holds what the sentence promises. When one old link covers two leaves, link
-both. Every leaf needs an inbound link from a skill, role, adapter or folder index.
+both. Every leaf needs an inbound link from a skill, agent, job, adapter or folder index.
 
 **Move text, don't rewrite it, when restructuring.** Move whole sections and verify
 every old body line is still present. Then search the moved text for `above`,
 `below`, `this file` and old file names; those break silently.
+
+**Keep an agent file to what all its jobs share.** `agents/<name>.md` holds
+permissions, principles and core skills only. Every line must hold for every job of
+that agent; a rule that only some jobs need belongs in their
+`skills/<owner>/jobs/<job>.md`. End each principle with `shown by:` and the
+observable evidence that it was followed. State rules directly, without identity
+phrasing such as "you are" or "act as an expert". `tests/test_agent_definitions.py`
+checks the structure.
 
 **Keep host differences in adapters.** Shared docs state host-neutral rules; how a
 host reads files, waits or launches workers belongs in `harnesses/<host>/`.

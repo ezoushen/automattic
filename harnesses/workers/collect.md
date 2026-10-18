@@ -11,6 +11,10 @@ the report digest and requires the checked revision at `gate --stage accept
 immutable; snapshot a canonical report before its next authorized append. Later
 attempts retain their own report snapshots. Other evidence links and live runtime
 gates remain under the shared acceptance contract.
+A `completed` result also owes its job's `returns` report sections (real headings,
+outside code blocks) and, for a `writes: none` agent, the same HEAD and tracked
+changes it was registered with. Collection records any gap on the result; then
+`gate --stage accept` fails and recording acceptance is refused.
 
 For a checked result, use `collect --state ... --attempt ... --input
 /absolute/result.json` after native inspection and wait reconciliation. The input
@@ -29,8 +33,8 @@ contains `status`, checked `head`, existing immutable `report`, verification
 }
 ```
 
-For a completed implementer, `acceptance` goes inside `disposition` (see acceptance
-below); other roles omit it.
+For a completed attempt of a job with `acceptance: true` (`ticket`), `acceptance` goes
+inside `disposition` (see acceptance below); other jobs omit it.
 
 Collection persists the report and its digest, acknowledges only that attempt's
 wait/result receipts, then performs the chosen disposition. A completed collection
@@ -62,7 +66,7 @@ after the worker's session closed, once per attempt. Acceptance is the
 orchestrator's judgement, not the worker's `completed` claim; the
 [effort spend report](../../docs/effort-spend.md) counts accepted tickets from it.
 
-Closing or retiring a completed implementer attempt that is neither accepted nor
+Closing or retiring a completed `acceptance: true` attempt that is neither accepted nor
 declined settles it: the `closed` record, the `retire` input and the `collect`
 retire `disposition` each carry `"acceptance": {"decision": "accepted", "commit":
 "...", "evidence": ["..."]}` (nonempty evidence) once integrated, `{"decision":
@@ -75,9 +79,9 @@ after the session closed, and each excludes the other.
 
 Each collected attempt's outcome (result, acceptance or decline, reverts) also goes
 to a machine-wide ledger, `$XDG_STATE_HOME/automattic/outcomes.sqlite`, with its
-candidate and role, whatever routed it. `scripts/outcomes.py summary` counts
-successes, failures and pending attempts per role and candidate: an implementer
-succeeds when accepted, other roles when completed; a decline, revert or failed
+candidate, agent and job, whatever routed it. `scripts/outcomes.py summary [--agent <agent>]
+[--job <job>]` counts successes, failures and pending attempts per agent, job and
+candidate: an `acceptance: true` job succeeds when accepted, other jobs when completed; a decline, revert or failed
 result fails, and a blocked result, which waits on something outside the worker,
 counts neither way. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
 past decision journals and lifecycle state files once. A lifecycle attempt replaces

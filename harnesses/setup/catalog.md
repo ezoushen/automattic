@@ -1,10 +1,10 @@
 # Models and runtime routes
 
-## Configure a role
+## Configure an agent
 
 Define models by task-fit description and **runtime bindings**. Each binding holds
 that runtime's registered `id` and optional thinking policy. Define launch routes
-once under top-level `runtimes`, shared by every model using that runtime. Roles
+once under top-level `runtimes`, shared by every model using that runtime. Agents
 reference a model with `{"model":"sol"}` or list allowed models in a pool.
 
 Here `sol` is the catalog name, `codex` is the worker runtime, and `gpt-6.1-sol` is its
@@ -48,8 +48,8 @@ registered model ID. Replace illustrative local IDs with installed catalog value
     }
   },
   "agents": {
-    "implementer": {"candidates": ["sol", "glm"]},
-    "spec-reviewer": {"model": "sol"}
+    "builder": {"candidates": ["sol", "glm"]},
+    "reviewer": {"model": "sol"}
   }
 }
 ```
@@ -58,7 +58,7 @@ A model may also state `cost` (`subscription`, `free` or `local`) and `data`
 (`local`, `no-retention`, `provider` or `trains`). A model whose `data` is `trains`
 uses prompts to train the provider's models, so it is unavailable unless a
 configuration layer sets top-level `"allow_training": true`: a pool lists it in
-`unavailable_candidates` with that reason, and a role pinned to it fails. The last
+`unavailable_candidates` with that reason, and an agent pinned to it fails. The last
 layer that sets `allow_training` wins; set it only in the `.automattic/executors.json`
 of a repository whose code may be used that way.
 
@@ -80,14 +80,14 @@ host's route is never borrowed, even when its skill file exists on disk or its
 profile is selected. Caller keys already scope routes, so no separate
 `supported_runtimes` field is needed.
 
-Routing profiles override candidate/thinking by role and worker runtime; they do not create runtime capabilities.
+Routing profiles override candidate/thinking by agent and worker runtime; they do not create runtime capabilities.
 A model with no reachable binding is an inspectable exclusion. Unknown model or
 runtime references are configuration errors. The selected route still needs runtime
 preflight. Native availability, tools and supported settings must be established;
 configuration does not prove a provider or worker can execute.
 
 Model, runtime, profile and named executor definitions merge by name across user, project and session layers;
-each definition replaces the lower definition in full. Role entries, `router` and
+each definition replaces the lower definition in full. Agent entries, `router` and
 `decisions` also replace in full. The resolver reports `target_runtime`, `executor_context`, model/binding
 and executor sources; pool inspection includes each candidate's resolved route.
 These fields describe the requested route, not observed runtime identity.

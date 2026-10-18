@@ -165,7 +165,7 @@ class Retirement(WorkerLifecycleCase):
         report.write_text('Different report content\n')
         self.cli('gate', '--attempt', 'ticket-1/1', '--stage', 'accept', '--revision', 'head-1', code=1)
         self.record('closed', code=2, evidence=['native pane closure confirmed'])
-        report.write_text('Verified assignment report at head-1\n')
+        report.write_text('## Implemented\n\nVerified assignment report at head-1\n')
         self.record('closed', evidence=['native pane closure confirmed'], acceptance={'decision': 'deferred', 'reason': 'acceptance checks pending'})
         self.cli('gate', '--attempt', 'ticket-1/1', '--stage', 'work', code=1)
 

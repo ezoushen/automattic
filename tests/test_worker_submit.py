@@ -67,7 +67,7 @@ class Submission(WorkerLifecycleCase):
                     boundary.unlink()
 
     def test_submit_reads_codex_session_and_latest_turn_controls(self):
-        self.execution.write_text(json.dumps({'harness': 'codex', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'codex', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'gpt-6.1-sol', 'effort': 'high'}}))
         self.register(runtime='codex')
         native = self.root / 'native.jsonl'
@@ -83,7 +83,7 @@ class Submission(WorkerLifecycleCase):
                          {'runtime': 'codex', 'model': 'gpt-6.1-sol', 'effort': 'high'})
 
     def test_submit_reads_pi_controls_from_active_branch(self):
-        self.execution.write_text(json.dumps({'harness': 'pi', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'pi', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'}}))
         self.register(runtime='pi')
         native = self.root / 'native.jsonl'
@@ -103,7 +103,7 @@ class Submission(WorkerLifecycleCase):
                          {'runtime': 'pi', 'model': 'dgx/glm-5.3-flash', 'effort': 'high'})
 
     def test_submit_refuses_pi_provider_error_until_a_successful_probe(self):
-        self.execution.write_text(json.dumps({'harness': 'pi', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'pi', 'agent': 'builder', 'job': 'ticket',
             'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'}}))
         self.register(runtime='pi')
         native = self.root / 'native.jsonl'
@@ -129,7 +129,7 @@ class Submission(WorkerLifecycleCase):
         self.assertTrue((self.root / 'productive-work').exists())
 
     def test_submit_reads_opencode_assistant_controls_instead_of_requested_defaults(self):
-        self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'opencode', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'opencode/muse-spark-1.3-contributor-free',
                                                           'effort': 'high'}}))
         self.register(runtime='opencode')
@@ -148,7 +148,7 @@ class Submission(WorkerLifecycleCase):
                           'effort': 'high'})
 
     def test_submit_refuses_opencode_tool_error_until_a_clean_new_probe(self):
-        self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'opencode', 'agent': 'builder', 'job': 'ticket',
             'settings': {'model': 'opencode/muse-spark-1.3-contributor-free'}}))
         self.register(runtime='opencode')
         native = self.root / 'native-export.json'
@@ -173,7 +173,7 @@ class Submission(WorkerLifecycleCase):
         self.assertTrue((self.root / 'productive-work').exists())
 
     def test_submit_reads_opencode_2_export_controls(self):
-        self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'opencode', 'agent': 'builder', 'job': 'ticket',
             'settings': {'model': 'opencode/deepseek-v4.1-flash-free', 'effort': 'high'}}))
         self.register(runtime='opencode')
         self.submit_opencode_v2(self.opencode_v2_export([{'type': 'text', 'text': 'ready'}]))
@@ -182,7 +182,7 @@ class Submission(WorkerLifecycleCase):
         self.assertTrue((self.root / 'productive-work').exists())
 
     def test_submit_refuses_opencode_2_tool_error_and_foreign_session(self):
-        self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'opencode', 'agent': 'builder', 'job': 'ticket',
             'settings': {'model': 'opencode/deepseek-v4.1-flash-free'}}))
         self.register(runtime='opencode')
         failed = {'type': 'tool', 'name': 'read', 'state': {'status': 'error', 'error': {'message': 'denied'}}}
@@ -224,7 +224,7 @@ class Submission(WorkerLifecycleCase):
         self.record('submitted', evidence=['native.jsonl:2:accepted prompt'])
 
     def test_submit_refuses_opencode_provider_error_even_when_settings_match(self):
-        self.execution.write_text(json.dumps({'harness': 'opencode', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'opencode', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'opencode/muse-spark-1.3-contributor-free'}}))
         self.register(runtime='opencode')
         native = self.root / 'native.json'
@@ -284,7 +284,7 @@ class Submission(WorkerLifecycleCase):
         self.assertTrue(self.cli('status')['attempts'][0]['verified'])
 
     def test_submit_leaves_unrequested_native_controls_inherited(self):
-        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'implementer', 'settings': {}}))
+        self.execution.write_text(json.dumps({'harness': 'claude', 'agent': 'builder', 'job': 'ticket', 'settings': {}}))
         self.register()
         native = self.root / 'native.jsonl'
         native.write_text(json.dumps({'type': 'assistant', 'sessionId': 'native-1', 'cwd': str(self.root),
@@ -350,7 +350,7 @@ class Submission(WorkerLifecycleCase):
         self.assertFalse(self.record('startup', observed=observed, evidence=['native.jsonl:1'])['verified'])
         self.assertTrue(self.record('startup', observed=observed, evidence=['native.jsonl:1'],
                                    model_alias_evidence=['installed catalog binds sonnet to claude-sonnet-native'])['verified'])
-        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'implementer', 'settings': {}}))
+        self.execution.write_text(json.dumps({'harness': 'claude', 'agent': 'builder', 'job': 'ticket', 'settings': {}}))
         self.register('ticket-2/1', 'ticket-2', 'native-2', 'pane-2')
         self.record('startup', 'ticket-2/1', observed={'runtime': 'claude'}, evidence=['native.jsonl:2'])
         self.assertEqual(self.cli('status')['attempts'][1]['requested'], {'runtime': 'claude'})
@@ -363,9 +363,9 @@ class Submission(WorkerLifecycleCase):
         self.acknowledge()
         self.record('retain', reason='Pending repair', next_use='same-ticket repair recheck', evidence=['phase report'])
         self.register('ticket-2/1', 'ticket-2', 'native-1', 'pane-2', code=2)
-        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'spec-reviewer', 'settings': {}}))
+        self.execution.write_text(json.dumps({'harness': 'claude', 'agent': 'reviewer', 'job': 'diff-review', 'settings': {}}))
         self.register('ticket-1/review', 'ticket-1', 'native-1', 'pane-2', code=2)
-        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'claude', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'sonnet', 'effort': 'high'}}))
         self.register('ticket-1/2')
         self.assertFalse(self.cli('status')['attempts'][1]['verified'])

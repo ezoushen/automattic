@@ -84,7 +84,7 @@ class Profiles(RouterCase):
         result = self.resolve(target_runtime='codex', eligible_candidates=['luna'], selection=self.choose('luna'))
         self.assertEqual(result['candidate'], 'luna')
         self.assertEqual(result['fallback_from'], 'sol')
-        self.data['agents']['implementer']['fallback'] = False
+        self.data['agents']['builder']['fallback'] = False
         self.save()
         with self.assertRaisesRegex(ValueError, 'fallback'):
             self.resolve(target_runtime='codex', eligible_candidates=['luna'], selection=self.choose('luna'))
@@ -119,7 +119,7 @@ class Profiles(RouterCase):
         self.assertNotIn('settings', result)
 
     def test_profile_selection_is_explicit_not_host_or_herdr_name(self):
-        self.data['profiles'] = {'herdr': {'implementer': {'codex': {'candidate': 'sol'}}}}
+        self.data['profiles'] = {'herdr': {'builder': {'codex': {'candidate': 'sol'}}}}
         self.save()
         self.assertEqual(self.resolve()['router']['type'], 'skill')
         self.assertEqual(self.resolve(config_profile='herdr', target_runtime='codex')['candidate'], 'sol')
@@ -128,7 +128,7 @@ class Profiles(RouterCase):
 
     def test_router_and_profile_layering_and_session_resume(self):
         self.profile({'codex': {'candidate': 'sol'}})
-        self.project.write_text(json.dumps({'profiles': {'balanced': {'implementer': {
+        self.project.write_text(json.dumps({'profiles': {'balanced': {'builder': {
             'codex': {'candidate': 'luna'}}}}}))
         self.assertEqual(self.resolve(target_runtime='codex')['candidate'], 'luna')
         models.save_session(self.root, 'one', {'router': {'type': 'skill', 'skill': 'my:router'}})
@@ -138,7 +138,7 @@ class Profiles(RouterCase):
         self.assertEqual(self.resolve(session_id='one', target_runtime='codex')['candidate'], 'luna')
 
     def test_old_profiles_and_pool_defaults_have_migration_diagnostics(self):
-        for config in ({'agents': {'implementer': {'default': 'sol', 'candidates': ['sol']}}},
+        for config in ({'agents': {'builder': {'default': 'sol', 'candidates': ['sol']}}},
                        {'profiles': {'codex': {'agents': {}}}}):
             with self.subTest(config=config), self.assertRaisesRegex(ValueError, 'migrat'):
                 models.validate_execution_config(config, 'fixture')
@@ -167,7 +167,7 @@ class Profiles(RouterCase):
 
     def test_target_runtime_applies_to_fixed_catalog_references(self):
         self.data['models']['opus']['runtimes']['codex'] = {'id': 'codex/opus'}
-        self.data['agents']['implementer'] = {'model': 'opus'}
+        self.data['agents']['builder'] = {'model': 'opus'}
         self.save()
         self.assertEqual(self.resolve(target_runtime='codex')['settings'], {'model': 'codex/opus'})
 
@@ -178,7 +178,7 @@ class Profiles(RouterCase):
         for entry in (None, native, {'candidates': {'native': native}},
                       {'candidates': {'external': external}}):
             with self.subTest(entry=entry):
-                self.data['agents']['implementer'] = entry
+                self.data['agents']['builder'] = entry
                 self.save()
                 with self.assertRaisesRegex(ValueError, 'target runtime requires'):
                     self.resolve(target_runtime='codex')
@@ -199,7 +199,7 @@ class Profiles(RouterCase):
         import sys
         result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
                                  '--repo', str(self.root), '--user-executors', str(self.user),
-                                 '--harness', 'claude', '--role', 'implementer', '--route', '--profile'],
+                                 '--harness', 'claude', '--job', 'ticket', '--route', '--profile'],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
         self.assertIn('Select a candidate', result.stderr)

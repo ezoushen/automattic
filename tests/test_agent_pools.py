@@ -42,11 +42,11 @@ class Pools(unittest.TestCase):
             'local': {'description': 'Local model through an installed Pi delegate.',
                       'executor': {'type': 'subagent', 'config': {'agent': 'local-pi'}},
                       'models': {'mode': 'inherit'}}}}
-        self.project.write_text(json.dumps({'agents': {'implementer': self.pool}}))
+        self.project.write_text(json.dumps({'agents': {'builder': self.pool}}))
 
     def resolve(self, task=None, **kwargs):
         return models.resolve_execution(self.root, self.root / 'absent-models.json', self.user,
-                                        'codex', 'implementer', task or {}, **kwargs)
+                                        'codex', 'builder', task or {}, **kwargs)
 
     def test_joint_choice_and_native_inheritance(self):
         result = self.resolve(candidate='luna')
@@ -89,7 +89,7 @@ class Pools(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.resolve(eligible_candidates=[])
         self.pool['fallback'] = False
-        self.project.write_text(json.dumps({'agents': {'implementer': self.pool}}))
+        self.project.write_text(json.dumps({'agents': {'builder': self.pool}}))
         with self.assertRaises(ValueError):
             self.resolve(selection={'candidate': 'luna', 'reason': 'Chosen before outage.'}, eligible_candidates=['sol'])
 
@@ -112,7 +112,7 @@ class Pools(unittest.TestCase):
         self.pool['candidates']['model-only'] = {'executor': {'type': 'skill', 'config': {
             'skill': 'local-runner', 'instruction': 'Use the registered local worker.'}},
             'models': {'mode': 'override', 'model': 'local/model'}}
-        self.project.write_text(json.dumps({'agents': {'implementer': self.pool}}))
+        self.project.write_text(json.dumps({'agents': {'builder': self.pool}}))
         result = self.resolve(selection={'candidate': 'fixed', 'thinking': 'high', 'reason': 'Pinned setting fits.'})
         self.assertEqual(result['settings'], {'effort': 'high'})
         self.assertEqual(self.resolve(candidate='model-only')['settings'], {'model': 'local/model'})
@@ -121,10 +121,10 @@ class Pools(unittest.TestCase):
 
     def test_profile_pool_and_session_null_mask(self):
         self.project.write_text(json.dumps({
-            'agents': {'implementer': self.pool},
-            'profiles': {'balanced': {'implementer': {'codex': {'candidate': 'luna'}}}}}))
+            'agents': {'builder': self.pool},
+            'profiles': {'balanced': {'builder': {'codex': {'candidate': 'luna'}}}}}))
         self.assertEqual(self.resolve()['status'], 'selection_required')
-        models.save_session(self.root, 'run', {'agents': {'implementer': None}})
+        models.save_session(self.root, 'run', {'agents': {'builder': None}})
         result = self.resolve(session_id='run', config_profile='balanced')
         self.assertEqual(result['model_mode'], 'existing')
         models.reset_session(self.root, 'run')
@@ -140,13 +140,14 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
                   'status': 'completed', 'report': json.dumps(request['models'])}))
 ''')
         executor = {'type': 'bash', 'config': {'argv': [sys.executable, str(script)]}}
-        models.save_session(self.root, 'run', {'agents': {'implementer': worker('before', executor=executor)}})
+        models.save_session(self.root, 'run', {'agents': {'builder': worker('before', executor=executor)}})
         frozen = self.root / 'resolved.json'
         frozen.write_text(json.dumps(self.resolve(session_id='run')))
-        models.save_session(self.root, 'run', {'agents': {'implementer': worker('after', executor=executor)}})
+        models.save_session(self.root, 'run', {'agents': {'builder': worker('after', executor=executor)}})
         assignment = self.root / 'assignment.json'
         assignment.write_text(json.dumps({'assignment_id': 'frozen-1', 'worktree': str(self.root),
-                                          'role_file': str(models.ROOT / 'roles/implementer.md'),
+                                          'agent_file': str(models.ROOT / 'agents/builder.md'),
+                                          'job_file': str(models.ROOT / 'skills/dispatch/jobs/ticket.md'),
                                           'head': 'fixture-head', 'prompt': 'Return received settings.'}))
         result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/bash_executor.py'),
                                  '--execution', str(frozen), '--assignment', str(assignment)],
@@ -169,23 +170,23 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
         bad.append(value)
         for value in bad:
             with self.subTest(value=value), self.assertRaises(ValueError):
-                models.validate_execution_config({'agents': {'implementer': value}}, 'test')
-        self.user.write_text(json.dumps({'agents': {'implementer': self.pool}}))
-        self.project.write_text(json.dumps({'agents': {'implementer': worker('project')}}))
+                models.validate_execution_config({'agents': {'builder': value}}, 'test')
+        self.user.write_text(json.dumps({'agents': {'builder': self.pool}}))
+        self.project.write_text(json.dumps({'agents': {'builder': worker('project')}}))
         self.assertEqual(self.resolve()['settings']['model'], 'project')
         with self.assertRaises(ValueError):
             self.resolve(candidate='sol')
 
     def test_session_resume_isolation_and_child_host(self):
         project_before = self.project.read_bytes()
-        config = {'agents': {'implementer': worker('session-model')}}
+        config = {'agents': {'builder': worker('session-model')}}
         missing = self.resolve(session_id='first')
         self.assertFalse(Path(missing['session']['path']).exists())
         models.save_session(self.root, 'first', config)
         frozen = self.resolve(session_id='first')
         self.assertEqual(frozen['settings']['model'], 'session-model')
         child = models.resolve_execution(self.root, self.root / 'absent.json', self.user,
-                                         'claude', 'implementer', {}, session_id='first')
+                                         'claude', 'builder', {}, session_id='first')
         self.assertEqual(child['settings']['model'], 'session-model')
         self.assertEqual(self.resolve(session_id='second')['status'], 'selection_required')
         other = self.root / 'another-repo'
@@ -195,7 +196,7 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
             self.assertEqual(self.resolve()['settings']['model'], 'session-model')
             self.assertEqual(self.resolve(session_id='second')['status'], 'selection_required')
         self.assertEqual(self.resolve(session_id='first', choice=worker('pin'))['settings']['model'], 'pin')
-        models.save_session(self.root, 'first', {'agents': {'implementer': worker('updated')}})
+        models.save_session(self.root, 'first', {'agents': {'builder': worker('updated')}})
         self.assertEqual(self.resolve(session_id='first')['settings']['model'], 'updated')
         self.assertEqual(frozen['settings']['model'], 'session-model')
         models.reset_session(self.root, 'first')
@@ -204,10 +205,10 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
         self.assertFalse(self.user.exists())
 
     def test_session_validation_preserves_existing_state(self):
-        path = models.save_session(self.root, 'run', {'agents': {'implementer': self.pool}})
+        path = models.save_session(self.root, 'run', {'agents': {'builder': self.pool}})
         before = path.read_bytes()
         with self.assertRaises(ValueError):
-            models.save_session(self.root, 'run', {'agents': {'implementer': {'default': 'unknown'}}})
+            models.save_session(self.root, 'run', {'agents': {'builder': {'default': 'unknown'}}})
         self.assertEqual(path.read_bytes(), before)
         record = json.loads(before)
         record['repo'] = str(self.root / 'wrong')
@@ -222,7 +223,7 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
 
     def test_cli_inspection_and_session_write(self):
         args = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
-                '--repo', str(self.root), '--harness', 'codex', '--role', 'implementer',
+                '--repo', str(self.root), '--harness', 'codex', '--job', 'ticket',
                 '--user-executors', str(self.user), '--route']
         def cli(*extra, ok=True):
             result = subprocess.run(args + list(extra), capture_output=True, text=True)
@@ -234,7 +235,7 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
         cli('--candidate', 'outside', ok=False)
         cli('--eligible-candidates', '', ok=False)
         config = self.root / 'session.json'
-        config.write_text(json.dumps({'agents': {'implementer': worker('session-model')}}))
+        config.write_text(json.dumps({'agents': {'builder': worker('session-model')}}))
         cli('--session', 'run', '--save-session', str(config))
         self.assertEqual(cli('--session', 'run')['settings']['model'], 'session-model')
         cli('--session', 'run', '--reset-session')

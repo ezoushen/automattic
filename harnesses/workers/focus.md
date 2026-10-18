@@ -20,8 +20,8 @@ needed for a decision, and retain all required evidence in the report, including
 complete report sections returned by read-only workers.
 
 Read each skill the assignment lists before the step it serves. Load another
-skill when a step needs it. Report each skill you loaded beyond your role file and
-the listed ones, with its reason, and any listed skill you never used. See [assignment skills](skills.md).
+skill when a step needs it. Report each skill you loaded beyond your agent and job files
+and the listed ones, with its reason, and any listed skill you never used. See [assignment skills](skills.md).
 
 ## Worker return and checkpoints
 
@@ -33,8 +33,8 @@ and workflow acceptance are separate: return a complete account of passed, faile
 and incomplete obligations; only verified passing evidence clears the workflow.
 Initial implementation owns scoped code and implementation checks. Assign applicable
 E2E explicitly to implementation or verification; reuse its valid evidence at the
-later handoff rather than running it twice because the role changed. Account for
-the whole ticket's criteria without making every later-phase gate the implementer's
+later handoff rather than running it twice because the job changed. Account for
+the whole ticket's criteria without making every later-phase gate the ticket job's
 return condition. Unassigned required checks need an owner before dispatch.
 
 On an estimate overrun, stalled approach or newly discovered defect, send a concise

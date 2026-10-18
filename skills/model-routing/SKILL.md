@@ -24,7 +24,7 @@ Surface its new warnings through the [decision skill](../decision/SKILL.md).
 At recovery checkpoints, choose the recovery action before worker reselection;
 context or environment repairs can retain the existing choice.
 
-Start with the supplied assignment, acceptance criteria and eligible role pool.
+Start with the supplied assignment, acceptance criteria and eligible agent pool.
 Compare model and native thinking together, using the catalog's task-fit descriptions,
 known tool/context support, uncertainty, consequences of mistakes and relevant
 verified outcomes. Weigh total completion cost, including repair, review, context

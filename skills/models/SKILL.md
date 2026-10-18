@@ -2,7 +2,7 @@
 name: models
 description: "Inspect, configure or reset worker models, routes, pools, decision opt-ins/calibration, routers, profiles and thinking bounds, including session overrides."
 disable-model-invocation: true
-argument-hint: "[request|show|set|reset] [role|router|decisions|profile|model-definition|runtime-definition|executor-definition] [--scope user|project|session] [--route] [--config-profile <name>] [runtime=claude|codex|pi|opencode] [--candidate <id>] [thinking=<label|JSON>]"
+argument-hint: "[request|show|set|reset] [agent|router|decisions|profile|model-definition|runtime-definition|executor-definition] [--scope user|project|session] [--route] [--config-profile <name>] [runtime=claude|codex|pi|opencode] [--candidate <id>] [thinking=<label|JSON>]"
 ---
 
 # models

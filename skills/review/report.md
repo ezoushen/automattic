@@ -108,7 +108,7 @@ evidence retains its execution head/source and the code/input/environment compar
 Record exclusions, explicit project omissions and unavailable or failed checks.
 On pause/resume retain completed iterations and the remaining work; explain any
 required restart. Distinguish execution, resource queueing and user-paused time.
-For each unfinished gate: next action and responsible role, or concrete blocker.
+For each unfinished gate: next action and responsible job, or concrete blocker.
 Read-only review may leave this not-run; autofix completes verification or records
 failed/incomplete status with concrete blockers. Never invent a passing run.
 ```

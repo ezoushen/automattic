@@ -40,13 +40,14 @@ class Capacity(unittest.TestCase):
         """Register a worker on the local `lane` backend."""
         self.number += 1
         execution = self.root / f'execution-{self.number}.json'
-        execution.write_text(json.dumps({'harness': 'pi', 'role': 'e2e-runner', 'candidate': 'ornith',
+        execution.write_text(json.dumps({'harness': 'pi', 'agent': 'verifier', 'job': 'e2e-gate', 'candidate': 'ornith',
                                          'settings': {'model': 'ornith'}, 'backend': 'lane',
                                          'capacity': dict({'slots': 2}, **capacity)}))
         return self.record(state or self.root / 'workers.sqlite', 'register', attempt, code=code,
                            assignment=attempt.split('/')[0], repo=str(self.root), worktree=str(self.root),
                            head='head-1', execution=str(execution), runtime='pi', worker=f'pane-{self.number}',
-                           native_session=f'native-{self.number}', owned=True)
+                           native_session=f'native-{self.number}', owned=True,
+                           packet=str(support.assignment_file(self.root, 'e2e-gate')))
 
     def collect(self, attempt, state=None):
         state = state or self.root / 'workers.sqlite'

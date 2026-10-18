@@ -15,14 +15,14 @@ the Python environment described in [executor configuration](../setup/executors.
 "<python>" "<plugin_root>/scripts/bash_executor.py" --execution "<resolved.json>" --assignment "<assignment.json>"
 ```
 
-The assignment requires nonempty `assignment_id`, absolute existing `worktree`
-and `role_file`, pinned `head`, and `prompt`. Include the usual scope, review base,
+The assignment requires nonempty `assignment_id`, absolute existing `worktree`,
+`agent_file` and `job_file`, pinned `head`, and `prompt`. Include the usual scope, review base,
 permissions and evidence requirements as additional assignment fields. The helper
 runs argv in that worktree and supplies this JSON on stdin:
 
 ```json
 {
-  "assignment": {"assignment_id": "review-1", "worktree": "/repo", "role_file": "/plugin/roles/spec-reviewer.md", "head": "pinned-sha", "prompt": "Review the assigned scope"},
+  "assignment": {"assignment_id": "review-1", "worktree": "/repo", "agent_file": "/plugin/agents/reviewer.md", "job_file": "/plugin/skills/review/jobs/diff-review.md", "head": "pinned-sha", "prompt": "Review the assigned scope"},
   "models": {"mode": "override", "model": "requested-id", "thinking": "high"}
 }
 ```

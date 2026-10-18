@@ -1,7 +1,6 @@
 {
   "docs": [
     "skills/**/*.md",
-    "roles/*.md",
     "harnesses/**/*.md",
     "agents/*.md",
     ".agents/skills/**/*.md"
@@ -26,15 +25,16 @@
     "tests/test_git_hooks.py",
     "tests/test_pre_push.py",
     "tests/test_pre_push_signals.py",
-    "tests/hook_case.py"
+    "tests/hook_case.py",
+    "tests/test_agent_definitions.py"
   ],
-  "code_doc_pattern": "(?:harnesses|skills|roles)/[\\w/-]+\\.md",
+  "code_doc_pattern": "(?:harnesses|skills|agents)/[\\w/-]+\\.md",
   "entry_points": [
     "skills/*/SKILL.md",
     "harnesses/*/adapter.md",
     "agents/*.md",
-    "roles/*.md",
-    ".agents/skills/*/SKILL.md"
+    ".agents/skills/*/SKILL.md",
+    "skills/*/jobs/*.md"
   ],
   "skill_files": [
     "skills/*/SKILL.md",
@@ -51,7 +51,7 @@
   "debt": {
     "skills/dispatch/SKILL.md": {
       "contents": true,
-      "bytes": 18135
+      "bytes": 18130
     },
     "skills/dispatch/board.md": {
       "contents": true
@@ -76,7 +76,7 @@
     },
     "skills/review/workflow.md": {
       "contents": true,
-      "bytes": 28516
+      "bytes": 28504
     }
   }
 }

@@ -76,7 +76,7 @@ class Outcomes(WorkerLifecycleCase):
         self.assertEqual((accepted['commit'], accepted['evidence']), ('merge-1', ['git log merge-1']))
         self.assertIn('already accepted', self.record('accepted', commit='merge-2', evidence=['log'], code=2))
 
-    def test_closing_a_completed_implementer_settles_its_acceptance(self):
+    def test_closing_a_completed_ticket_settles_its_acceptance(self):
         self.register()
         self.ready()
         self.collect()
@@ -125,8 +125,8 @@ class Outcomes(WorkerLifecycleCase):
                          ('criteria 2 unmet; replaced by attempt 2', []))
         self.assertIn('declined', self.record('accepted', 'ticket-3/1', commit='m', evidence=['log'], code=2))
 
-    def test_other_roles_close_without_an_acceptance_decision(self):
-        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'spec-reviewer',
+    def test_other_jobs_close_without_an_acceptance_decision(self):
+        self.execution.write_text(json.dumps({'harness': 'claude', 'agent': 'reviewer', 'job': 'diff-review',
                                              'settings': {'model': 'sonnet', 'effort': 'high'}}))
         self.register()
         self.ready()
@@ -167,7 +167,7 @@ class Outcomes(WorkerLifecycleCase):
         self.assertEqual((assessment['expected'], assessment['source'], assessment['evidence']),
                          (['done'], 'objective', [str(report)]))
 
-    def test_retiring_a_completed_implementer_settles_acceptance_before_closing_the_pane(self):
+    def test_retiring_a_completed_ticket_settles_acceptance_before_closing_the_pane(self):
         self.register()
         self.ready()
         self.collect()

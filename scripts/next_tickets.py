@@ -5,7 +5,7 @@
 
 No action: JSON candidates. No slug: all efforts. Other efforts still hold locks.
 Actions: --board, --counts, --check, --accept TICKET,
-         --can-verify TICKET, --delivery, --set TICKET status=VALUE (or implementer=ID).
+         --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID).
 Only --set may be combined with --counts.
 
 Tickets: .scratch/<slug>/issues/NN-title.md, with restricted YAML front matter
@@ -70,7 +70,7 @@ def load():
                     sys.exit(f"{path}: {key} must be a bracketed list")
             fm["path"] = str(path.relative_to(ROOT))
             tickets[fm["ticket"]] = fm
-        elif fm and set(fm) & {"blocked_by", "touches", "devices", "implementer"}:
+        elif fm and set(fm) & {"blocked_by", "touches", "devices", "worker"}:
             sys.exit(f"{path}: missing ticket front matter")
     return tickets
 
@@ -226,8 +226,8 @@ def accept(tickets, name):
 
 def set_field(tickets, name, assignment):
     key, equals, value = assignment.partition("=")
-    if not equals or key not in {"status", "implementer"} or any(c in value for c in "\r\n"):
-        sys.exit(f"{name}: --set accepts one-line status= or implementer= only")
+    if not equals or key not in {"status", "worker"} or any(c in value for c in "\r\n"):
+        sys.exit(f"{name}: --set accepts one-line status= or worker= only")
     if key == "status" and value not in STATUSES:
         sys.exit(f"{name}: status {value!r} is not one of {sorted(STATUSES)}")
     fm = tickets[name]

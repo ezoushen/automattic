@@ -21,10 +21,10 @@ Claude and Codex startup hooks, and Pi's bootstrap extension, identify the curre
 host for its adapter. Without that hint, select the harness explicitly under the
 [runtime bootstrap](../README.md). OpenCode currently requires explicit selection.
 
-Top-level `agents` defines shared role pools or intentional fixed instances.
+Top-level `agents` defines shared pools for `builder`, `reviewer` and `verifier`, or intentional fixed instances.
 `router` selects a routing skill, a System One decision model or a sparse named profile. See
 [routers and sparse profiles](../setup/routers.md#routers-and-sparse-profiles) for the
-configuration and omission semantics. A profile key such as `implementer.codex`
+configuration and omission semantics. A profile key such as `builder.codex`
 addresses the worker runtime, even when the host is Claude.
 Shared [decisions and calibration](../setup/routers.md#decision-backend) configure a reusable backend and
 explicit phase opt-ins. A decision-model worker router can use that backend;
@@ -46,20 +46,27 @@ selection completes. It is separate from routing `--config-profile`.
 Before every worker launch, the orchestrator runs:
 
 ```sh
-"<python>" "<plugin_root>/scripts/agent_models.py" --repo "<canonical-main-checkout>" --harness <host> --role <role> --route
+"<python>" "<plugin_root>/scripts/agent_models.py" --repo "<canonical-main-checkout>" --harness <host> --job <job> --route
 ```
+
+The job selects its agent; a launch route without `--job` is refused. Use
+`--agent <agent>` only to inspect or edit settings, such as `--list-candidates`.
+The worker's assignment text carries `adapter`, `agent_file`, `job_file`,
+`plugin_root`, `repo` and every input in the job's frontmatter, each as
+`name: value`. Registration checks that text (its `packet`) and refuses one that
+lacks an input; on Claude the launch hook checks the prompt the same way.
 
 Use plugin `.venv/bin/python` when present; otherwise use a Python environment
 with the required dependency if configuration is present. A `selection_required`
 result must complete [selection](../routing/choose.md) first; it has
 no launch settings. Then read the returned `executor_guide` and active host adapter.
 Resolution returns instructions/settings; it never launches a worker. Inspection
-is offline and read-only. An explicit `--assignment` can call the decision backend
+is offline and read-only. An explicit `--assignment` (compact routing text) can call the decision backend
 and update calibration monitoring state. Only explicit session save/reset
 operations change the session configuration.
 
 Agent precedence is **one-run choice → session → project → user → existing native**.
-Role entries replace in full. Model, runtime, routing profile and executor-type
+Agent entries replace in full. Model, runtime, routing profile and executor-type
 definitions merge by name across user → project → session, replacing each definition
 in full; `router` and `decisions` each replace the lower object in full.
 References expand after this merge.
@@ -76,7 +83,7 @@ saving it. Relative argv paths refer to the assigned worktree, not this config f
 When the result includes `candidate_pool`, follow [selection](../routing/choose.md)
 before launch. The configured router recommends model/thinking jointly; the resolver
 enforces configuration bounds. Adapters translate its returned settings to native
-controls; they do not choose models or supply role-based defaults. With no override, retain the
+controls; they do not choose models or supply agent-based defaults. With no override, retain the
 destination's native settings. Ticket `model: standard|deep` and legacy
 `sonnet|opus` values describe workload only and never select or promote a model.
 
@@ -116,15 +123,14 @@ the [decision recording procedure](../routing/report.md). A failed
 resolution never permits launching with omitted settings.
 
 Supply a unique assignment ID, canonical repo, assigned worktree, branch/head,
-pinned review base, absolute shared role/core paths, scope/priorities, task inputs,
+pinned review base, absolute agent and job file paths, scope/priorities, the job's inputs,
 [situational skills](skills.md), permissions, model policy/settings and expected evidence. Use fresh worker context.
 Carry the user's current allowance priority, required deliverable and deferred
 optional work in both the compact routing input and the worker assignment. Existing
 acceptance gates remain part of the deliverable. A quota concern does not imply a
 global model change; use the accepted priority when choosing this assignment.
-Include absolute adapter and role paths in the opening message, alongside any
-assignment-packet path. If only a packet path is supplied, open it directly to
-resolve those paths, then read the named adapter and role before acting. Include
+Send the whole assignment, the registered `packet` text, as the opening message;
+workers read the named adapter, agent and job files before acting. Include
 known source/test entry points and relevant prior evidence with its revision and
 applicability limits.
 Workers verify those anchors against their assigned checkout, then investigate

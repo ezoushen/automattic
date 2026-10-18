@@ -30,12 +30,12 @@ families need no checkpoint or check call: configuration is their record.
 | `worker-selection` | After preflight: which permitted model/thinking pair fits this assignment? | Existing router, pins, candidate eligibility and executor |
 | `review-triage` | After a review layer: which proposed grouping or next investigation fits the evidence? | Finding proof, all required coverage, priorities and comment policy |
 | `recovery` | At a blocker, confirmed review defect or failed required check: which permitted recovery action addresses the cause? | Attempt budget, safe handoff and unchanged acceptance gates |
-| `skill-selection` | Before a launch, per [open skill candidate](../workers/skills.md#open-candidates): load or skip? | Role core gates, user-named skills and the assignment's facts |
+| `skill-selection` | Before a launch, per [open skill candidate](../workers/skills.md#open-candidates): load or skip? | Agent core gates, user-named skills and the assignment's facts |
 | `delivery` | After assembling delivery evidence: which unresolved follow-up needs attention? | Verified tests/revisions and publication authorization |
 
 Worker and skill selection score both option orders and average them (`order_balanced`),
 so the result doesn't depend on how the host listed the options. It also carries the
-role's earlier outcomes from the journal and warns `missing_outcomes`. The worker
+agent and job's earlier outcomes from the journal and warns `missing_outcomes`. The worker
 lifecycle records outcomes for the attempts it registers; record any other
 outcome when the work is accepted or rejected. Phase families whose
 host-written options differ greatly in length return `option_imbalance`; describe
@@ -79,7 +79,7 @@ a fabricated decision or backend call. Repair omitted bookkeeping from retained
 evidence or report its capture gap; a worker-selection entry does not account for
 a separate phase choice.
 
-The family follows the question, not the slash command or the assigned role.
+The family follows the question, not the slash command or the assigned agent or job.
 `review-triage` chooses the next investigation/grouping after a review layer;
 `recovery` chooses how to address a confirmed defect or failed check before repair;
 `worker-selection` then chooses who carries out that action if a worker is needed.

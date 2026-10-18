@@ -2,7 +2,7 @@
 
 ## Reset only the requested settings
 
-For **reset --scope session** without fields or a candidate, remove the named role
+For **reset --scope session** without fields or a candidate, remove the named agent
 entry to expose durable defaults, preserving unrelated entries. An explicit
 whole-session reset uses `--reset-session`. Field/candidate resets use the instance
 rules below. Within a pool, reset only the requested candidate's settings, preserving
@@ -24,15 +24,15 @@ remove executor selection when the user asks only to reset models.
 
 Validate candidate executor JSON with `validate_execution_config` from
 `scripts/agent_models.py` before replacing the original, then resolve every affected
-role with --route --list-candidates, including every affected profile. Resolve
+agent with --route --list-candidates, including every affected profile. Resolve
 profile overrides with the relevant --target-runtime and candidate to check thinking.
 A pending selection is valid and never authorizes a worker probe. Preserve unrelated
 entries. Finish with the saved absolute path,
-role, executor/selection, model policy, model/thinking (or inherited), and any
+agent, executor/selection, model policy, model/thinking (or inherited), and any
 pending runtime checks. Show the focused diff without claiming a worker was tested.
 New assignments read changes automatically; identify a reload only when native
 profile discovery or plugin installation actually requires one.
-The former per-model executor catalog needs the migration described in [models and runtime routes](catalog.md#configure-a-role);
+The former per-model executor catalog needs the migration described in [models and runtime routes](catalog.md#configure-an-agent);
 confirm destination runtimes from known configuration/contracts, preserve IDs and
 thinking, and reconcile shared route conflicts. Back up the existing file before
 migration. Legacy package/routes files use the executor
@@ -48,7 +48,7 @@ For structured `/models` legacy commands without **--route**, **--config-profile
 scope or pool options, show/set/reset models.json.
 Accept thinking as an input alias but store legacy `effort`; `defaults` applies only
 here. Preserve its per-field precedence and null masks. Validate with `read_config`
-and resolve the affected harness/role. No harness argument defaults to the current
+and resolve the affected harness/agent. No harness argument defaults to the current
 host. Do not edit legacy settings expecting them to affect a configured instance.
 A one-run request stays in the assignment, not a saved file.
 

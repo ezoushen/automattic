@@ -32,9 +32,9 @@ class ShadowAndCapacity(RouterCase):
         import outcomes
         for index in range(9):
             # Attempts registered without a candidate name are known by their model ID.
-            outcomes.put(f'seed#sol-{index}', {'role': 'implementer', 'candidate': 'codex/sol' if index else 'sol',
+            outcomes.put(f'seed#sol-{index}', {'agent': 'builder', 'job': 'ticket', 'candidate': 'codex/sol' if index else 'sol',
                                                'status': 'succeeded', 'accepted': True})
-        outcomes.put('seed#glm-0', {'role': 'implementer', 'candidate': 'glm', 'status': 'failed'})
+        outcomes.put('seed#glm-0', {'agent': 'builder', 'job': 'ticket', 'candidate': 'glm', 'status': 'failed'})
         self.profile({'codex': {'candidate': 'sol'}})
         result = self.resolve(target_runtime='codex', assignment='Implement ticket 1.')
         self.assertEqual((result['candidate'], result['selection_source']), ('sol', 'profile'))
@@ -105,7 +105,7 @@ class ShadowAndCapacity(RouterCase):
         with self.assertRaisesRegex(ValueError, 'not eligible'):
             self.resolve(candidate='glm')
         # A role pinned to the model fails the same way.
-        self.data['agents']['implementer'] = {'model': 'glm'}
+        self.data['agents']['builder'] = {'model': 'glm'}
         self.save()
         with self.assertRaisesRegex(ValueError, 'dgx is at capacity'):
             self.resolve()

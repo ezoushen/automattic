@@ -13,9 +13,9 @@ The coordinator may recover through another allowed candidate under the shared
 choose replacement models or bypass invocation restrictions.
 
 Provide `executor_config.instruction` followed by the current shared assignment
-and resolved model policy/settings. Keep scope, worktree, pinned revision, role
-file, permissions and acceptance criteria in the assignment. The configured
-instruction describes how to delegate; it does not replace the shared role.
+and resolved model policy/settings. Keep scope, worktree, pinned revision, agent
+and job files, permissions and acceptance criteria in the assignment. The configured
+instruction describes how to delegate; it does not replace the agent or job file.
 
 Before the first launch, read the selected skill's applicable preflight, launch,
 completion, recovery and cleanup instructions, including their referenced procedures.

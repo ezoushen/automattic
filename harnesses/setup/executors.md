@@ -17,10 +17,10 @@ Use `/automattic:models` in Claude Code, `$automattic:models` in Codex, or
 means inspect only. For example, using Claude's spelling:
 
 ```text
-/automattic:models set spec-reviewer --route executor=subagent mode=inherit
-/automattic:models set spec-reviewer --route thinking=high
-/automattic:models show spec-reviewer --route
-/automattic:models reset spec-reviewer --route thinking
+/automattic:models set reviewer --route executor=subagent mode=inherit
+/automattic:models set reviewer --route thinking=high
+/automattic:models show reviewer --route
+/automattic:models reset reviewer --route thinking
 ```
 
 The second command explicitly overrides thinking; the worker's model remains at
@@ -29,8 +29,8 @@ supported `model=<id>` when you want to select a model too. Labels are validated
 against the destination before launch, not assumed portable across runtimes.
 
 You can describe the same changes in natural language after the command. Name the
-role, desired executor and any model/thinking choices. Available roles are
-`implementer`, `spec-reviewer`, `reproducer`, `repair` and `e2e-runner`. The skill
+agent, desired executor and any model/thinking choices. Available agents are
+`builder`, `reviewer` and `verifier`. The skill
 uses the current host and project by default and asks only for missing choices
 that cannot be established from the request or current setup.
 
@@ -45,18 +45,18 @@ executor/model policy and any runtime checks still pending. Use the next ordinar
 ## Configuration examples
 
 Optional files: `~/.config/automattic/executors.json` and
-`<canonical-main-checkout>/.automattic/executors.json`. Merge the requested role
+`<canonical-main-checkout>/.automattic/executors.json`. Merge the requested agent
 into an existing file; do not replace unrelated agent entries. The
 [configuration schema](../../schemas/executors.schema.json) ships with the plugin.
 An optional `$schema` path supports editors but does not change runtime validation.
 
-This complete example selects the native spec reviewer and preserves its native
+This complete example selects the native reviewer and preserves its native
 model/thinking settings:
 
 ```json
 {
   "agents": {
-    "spec-reviewer": {
+    "reviewer": {
       "executor": {"type": "subagent"},
       "models": {"mode": "inherit"}
     }
@@ -112,13 +112,13 @@ model or thinking may be omitted; omitted fields retain destination defaults.
 Use `{"mode":"inherit"}` to clear both overrides and preserve native settings.
 There is no `destination` field or schema definition inside the configuration.
 
-For multiple permitted workers per role, bounded thinking, or temporary overrides,
+For multiple permitted workers per agent, bounded thinking, or temporary overrides,
 use [models and runtime routes](catalog.md), [assignment selection](../routing/choose.md) and [session scope](session.md). Define reusable
 models under top-level `models` with descriptions and runtime bindings containing
 registered IDs and thinking policy. Top-level `runtimes` owns shared launch routes.
-Roles reference one definition or a pool of definition
+Agents reference one definition or a pool of definition
 names. The router selects within those pools; sparse profiles contain optional
-role/runtime overrides. Existing fixed instances and maps of complete
+agent/runtime overrides. Existing fixed instances and maps of complete
 candidates remain valid. Models and thinking are chosen together before invocation.
 
 ## Named skill executor types
@@ -161,9 +161,9 @@ distinct name for another usage. Nested type references and parameter templates
 are not supported.
 
 Definitions merge by name across user, project and session scopes; the higher
-scope replaces the whole definition. Routing profiles contain role/runtime candidate and thinking overrides.
+scope replaces the whole definition. Routing profiles contain agent/runtime candidate and thinking overrides.
 The resolver checks referenced names after loading these layers and reports an
-unknown name as a configuration error. Inspect all affected roles before saving
+unknown name as a configuration error. Inspect all affected agents before saving
 or removing a shared definition. Structural schema validation alone cannot prove
 that references resolve across files.
 
@@ -187,10 +187,10 @@ Reuse a working environment; do not recreate it on every configuration change.
 Configured execution needs `jsonschema`; unconfigured native resolution remains
 stdlib-only. Ordinary dispatch never installs dependencies automatically.
 
-After saving the requested configuration, inspect one role without starting work:
+After saving the requested configuration, inspect one agent without starting work:
 
 ```sh
-"<plugin_root>/.venv/bin/python" "<plugin_root>/scripts/agent_models.py" --repo "<project>" --harness claude --role spec-reviewer --route
+"<plugin_root>/.venv/bin/python" "<plugin_root>/scripts/agent_models.py" --repo "<project>" --harness claude --agent reviewer --route --list-candidates
 ```
 
 Replace `claude` with the current host (`claude`, `codex`, `pi`, or `opencode`).

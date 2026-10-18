@@ -51,12 +51,12 @@ that looks fine at a glance is where hollow checks hide.
    accepts and no later assertion notices. Cite the rejecting and backup checks.
 4. **Re-read.** For a flagged or escalated test, read the cited lines again. Dismiss
    an escalation only with concrete contrary evidence, such as the line where the test
-   would fail. A flag you would dismiss is disputed: the reproducer decides it, given
+   would fail. A flag you would dismiss is disputed: a [reproduce](../../review/jobs/reproduce.md) job decides it, given
    your contrary evidence and the flagged shape. False alarms are expected here.
 Mark each candidate CONFIRMED (a cited trace or re-read shows the defect passes),
 FALSE-POSITIVE (dismissed with cited evidence) or UNVERIFIED (no checklist, or no
 traceable rejection). Confirming a finding changes no code and runs no test; a
-reproducer for a disputed or UNVERIFIED candidate repeats these reading steps.
+reproduce job for a disputed or UNVERIFIED candidate repeats these reading steps.
 
 ## Repair
 

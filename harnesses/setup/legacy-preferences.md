@@ -17,7 +17,7 @@ Migrate them to agent instances only on explicit request.
 To inspect model preferences directly, independently of routing, run:
 
 ```sh
-python3 "<plugin_root>/scripts/agent_models.py" --repo "<repo>" --harness <harness> --role <role>
+python3 "<plugin_root>/scripts/agent_models.py" --repo "<repo>" --harness <harness> --agent <agent>
 ```
 
 `repo` is the canonical project checkout supplied by the orchestrator. Carry it
@@ -31,8 +31,8 @@ omit override parameters and use normal native behavior.
 
 Optional user file: `~/.config/automattic/models.json`.
 Optional project file: `<repo>/.automattic/models.json`.
-For each field, strongest first: explicit task choice → project role → project
-defaults → user role → user defaults → native behavior.
+For each field, strongest first: explicit task choice → project agent → project
+defaults → user agent → user defaults → native behavior.
 Removing a key reveals the lower layer; JSON `null` masks lower layers and restores
 native behavior for that field. Model and effort merge independently. Changing
 only the model can retain a saved effort: validate the resulting pair, don't
@@ -44,13 +44,13 @@ Example shape, **not an installed preset**:
 {
   "claude": {
     "defaults": {"effort": "medium"},
-    "spec-reviewer": {"model": "opus", "effort": "high"}
+    "reviewer": {"model": "opus", "effort": "high"}
   }
 }
 ```
 
-Harness keys: `claude`, `codex`, `pi`, `opencode`. Role keys: `implementer`,
-`spec-reviewer`, `reproducer`, `repair`, `e2e-runner`, plus `defaults`.
+Harness keys: `claude`, `codex`, `pi`, `opencode`. Agent keys: `builder`,
+`reviewer`, `verifier`, plus `defaults`.
 Values are `model` and/or `effort` strings, or `null`. Model IDs/aliases come from
 that runtime's catalog; Pi/OpenCode use qualified `provider/model` identifiers.
 For Pi, put thinking in `effort`, not a suffix in the saved model ID.
@@ -72,7 +72,7 @@ continue independent work. Do not change account settings or bypass permissions.
 These legacy fixed preferences define no alternative pool. Configured pools use
 the separate [availability recovery policy](../routing/recovery.md#feedback-and-recovery).
 
-Record role, requested settings/sources, native agent/run ID and confirmed model
+Record agent, requested settings/sources, native agent/run ID and confirmed model
 and effort with the existing worker evidence. Mark unavailable runtime metadata
 unverified; never call resolver output the actual model. Resume retains its launch
 settings unless the native runtime explicitly supports updating them. Changed
@@ -85,7 +85,8 @@ snapshot with a content-derived name, without writing it. Write that exact conte
 at `native_profile.path` relative to the **active native project's directory**;
 use an existing identical file, and do not overwrite differing contents. Confirm
 native discovery before launch, reloading/restarting if required. Pass the normal
-shared role and adapter paths; the snapshot contains no copied role instructions.
+agent, job and adapter paths; a Claude snapshot carries the agent file's body, and no
+snapshot copies job instructions.
 No settings produces no profile. Ignore obsolete snapshots when resolving new
 launches; clean up proven-unused generated files on an explicit reset/housekeeping
 request. Do not commit personal snapshots or include them in product changes.

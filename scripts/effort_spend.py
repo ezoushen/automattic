@@ -8,6 +8,10 @@ from pathlib import Path
 import re
 import shlex
 import sqlite3
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import outcomes  # noqa: E402
 
 
 FIELDS = ('responses', 'input', 'cache_write', 'cache_read', 'output')
@@ -400,7 +404,7 @@ def report(state, roots, hosts=(), since=None, until=None):
     for saved in attempts:
         key = (saved['runtime'], saved['native_session'])
         if key in seen:
-            continue  # A retained session serves later attempts of the same assignment and role.
+            continue  # A retained session serves later attempts of the same assignment and agent.
         seen.add(key)
         gap = {key: saved[key] for key in ('attempt', 'runtime', 'native_session')}
         if saved['runtime'] not in READERS:
@@ -415,24 +419,24 @@ def report(state, roots, hosts=(), since=None, until=None):
         elif not paths:
             missing.append(dict(gap, reason='no transcript found'))
         responses = read(paths, unreadable)
-        workers.setdefault((saved['assignment'], saved['role']), []).extend(responses)
-    by_assignment, by_role = {}, {}
-    for (assignment, role), responses in workers.items():
+        workers.setdefault((saved['assignment'], saved.get('job') or 'unknown'), []).extend(responses)
+    by_assignment, by_job = {}, {}
+    for (assignment, job), responses in workers.items():
         by_assignment.setdefault(assignment, []).extend(responses)
-        by_role.setdefault(role, []).extend(responses)
+        by_job.setdefault(job, []).extend(responses)
     host = [response for path in hosts for response in host_reader(path)([path], unreadable)
             if response['time'] and since <= timestamp(response['time']) < until]
     reverted = {row[0] for row in db.execute("SELECT attempt FROM events WHERE kind = 'attribution' "
                                              "AND json_extract(payload, '$.kind') = 'revert'")}
     accepted = sorted({saved['assignment'] for saved in attempts if saved.get('accepted')
-                       and saved['role'] == 'implementer' and saved['attempt'] not in reverted})
+                       and outcomes.needs_acceptance(saved.get('job')) and saved['attempt'] not in reverted})
     worker_responses = [response for responses in workers.values() for response in responses]
     spend = total(worker_responses + host)
     return {'state': str(state), 'accepted_tickets': accepted, 'total': spend,
             'per_accepted_ticket': {key: value / len(accepted) for key, value in spend.items()} if accepted else None,
             'workers': {'total': total(worker_responses),
                         'by_assignment': {key: total(value) for key, value in sorted(by_assignment.items())},
-                        'by_role': {key: total(value) for key, value in sorted(by_role.items())}},
+                        'by_job': {key: total(value) for key, value in sorted(by_job.items())}},
             'host': {'files': [str(path) for path in hosts], 'since': since and since.isoformat(),
                      'until_exclusive': until and until.isoformat(), 'total': total(host),
                      'by_trigger': grouped(host, lambda response: response['trigger']),

@@ -30,28 +30,28 @@ class Preferences(unittest.TestCase):
         self.user = self.root / 'user/models.json'
         self.project = self.root / '.automattic/models.json'
 
-    def resolve(self, harness='codex', role='spec-reviewer', **task):
-        return models.resolve(self.root, self.user, harness, role, task)
+    def resolve(self, harness='codex', agent='reviewer', **task):
+        return models.resolve(self.root, self.user, harness, agent, task)
 
     def write_layers(self):
         self.user.parent.mkdir()
         self.project.parent.mkdir()
         self.user.write_text(json.dumps({'codex': {
             'defaults': {'model': 'personal-model', 'effort': 'low'},
-            'spec-reviewer': {'effort': 'high'}}}))
+            'reviewer': {'effort': 'high'}}}))
         self.project.write_text(json.dumps({'codex': {
             'defaults': {'effort': 'medium'},
-            'spec-reviewer': {'model': 'project-model'}}}))
+            'reviewer': {'model': 'project-model'}}}))
 
     def test_reads_without_configuration_return_nothing_and_write_nothing(self):
         for harness in models.HARNESSES:
-            for role in models.ROLES:
-                result = self.resolve(harness, role)
+            for agent in models.AGENTS:
+                result = self.resolve(harness, agent)
                 assert result['settings'] == result['sources'] == {}
                 if harness in ('claude', 'opencode'):
                     assert models.native_profile(result) is None
             assert models.resolve_execution(self.root, self.user, self.root / 'executors.json', harness,
-                                            'spec-reviewer', {})['executor'] == 'native'
+                                            'reviewer', {})['executor'] == 'native'
         assert list(self.root.iterdir()) == []  # Reads do not opt the user in.
 
     def test_task_project_and_user_layers_take_precedence(self):
@@ -64,46 +64,48 @@ class Preferences(unittest.TestCase):
         assert self.resolve(model=None)['settings'] == {'effort': 'medium'}
         assert self.resolve(model=None)['sources']['model'] == 'task'
         assert self.resolve('pi')['settings'] == {}
-        assert self.resolve(role='repair')['settings'] == {'model': 'personal-model', 'effort': 'medium'}
+        assert self.resolve(agent='builder')['settings'] == {'model': 'personal-model', 'effort': 'medium'}
         assert before == (self.user.read_bytes(), self.project.read_bytes())
 
-        self.project.write_text(json.dumps({'codex': {'spec-reviewer': {'model': None, 'effort': None}}}))
+        self.project.write_text(json.dumps({'codex': {'reviewer': {'model': None, 'effort': None}}}))
         assert self.resolve()['settings'] == {}
         self.project.write_text('{}')  # Removing the override exposes the user layer.
         assert self.resolve()['settings'] == {'model': 'personal-model', 'effort': 'high'}
 
     def test_invalid_configuration_is_rejected_and_left_unchanged(self):
         self.project.parent.mkdir()
-        for data in ('{broken', '[]', '{"claud": {}}', '{"codex":{"reviewer":{}}}',
-                     '{"pi":{"repair":{"thinking":"high"}}}',
-                     '{"claude":{"repair":{"model":false}}}',
-                     '{"codex":{"repair":{"effort":"magic"}}}',
-                     '{"pi":{"repair":{"model":"bad\\nmodel"}}}'):
+        for data in ('{broken', '[]', '{"claud": {}}', '{"codex":{"implementer":{}}}',
+                     '{"pi":{"builder":{"thinking":"high"}}}',
+                     '{"claude":{"builder":{"model":false}}}',
+                     '{"codex":{"builder":{"effort":"magic"}}}',
+                     '{"pi":{"builder":{"model":"bad\\nmodel"}}}'):
             self.project.write_text(data)
             with self.assertRaises(ValueError, msg=data):
                 self.resolve()
             assert self.project.read_text() == data
 
-    def test_claude_profiles_carry_role_tools_and_requested_settings(self):
-        for role in models.ROLES:
-            _, header, _ = (models.ROOT / 'agents' / f'{role}.md').read_text().split('---', 2)
+    def test_claude_profiles_carry_agent_tools_principles_and_requested_settings(self):
+        for agent in models.AGENTS:
+            source = (models.ROOT / 'agents' / f'{agent}.md').read_text()
+            _, header, body = source.split('---', 2)
             assert not any(line.startswith(('model:', 'effort:')) for line in header.splitlines())
-            result = self.resolve('claude', role, model='opus', effort='high')
+            result = self.resolve('claude', agent, model='opus', effort='high')
             profile = models.native_profile(result)
             text = profile['content']
             assert 'model: "opus"' in text and 'effort: "high"' in text
-            assert 'role_file' in text
-            for line in (models.ROOT / 'agents' / f'{role}.md').read_text().splitlines():
+            # The agent's own body is the system prompt; Automattic's keys stay out of Claude's frontmatter.
+            assert text.endswith(body) and '## Principles' in text
+            assert '\nwrites:' not in text and '\ncore_skills:' not in text
+            for line in source.splitlines():
                 if line.startswith(('tools: ', 'disallowedTools: ')):
                     key, value = line.split(': ', 1)
                     assert f'{key}: {json.dumps(value)}' in text
             assert profile == models.native_profile(result)
-            assert profile['name'] != models.native_profile(self.resolve('claude', role, effort='low'))['name']
-            model_only = models.native_profile(self.resolve('claude', role, model='opus'))['content']
+            assert profile['name'] != models.native_profile(self.resolve('claude', agent, effort='low'))['name']
+            model_only = models.native_profile(self.resolve('claude', agent, model='opus'))['content']
             assert 'model: "opus"' in model_only and '\neffort:' not in model_only
-            effort_only = models.native_profile(self.resolve('claude', role, effort='high'))['content']
+            effort_only = models.native_profile(self.resolve('claude', agent, effort='high'))['content']
             assert 'effort: "high"' in effort_only and '\nmodel:' not in effort_only
-        assert 'maxTurns: 40' in models.native_profile(self.resolve('claude', 'reproducer', effort='high'))['content']
         with self.assertRaises(ValueError, msg='Claude accepted ultra'):
             models.native_profile(self.resolve('claude', effort='ultra'))
 
@@ -116,10 +118,13 @@ class Preferences(unittest.TestCase):
         self.write_layers()
         self.project.write_text('{}')
         args = [sys.executable, '-B', str(SCRIPT), '--repo', str(self.root), '--user-config', str(self.user),
-                '--harness', 'codex', '--role', 'spec-reviewer']
+                '--harness', 'codex', '--agent', 'reviewer']
         cli = subprocess.run(args + ['--model', 'native'], capture_output=True, text=True, check=True)
         assert json.loads(cli.stdout)['settings'] == {'effort': 'high'}
         assert subprocess.run(args + ['--profile'], capture_output=True).returncode != 0
+        assignment = self.root / 'assignment.txt'
+        assignment.write_text('Review the pinned range.\n')
+        args = args[:-2] + ['--job', 'diff-review']
         for value in ('Assignment prose instead of a file path.', 'long assignment ' * 30, str(self.root)):
             failed = subprocess.run(args + ['--route', '--user-executors', str(self.root / 'missing.json'),
                                             '--assignment', value], capture_output=True, text=True)
@@ -130,10 +135,24 @@ class Preferences(unittest.TestCase):
                              ('--route-choice', ('native', 'null'))):
             for value in values:
                 failed = subprocess.run(args + ['--route', '--user-executors', str(self.root / 'missing.json'),
-                                                flag, value], capture_output=True, text=True)
+                                                '--assignment', str(assignment), flag, value],
+                                        capture_output=True, text=True)
                 assert failed.returncode == 2, failed.stdout + failed.stderr
                 assert flag + ' expects inline JSON, for example' in failed.stderr, failed.stderr
 
+    def test_a_launch_route_needs_a_job_which_selects_its_agent(self):
+        base = [sys.executable, '-B', str(SCRIPT), '--repo', str(self.root), '--user-config', str(self.user),
+                '--harness', 'codex', '--route', '--user-executors', str(self.root / 'missing.json')]
+        failed = subprocess.run(base + ['--agent', 'reviewer'], capture_output=True, text=True)
+        assert failed.returncode == 2 and 'a launch route requires --job' in failed.stderr, failed.stderr
+        listed = subprocess.run(base + ['--agent', 'reviewer', '--list-candidates'], capture_output=True, text=True)
+        assert listed.returncode == 0, listed.stderr
+        launched = json.loads(subprocess.run(base + ['--job', 'diff-review'], capture_output=True, text=True,
+                                             check=True).stdout)
+        assert (launched['agent'], launched['job']) == ('reviewer', 'diff-review')
+        with self.assertRaisesRegex(ValueError, "Job 'ticket' is done by builder, not reviewer"):
+            models.resolve_execution(self.root, self.user, self.root / 'missing.json', 'codex', 'reviewer', {},
+                                     job='ticket')
 
 def check_opencode_profile(root, env, name):
     """Read the loaded profile from an isolated OpenCode 2 service (no model calls)."""
@@ -156,7 +175,7 @@ def check_opencode_profile(root, env, name):
         assert name in agents, (name, sorted(agents))
         loaded = agents[name]
         assert loaded['model'] == {'providerID': 'openai', 'id': 'gpt-5', 'variant': 'high'}, loaded
-        assert loaded['mode'] == 'subagent' and 'role_file' in loaded['system']
+        assert loaded['mode'] == 'subagent' and 'job_file' in loaded['system']
     finally:
         opencode('service', 'stop')
 
@@ -173,15 +192,15 @@ class NativeProfiles(unittest.TestCase):
                 env[key] = str(root / directory)
                 Path(env[key]).mkdir()
             for harness in ('claude', 'opencode'):
-                for role in models.ROLES:
+                for agent in models.AGENTS:
                     settings = {'model': 'opus' if harness == 'claude' else 'openai/gpt-5', 'effort': 'high'}
-                    profile = models.native_profile({'harness': harness, 'role': role, 'settings': settings})
+                    profile = models.native_profile({'harness': harness, 'agent': agent, 'settings': settings})
                     path = root / profile['path']
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text(profile['content'])
                     if harness == 'claude':
                         for partial in ({'model': 'opus'}, {'effort': 'high'}):
-                            profile = models.native_profile({'harness': harness, 'role': role, 'settings': partial})
+                            profile = models.native_profile({'harness': harness, 'agent': agent, 'settings': partial})
                             (root / profile['path']).write_text(profile['content'])
                     if harness == 'opencode':
                         check_opencode_profile(root, env, profile['name'])

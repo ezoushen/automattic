@@ -26,7 +26,7 @@ def write_ticket(repo, name, status='ready', deps=(), area=None):
     slug, nn = name.split('/')
     path = repo / '.scratch' / slug / 'issues' / f'{nn}-task.md'
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(f'---\nticket: {name}\nstatus: {status}\nblocked_by: [{", ".join(deps)}]\ntouches: [{area or name}]\ndevices: []\nmodel: standard\nimplementer:\n---\n# Task\n')
+    path.write_text(f'---\nticket: {name}\nstatus: {status}\nblocked_by: [{", ".join(deps)}]\ntouches: [{area or name}]\ndevices: []\nmodel: standard\nworker:\n---\n# Task\n')
     return path
 
 
@@ -94,7 +94,7 @@ class CrossHarness(unittest.TestCase):
             evidence = (f'---\nreview_status: clean\ndocumentation_status: passed\nreview_head: {reviewed_head}\n'
                     f'review_base: {review_base}\nreview_diff_base: {review_base}\n'
                     f'e2e_status: passed\ne2e_head: {reviewed_head}\n'
-                    f'review_by: automattic-spec-reviewer/agent-1\ne2e_by: automattic-e2e-runner/agent-2\n---\n')
+                    f'review_by: automattic-reviewer/agent-1\ne2e_by: automattic-verifier/agent-2\n---\n')
             source_report.write_text(evidence)
             cli('a', '--delivery')
             for valid, invalid in [('review_status: clean', 'review_status: findings'),
@@ -106,10 +106,10 @@ class CrossHarness(unittest.TestCase):
                                    (f'review_head: {reviewed_head}', f'review_head: {review_base}'),
                                    (f'review_diff_base: {review_base}', f'review_diff_base: {reviewed_head}'),
                                    # Status without the run that produced it is not delivery evidence.
-                                   ('review_by: automattic-spec-reviewer/agent-1\n', ''),
-                                   ('e2e_by: automattic-e2e-runner/agent-2', 'e2e_by: orchestrator'),
-                                   ('review_by: automattic-spec-reviewer/agent-1', 'review_by: host'),
-                                   ('review_by: automattic-spec-reviewer/agent-1', 'review_by: none')]:
+                                   ('review_by: automattic-reviewer/agent-1\n', ''),
+                                   ('e2e_by: automattic-verifier/agent-2', 'e2e_by: orchestrator'),
+                                   ('review_by: automattic-reviewer/agent-1', 'review_by: host'),
+                                   ('review_by: automattic-reviewer/agent-1', 'review_by: none')]:
                 source_report.write_text(evidence.replace(valid, invalid))
                 assert cli('a', '--delivery', ok=False).returncode != 0
                 assert names('b') == []
@@ -121,7 +121,7 @@ class CrossHarness(unittest.TestCase):
             changed = cli('b', '--set', 'b/01', 'status=implementing', '--counts')
             assert '1 live' in changed.stdout and '0 done' in changed.stdout
             assert cli('--set', 'b/01', 'status=bogus', ok=False).returncode != 0
-            assert cli('--set', 'b/01', 'implementer=x\nstatus: done', ok=False).returncode != 0
+            assert cli('--set', 'b/01', 'worker=x\nstatus: done', ok=False).returncode != 0
             # Acceptance requires a real branch descendant and a report in the main checkout.
             base = git('rev-parse', 'feat/b')
             git('checkout', '-b', 'feat/b-01', 'feat/b')
@@ -165,11 +165,8 @@ class CrossHarness(unittest.TestCase):
                 assert 'disable-model-invocation: true' not in path.read_text(), path
             ui = (path.parent / 'agents/openai.yaml').read_text()
             assert f'policy:\n  allow_implicit_invocation: {str(implicit).lower()}\n' in ui, path
-        for path in (PLUGIN / 'agents').glob('*.md'):
-            assert (PLUGIN / 'roles' / path.name).is_file()
-            body = path.read_text().split('---', 2)[2]
-            assert 'role_file' in body and len(body.split()) < 60, path
-        for folder in ('skills', 'harnesses', 'roles', 'addons'):
+        # Agent and job structure is checked by agent_defs (tests/test_agent_definitions.py).
+        for folder in ('skills', 'harnesses', 'agents', 'addons'):
             for path in (PLUGIN / folder).rglob('*.md'):
                 for link in re.findall(r'\]\(([^)]+)\)', path.read_text()):
                     if '://' not in link and '<' not in link:
@@ -256,13 +253,14 @@ class CrossHarness(unittest.TestCase):
         prove = re.search(r'^2\. \*\*Prove\.\*\*(.+?)^3\. ', skill, re.M | re.S).group(1)
         prove = ' '.join(prove.split())
         assert "only where the kind's Proof calls for them" in prove, prove
-        assert 'Send disputed or UNVERIFIED findings to a [reproducer]' in prove, prove
+        assert "Send disputed or UNVERIFIED findings to a reviewer's [reproduce]" in prove, prove
+        assert 'never to the worker that raised them' in prove, prove
         assert 'needs no further run' in prove, prove
         kind = (PLUGIN / 'skills/remediate/kinds/tautological-tests.md').read_text()
         proof = ' '.join(re.search(r'^## Proof$(.+?)^## Repair$', kind, re.M | re.S).group(1).split())
         assert 'Confirming a finding changes no code and runs no test' in proof, proof
-        role = ' '.join((PLUGIN / 'roles/reproducer.md').read_text().split())
-        assert 'When the assigned proof steps are reading-only, edit and run nothing' in role, role
+        job = ' '.join((PLUGIN / 'skills/review/jobs/reproduce.md').read_text().split())
+        assert 'When the assigned proof steps are reading-only, edit and run nothing' in job, job
 
     def test_remediate_detection_covers_every_test(self):
         import re
@@ -272,7 +270,7 @@ class CrossHarness(unittest.TestCase):
         assert '`protected` clears a test only when its checklist raised no doubt' in proof, proof
         assert 'a generated or default value is not an observation' in proof, proof
         assert '`unknown` only when the code does not settle it' in proof, proof
-        assert 'A flag you would dismiss is disputed: the reproducer decides it' in proof, proof
+        assert 'A flag you would dismiss is disputed: a [reproduce](../../review/jobs/reproduce.md) job decides it' in proof, proof
         routing = ' '.join((PLUGIN / 'harnesses/decisions/test-shape.md').read_text().split())
         assert 'A flagged test is not resubmitted' in routing, routing
         skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
@@ -315,7 +313,7 @@ class NativeHarnesses(unittest.TestCase):
         inventory = run('claude', '--plugin-dir', str(PLUGIN), 'plugin', 'details', 'automattic').stdout
         skill_count = len(list((PLUGIN / 'skills').glob('*/SKILL.md')))
         hook_events = len(json.loads((PLUGIN / 'hooks/hooks.json').read_text())['hooks'])
-        for expected in (f'Skills ({skill_count})', 'Agents (5)', f'Hooks ({hook_events})'):
+        for expected in (f'Skills ({skill_count})', 'Agents (3)', f'Hooks ({hook_events})'):
             assert expected in inventory, inventory
         # Source inventory does not resolve installed-plugin dependencies.
         installed = json.loads(run('claude', 'plugin', 'list', '--json').stdout)

@@ -24,12 +24,12 @@ directories.
 
 ## What it reports
 
-- `accepted_tickets`: implementer assignments with an attempt recorded as
+- `accepted_tickets`: assignments of an `acceptance: true` job (`ticket`) with an attempt recorded as
   [`accepted`](../harnesses/workers/collect.md#accept-and-record-outcomes) and no `revert` attributed to it.
   A worker's `completed` result is its own claim; acceptance is the orchestrator's.
 - `total` and `per_accepted_ticket`: worker and host tokens together, divided by the
   accepted tickets. With none, the ratio is `null` rather than a guess.
-- `workers`: totals `by_assignment` and `by_role`. Failed attempts, repairs, reviews
+- `workers`: totals `by_assignment` and `by_job`. Failed attempts, repairs, reviews
   and E2E runs stay in the total; they are part of what an accepted ticket cost.
 - `host`: totals `by_trigger` (`user`, `wake` for a lifecycle receipt or task
   notification, `yield-hook`) and `by_activity`, the first tool call of each response:
@@ -62,4 +62,4 @@ Every figure counts `responses`, fresh `input`, `cache_write`, `cache_read` and
   names the activity, and other calls appear as `tool:<name>`, such as
   `tool:write_stdin` for polling a running command.
 - A worker session reused by later attempts of the same assignment is counted once,
-  under the first attempt's assignment and role.
+  under the first attempt's assignment and job.

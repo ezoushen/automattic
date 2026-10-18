@@ -11,20 +11,20 @@ a section short. Each shared doc under `harnesses/` fits one read.
 
 Before launching a worker, resolve [executors](../workers/launch.md) with the plugin's
 validator Python and `agent_models.py --route --repo <canonical-repo> --harness claude
---role <role>`; include any explicit configuration profile. Record the full result,
+--job <job>`; include any explicit configuration profile. Record the full result,
 without piping through head/tail or masking its exit status. Inspect the pool with
 `--list-candidates`, establish the available model/effort pairs below, then select
 with `--eligible-candidates` and `--eligible-thinking`. Render profiles only where
 native controls require them.
 Do this for review workers too, including each partition and later round; an
-`automattic:<role>` name is not a substitute for resolving user configuration. The operations
+`automattic:<agent>` name is not a substitute for resolving user configuration. The operations
 below apply to `native`; a selected external executor owns its launch/lifecycle
 and model controls. The orchestrator retains this host adapter.
 
-Start workers with the native `Agent` tool using the `automattic:<role>` profile
-(or its exact registered name). Profiles contain settings and a bootstrap only.
-Supply absolute `adapter`, `role_file`, and `plugin_root` alongside the role's
-inputs. Do not request another automatic worktree: dispatch supplies an existing
+Start workers with the native `Agent` tool using the `automattic:<agent>` profile
+(or its exact registered name) of the job's agent. Claude loads the agent file natively.
+Supply absolute `adapter`, `agent_file`, `job_file`, `plugin_root` and `repo` alongside the
+job's inputs, each as `name: value`. Do not request another automatic worktree: dispatch supplies an existing
 one. Reuse an agent with `SendMessage`/native resume when supported; otherwise
 start a replacement with the surviving report and worktree. Inspect the actual
 tool schema; do not treat an ordinary message to an idle agent as a guaranteed
@@ -46,10 +46,10 @@ and confirm teardown. If messaging is unavailable, use the shared
 [bounded return](../workers/focus.md#worker-return-and-checkpoints) fallback.
 Regenerate a configured profile after a shipped profile changes; its content-derived
 name changes with the tool list. An older registered snapshot retains its old tools,
-and the Agent-model hook denies launching one whose tools differ from its shipped role.
+and the Agent-model hook denies launching one whose tools differ from its shipped agent.
 
 Apply only the model/effort settings returned by executor resolution. Bundled
-profiles do not pin either field, so launching `automattic:<role>` always passes
+profiles do not pin either field, so launching `automattic:<agent>` always passes
 `model`. When resolution leaves the model unspecified, name the session's model
 explicitly; the Agent-model hook requires that. Omitted effort inherits the **parent session's
 effort**, which need not be the selected model's default.
@@ -57,11 +57,11 @@ See Claude's [native subagent controls](https://code.claude.com/docs/en/sub-agen
 Do not select models from ticket workload labels or re-resolve legacy preferences.
 Do not change the main session's model. A model-only override uses Agent's native
 `model` argument. If the resolved effort equals a verified inherited session effort,
-the bundled role can use it without a new profile; still confirm the child's metadata.
+the bundled agent can use it without a new profile; still confirm the child's metadata.
 Otherwise render with `--profile`, prepare/discover the returned native profile and invoke its exact
-name instead of `automattic:<role>`. Set only the resolved fields; an effort-only
+name instead of `automattic:<agent>`. Set only the resolved fields; an effort-only
 override leaves the model unspecified. The generated profile
-preserves the shipped tools/restrictions and shared-role bootstrap. Inspect existing
+preserves the shipped agent's tools, restrictions and principles. Inspect existing
 native/user profile customizations before using it; carry forward their restrictions
 or report a conflict, never weaken them to apply model settings. Verify model/effort
 in native task metadata; forced environment settings or allowlists can override a
@@ -98,13 +98,14 @@ Plan, and other plugins' agents. Choose the cheapest model that is adequate:
 
 Forks keep the parent's model, so fork only when the shared context is worth it.
 The plugin's `PreToolUse` hook (`hooks/agent_model.py`) denies an Agent call with no
-model whose definition doesn't pin one. `AUTOMATTIC_AGENT_MODEL_HOOK=off` disables
+model whose definition doesn't pin one, and an automattic agent launch whose
+prompt lacks `job_file:` or any input of that job, or names a job of another agent. `AUTOMATTIC_AGENT_MODEL_HOOK=off` disables
 it. A second `PreToolUse` hook (`hooks/pr_body.py`) denies `gh pr create` and
 `gh pr edit` unless the description comes from a `--body-file` that passes
 `scripts/lint_pr_body.py`. `AUTOMATTIC_PR_HOOK=off` disables it. A `Stop` hook
 (`hooks/yield_gate.py`) applies the worker lifecycle's yield gate when the session
 stops; `AUTOMATTIC_YIELD_HOOK=off` disables it. A non-Anthropic model needs a configured cross-runtime route (Herdr, Pi or
-Codex), not an Agent call. Offer those routes when a role's configured pool
+Codex), not an Agent call. Offer those routes when an agent's configured pool
 includes them and the assignment is long enough to justify the launch overhead.
 
 Use at most the available child slots, with 8 as the scheduling ceiling rather
@@ -122,7 +123,7 @@ for unresolved user decisions and resource grants. Without a goal, keep waiting
 for live workers in the current run.
 
 Automattic does not block Git commands. The orchestrator can perform authorized
-publication and cleanup directly; workers retain their assigned role boundaries.
+publication and cleanup directly; workers retain their agent's permissions.
 Follow native permissions. On permission denial, report the actual boundary and
 stop that action; do not route around it.
 Carry the denied operation/resource into worker and resume assignments so another

@@ -49,8 +49,8 @@ Resolve scope before acting:
   within them. Follow callers and implementation for evidence, keeping repairs
   inside the selected paths.
 - **Whole project**: only when explicitly requested. Inventory top-level modules
-  and assign read-only detection per module through normal routing. Follow the
-  selected adapter's capacity and worker lifecycle; use sequential read-only
+  and assign a reviewer the [audit](jobs/audit.md) job per module through normal
+  routing. Follow the selected adapter's capacity and worker lifecycle; use sequential read-only
   passes when workers are unavailable. Record coverage and any unscanned modules.
   Present proven findings and dropped/unverified counts before any repair, then
   wait for the user's confirmation of the findings to repair. Time passing or a
@@ -75,22 +75,25 @@ report that boundary for a separate implementation task.
    run them for every test in scope during detection, before selecting candidates.
    For a paths or whole-project scan, reconcile the file inventory against the
    workers' coverage file by file, and scan every file no worker accounted for.
-   Detection makes no source edits.
+   Detection makes no source edits; delegated detection is a reviewer's audit job.
+   Every delegated audit, reproduce or repair assignment names its job's inputs, with
+   an absolute report outside the worktree, such as
+   `<main checkout>/.scratch/remediate-<goal>/reports/<partition>.md`.
 2. **Prove.** Apply the kind's Proof to each candidate. Retain the pinned inputs,
    exact command/trace or contract-to-code comparison and deciding observation.
    Run experiments only where the kind's Proof calls for them: temporary negative
    controls in isolation, restored after saving proof, with owned processes reconciled
    under [check execution](../../harnesses/checks/run.md). A candidate the kind's Proof
    confirms needs no further run.
-   Send disputed or UNVERIFIED findings to a [reproducer](../../roles/reproducer.md)
-   through normal routing, with the kind's proof steps, diagnosis-only scope and
-   counter-evidence. A clean independent verification can replace a disputed initial claim.
+   Send disputed or UNVERIFIED findings to a reviewer's [reproduce](../review/jobs/reproduce.md)
+   job through normal routing, never to the worker that raised them, with the kind's
+   proof steps, diagnosis-only scope and counter-evidence. A clean independent verification can replace a disputed initial claim.
    Mark each candidate CONFIRMED, FALSE-POSITIVE or UNVERIFIED. Drop disproven
    and unproven claims from repairs; report their counts and reasons. Missing
    tools or inability to reproduce leave proof incomplete, never confirmed.
 3. **Repair confirmed findings.** Enforce the scope's confirmation rule first.
-   Use a [repair worker](../../roles/repair.md) when delegated, supplying confirmed
-   IDs, accepted seams, test/comment-only boundaries and this procedure. Otherwise
+   Use a builder's [repair](../review/jobs/repair.md) job when delegated, supplying
+   confirmed IDs, accepted seams, test/comment-only boundaries and this procedure. Otherwise
    apply the same bounded steps directly. For tests: follow the kind's Repair, with an
    expected result from an independent source and, for an expected failure, a check
    of the claimed rule's own reason; then run it against the real implementation.

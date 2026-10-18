@@ -5,7 +5,7 @@
       "id": "worker-exact-edit",
       "request": {
         "family": "worker-selection",
-        "state": "Role: implementer. One documented constant needs changing from 10 to 12. The exact file and test are supplied; no design work is required. Both workers are available with the same tools. The user prioritizes economical completion.",
+        "state": "Agent: builder\nJob: ticket\nOne documented constant needs changing from 10 to 12. The exact file and test are supplied; no design work is required. Both workers are available with the same tools. The user prioritizes economical completion.",
         "instruction": "Choose the lightest adequate worker using the supplied capabilities and evidence. Abstain when evidence is insufficient.",
         "options": {"small": "Low-cost worker verified on exact, bounded edits.", "large": "Expensive worker for ambiguous, cross-module reasoning."}
       },
@@ -16,7 +16,7 @@
       "id": "worker-concurrency-contract",
       "request": {
         "family": "worker-selection",
-        "state": "Role: repair. The assignment requires reconstructing ownership across three asynchronous modules. Two attempts by the small worker contradicted the documented cancellation contract. All fixtures pass independently and the evidence is complete. One attempt remains; another worker is allowed.",
+        "state": "Agent: builder\nJob: repair\nThe assignment requires reconstructing ownership across three asynchronous modules. Two attempts by the small worker contradicted the documented cancellation contract. All fixtures pass independently and the evidence is complete. One attempt remains; another worker is allowed.",
         "instruction": "Choose a worker adequate for the evidenced complexity and remaining attempt. Abstain when evidence is insufficient.",
         "options": {"small": "Worker whose two prior approaches failed this contract.", "large": "Available worker verified for cross-module concurrency diagnosis."}
       },
@@ -27,7 +27,7 @@
       "id": "worker-insufficient-capability-data",
       "request": {
         "family": "worker-selection",
-        "state": "Role: implementer. The assignment requires a specialized compiler tool. Neither worker's tool support is known and there is no supporting evidence.",
+        "state": "Agent: builder\nJob: ticket\nThe assignment requires a specialized compiler tool. Neither worker's tool support is known and there is no supporting evidence.",
         "instruction": "Select only when the evidence establishes task fit. Abstain if required tool capability is unknown.",
         "options": {"a": "Unknown worker A.", "b": "Unknown worker B."}
       },
@@ -38,7 +38,7 @@
       "id": "worker-supplied-context-fit",
       "request": {
         "family": "worker-selection",
-        "state": "Role: spec-reviewer. The review needs all of a 90,000-token contract at once; no complete condensed contract is available. Both workers meet the review quality bar, but only one can accept that context.",
+        "state": "Agent: reviewer\nJob: diff-review\nThe review needs all of a 90,000-token contract at once; no complete condensed contract is available. Both workers meet the review quality bar, but only one can accept that context.",
         "instruction": "Choose a worker that satisfies the stated context requirement using supplied facts.",
         "options": {"short": "Maximum context 32,000 tokens.", "long": "Maximum context 128,000 tokens."}
       },

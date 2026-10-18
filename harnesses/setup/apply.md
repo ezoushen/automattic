@@ -1,6 +1,6 @@
 # Apply requested changes
 
-For **set --route** or a natural-language setup request, identify the shared role
+For **set --route** or a natural-language setup request, identify the shared agent
 or named model/runtime/executor definition being changed. For a model with multiple bindings,
 establish the intended runtime from the request before changing its ID or thinking;
 accept `runtime=<name>` to identify that binding and `id=<model-id>` for its registered
@@ -25,17 +25,17 @@ For catalog entries, pools, bounded thinking or **--scope session**, read
 [models and runtime routes](catalog.md) and [session scope](session.md). These options select
 the per-agent flow. Accept a pool as structured JSON or construct it from the
 user's named candidates as catalog references or complete executor/model policies.
-Catalog membership alone does not grant every role access. For role grading,
-research the exact model/runtime, choose candidates by the role's obligations, and
+Catalog membership alone does not grant every agent access. For agent grading,
+research the exact model/runtime, choose candidates by the agent's obligations, and
 put conditional task limits in model descriptions. Keep dated comparisons in research
 journals; use [assignment selection](../routing/choose.md)
 to filter each task. Pools have no model default; `--candidate <id>` identifies
 the candidate to edit. Migrate old defaults explicitly using that guide.
 For a per-candidate change, establish the target from the request before editing;
 preserve the other candidates. Never silently collapse a pool to one
-instance. Shared model/runtime/executor definition edits affect every referencing role. For
-role-only model settings, copy the model definition under a distinct descriptive ID
-and update that role's reference. For a role-only launch override, use a complete
+instance. Shared model/runtime/executor definition edits affect every referencing agent. For
+agent-only model settings, copy the model definition under a distinct descriptive ID
+and update that agent's reference. For an agent-only launch override, use a complete
 executor instance; runtime names are fixed. Preserve other uses. Unknown references fail after layers are merged;
 validate all affected references, including when removing a definition. Pools default
 to automatic availability fallback; set `fallback:false` only when requested.
@@ -47,7 +47,7 @@ form replaces the legacy boolean; a single allowed value locks thinking.
 Session edits use the stable root session ID from the assignment/environment or
 existing effort record. If unavailable, generate and retain one before the first
 override. Use the resolver's `--session` for all affected inspections and descendants.
-Copy the effective role entry before a partial override, preserve unrelated session
+Copy the effective agent entry before a partial override, preserve unrelated session
 entries, validate, and save the complete configuration through `--save-session`.
 The saved file contains its repository/session identity plus `config`; the helper
 input is only that `config` object. The coordinator owns writes. Report the ID and
@@ -86,14 +86,14 @@ settings belong in `decisions.backend`, not the worker catalog. Preserve the exi
 when editing pools or routes. This command does not invoke a router or probe its
 service; a requested integration test is separate from configuration inspection.
 
-For a **profile** request, edit the named role/runtime entry only. Omitted fields
-leave selection unchanged. A candidate must be in the role pool and bound to that
+For a **profile** request, edit the named agent/runtime entry only. Omitted fields
+leave selection unchanged. A candidate must be in the agent pool and bound to that
 worker runtime. A thinking-only entry is checked against the final selected model.
-Resetting a profile field removes that override; resetting a role/runtime entry
-removes only that entry. Preserve sibling roles/runtimes. Defining a profile does
+Resetting a profile field removes that override; resetting an agent/runtime entry
+removes only that entry. Preserve sibling agents/runtimes. Defining a profile does
 not activate it unless requested. An explicit activation updates `router`.
 
-Role entries, `router`, `decisions` and named profile definitions replace lower layers
+Agent entries, `router`, `decisions` and named profile definitions replace lower layers
 in full. Before a partial edit at a new scope, copy the effective object and
 preserve unrelated entries. Report the edited profile and whether it is active.
 Complete instances store `models.model` and `models.thinking` together; catalog

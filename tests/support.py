@@ -31,3 +31,13 @@ def isolated_env(root, **values):
     root = Path(root)
     return dict(os.environ, XDG_STATE_HOME=str(root / 'state'), XDG_CONFIG_HOME=str(root / 'config'),
                 CODEX_HOME=str(root / 'codex'), **values)
+
+
+def assignment_file(root, job, text=''):
+    """An assignment for job that names every input the resolver requires, followed by text."""
+    import agent_defs
+    definition = agent_defs.load()['jobs'][job]
+    lines = [f'{name}: /fixture/{name.replace(" ", "-")}' for name in (*agent_defs.COMMON_INPUTS, *definition['inputs'])]
+    path = Path(root) / f'{job}-assignment.txt'
+    path.write_text('\n'.join(lines) + '\n' + text)
+    return path

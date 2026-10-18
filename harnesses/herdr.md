@@ -17,9 +17,9 @@ Prefer configured native children for same-runtime assignments, including Pi-to-
 Use Herdr for configured cross-runtime assignments or an explicit Herdr route.
 Preserve an explicit user-selected executor and model policy;
 do not infer the destination from a model name or silently replace a saved route.
-Use [runtime definitions](setup/catalog.md#configure-a-role) to share launch routes
+Use [runtime definitions](setup/catalog.md#configure-an-agent) to share launch routes
 across models; model bindings declare each runtime's registered ID and thinking
-policy. Role pools stay shared; routing profiles override candidate/thinking by
+policy. Agent pools stay shared; routing profiles override candidate/thinking by
 worker runtime only when selected explicitly. If a saved route sends same-runtime
 work through Herdr, show the mismatch and
 use the models skill for an authorized correction. Environment detection alone
@@ -34,7 +34,7 @@ if it runs inside Herdr. It completes the assigned scope directly. Additional
 assignments return to the orchestrator, which resolves each worker from its actual
 runtime bindings and the active router.
 
-Use absolute paths for the adapter, role and required method sources, and verify
+Use absolute paths for the adapter, agent and job files and required method sources, and verify
 their reads succeeded before productive work. A long Claude prompt can arrive as
 pasted content: naming a slash command inside it does not prove phase invocation.
 Use a short native slash command for an authorized phase reserved for explicit

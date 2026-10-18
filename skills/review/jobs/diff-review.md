@@ -1,29 +1,34 @@
-# spec-reviewer
+---
+name: diff-review
+agent: reviewer
+inputs: ["worktree", "report", "base", "diff_base", "head", "changed files", "scope sources", "priority sources"]
+returns: ["## Coverage", "## Review round"]
+independent_of: []
+acceptance: false
+---
 
-Follow [assignment focus](../harnesses/workers/focus.md) for priorities
-and concise updates, and [resource and job lifetime](../harnesses/workers/resources.md#resource-and-job-lifetime)
-for experiments, queued builds, teardown and completion.
+# diff-review
 
-Inputs: absolute adapter, role_file, plugin_root, repo, worktree and report; pinned
-base/diff_base/head; changed files; scope/priority sources; settled direction and
-blast radius, eligible implementation coverage; brief/spec if any.
-Read the adapter and `## Scope and priorities` in the report before acting.
-Verify worktree and HEAD match the assignment. Never switch the user's checkout,
-edit production code, push, merge, change tickets, or expand the review scope.
-Never stop processes, servers or daemons you did not start; report a blocking one instead.
-Keep static reads pinned to Git objects or a reserved stable checkout throughout
-the review. If another job switches revisions or mutates inputs, stop affected
-reads and obtain a stable view; startup HEAD equality alone is insufficient.
+Review a pinned change range: the implementation layer of the
+[shared review procedure](../workflow.md).
 
-An assignment may specify `report_transport: return` for a read-only executor.
-Read the supplied report/scope, then return the complete report sections and pinned
-revision with the assignment ID; the orchestrator persists them. Do not write
-report files or relax permissions. Report unavailable experiments as evidence gaps
-and request any necessary reproduction through the orchestrator.
+Contents:
+- [Inputs](#inputs)
+- [Finish line](#finish-line)
+- [Return](#return)
 
-Follow [review layers](../skills/review/layers.md), including blocked dependencies
+## Inputs
+
+The assignment names the `worktree` and `report`; the pinned `base`, `diff_base` and
+`head`; the full `changed files` list; the `scope sources` and `priority sources`;
+settled direction and blast radius; eligible implementation coverage; and the
+brief/spec if any. Read `## Scope and priorities` in the report before acting.
+
+## Finish line
+
+Follow [review layers](../layers.md), including blocked dependencies
 and incremental invalidation. As implementation-review owner, apply the
-[implementation review method](../skills/review/method.md) in this worker to the exact
+[implementation review method](../method.md) in this worker to the exact
 pinned range, spec, eligible coverage and standards supplied. If assigned only an
 axis/partition, execute that part of the method and return evidence without starting
 another full review. Preserve Standards and Spec. Explain the Automattic assignment: the changed
@@ -32,19 +37,18 @@ improvements the repository could use. Preserve complete axis reports even when
 the return summary is short. Missing spec → explicit limitation, never invented
 requirements. A PR description is evidence of intent, not an approved standard.
 
-Complete the assigned axes directly. Request any independent partition or
-reproduction from the orchestrator, which owns additional worker assignments.
+Complete the assigned axes directly. Request any independent partition from the
+orchestrator, and a [reproduce](reproduce.md) job for hard or disputed findings.
 Don't run unrelated setup/install flows. If a required capability is absent,
-record that coverage gap. Never report an omitted axis as passed or bypass a
-denied tool invocation.
+record that coverage gap.
 
 Account for each changed file and affected behavior in `## Coverage`. Follow
 callers and entry points to understand impact; do not turn context-reading into
 an audit of unrelated code. Findings that expose another affected path reopen that
 coverage item. Finish all applicable coverage, not a quota of findings or rounds.
 
-Use [code-comments](../skills/code-comments/SKILL.md) for writing-quality criteria;
-this role owns the gate and verdict, not a separate writing standard.
+Use [code-comments](../../code-comments/SKILL.md) for writing-quality criteria;
+this job owns the gate and verdict, not a separate writing standard.
 Code comments and API documentation (JSDoc, KDoc, docstrings and equivalents) are
 part of the source contract and a mandatory review gate. Cover added/edited/deleted
 comments and existing documentation whose meaning is affected by the change,
@@ -53,7 +57,7 @@ implementation and callers using code-comments, including missing documentation
 needed for the changed contract or required by project conventions.
 
 Check every added or modified test with
-[tautological-tests](../skills/remediate/kinds/tautological-tests.md): write its
+[tautological-tests](../../remediate/kinds/tautological-tests.md): write its
 checklist, route it, trace masked rules and re-read flags, dismissing false alarms
 with cited evidence. Report a finding only with that kind's cited proof.
 
@@ -83,7 +87,7 @@ unresolved contract decision and keep the gate incomplete.
 Unrelated pre-existing documentation problems retain the normal follow-up boundary.
 Stylistic preferences alone are not correctness defects.
 For maintained README, project instructions, skills and references, also check
-[housekeeping's documentation policy](../skills/housekeeping/SKILL.md#keep-affected-documentation-current):
+[housekeeping's documentation policy](../../housekeeping/SKILL.md#keep-affected-documentation-current):
 the changed guidance gives the current contract, with retained history in its
 designated record. An added journal or changelog inside maintained guidance is a
 policy violation; stale/conflicting instructions keep the documentation gate blocked.
@@ -122,15 +126,14 @@ verification gap; do not invent wider acceptance criteria or require a productio
 rollout outside the agreed scope.
 
 Validate correctness with an executed repro or a concrete input/execution trace
-showing the failure. Builds follow check [planning](../harnesses/checks/plan.md) and [execution](../harnesses/checks/run.md), including
+showing the failure. Builds follow check [planning](../../../harnesses/checks/plan.md) and [execution](../../../harnesses/checks/run.md), including
 runner input identity and only project-required resource coordination.
-Experiments stay in the isolated worktree and must not alter reviewed production
-code; record exact commands/results. Request the reproducer through the orchestrator
-for hard/disputed findings.
-An inability to execute is UNVERIFIED, not FALSE-POSITIVE. Design/simplicity claims
-need requirement/caller evidence and a behavior-preserving alternative, not a
-fabricated runtime failure. Apply the documentation gate above even when all
-executable tests pass.
+Experiments must not alter reviewed production code; record exact commands/results.
+Design/simplicity claims need requirement/caller evidence and a behavior-preserving
+alternative, not a fabricated runtime failure. Apply the documentation gate above
+even when all executable tests pass.
+
+## Return
 
 Write CONFIRMED, FALSE-POSITIVE with disproof, or UNVERIFIED with the missing evidence.
 Keep evidence status, scope, priority and disposition separate. A confirmed

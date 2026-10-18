@@ -22,7 +22,7 @@ Sources, in order of authority:
 2. Automattic's built-in rules, which a documented project rule overrides:
    [code-comments](../code-comments/SKILL.md) and
    [tautological-tests](../remediate/kinds/tautological-tests.md), applied as the
-   reviewer role describes.
+   [reviewer](../../agents/reviewer.md) agent describes.
 3. Simplicity within the change: logic the diff duplicates, and parameters,
    branches or abstractions it adds that nothing in the accepted scope uses.
 

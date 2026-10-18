@@ -2,7 +2,7 @@
 
 Run after changes to walkthrough discussion, review handoff, adjudication or completion.
 Use an independent agent with the walkthrough skill, shared review procedure,
-show-me presentation guidance, reviewer role and report template. Supply each input below
+show-me presentation guidance, reviewer agent, diff-review job and report template. Supply each input below
 only when that stage begins; keep the assessment criteria with the evaluator.
 Use an isolated temporary directory, no repository writes or external actions.
 This tests decisions and conversational ordering; it does not prove native tool
@@ -63,7 +63,7 @@ requiring its returned ID. It adds no inference and cannot waive quality gates.
 
 ## Verification acceptance and resumption cases
 
-Supply the checks contract, E2E role and review workflow. Simulate the following
+Supply the checks contract, verifier agent, e2e-gate job and review workflow. Simulate the following
 retained evidence without running builds, driving a device or contacting services.
 
 1. A smoke script exits zero after 20 loops with no crash. Its log contains 180
@@ -267,7 +267,7 @@ Give the evaluator these cases without the assessment below.
 ### Assessment
 
 - Case 1 routes the missing verification through the coordinator to the configured
-  E2E runner, reserves resources and continues without an approval round. Arithmetic
+  verifier, reserves resources and continues without an approval round. Arithmetic
   does not prove run conditions. A real denial or user limit remains binding, with
   the specific blocked check recorded; neither permits a silent waiver or bypass.
 - Case 2 retains the reviewer or explicitly retires it with durable evidence,
@@ -283,7 +283,7 @@ Give the evaluator these cases without the assessment below.
 
 ## Maintained documentation case
 
-Use housekeeping's documentation policy and the reviewer role. A task replaces
+Use housekeeping's documentation policy and the reviewer agent with its diff-review job. A task replaces
 `old-build` with `build` for all supported versions. README still instructs users
 to run `old-build`, followed by "Day 3: we changed it to build after two
 failed attempts." CLAUDE.md repeats that progress entry. A skill appends a dated

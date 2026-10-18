@@ -96,7 +96,7 @@ class DecisionRouting(RouterCase):
         self.resolve(assignment='Implement ticket 2.', journal=journal, assignment_id='t2/attempt-1')
         third = self.resolve(assignment='Implement ticket 3.', journal=journal, assignment_id='t3/attempt-1')
         state = self.requests[-1]['state']
-        self.assertIn('Earlier implementer outcomes in this journal', state)
+        self.assertIn('Earlier builder ticket outcomes in this journal', state)
         self.assertIn('codex/luna xhigh: 1 failed', state)
         warnings = [w['code'] for w in third['decision_warnings']]
         self.assertIn('missing_outcomes', warnings)
@@ -336,7 +336,7 @@ class DecisionRouting(RouterCase):
         self.profile({'claude': {'candidate': 'opus', 'thinking': 'high'}})
         result = subprocess.run([sys.executable, str(Path(models.__file__)), '--route', '--profile',
                                  '--repo', str(self.root), '--user-executors', str(self.user),
-                                 '--harness', 'claude', '--role', 'implementer', '--target-runtime', 'claude',
+                                 '--harness', 'claude', '--job', 'ticket', '--target-runtime', 'claude',
                                  '--eligible-thinking', '{"opus":["medium"]}'], capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
         self.assertIn('runtime preflight', result.stderr)
@@ -351,7 +351,7 @@ class DecisionRouting(RouterCase):
                 self.resolve(**kwargs, **({} if not kwargs or kwargs.get('list_candidates')
                                          else {'assignment': 'Some task.'}))
         self.assertEqual(self.requests, [])
-        self.data['agents']['implementer'] = {'model': 'sol'}
+        self.data['agents']['builder'] = {'model': 'sol'}
         self.save()
         self.resolve(assignment='Some task.')
         self.assertEqual(self.requests, [])
@@ -371,7 +371,7 @@ class DecisionRouting(RouterCase):
 
     def test_decision_model_does_not_invent_effort_for_inherited_or_fixed_models(self):
         self.decision_router()
-        self.data['agents']['implementer'] = {'candidates': {
+        self.data['agents']['builder'] = {'candidates': {
             'inherit': {'executor': {'type': 'subagent'}},
             'haiku': {'executor': {'type': 'subagent'}, 'models': {'mode': 'override', 'model': 'haiku'}},
             'fixed': {'executor': {'type': 'subagent'}, 'models': {
@@ -440,7 +440,7 @@ class DecisionRouting(RouterCase):
         assignment = self.root / 'assignment.txt'
         assignment.write_text('Implement the exact supplied fix and run its regression test.')
         command = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
-                   '--repo', str(self.root), '--harness', 'codex', '--role', 'implementer',
+                   '--repo', str(self.root), '--harness', 'codex', '--job', 'ticket',
                    '--route', '--user-executors', str(self.user), '--assignment', str(assignment),
                    '--eligible-candidates', '["sol"]']
         result = subprocess.run(command, capture_output=True, text=True)
@@ -465,7 +465,7 @@ class DecisionRouting(RouterCase):
         self.decision_router()
         result = self.resolve(assignment='Implement the fix.', task={'model': 'codex/sol'})
         self.assertEqual({entry['candidate'] for entry in result['decision_model']['options'].values()}, {'sol'})
-        self.data['profiles'] = {'fixed': {'implementer': {'codex': {'candidate': 'sol'}}}}
+        self.data['profiles'] = {'fixed': {'builder': {'codex': {'candidate': 'sol'}}}}
         self.save()
         result = self.resolve(assignment='Some task.', config_profile='fixed', target_runtime='codex')
         self.assertEqual(result['selection_source'], 'profile')

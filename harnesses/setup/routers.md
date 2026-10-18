@@ -2,7 +2,7 @@
 
 ## Routers and sparse profiles
 
-`agents.<role>.candidates` is the allowed pool, without a model default. The optional
+`agents.<agent>.candidates` is the allowed pool, without a model default. The optional
 `router` chooses the selection strategy. Omission uses the built-in skill:
 
 ```json
@@ -28,7 +28,7 @@ A profile router applies sparse overrides after establishing the worker runtime:
 {
   "profiles": {
     "balanced": {
-      "implementer": {
+      "builder": {
         "codex": {"candidate": "sol", "thinking": "medium"},
         "pi": {"candidate": "glm"}
       }
@@ -38,11 +38,11 @@ A profile router applies sparse overrides after establishing the worker runtime:
 }
 ```
 
-`implementer.codex` means the worker runs in Codex, including a Claude caller that
+`builder.codex` means the worker runs in Codex, including a Claude caller that
 launches it through a bridge. The host still determines which launch routes exist.
-No `choices` wrapper is used. Missing candidate, thinking, role or runtime leaves
+No `choices` wrapper is used. Missing candidate, thinking, agent or runtime leaves
 that part of selection unchanged; an empty profile is valid. Profiles do not alter
-pools or executors. Candidate overrides must belong to the role pool and have a
+pools or executors. Candidate overrides must belong to the agent pool and have a
 binding for that worker runtime. Thinking must fit the final candidate's policy.
 Use catalog pools for runtime profiles; a complete instance with an opaque external
 executor has no inferred worker runtime. `--target-runtime` requires a catalog

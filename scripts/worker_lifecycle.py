@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import re
 from pathlib import Path
 import signal
 import sqlite3
@@ -16,11 +17,14 @@ import uuid
 
 # Find the sibling decision modules even under an isolated interpreter (python -I).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import agent_defs  # noqa: E402
 import capacity  # noqa: E402
 import decision_journal  # noqa: E402
 import decisions  # noqa: E402
 import native_settings  # noqa: E402
 import outcomes  # noqa: E402
+
+DEFINITIONS = agent_defs.load()
 
 
 def require(value, message):
@@ -143,6 +147,10 @@ def gaps(db, data, stage, revision=None):
             missing.append('report for the checked revision')
         if not report_intact(data):
             missing.append('retained report integrity')
+        if result.get('missing_returns'):
+            missing.append('job report sections ' + ', '.join(result['missing_returns']))
+        if result.get('read_only_changes'):
+            missing.append('unchanged worktree for a read-only agent')
     return missing
 
 
@@ -308,16 +316,71 @@ def assess_wake(db, saved, report):
 
 
 def unsettled(saved):
-    """A completed implementer attempt with neither an acceptance nor a decline on record."""
-    return (saved.get('role') == 'implementer' and saved.get('result', {}).get('status') == 'completed'
+    """A completed attempt whose job requires acceptance, with neither an acceptance nor a decline on record."""
+    return (outcomes.needs_acceptance(saved.get('job')) and saved.get('result', {}).get('status') == 'completed'
             and not saved.get('accepted') and not saved.get('declined'))
 
 
+def return_check(saved, report):
+    """What a completed result owes its job and agent: the job's report sections, and an untouched
+    worktree for an agent that writes nothing."""
+    if saved.get('job') not in DEFINITIONS['jobs']:
+        return [], None  # Registered before agents and jobs existed.
+    lines, fenced = [], None
+    for line in report.read_text(errors='replace').splitlines():
+        fence = re.match(r' {0,3}(`{3,}|~{3,})(.*)$', line)
+        if fenced is None and fence and not (fence.group(1)[0] == '`' and '`' in fence.group(2)):
+            fenced = fence.group(1)
+        elif fenced is not None:
+            # Only a bare run of the same character, at least as long, closes a fence.
+            if fence and fence.group(1)[0] == fenced[0] and len(fence.group(1)) >= len(fenced) \
+                    and not fence.group(2).strip():
+                fenced = None
+        else:
+            lines.append(line.rstrip())
+    # A heading names the section exactly, or continues it after a space, as in `## Fixed round 2`.
+    missing = [heading for heading in DEFINITIONS['jobs'][saved['job']]['returns']
+               if not any(line == heading or line.startswith(heading + ' ') for line in lines)]
+    changed = None
+    baseline = saved.get('worktree_baseline', False)
+    if baseline is None:
+        changed = 'not a readable Git checkout at registration; read-only work cannot be verified'
+    elif baseline:
+        now = worktree_state(saved['worktree'])
+        if now is None:
+            changed = 'worktree state unreadable at collection'
+        elif now['head'] != baseline['head']:
+            changed = f'HEAD moved from {baseline["head"]} to {now["head"]}'
+        elif now['changes'] != baseline['changes']:
+            changed = 'tracked files differ from their state at registration'
+    return missing, changed
+
+
+def worktree_state(worktree):
+    """HEAD and a digest of tracked changes against it, or None outside a readable Git checkout. A snapshot
+    check may start from a dirty tree, so a read-only agent is held to the state it was given."""
+    run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL)
+    head, diff = run('rev-parse', 'HEAD'), run('diff', '--no-ext-diff', '--no-textconv', '--no-color', '--binary', 'HEAD')
+    if head.returncode or diff.returncode:
+        return None
+    return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest()}
+
+
+def require_returned(saved):
+    """Acceptance needs what the job owes: its report sections, and no edits by a read-only agent."""
+    result = saved.get('result', {})
+    require(not result.get('missing_returns'),
+            f'Acceptance requires the job report sections {", ".join(result.get("missing_returns", []))}; '
+            'decline it or collect a new attempt')
+    require(not result.get('read_only_changes'),
+            'Acceptance requires an unchanged worktree for a read-only agent; decline it')
+
+
 def settle(saved, acceptance):
-    """Apply the acceptance decision a closure carries for a completed implementer attempt."""
+    """Apply the acceptance decision a closure carries for a completed attempt whose job requires one."""
     if not unsettled(saved):
         return
-    message = ('Settle acceptance of a completed implementer before closing it: record `accepted`, or pass '
+    message = (f'Settle acceptance of the completed {saved["job"]} attempt before closing it: record `accepted`, or pass '
                'acceptance {"decision": "accepted", "commit", "evidence"} or {"decision": "deferred" or '
                '"declined", "reason"}')
     require(isinstance(acceptance, dict), message)
@@ -325,6 +388,7 @@ def settle(saved, acceptance):
     if decision == 'accepted':
         require(text(acceptance.get('commit')) and isinstance(acceptance.get('evidence'), list)
                 and acceptance['evidence'] and all(text(x) for x in acceptance['evidence']), message)
+        require_returned(saved)
         saved['accepted'] = {'commit': acceptance['commit'], 'evidence': acceptance['evidence']}
     else:
         require(decision in ('deferred', 'declined') and text(acceptance.get('reason')), message)
@@ -355,7 +419,16 @@ def record(db, data):
             settings = execution.get('settings')
             require(isinstance(settings, dict) and not set(settings) - {'model', 'effort'}
                     and all(text(value) for value in settings.values()), 'Invalid resolved settings')
-            require(text(execution.get('role')), 'Resolved execution requires role')
+            require(text(execution.get('agent')) and execution.get('job') in DEFINITIONS['jobs'],
+                    'Resolved execution requires its agent and a known job (resolve with --job)')
+            job = DEFINITIONS['jobs'][execution['job']]
+            require(job['agent'] == execution['agent'], f'Job {execution["job"]} is done by {job["agent"]}')
+            packet = Path(data.get('packet') or '')
+            require(packet.is_absolute() and packet.is_file(),
+                    'Registration requires packet: the absolute path of the assignment text sent to the worker')
+            missing = agent_defs.missing_inputs(job, packet.read_text(errors='replace'))
+            require(not missing, f'The {execution["job"]} assignment lacks {", ".join(missing)}; write each as '
+                                 f'`name: value` (see {job["path"]})')
             runtime = execution.get('target_runtime') or execution.get('harness')
             require(runtime is None or runtime == data['runtime'], 'Runtime conflicts with resolved execution')
             closed = closed_sessions(db)
@@ -369,13 +442,18 @@ def record(db, data):
                 if same_session or same_worker:
                     require(previous['assignment'] == data['assignment']
                             and previous['repo'] == data['repo']
-                            and previous['role'] == execution['role'],
-                            'New ticket or role requires a fresh worker and native session')
+                            and previous['agent'] == execution['agent'],
+                            'A new assignment or agent requires a fresh worker and native session')
+                    require(previous['job'] not in job['independent_of'],
+                            f'A {execution["job"]} job must be independent of {previous["job"]}: '
+                            'this worker already did that job, so start a fresh worker')
                     require(not previous.get('retirement_requested'), 'Native retirement is in progress')
                     require(previous.get('result') and previous.get('retained')
                             and not watching(previous) and not pending(db, previous['attempt']),
                             'Same-assignment reuse requires collected result, explicit retention and no live wait')
-            saved = dict(data, role=execution['role'], execution_snapshot=execution,
+            if DEFINITIONS['agents'][execution['agent']]['writes'] == 'none':
+                data['worktree_baseline'] = worktree_state(data['worktree'])
+            saved = dict(data, agent=execution['agent'], job=execution['job'], execution_snapshot=execution,
                          requested=dict(settings, runtime=data['runtime']), verified=False)
             decision = linked_decision(execution)
             if decision:
@@ -436,6 +514,10 @@ def record(db, data):
                             'Completion requires verified settings, accepted prompt and resolved design hold')
                 require(not saved.get('result'), 'Result already collected; use a new attempt for further work')
                 saved['result'] = dict(data, report_sha256=hashlib.sha256(report.read_bytes()).hexdigest())
+                if data['status'] == 'completed':
+                    missing, changed = return_check(saved, report)
+                    saved['result'].update({'missing_returns': missing} if missing else {},
+                                           **({'read_only_changes': changed} if changed else {}))
                 started = submitted_at(db, attempt)
                 if started:
                     saved['result']['metrics'] = {'worker_seconds': round(time.time() - started, 3)}
@@ -445,6 +527,7 @@ def record(db, data):
                 require(not saved.get('accepted'), 'Attempt already accepted')
                 require(not saved.get('declined'), 'Attempt was declined; accept a new attempt instead')
                 require(text(data.get('commit')), 'Acceptance requires the integrated commit')
+                require_returned(saved)
                 saved['accepted'] = data
             elif kind == 'declined':
                 require(saved.get('result', {}).get('status') == 'completed',
@@ -957,7 +1040,7 @@ def status(db, attempt=None):
         if any(row['payload'].get('notify') and row['payload'].get('delivery', {}).get('state') != 'sent'
                for row in pending(db, saved['attempt'])):
             attention.append('inspect parent and recover pending notification')
-        summary = {key: saved[key] for key in ('attempt', 'assignment', 'role', 'worker', 'native_session',
+        summary = {key: saved[key] for key in ('attempt', 'assignment', 'agent', 'job', 'worker', 'native_session',
                    'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'accepted', 'declined',
                    'acceptance_deferred', 'retained', 'closed',
                    'retirement_requested') if key in saved}

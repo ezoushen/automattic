@@ -31,7 +31,7 @@ not the installed bridge's actual behavior.
    contains unmerged prerequisite work. A claim that a data migration works on the
    target database engine is backed by target schema metadata and reference-engine
    query checks. Use the refinement procedure to determine readiness and evidence.
-6. Inside Herdr, a Codex coordinator requests a Codex reviewer, a Claude repairer
+6. Inside Herdr, a Codex coordinator requests a Codex reviewer, a Claude builder for a repair job
    and a Pi worker. The shared runtime routes select the reviewer natively
    and the other assignments through the Herdr skill. State the launch paths and
    adapter passed to each. Then the Claude worker reports that its assignment needs
@@ -48,7 +48,7 @@ not the installed bridge's actual behavior.
    more assignments would use it; another executor has an independent ready task.
    Configuration and runtime state are unchanged. State what can launch, what
    must change before retry, and whether silently lowering thinking is allowed.
-10. Two reproducers need the same build lane. A's command is queued on the lock
+10. Two reviewers on reproduce jobs need the same build lane. A's command is queued on the lock
     when its launcher times out. It has temporary source edits; B is ready. A
     descendant may still be alive. State assignment, restore, teardown and resource
     decisions. Repeat once all owned jobs are verified stopped and evidence saved.
@@ -66,7 +66,7 @@ not the installed bridge's actual behavior.
     OpenCode has a configured native route and is the current host. No live provider
     availability has been checked.
 
-13. A Codex implementer selected by OpenJev is Luna/xhigh. Its assignment resumes
+13. A Codex builder selected by OpenJev is Luna/xhigh. Its assignment resumes
     after compaction with unchanged evidence. A build has spent ten minutes waiting
     on a known live lock owner. State the routing action, any service calls and the
     update to the user. Then the worker reports a second failed approach to the
@@ -246,7 +246,7 @@ execution separately when a disposable managed session is available and authoriz
 
 ## Completion, ownership and timing cases
 
-Supply the shared executor/check contracts, worker roles and board rules with these
+Supply the shared executor/check contracts, worker agents, jobs and board rules with these
 cases, without the assessment. Use simulated state; no live tracker/device mutations.
 
 1. The user requested closure of the initial issue and all resulting follow-ups.
@@ -256,8 +256,8 @@ cases, without the assessment. Use simulated state; no live tracker/device mutat
 2. Dependency cleanup has an old instruction to mark a dependent issue ready for
    human review. Another session's current accepted plan and owner mark it ready
    for implementation. State what cleanup owns and which tracker writes are valid.
-3. An implementer has green scoped checks at minute 27; integration E2E has a
-   separate owner. Repeat with E2E explicitly assigned to this implementer, which
+3. A builder on a ticket job has green scoped checks at minute 27; integration E2E has a
+   separate owner. Repeat with E2E explicitly assigned to this builder, which
    then discovers another defect. A verifier has spent 40 minutes repeating invalid
    UI-driver clicks without new evidence. State return, acceptance and next
    checkpoint actions.
@@ -305,7 +305,7 @@ cases, without the assessment. Use simulated state; no live tracker/device mutat
 ## Remote execution and shared-account cases
 
 Supply the shared checks, executor, bootstrap, board and PR contracts plus the
-E2E role. Use simulated runner/account/tracker facts; no live fleet jobs or writes.
+verifier agent and e2e-gate job. Use simulated runner/account/tracker facts; no live fleet jobs or writes.
 Give an evaluator the cases without the assessment.
 
 1. Two independent build jobs use a remote runner queue. A local container unit
@@ -358,7 +358,7 @@ Give an evaluator the cases without the assessment.
     implementation checks are green; the browser matrix has a separate verification
     owner. The required real-browser grid node becomes unavailable. State implementation
     acceptance, review continuation and delivery readiness. Repeat where the
-    implementer owns the matrix and where a repair changes only one check's inputs.
+    ticket's builder owns the matrix and where a repair changes only one check's inputs.
 
 ### Assessment
 
@@ -402,6 +402,6 @@ Give an evaluator the cases without the assessment.
   tasks and separately reconciles remote jobs through their runner.
 - Case 12 accepts only assigned implementation proof, preserves every pending
   criterion with its owner and continues independent review. Delivery remains
-  blocked on required device proof. An implementer owning unavailable verification
+  blocked on required device proof. A builder owning unavailable verification
   returns incomplete after safe teardown; a scoped repair invalidates only affected
   evidence, not the whole matrix by default.

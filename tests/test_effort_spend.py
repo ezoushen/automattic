@@ -41,19 +41,19 @@ class EffortSpend(unittest.TestCase):
         path.write_text(json.dumps(dict(kind=kind, attempt=attempt, **fields)))
         self.lifecycle('record', '--input', str(path))
 
-    def attempt(self, attempt, assignment, session, runtime='claude', role='implementer',
+    def attempt(self, attempt, assignment, session, runtime='claude', job='ticket',
                 status='completed', accepted=True):
         execution = self.root / f'{session}.execution.json'
-        execution.write_text(json.dumps({'harness': runtime, 'role': role,
+        execution.write_text(json.dumps({'harness': runtime, 'agent': 'builder', 'job': job,
                                          'settings': {'model': 'm', 'effort': 'high'}}))
         self.record('register', attempt, assignment=assignment, repo=str(self.root), worktree=str(self.root),
                     head='head-1', execution=str(execution), runtime=runtime, worker=f'pane-{session}',
-                    native_session=session, owned=True)
+                    native_session=session, owned=True, packet=str(support.assignment_file(self.root, job)))
         self.record('startup', attempt, observed={'runtime': runtime, 'model': 'm', 'effort': 'high'},
                     evidence=['native:1'])
         self.record('submitted', attempt, evidence=['native:2'])
         report = self.root / f'{session}.md'
-        report.write_text('report\n')
+        report.write_text('## Implemented\n\n## Fixed round 1\n\nreport\n')
         self.record('result', attempt, status=status, head='head-1', report=str(report), evidence=['checks'])
         if accepted:
             self.record('accepted', attempt, commit='merge-1', evidence=['git log merge-1'])
@@ -152,7 +152,7 @@ class EffortSpend(unittest.TestCase):
 
     def test_codex_repair_counts_toward_its_ticket_and_unaccepted_work_still_costs(self):
         self.attempt('t1/1', 't1', 'sess-a')
-        self.attempt('t1/repair-1', 't1', 'sess-b', runtime='codex', role='repair')
+        self.attempt('t1/repair-1', 't1', 'sess-b', runtime='codex', job='repair')
         self.attempt('t2/1', 't2', 'sess-c', status='failed', accepted=False)
         self.claude_transcript('sess-a', [('msg-1', {'input_tokens': 10, 'cache_creation_input_tokens': 0,
                                                      'cache_read_input_tokens': 0, 'output_tokens': 5}, [])])
@@ -160,7 +160,7 @@ class EffortSpend(unittest.TestCase):
         self.claude_transcript('sess-c', [('msg-2', {'input_tokens': 7, 'cache_creation_input_tokens': 0,
                                                      'cache_read_input_tokens': 0, 'output_tokens': 3}, [])])
         result = self.report()
-        self.assertEqual(result['workers']['by_role']['repair'],
+        self.assertEqual(result['workers']['by_job']['repair'],
                          {'responses': 2, 'input': 150, 'cache_write': 0, 'cache_read': 1900, 'output': 50})
         self.assertEqual(result['workers']['by_assignment']['t2']['output'], 3)
         self.assertEqual(result['accepted_tickets'], ['t1'])
@@ -324,7 +324,7 @@ class EffortSpend(unittest.TestCase):
             f"cat > /t/n.md <<'EOF'\nthe worker's report\nEOF\npython3 {lifecycle} record --input /t/r.json",
             f"python3 - <<'EOF'\nprint(x.decode().strip())\nEOF\npython3 {lifecycle} retire --input /t/r.json",
             "cat > /t/a.txt <<'EOF'\nport the fork's cache\nEOF\n"
-            '.venv/bin/python -B scripts/agent_models.py --role implementer --route --assignment /t/a.txt',
+            '.venv/bin/python -B scripts/agent_models.py --job ticket --route --assignment /t/a.txt',
             f'python3 {lifecycle} --help 2>&1 | head -5',
             'case "$x" in\n  a) echo one ;;\n  *) gh pr list ;;\nesac',
             'for f in a.proto \\\n  b.proto; do curl -sO "$f"; done',
@@ -344,7 +344,7 @@ class EffortSpend(unittest.TestCase):
         commands = ['L=/p/scripts/worker-lifecycle.py; python3 $L ack --event-id 3',
                     'python3 /p/scripts/worker-lifecycle.py --state /s/w.sqlite collect',
                     'python3 /p/scripts/run-check.py --label unit -- make test',
-                    'python3 /p/scripts/agent-models.py --role implementer --route']
+                    'python3 /p/scripts/agent-models.py --job ticket --route']
         host = self.claude_host(['go'] + [(f'2026-10-14T02:00:0{index}Z', f'h{index}', 2 ** index, [bash(command)])
                                           for index, command in enumerate(commands)])
         result = self.report('--host', str(host), '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')

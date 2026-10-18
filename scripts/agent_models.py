@@ -10,6 +10,7 @@ import random
 import sqlite3
 import tempfile
 import time
+import agent_defs
 import allowance
 import capacity
 import decisions
@@ -20,7 +21,9 @@ from decisions import systemone_request
 
 ROOT = Path(__file__).resolve().parents[1]
 HARNESSES = ('claude', 'codex', 'pi', 'opencode')
-ROLES = tuple(sorted(path.stem for path in (ROOT / 'roles').glob('*.md')))
+DEFINITIONS = agent_defs.load()
+AGENTS = tuple(sorted(DEFINITIONS['agents']))
+JOBS = DEFINITIONS['jobs']
 EFFORTS = ('none', 'off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra')
 DEFAULT_ROUTER = {'type': 'skill', 'skill': 'automattic:model-routing'}
 
@@ -29,7 +32,7 @@ def validate_execution_config(data, location):
     """Validate only bundled schemas; configuration never loads code or remote schemas."""
     if isinstance(data, dict) and ({'routes', 'executors'} & data.keys()):
         raise ValueError(f'{location}: legacy executor packages/routes require explicit migration '
-                         'to agents.<role>.executor.type/config; see harnesses/setup/troubleshooting.md')
+                         'to agents.<agent>.executor.type/config; see harnesses/setup/troubleshooting.md')
     if isinstance(data, dict) and isinstance(data.get('models'), dict):
         for name, definition in data['models'].items():
             if isinstance(definition, dict) and ({'model', 'executors'} & definition.keys()):
@@ -42,7 +45,7 @@ def validate_execution_config(data, location):
         if isinstance(profiles, dict) and any(isinstance(profile, dict) and 'agents' in profile
                                              for profile in profiles.values()):
             raise ValueError(f'{location}: migrate profile agents to shared agents; profiles now contain '
-                             'profiles.<name>.<role>.<worker-runtime>.candidate/thinking')
+                             'profiles.<name>.<agent>.<worker-runtime>.candidate/thinking')
         if isinstance(agents, dict) and any(isinstance(entry, dict) and 'candidates' in entry and 'default' in entry
                                            for entry in agents.values()):
             raise ValueError(f'{location}: migrate pool defaults to sparse routing profiles; '
@@ -61,7 +64,7 @@ def validate_execution_config(data, location):
                 raise ValueError(f'{location}: runtime {runtime!r} requires a named bridge or external '
                                  f'executor from {caller!r}; an unnamed subagent runs in its caller')
     for agents in groups:
-        for role, entry in agents.items():
+        for agent, entry in agents.items():
             if entry is None:
                 continue
             if 'candidates' in entry:
@@ -169,8 +172,13 @@ QUALITY_SIGNALS = {'review_defects': 'review defects', 'repair_rounds': 'repair 
                    'reverts': 'reverts', 'owner_defects': 'owner-found defects'}
 
 
-def outcome_history(trace, role):
-    """Summarize earlier worker outcomes in this journal: per actual model/effort for the role, plus gaps."""
+def state_prefix(agent, job):
+    """The decision state's first lines, which outcome history and the outcome ledger read back."""
+    return f'Agent: {agent}\nJob: {job}\n'
+
+
+def outcome_history(trace, agent, job):
+    """Summarize earlier worker outcomes in this journal: per actual model/effort for the agent's job, plus gaps."""
     path = Path(trace['path']) if trace else None
     if path is None or not path.is_file():
         return [], 0
@@ -188,7 +196,7 @@ def outcome_history(trace, role):
         events = latest.get(row['decision_id'], {})
         if 'outcome' not in events:
             missing += 1
-        if not row['request'].get('state', '').startswith(f'Role: {role}\n') or 'execution' not in events:
+        if not row['request'].get('state', '').startswith(state_prefix(agent, job)) or 'execution' not in events:
             continue
         observed = events['execution'].get('observed') or {}
         key = ' '.join(str(observed[k]) for k in ('model', 'effort') if observed.get(k))
@@ -220,7 +228,7 @@ def recorded_state(trace):
     return None
 
 
-def decision_model_selection(router, candidates, definitions, role, host, assignment, task, *, decision_policy=None, context=None, eligible_thinking=None, trace=None, excluded=None, failure=None):
+def decision_model_selection(router, candidates, definitions, agent, job, host, assignment, task, *, decision_policy=None, context=None, eligible_thinking=None, trace=None, excluded=None, failure=None):
     """Score permitted model/effort pairs together; the service never supplies launch settings."""
     if not isinstance(assignment, str) or not assignment.strip() or len(assignment) > 16000:
         raise ValueError('Decision model requires a nonempty assignment of at most 16000 characters')
@@ -277,14 +285,14 @@ def decision_model_selection(router, candidates, definitions, role, host, assign
                     'credits from token counts or treat synthetic scores as measured completion quality. '
                     'Avoid guessing model capabilities. '
                     'Abstain if the evidence is insufficient.')
-    history, missing = outcome_history(trace, role)
-    heading = f'Earlier {role} outcomes in this journal (actual model and effort):\n'
+    history, missing = outcome_history(trace, agent, job)
+    heading = f'Earlier {agent} {job} outcomes in this journal (actual model and effort):\n'
     history = heading + '\n'.join(history) + '\n' if history else ''
     previous = recorded_state(trace)
     if previous is not None:
         # A resume reuses the history its decision first saw, so the checkpoint key stays stable.
         history = previous[previous.index(heading):previous.index('Assignment:\n')] if heading in previous else ''
-    state = f'Role: {role}\nCaller: {host}\n'
+    state = state_prefix(agent, job) + f'Caller: {host}\n'
     if failure:
         # Before the history, which a resume reuses from the first request.
         state += f'Earlier attempt failed: {failure}\n'
@@ -328,11 +336,11 @@ def allowance_levels():
 TRAINING = 'Model trains on prompts; this repository does not allow training endpoints (allow_training)'
 
 
-def shadow_selection(names, catalog, role, seed, levels=None):
+def shadow_selection(names, catalog, agent, job, seed, levels=None):
     """What a cost-aware policy would choose: per candidate, a Thompson sample of its acceptance rate in this
-    role's recorded outcomes, less the cost weight for subscription spend. It never changes the route."""
+    agent's recorded outcomes for this job, less the cost weight for subscription spend. It never changes the route."""
     try:
-        counts = outcomes.summary(role).get(role, {})
+        counts = outcomes.summary(agent, job).get(agent, {}).get(job, {})
     except (OSError, ValueError, sqlite3.Error) as error:
         return {'status': 'unavailable', 'error': str(error)}
     scored = {}
@@ -510,11 +518,16 @@ def expand_model(name, catalog, runtimes, host, target_runtime=None):
     return None, f'No configured route from {host!r} to model runtimes {ordered} in this environment'
 
 
-def resolve_execution(repo, user_config, user_executors, host, role, task, choice=None, config_profile=None,
-                      adaptive_thinking=None, *, session_id=None, candidate=None, selection=None,
+def resolve_execution(repo, user_config, user_executors, host, agent, task, choice=None, config_profile=None,
+                      adaptive_thinking=None, *, job=None, session_id=None, candidate=None, selection=None,
                       eligible_candidates=None, list_candidates=False, target_runtime=None, assignment=None,
                       eligible_thinking=None, journal=None, assignment_id=None, excluded_candidates=None,
                       after_failure=None):
+    if job is not None:
+        if job not in JOBS:
+            raise ValueError(f'Unknown job {job!r}; jobs: {", ".join(sorted(JOBS))}')
+        if JOBS[job]['agent'] != agent:
+            raise ValueError(f'Job {job!r} is done by {JOBS[job]["agent"]}, not {agent}')
     layers = [(path, read_executors(path))
               for path in (user_executors, repo / '.automattic/executors.json')]
     session_id = session_id if session_id is not None else os.environ.get('AUTOMATTIC_SESSION') or None
@@ -540,7 +553,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
     for name in (profile, router.get('fallback_profile')):
         if name is not None and name not in profiles:
             raise ValueError(f'Unknown routing profile {name!r}; define it in executors.json')
-    overrides = profiles[profile][0].get(role, {}) if profile is not None else {}
+    overrides = profiles[profile][0].get(agent, {}) if profile is not None else {}
     metadata = {'config_profile': profile, 'profile_source': profiles[profile][1] if profile else None,
                 'router': router, 'router_source': router_source, 'profile_overrides': overrides,
                 'decision_policy': decision_policy, **session}
@@ -556,11 +569,11 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                       for path, data in layers for name, definition in data.get('executor_types', {}).items()}
     instance, source = None, None
     for path, data in layers:
-        if role in data.get('agents', {}):
-            instance = data['agents'][role]
-            source = f'{path}:agents.{role}'
+        if agent in data.get('agents', {}):
+            instance = data['agents'][agent]
+            source = f'{path}:agents.{agent}'
     if choice is not None:
-        validate_execution_config({'agents': {role: choice}}, 'task choice')
+        validate_execution_config({'agents': {agent: choice}}, 'task choice')
         if 'executor' not in choice:
             raise ValueError('task choice requires a complete single agent instance')
         instance, source = choice, 'task choice'
@@ -590,7 +603,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             if name is None:
                 continue
             if name not in instance['candidates']:
-                raise ValueError(f'Profile candidate {name!r} is outside the {role} pool')
+                raise ValueError(f'Profile candidate {name!r} is outside the {agent} pool')
             if isinstance(instance['candidates'], list):
                 if name not in catalog or runtime not in catalog[name][0]['runtimes']:
                     raise ValueError(f'Profile candidate {name!r} has no {runtime!r} binding')
@@ -678,7 +691,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                                                  else instance['candidates'])
                                if name not in eligible_thinking or eligible_thinking[name]]
     if list_candidates:
-        return dict(metadata, host_harness=host, role=role, route_source=source,
+        return dict(metadata, host_harness=host, agent=agent, job=job, route_source=source,
                     candidates=instance['candidates'] if pooled else {},
                     instance=None if pooled else instance)
     if pooled:
@@ -702,7 +715,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             rule_profile = router.get('fallback_profile')
             if rule_profile is None:
                 raise ValueError('router consult "after-failure" needs a fallback_profile as its rule route')
-            rule = profiles[rule_profile][0].get(role, {})
+            rule = profiles[rule_profile][0].get(agent, {})
             usable = [runtime for runtime, entry in rule.items()
                       if entry.get('candidate') in (eligible_candidates or pool['candidates'])
                       and definitions.get(entry['candidate'], {}).get('target_runtime') == runtime]
@@ -747,7 +760,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             try:
                 selection, record = decision_model_selection(
                     router, {name: pool['candidates'][name] for name in eligible}, definitions,
-                    role, host, assignment, task, decision_policy=decision_policy, context=decision_context,
+                    agent, job, host, assignment, task, decision_policy=decision_policy, context=decision_context,
                     eligible_thinking=eligible_thinking, trace=trace, excluded=excluded, failure=after_failure)
                 metadata['decision_model'] = record
                 metadata['decision_warnings'] = record['warnings']
@@ -758,11 +771,11 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
                 # Only a backend outage/abstention/invalid answer falls back; configuration or journal errors do not.
                 if fallback is None or 'decision_model' not in metadata:
                     return dict(metadata, status='selection_required', selection_error=str(error),
-                                host_harness=host, role=role, route_source=source,
+                                host_harness=host, agent=agent, job=job, route_source=source,
                                 eligible_candidates=eligible, candidates=pool['candidates'],
                                 selection_router=DEFAULT_ROUTER)
                 # Deterministic recovery: apply the configured profile before asking the host.
-                overrides = profiles[fallback][0].get(role, {})
+                overrides = profiles[fallback][0].get(agent, {})
                 metadata.update(config_profile=fallback, profile_source=profiles[fallback][1],
                                 profile_overrides=overrides, selection_error=str(error))
                 metadata['decision_warnings'] = metadata['decision_warnings'] + [{
@@ -776,7 +789,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             default_runtime=rule_runtime if metadata.get('rule_route') else None)
         metadata.update(info)
         if info.get('status') == 'selection_required':
-            return dict(metadata, host_harness=host, role=role, route_source=source,
+            return dict(metadata, host_harness=host, agent=agent, job=job, route_source=source,
                         candidates=pool['candidates'],
                         selection_router=DEFAULT_ROUTER if router['type'] == 'profile'
                         or 'selection_error' in info or 'selection_error' in metadata else router)
@@ -789,8 +802,8 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
             metadata['selection_source'] = ('sole-option' if metadata['decision_model']['status'] == 'skipped'
                                             else 'decision-model')
         if isinstance(configured_candidates, list) and configured_candidates:
-            shadow = shadow_selection(competing, catalog, role,
-                                      f'{role}|{assignment_id or assignment or ""}', allowance_levels())
+            shadow = shadow_selection(competing, catalog, agent, job,
+                                      f'{agent}|{job}|{assignment_id or assignment or ""}', allowance_levels())
             if shadow.get('choice') is not None:
                 shadow['agrees'] = shadow['choice'] == info['candidate']
             metadata['shadow_selection'] = shadow
@@ -804,8 +817,8 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
     if instance is None:
         if adaptive_thinking is not None:
             raise ValueError('adaptive thinking requires an agent with allow_thinking_override: true')
-        result = resolve(repo, user_config, host, role, task)
-        result.update(host_harness=host, executor='native', executor_type='subagent',
+        result = resolve(repo, user_config, host, agent, task)
+        result.update(host_harness=host, job=job, executor='native', executor_type='subagent',
                       executor_config={}, native_dispatch=True, model_mode='existing',
                       route_source=source, allow_thinking_override=False, **metadata,
                       executor_guide=str(ROOT / 'harnesses/executors/subagent.md'))
@@ -856,7 +869,7 @@ def resolve_execution(repo, user_config, user_executors, host, role, task, choic
         raise ValueError(f'candidate {selected!r} thinking {settings.get("effort")!r} failed runtime preflight; '
                          'choose an eligible setting or verify registration before retrying')
     # Named delegates and skills can forward to another runtime; the host is not the destination.
-    return {'harness': host if native else None, 'host_harness': host, 'role': role,
+    return {'harness': host if native else None, 'host_harness': host, 'agent': agent, 'job': job,
             'settings': settings, 'sources': sources, 'files': [],
             'executor': 'native' if native else kind, 'executor_type': kind,
             'executor_config': config, 'native_dispatch': native, 'model_mode': mode,
@@ -885,21 +898,21 @@ def read_config(path):
     data = json.loads(path.read_text())
     if not isinstance(data, dict) or set(data) - set(HARNESSES):
         raise ValueError(f'{path}: expected harness keys {HARNESSES}')
-    for harness, roles in data.items():
-        if not isinstance(roles, dict) or set(roles) - set(ROLES + ('defaults',)):
-            raise ValueError(f'{path}:{harness}: unknown role or invalid object')
-        for role, settings in roles.items():
-            validate_settings(settings, f'{path}:{harness}.{role}')
+    for harness, entries in data.items():
+        if not isinstance(entries, dict) or set(entries) - set(AGENTS + ('defaults',)):
+            raise ValueError(f'{path}:{harness}: unknown agent or invalid object')
+        for agent, settings in entries.items():
+            validate_settings(settings, f'{path}:{harness}.{agent}')
     return data
 
 
-def resolve(repo, user_config, harness, role, task):
+def resolve(repo, user_config, harness, agent, task):
     settings, sources = {}, {}
     files = (user_config, repo / '.automattic/models.json')
     layers = []
     for path in files:
         data = read_config(path).get(harness, {})
-        for key in ('defaults', role):
+        for key in ('defaults', agent):
             layers.append((data.get(key, {}), f'{path}:{harness}.{key}'))
     validate_settings(task, 'task', runtime_labels=True)
     layers.append((task, 'task'))
@@ -910,20 +923,21 @@ def resolve(repo, user_config, harness, role, task):
             else:
                 settings[key] = value
             sources[key] = source
-    return {'harness': harness, 'role': role, 'settings': settings,
+    return {'harness': harness, 'agent': agent, 'settings': settings,
             'sources': sources, 'files': [str(path) for path in files]}
 
 
 def native_profile(result):
-    harness, role, settings = result['harness'], result['role'], result['settings']
+    harness, agent, settings = result['harness'], result['agent'], result['settings']
     if harness not in ('claude', 'opencode'):
         raise ValueError('--profile is only for Claude and OpenCode')
     if not settings:
         return None
     if harness == 'claude':
-        _, header, body = (ROOT / 'agents' / f'{role}.md').read_text().split('---', 2)
+        _, header, body = (ROOT / 'agents' / f'{agent}.md').read_text().split('---', 2)
         fields = dict(line.split(': ', 1) for line in header.strip().splitlines())
-        fields.pop('name')
+        for key in ('name', 'writes', 'core_skills'):
+            fields.pop(key)  # Claude reads its own keys; these are Automattic's.
         if 'maxTurns' in fields:
             fields['maxTurns'] = int(fields['maxTurns'])
         fields.update(settings)
@@ -931,19 +945,19 @@ def native_profile(result):
             raise ValueError('Claude does not support this effort level')
         folder = '.claude/agents'
     else:
-        fields = {'description': f'Automattic {role}; use for assigned shared-role work.',
+        fields = {'description': f'Automattic {agent}; use only for an assigned Automattic job.',
                   'mode': 'subagent'}
         if 'model' in settings:
             fields['model'] = settings['model']
         if 'effort' in settings:
             fields['variant'] = settings['effort']
-        body = ('\n\nRead the absolute `adapter` and `role_file` in your assignment.\n'
-                'Verify the supplied worktree and follow the shared role.\n')
+        body = ('\n\nRead the absolute `adapter`, `agent_file` and `job_file` in your assignment.\n'
+                'Verify the supplied worktree and follow the agent and its job.\n')
         folder = '.opencode/agents'
     # JSON strings are YAML scalars, including model IDs with punctuation.
     header = '\n'.join(f'{key}: {json.dumps(value)}' for key, value in fields.items())
     digest = hashlib.sha256((header + body).encode()).hexdigest()[:12]
-    name = f'automattic-{role}-{digest}'
+    name = f'automattic-{agent}-{digest}'
     content = (f'---\nname: {name}\n{header}\n---\n'
                '<!-- Generated by Automattic agent_models.py; settings snapshot. -->' + body)
     return {'name': name, 'path': f'{folder}/{name}.md', 'content': content}
@@ -976,7 +990,9 @@ def main():
     parser.add_argument('--user-config', type=Path,
                         default=Path.home() / '.config/automattic/models.json')
     parser.add_argument('--harness', required=True, choices=HARNESSES)
-    parser.add_argument('--role', required=True, choices=ROLES)
+    who = parser.add_mutually_exclusive_group(required=True)
+    who.add_argument('--agent', choices=AGENTS, help='inspect or edit settings for an agent')
+    who.add_argument('--job', choices=sorted(JOBS), help='the job to launch; selects its agent')
     parser.add_argument('--model', help='explicit task override; native masks saved overrides')
     parser.add_argument('--thinking', '--effort', dest='effort',
                         help='explicit thinking label within bounds; native removes an unbounded override')
@@ -1049,12 +1065,15 @@ def main():
             raise ValueError('--target-runtime requires --route')
         if args.adaptive_thinking is not None and not args.route:
             raise ValueError('--adaptive-thinking requires --route')
+        agent = JOBS[args.job]['agent'] if args.job else args.agent
+        if args.route and not args.list_candidates and args.job is None:
+            raise ValueError('a launch route requires --job; use --agent only to inspect or edit settings')
         if args.route:
             choice = json_argument(args.route_choice, '--route-choice', dict,
                                    '\'{"executor":{"type":"subagent"}}\'')
             result = resolve_execution(repo, user_config, args.user_executors.expanduser().resolve(),
-                                       args.harness, args.role, task, choice, args.config_profile,
-                                       args.adaptive_thinking, session_id=args.session, candidate=args.candidate,
+                                       args.harness, agent, task, choice, args.config_profile,
+                                       args.adaptive_thinking, job=args.job, session_id=args.session, candidate=args.candidate,
                                        selection=args.selection,
                                        eligible_candidates=json_argument(args.eligible_candidates, '--eligible-candidates', list,
                                                                          '\'["luna","sol"]\''),
@@ -1067,7 +1086,7 @@ def main():
                                        excluded_candidates=json_argument(args.excluded_candidates, '--excluded-candidates',
                                                                          dict, '\'{"luna":"quota exhausted"}\''))
         else:
-            result = resolve(repo, user_config, args.harness, args.role, task)
+            result = resolve(repo, user_config, args.harness, agent, task)
         if args.profile:
             if result.get('status') == 'selection_required':
                 raise ValueError('Select a candidate before rendering a native profile')

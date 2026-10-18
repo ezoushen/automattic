@@ -16,17 +16,18 @@ def run(execution, assignment):
     for source, target in (('model', 'model'), ('effort', 'thinking')):
         if source in execution['settings']:
             policy[target] = execution['settings'][source]
-    models.validate_execution_config({'agents': {execution['role']: {
+    models.validate_execution_config({'agents': {execution['agent']: {
         'executor': {'type': 'bash', 'config': execution['executor_config']},
         'models': policy}}}, 'execution')
-    for field in ('assignment_id', 'worktree', 'role_file', 'head', 'prompt'):
+    for field in ('assignment_id', 'worktree', 'agent_file', 'job_file', 'head', 'prompt'):
         if not isinstance(assignment.get(field), str) or not assignment[field].strip():
             raise ValueError(f'assignment.{field} must be a nonempty string')
-    worktree, role_file = Path(assignment['worktree']), Path(assignment['role_file'])
+    worktree = Path(assignment['worktree'])
     if not worktree.is_absolute() or not worktree.is_dir():
         raise ValueError('assignment.worktree must be an existing absolute directory')
-    if not role_file.is_absolute() or not role_file.is_file():
-        raise ValueError('assignment.role_file must be an existing absolute file')
+    for field in ('agent_file', 'job_file'):
+        if not Path(assignment[field]).is_absolute() or not Path(assignment[field]).is_file():
+            raise ValueError(f'assignment.{field} must be an existing absolute file')
     request = {'assignment': assignment, 'models': policy}
     # argv remains literal: prompts and model selections travel through stdin, never shell expansion.
     process = subprocess.run(execution['executor_config']['argv'], cwd=worktree,

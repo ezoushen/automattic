@@ -41,11 +41,11 @@ class Executors(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='automattic profiles ') as tmp:
             root = Path(tmp)
             user = root / 'user.json'
-            data = {'agents': {'spec-reviewer': instance()}, 'profiles': {'balanced': {}}}
+            data = {'agents': {'reviewer': instance()}, 'profiles': {'balanced': {}}}
             user.write_text(json.dumps(data))
             cli = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'), '--repo', str(root),
                    '--user-executors', str(user), '--user-config', str(root/'absent-models.json'),
-                   '--harness', 'claude', '--role', 'spec-reviewer', '--config-profile', 'balanced']
+                   '--harness', 'claude', '--job', 'diff-review', '--config-profile', 'balanced']
             with patch.dict(os.environ, {'AUTOMATTIC_PROFILE': '', 'AUTOMATTIC_SESSION': '', 'HERDR_ENV': ''}):
                 result = subprocess.run(cli + ['--route'], capture_output=True, text=True, check=True)
                 resolved = json.loads(result.stdout)
@@ -69,19 +69,19 @@ class Executors(unittest.TestCase):
             project = root / '.automattic/executors.json'
             preferences = root / 'user/models.json'
 
-            def resolve(host='claude', role='spec-reviewer', choice=None, adaptive_thinking=None, **task):
-                return models.resolve_execution(root, preferences, user, host, role, task, choice,
+            def resolve(host='claude', agent='reviewer', choice=None, adaptive_thinking=None, **task):
+                return models.resolve_execution(root, preferences, user, host, agent, task, choice,
                                                 adaptive_thinking=adaptive_thinking)
 
             for host in models.HARNESSES:
-                for role in models.ROLES:
-                    result = resolve(host, role)
+                for agent in models.AGENTS:
+                    result = resolve(host, agent)
                     assert result['executor'] == 'native' and result['native_dispatch']
             assert list(root.iterdir()) == []
             fails(lambda: resolve(adaptive_thinking='high'))
             user.parent.mkdir()
             project.parent.mkdir()
-            preferences.write_text(json.dumps({'claude': {'spec-reviewer': {'model': 'legacy-model'}}}))
+            preferences.write_text(json.dumps({'claude': {'reviewer': {'model': 'legacy-model'}}}))
             native = instance()
             for host in models.HARNESSES:
                 omitted = resolve(host, choice={'executor': {'type': 'subagent'}})
@@ -96,14 +96,14 @@ class Executors(unittest.TestCase):
                 assert result['native_dispatch'] == (value == native)
                 assert result['harness'] == ('claude' if value == native else None)
             for host in models.HARNESSES:
-                for role in models.ROLES:
+                for agent in models.AGENTS:
                     for policy, expected in (
                         ({'mode': 'inherit'}, {}),
                         ({'mode': 'override', 'model': 'chosen-model'}, {'model': 'chosen-model'}),
                         ({'mode': 'override', 'thinking': 'high'}, {'effort': 'high'}),
                     ):
-                        user.write_text(json.dumps({'agents': {role: instance(policy=policy)}}))
-                        result = resolve(host, role)
+                        user.write_text(json.dumps({'agents': {agent: instance(policy=policy)}}))
+                        result = resolve(host, agent)
                         assert result['settings'] == expected
                         if host not in ('claude', 'opencode'):
                             continue
@@ -118,15 +118,15 @@ class Executors(unittest.TestCase):
             # Arbitrary installed names are data, not a provider allowlist.
             assert resolve(choice=instance('skill', {'skill': 'my-plugin:delegate', 'instruction': 'Run it'}))['executor'] == 'skill'
 
-            user.write_text(json.dumps({'agents': {'spec-reviewer': skill}}))
+            user.write_text(json.dumps({'agents': {'reviewer': skill}}))
             before = user.read_bytes()
-            project.write_text(json.dumps({'agents': {'spec-reviewer': native}}))
+            project.write_text(json.dumps({'agents': {'reviewer': native}}))
             assert resolve()['native_dispatch'] and resolve()['settings'] == {}
-            project.write_text(json.dumps({'agents': {'spec-reviewer': None}}))
+            project.write_text(json.dumps({'agents': {'reviewer': None}}))
             assert resolve()['settings'] == {'model': 'legacy-model'}
             project.write_text('{}')
             assert resolve()['executor'] == 'skill'
-            assert resolve(role='repair')['executor'] == 'native'
+            assert resolve(agent='builder')['executor'] == 'native'
 
             preferences.write_text('{invalid unused legacy preferences')
             assert resolve()['settings'] == {}
@@ -189,17 +189,17 @@ class Executors(unittest.TestCase):
             for value in invalid:
                 fails(lambda value=value: resolve(choice=value))
             for data in ([], {'agents': {'unknown-role': native}}, {'schema': {}},
-                         {'executors': {}}, {'routes': {'spec-reviewer': {'executor': 'herdr'}}}):
+                         {'executors': {}}, {'routes': {'reviewer': {'executor': 'herdr'}}}):
                 fails(lambda data=data: models.validate_execution_config(data, 'test'))
             # An editor's $schema value cannot replace bundled validation or trigger a fetch.
-            models.validate_execution_config({'$schema': 'https://invalid.example/schema', 'agents': {'repair': native}}, 'test')
+            models.validate_execution_config({'$schema': 'https://invalid.example/schema', 'agents': {'builder': native}}, 'test')
             project.write_text('{broken')
             fails(resolve)
             project.write_text('{}')
 
             cli = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
                    '--repo', str(root), '--user-config', str(preferences), '--user-executors', str(user),
-                   '--harness', 'claude', '--role', 'spec-reviewer', '--route']
+                   '--harness', 'claude', '--job', 'diff-review', '--route']
             result = subprocess.run(cli + ['--route-choice', json.dumps(override), '--thinking', 'low'],
                                     capture_output=True, text=True, check=True)
             assert json.loads(result.stdout)['settings']['effort'] == 'low'
@@ -234,7 +234,8 @@ print(json.dumps({'assignment_id': 'wrong' if mode == 'mismatch' else assignment
             launcher = root / 'worker.sh'
             launcher.write_text(f'exec {shlex.quote(sys.executable)} {shlex.quote(str(worker))} "$@"\n')
             assignment = {'assignment_id': 'review-1', 'head': 'pinned-sha', 'worktree': str(root),
-                          'role_file': str(models.ROOT / 'roles/spec-reviewer.md'),
+                          'agent_file': str(models.ROOT / 'agents/reviewer.md'),
+                          'job_file': str(models.ROOT / 'skills/review/jobs/diff-review.md'),
                           'prompt': 'Literal $(touch unexpected); `touch unexpected`'}
 
             def execution(mode='completed', policy=None):

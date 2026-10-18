@@ -31,14 +31,14 @@ provider/account settings remain with their own tools; explain any gap without
 installing or reconfiguring them merely to complete this tour.
 
 Begin with a compact picture of what is active and why. Explain responsibilities
-before field names, using one representative role from the actual configuration:
+before field names, using one representative agent from the actual configuration:
 
 - **Available workers:** model definitions bind registered IDs and thinking limits
-  to worker runtimes; each role's pool controls which it may use.
+  to worker runtimes; each agent's pool controls which it may use.
 - **How a worker runs:** runtime routes choose a native child, skill bridge or Bash
   executor for the caller. Named executor types reuse skill instructions.
 - **Who chooses:** the router uses host judgment through a skill, a sparse profile,
-  or a decision backend. A profile applies only its specified role/runtime fields;
+  or a decision backend. A profile applies only its specified agent/runtime fields;
   configured pins and bounds still apply.
 - **Which workflow decisions are delegated:** enabled decision families and their
   calibration evidence. Worker selection and recovery are separate opt-ins; showing

@@ -34,7 +34,7 @@ class RouterCase(unittest.TestCase):
                 runtime: {'type': 'subagent'},
                 'herdr': {'type': 'skill', 'config': {'skill': 'herdr', 'instruction': 'Run one worker.'}}
             }} for runtime in ('codex', 'claude')},
-            'agents': {'implementer': {'candidates': ['luna', 'sol', 'opus']}},
+            'agents': {'builder': {'candidates': ['luna', 'sol', 'opus']}},
         }
         for name, runtime, default, allowed in (
             ('luna', 'codex', 'xhigh', ['xhigh', 'max']),
@@ -51,14 +51,15 @@ class RouterCase(unittest.TestCase):
     def resolve(self, host='claude', **kwargs):
         if 'eligible_candidates' in kwargs and 'excluded_candidates' not in kwargs:
             # Tests narrow pools for setup; production callers must state their own reasons.
-            configured = self.data['agents']['implementer'].get('candidates', [])
+            configured = self.data['agents']['builder'].get('candidates', [])
             kwargs['excluded_candidates'] = {name: 'Not under test.' for name in configured
                                              if name not in (kwargs['eligible_candidates'] or configured)}
         return models.resolve_execution(self.root, self.root / 'absent.json', self.user,
-                                        host, 'implementer', kwargs.pop('task', {}), **kwargs)
+                                        host, 'builder', kwargs.pop('task', {}), job=kwargs.pop('job', 'ticket'),
+                                        **kwargs)
 
     def profile(self, value):
-        self.data['profiles'] = {'balanced': {'implementer': value}}
+        self.data['profiles'] = {'balanced': {'builder': value}}
         self.data['router'] = {'type': 'profile', 'profile': 'balanced'}
         self.save()
 
@@ -103,16 +104,16 @@ class RouterCase(unittest.TestCase):
             answer.update(choice='abstain', probabilities={key: float(key == 'abstain')
                                                          for key in answer['probabilities']})
         self.decision_router(abstain)
-        self.data['profiles'] = {'balanced': {'implementer': {'codex': {'candidate': 'sol', 'thinking': 'high'}}}}
+        self.data['profiles'] = {'balanced': {'builder': {'codex': {'candidate': 'sol', 'thinking': 'high'}}}}
         self.data['router']['fallback_profile'] = 'balanced'
         self.save()
 
     def free_and_local(self):
-        """Add a training endpoint and a local model to the implementer pool."""
+        """Add a training endpoint and a local model to the builder pool."""
         for name, cost, data in (('muse', 'free', 'trains'), ('glm', 'local', 'local')):
             self.data['models'][name] = {'description': name, 'cost': cost, 'data': data,
                                          'runtimes': {'codex': {'id': 'codex/' + name}}}
         for name in ('luna', 'sol'):
             self.data['models'][name]['cost'] = 'subscription'
-        self.data['agents']['implementer']['candidates'] += ['muse', 'glm']
+        self.data['agents']['builder']['candidates'] += ['muse', 'glm']
         self.save()

@@ -81,7 +81,7 @@ even while the overall branch continues. Keep invalid reports, host corrections
 and recovery costs in its evidence/metrics or independent assessment; eventual
 project success is not proof the original worker performed well. On worker reuse,
 append execution evidence for the resumed segment and a fresh checked outcome.
-The execution revision identifies assigned inputs; an implementer's accepted
+The execution revision identifies assigned inputs; a builder's accepted
 output revision can differ after it commits changes.
 
 For metrics, assessments or integrations, `record --journal <path>

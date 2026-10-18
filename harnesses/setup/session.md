@@ -24,7 +24,7 @@ Use the models skill with `--scope session` to edit it. Its helper operations ar
 These are explicit writes: save validates and atomically replaces the session's
 complete configuration, so preserve unrelated entries from its existing `config`.
 Reset removes only this session record and exposes project/user defaults. Both
-require the normal repo/host/role/route arguments. For a role-only reset, remove
+require the normal repo/host/agent/route arguments. For an agent-only reset, remove
 its override from the saved configuration instead of resetting the whole session.
 The resolver returns the absolute state path in `session.path`. Root identity is
 checked when reading, replacing or deleting an existing record.

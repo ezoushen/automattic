@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Keep each worker attempt's outcome across efforts and summarise it per role and candidate.
+"""Keep each worker attempt's outcome across efforts and summarise it per agent, job and candidate.
 
 The worker lifecycle writes an attempt's result, acceptance or decline, and later reverts.
-`import` adds past decision journals and lifecycle state files once. Implementers succeed when accepted; other roles
-when their work completed. A revert, a decline or a failed result is a failure; a blocked
+`import` adds past decision journals and lifecycle state files once. A job that requires acceptance
+succeeds when accepted; other jobs when their work completed. A revert, a decline or a failed result is a failure; a blocked
 result waits on something outside the worker and counts neither way.
 """
 
@@ -16,7 +16,10 @@ import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import agent_defs  # noqa: E402
 import decision_journal  # noqa: E402
+
+JOBS = agent_defs.load()['jobs']
 
 
 # A collected lifecycle status as an outcome, and later quality signals as metric names.
@@ -56,6 +59,10 @@ def put(key, row):
         db.close()
 
 
+def needs_acceptance(job):
+    return bool(JOBS.get(job, {}).get('acceptance'))
+
+
 def verdict(row):
     """'success', 'failure' or 'pending' for one attempt's outcome."""
     if row.get('reverts') or row.get('declined'):
@@ -66,12 +73,12 @@ def verdict(row):
         return 'failure'
     if row.get('status') != 'succeeded':
         return 'pending'
-    if row.get('role') == 'implementer' and not row.get('accepted'):
+    if needs_acceptance(row.get('job')) and not row.get('accepted'):
         return 'pending'
     return 'success'
 
 
-def summary(role=None):
+def summary(agent=None, job=None):
     """Read-only: a missing ledger has no outcomes yet."""
     path = ledger_path()
     if not path.is_file():
@@ -81,14 +88,15 @@ def summary(role=None):
         rows = [json.loads(data) for (data,) in db.execute('SELECT data FROM outcomes ORDER BY key')]
     finally:
         db.close()
-    roles = {}
+    agents = {}
     for row in rows:
-        if role is not None and row.get('role') != role:
+        # Rows recorded before agents and jobs measured different work; they are not compared.
+        if 'agent' not in row or agent is not None and row['agent'] != agent or job is not None and row['job'] != job:
             continue
-        counts = roles.setdefault(row['role'], {}).setdefault(
+        counts = agents.setdefault(row['agent'], {}).setdefault(row['job'], {}).setdefault(
             row['candidate'], {'successes': 0, 'failures': 0, 'pending': 0})
         counts[{'success': 'successes', 'failure': 'failures', 'pending': 'pending'}[verdict(row)]] += 1
-    return roles
+    return agents
 
 
 def attempt_row(db, saved, source):
@@ -105,7 +113,7 @@ def attempt_row(db, saved, source):
     link = saved.get('decision') or (routed if routed.get('decision_id') and routed.get('journal') else {})
     return dict(decision=f"{Path(link['journal']).resolve()}#{link['decision_id']}" if link else None,
                 source=source, attempt=saved['attempt'], assignment=saved['assignment'], repo=saved['repo'],
-                role=saved['role'], candidate=execution.get('candidate') or actual.get('model'),
+                agent=saved['agent'], job=saved['job'], candidate=execution.get('candidate') or actual.get('model'),
                 model=actual.get('model'), effort=actual.get('effort'), runtime=saved['runtime'],
                 selection_source=execution.get('selection_source'),
                 shadow_choice=(execution.get('shadow_selection') or {}).get('choice'),
@@ -139,7 +147,7 @@ def journal_rows(path):
         if not isinstance(request, dict) or request.get('family') != 'worker-selection':
             continue
         state = request.get('state', '')
-        if not state.startswith('Role: '):
+        if not state.startswith('Agent: '):
             continue
         events = latest.get(row['decision_id'], {})
         choice = events.get('action', {}).get('choice') or (row.get('result') or {}).get('choice')
@@ -147,13 +155,14 @@ def journal_rows(path):
         if not option:
             continue
         outcome = events.get('outcome', {})
-        role = state[len('Role: '):].split('\n', 1)[0]
+        agent = state[len('Agent: '):].split('\n', 1)[0]
+        job = state.split('\nJob: ', 1)[1].split('\n', 1)[0] if '\nJob: ' in state else None
         status = outcome.get('status', 'unknown')
         yield f"{Path(path).resolve()}#{row['decision_id']}", {
-            'source': str(Path(path).resolve()), 'attempt': row.get('assignment'), 'role': role,
+            'source': str(Path(path).resolve()), 'attempt': row.get('assignment'), 'agent': agent, 'job': job,
             'candidate': json.loads(option)['candidate'], 'status': status,
             # A host records success when it accepted the work; the lifecycle records it at completion.
-            'accepted': (role == 'implementer' and status == 'succeeded'
+            'accepted': (needs_acceptance(job) and status == 'succeeded'
                          and events.get('action', {}).get('actor') != 'worker-lifecycle') or None,
             'reverts': outcome.get('metrics', {}).get('reverts', 0)}
 
@@ -189,14 +198,15 @@ def import_sources(paths):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest='command', required=True)
-    report = commands.add_parser('summary', help='successes, failures and pending attempts per role and candidate')
-    report.add_argument('--role')
+    report = commands.add_parser('summary', help='successes, failures and pending attempts per agent, job and candidate')
+    report.add_argument('--agent')
+    report.add_argument('--job')
     load = commands.add_parser('import', help='add past decision journals and lifecycle state files once')
     load.add_argument('sources', nargs='+', type=Path, help='decisions .jsonl or lifecycle workers .sqlite files')
     args = parser.parse_args()
     try:
         if args.command == 'summary':
-            result = {'ledger': str(ledger_path()), 'roles': summary(args.role)}
+            result = {'ledger': str(ledger_path()), 'agents': summary(args.agent, args.job)}
         else:
             result = import_sources(args.sources)
     except (OSError, ValueError, sqlite3.Error) as error:

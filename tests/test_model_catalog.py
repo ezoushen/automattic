@@ -38,14 +38,14 @@ class Catalog(unittest.TestCase):
                 'sol': {'description': 'Implementation and repair.', 'runtimes': {'codex': {
                     'id': 'gpt-6.1-sol', 'thinking': {'default': 'medium', 'allowed': ['medium', 'high']}}}},
                 'local': {'description': 'Heavy local tasks.', 'runtimes': {'pi': {'id': 'local/glm'}}}},
-            'agents': {'implementer': {'candidates': ['sol', 'local']},
-                       'spec-reviewer': {'model': 'sol'}}}
+            'agents': {'builder': {'candidates': ['sol', 'local']},
+                       'reviewer': {'model': 'sol'}}}
         self.save()
 
     def save(self):
         self.user.write_text(json.dumps(self.data))
 
-    def resolve(self, host='codex', role='implementer', **kwargs):
+    def resolve(self, host='codex', role='builder', **kwargs):
         return models.resolve_execution(self.root, self.root / 'absent.json', self.user,
                                         host, role, {}, **kwargs)
 
@@ -87,7 +87,7 @@ class Catalog(unittest.TestCase):
         replacement = {'description': 'Project serving configuration.',
                        'runtimes': {'codex': {'id': 'project-sol'}}}
         self.project.write_text(json.dumps({'models': {'sol': replacement}}))
-        result = self.resolve(role='spec-reviewer')
+        result = self.resolve(role='reviewer')
         self.assertEqual(result['settings'], {'model': 'project-sol'})
         self.assertEqual(result['model_definition_source'], f'{self.project}:models.sol')
         self.assertEqual(result['sources']['model'], f'{self.project}:models.sol.runtimes.codex.id')
@@ -110,14 +110,14 @@ class Catalog(unittest.TestCase):
         self.assertIn('selection_error', result)
 
     def test_bad_catalog_references_are_configuration_errors(self):
-        self.project.write_text(json.dumps({'agents': {'implementer': {
+        self.project.write_text(json.dumps({'agents': {'builder': {
             'candidates': ['typo', 'sol']}}}))
         with self.assertRaisesRegex(ValueError, 'Unknown model'):
             self.resolve()
         for entry in ({'default': 'sol', 'candidates': ['sol', 'sol']},
                       {'default': 'other', 'candidates': ['sol']}):
             with self.assertRaises(ValueError):
-                models.validate_execution_config({'agents': {'implementer': entry}}, 'test')
+                models.validate_execution_config({'agents': {'builder': entry}}, 'test')
         for definition in ({'description': 'Task fit.', 'runtimes': {}},
                            {'description': 'Task fit.', 'runtimes': {'unknown': {'id': 'id'}}},
                            {'description': 'Task fit.', 'runtimes': {'pi': {
@@ -228,7 +228,7 @@ class Catalog(unittest.TestCase):
     def test_catalog_cli_is_read_only_and_explains_exclusions(self):
         before = self.user.read_bytes()
         args = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
-                '--repo', str(self.root), '--harness', 'codex', '--role', 'implementer',
+                '--repo', str(self.root), '--harness', 'codex', '--job', 'ticket',
                 '--user-executors', str(self.user), '--route']
         result = subprocess.run(args, capture_output=True, text=True, check=True)
         self.assertEqual(json.loads(result.stdout)['executor_context'], 'codex')
@@ -273,11 +273,11 @@ class Catalog(unittest.TestCase):
             'mode': 'override', 'model': 'chosen-model',
             'thinking': {'default': 'medium', 'allowed': ['medium', 'high']}}}
         self.data['executor_types'] = {'bridge': definition('user-bridge')}
-        self.data['agents']['spec-reviewer'] = instance
+        self.data['agents']['reviewer'] = instance
         self.save()
-        self.assertEqual(self.resolve(role='spec-reviewer')['executor_config']['skill'], 'user-bridge')
+        self.assertEqual(self.resolve(role='reviewer')['executor_config']['skill'], 'user-bridge')
         self.project.write_text(json.dumps({'executor_types': {'bridge': definition('project-bridge')},
-            'agents': {'implementer': {'candidates': {'named': instance}}}}))
+            'agents': {'builder': {'candidates': {'named': instance}}}}))
         result = self.resolve(adaptive_thinking='high')
         self.assertEqual(result['executor_config']['skill'], 'project-bridge')
         self.assertEqual(result['settings'], {'model': 'chosen-model', 'effort': 'high'})

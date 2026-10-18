@@ -26,7 +26,7 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    coordinator remains `--harness pi` when its selected destination is Codex.
    Map the resolved controls to the installed executor's actual model and effort
    controls. A model name or “think hard” in the prompt cannot set them.
-2. Create a fresh worker/conversation for a new ticket or role. Obtain its native
+2. Create a fresh worker/conversation for a new ticket or agent. Obtain its native
    session identity as well as the transport handle. A fresh pane or a worker's
    claim of fresh context does not establish a new conversation. Register before
    submitting productive work, using the following illustrative input shape:
@@ -38,14 +38,17 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
      "worktree": "/absolute/ticket-worktree", "head": "pinned-input-revision",
      "execution": "/absolute/reports/resolved-execution.json", "runtime": "claude",
      "worker": "returned-transport-handle", "native_session": "native-conversation-id",
-     "owned": true
+     "owned": true, "packet": "/absolute/reports/ticket-12-assignment.txt"
    }
    ```
 
    Pass the event file with `record --state /absolute/reports/workers.sqlite
    --input /absolute/register.json`. Assignment IDs identify a ticket and bounded
-   role scope; attempt IDs identify retries. The snapshot supplies the role and
-   requested settings. A repair attempt adds `repairs`, naming the collected
+   job scope; attempt IDs identify retries. The execution snapshot must carry
+   `agent` and `job`, and supplies the requested settings. `packet` is the exact
+   assignment text sent to the worker; registration refuses it when it lacks
+   `adapter`, `agent_file`, `job_file`, `plugin_root`, `repo` or any of the job's
+   inputs as `name: value`. A repair attempt adds `repairs`, naming the collected
    attempt whose work it fixes. When `wake-triage` is enabled, add `journal`, the
    absolute session decisions journal.
 
@@ -125,7 +128,9 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
 Same-assignment repair or recheck may retain context only after collecting the old
 result, acknowledging its receipts and recording `retain` with a reason and next
 use. Register the new attempt and verify its settings again. Reusing a native
-session across tickets, repositories or roles is rejected even if its pane changed.
+session across tickets, repositories or agents is rejected even if its pane changed.
+A reused worker also cannot take a job whose `independent_of` lists a job it already
+did: a worker that did a diff-review cannot then take a reproduce job.
 Pass a compact handoff: accepted decisions, pinned base/head, worktree, source/test
 entry points, applicable evidence, unresolved risks and next action. Cache savings
 do not justify carrying an unrelated conversation into a review.

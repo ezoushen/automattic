@@ -27,9 +27,9 @@ retry while the list lacks the built-in `build` agent, which a directory's first
 request can omit. Then use its registered name when the native Task tool supports it.
 Preserve project/native permissions; inspect any existing customized worker profile
 and retain its restrictions or report a conflict before using a generated profile.
-Pass absolute `plugin_root`, `adapter`, `role_file`, canonical `repo` and assigned
-worktree/branch plus task inputs. Workers read the shared role; model settings do
-not authorize additional work or change role boundaries. Native profile inspection
+Pass absolute `plugin_root`, `adapter`, `agent_file`, `job_file`, canonical `repo` and
+assigned worktree/branch plus the job's inputs. Workers read the agent and job files;
+model settings do not authorize additional work or change agent permissions. Native profile inspection
 proves configuration loading, not successful provider execution.
 
 ## Top-level workers

@@ -2,7 +2,7 @@
 
 One maintained workflow for Claude Code, Codex and Pi: mandate → align → refine →
 dispatch → review (including E2E with autofix) → PR. Effort state stays in `.scratch/<slug>/` in the target repository;
-skills, role instructions, scheduling and check execution guidance stay in this plugin.
+skills, agent and job instructions, scheduling and check execution guidance stay in this plugin.
 
 This is the maintained source tree. Package-manager cache copies are deployments;
 make changes here. Development symlinks expose those changes without maintaining
@@ -13,11 +13,10 @@ separate copies of skills or scripts.
 | Path | Owns |
 |---|---|
 | `skills/` | Explicit workflow, briefing and settings skills; automatically selectable decision, routing, writing and housekeeping skills |
-| `roles/` | Five shared worker contracts |
 | `scripts/` | Scheduler, optional build mutex, worker/decision resolution, calibration and runnable checks |
 | `harnesses/claude/` | Claude lifecycle and native settings controls |
 | `harnesses/codex/` | Codex lifecycle, capacity and hook registration |
-| `harnesses/pi/` | Pi lifecycle, shared-role delegation and bootstrap extension |
+| `harnesses/pi/` | Pi lifecycle, shared-agent delegation and bootstrap extension |
 | `harnesses/opencode/` | Model settings/profile selection; not a full workflow adapter |
 | `schemas/` | Configuration, worker selection and decision request contracts |
 | `benchmarks/` | Synthetic decision calibration examples |
@@ -25,13 +24,13 @@ separate copies of skills or scripts.
 | `harnesses/executors/` | Bash, Sub-agent and Skill execution adapters |
 | `harnesses/workers/`, `routing/`, `decisions/`, `checks/` | Shared runtime rules by reader, each file small enough for one read |
 | `harnesses/setup/` | Configuration procedure for the setup-automattic and models skills |
-| `agents/` | Thin Claude native profiles; workers read shared roles |
+| `agents/` | Three worker agents (builder, reviewer, verifier): permissions, principles and core skills; Claude loads them natively |
 | `hooks/` | Shared adapter bootstrap; Claude hook registration |
 | `plugin.json`, `.claude-plugin/`, `.codex-plugin/` | Portable metadata and compatibility registration |
 
 The harness bootstrap injects only the active adapter's path. Phase skills load that
 adapter before acting; code-comments and housekeeping also work independently. Codex workers use their native child-agent tools with an
-explicit shared role path; no imported role copies or orchestration server is
+explicit agent and job paths; no imported agent copies or orchestration server is
 needed. All three workflow harnesses load the same shared skill files.
 
 Codex planning loads a short adapter; worker lifecycle and peer messaging are
@@ -113,7 +112,7 @@ codex plugin add automattic@automattic-dev
 
 The installer copies a snapshot. For development on this machine,
 `~/.codex/plugins/cache/automattic-dev/automattic/0.3.0` is a real directory whose
-workflow directories are symlinks into this checkout, including `skills`, `roles`,
+workflow directories are symlinks into this checkout, including `skills`, `agents`,
 `harnesses`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`.
 Its `.codex-plugin/` directory and
 small `plugin.json` registration are regular files/directories, copied from this
@@ -198,7 +197,7 @@ transcripts.
 their pressure levels; see [selection](harnesses/routing/choose.md#allowance) for the
 status-line line that feeds Claude's.
 
-`scripts/outcomes.py summary [--role <role>]` counts each candidate's accepted,
+`scripts/outcomes.py summary [--agent <agent>] [--job <job>]` counts each candidate's accepted,
 failed and pending attempts across efforts from the lifecycle's outcome ledger;
 `scripts/outcomes.py import <decisions.jsonl | workers.sqlite>...` adds past decision
 journals and lifecycle state files once.
@@ -214,18 +213,18 @@ worker runs, its model, or its thinking level, use the **models** skill in chat:
 | Codex | `$automattic:models` |
 | Pi | `/skill:models` |
 
-Start by inspecting the current setup, then configure one role. These examples use
+Start by inspecting the current setup, then configure one agent. These examples use
 Claude's command spelling; use the corresponding command above in Codex or Pi:
 
 ```text
 /automattic:models
-/automattic:models set spec-reviewer --route executor=subagent mode=inherit
-/automattic:models show spec-reviewer --route
+/automattic:models set reviewer --route executor=subagent mode=inherit
+/automattic:models show reviewer --route
 ```
 
 `--route` selects the new per-agent configuration. The first set command selects
 the native reviewer and preserves its native model/thinking settings, bypassing
-older Automattic model overrides for that role. Other roles stay unchanged. The
+older Automattic model overrides for that agent. Other agents stay unchanged. The
 skill prepares the isolated validator environment when needed, validates the
 configuration and reports where it was saved. It does not start a worker.
 
@@ -236,8 +235,8 @@ The [Herdr guidance](harnesses/herdr.md) covers waits and automatic cleanup of o
 You can also describe the change after the command:
 
 ```text
-/automattic:models Configure this project's spec-reviewer to use the subagent codex:codex-rescue and inherit its destination settings.
-/automattic:models Reset only the spec-reviewer's thinking override; keep its executor and model.
+/automattic:models Configure this project's reviewer to use the subagent codex:codex-rescue and inherit its destination settings.
+/automattic:models Reset only the reviewer's thinking override; keep its executor and model.
 ```
 
 The named delegate requires the official Codex plugin in Claude Code. Names and
@@ -251,9 +250,9 @@ To select a model, supply its actual supported ID and optionally
 changes the main session. Reset with `--route` and no field selection restores
 inheritance while keeping the selected executor.
 For bounded thinking, use `thinking={"default":"medium","allowed":["medium","high"]}`.
-A role can define a pool of allowed candidates. The `router` chooses through a
+An agent can define a pool of allowed candidates. The `router` chooses through a
 skill, a built-in System One decision-model client, or a named profile. Profiles
-use `profiles.<name>.<role>.<worker-runtime>.candidate/thinking`; omitted fields
+use `profiles.<name>.<agent>.<worker-runtime>.candidate/thinking`; omitted fields
 leave selection unchanged. See [routers and sparse profiles](harnesses/setup/routers.md#routers-and-sparse-profiles)
 for examples. The built-in [model-routing skill](skills/model-routing/SKILL.md)
 chooses in the host's existing context, without a separate model call.
@@ -298,7 +297,7 @@ Encapsulate reusable skill usage under `executor_types.<name>`, then select
 
 Define each model once under `models` with a task-fit description and runtime
 bindings. Each binding holds its registered `id` and thinking policy; top-level
-`runtimes` holds shared launch routes. Roles reference model names individually or
+`runtimes` holds shared launch routes. Agents reference model names individually or
 in pools; complete executor instances remain supported. A Pi model can use a native
 Pi subagent or a Herdr-launched Pi worker from Codex, using the same binding.
 When credits or a provider are unavailable, automatically choose a suitable remaining
@@ -400,7 +399,7 @@ Missing, incomplete or failed documentation review blocks delivery even when
 executable tests pass; unrelated documentation cleanup remains a follow-up.
 
 [code-comments](skills/code-comments/SKILL.md) contains the shared, language-independent
-writing rules. Implementer and repair workers load it at entry; any agent can select
+writing rules. Builder workers load it at entry; any agent can select
 it automatically while writing comments or invoke `/automattic:code-comments`.
 Its [research basis](skills/code-comments/references/sources.md) separates common
 principles from language-specific style choices. Review owns the hard gate.
@@ -409,7 +408,7 @@ principles from language-specific style choices. Review owns the hard gate.
 intermediates and test outputs, preserves required evidence and updates affected
 project documentation using existing conventions. Maintained docs describe current
 behavior; retained development history belongs in `journals/` or the project's
-established changelog. Implementers and repairers apply that policy while editing,
+established changelog. Builders apply that policy while editing,
 and review checks it. Invoke `/automattic:housekeeping`
 independently; dispatch applies it before review, and PR preparation checks
 for remaining work. It reuses code-comments for source documentation. Cleanup
@@ -457,12 +456,12 @@ explicit base works offline. The target helper never fetches or checks out code.
 ## Permission boundary
 
 Automattic registers SessionStart to load the active adapter. In Claude it also
-registers two PreToolUse checks: Agent calls name a model and use a current worker
-profile (`hooks/agent_model.py`), and `gh pr create|edit` publishes only a linted
+registers two PreToolUse checks: Agent calls name a model, use a current worker
+profile and carry the `job_file` and inputs of a job of that agent (`hooks/agent_model.py`), and `gh pr create|edit` publishes only a linted
 `--body-file` (`hooks/pr_body.py`), plus a Stop check that keeps the session working
 while a lifecycle worker could finish unseen (`hooks/yield_gate.py`; Pi's extension
 and Codex's Stop hook apply the same gate). It has no Git command blocklist. The orchestrator performs authorized pushes and branch/worktree
-cleanup directly; workers retain their assigned role boundaries and native
+cleanup directly; workers retain their agent's permissions and native
 permissions still apply. Actual permission denials are respected.
 
 Run `/reload-plugins` in an existing Claude session to

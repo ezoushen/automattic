@@ -11,6 +11,14 @@ import unittest
 import support
 
 HOOK = support.HOOKS / 'agent_model.py'
+TICKET = support.ROOT / 'skills/dispatch/jobs/ticket.md'
+
+
+def assignment(job_file=TICKET, drop=()):
+    """A launch prompt naming a job file and every input that job lists, less any dropped ones."""
+    text = support.assignment_file(tempfile.mkdtemp(), Path(job_file).stem).read_text()
+    lines = [line for line in text.splitlines() if line.split(':', 1)[0] not in drop]
+    return '\n'.join(line if not line.startswith('job_file:') else f'job_file: {job_file}' for line in lines)
 
 
 class AgentModelHook(unittest.TestCase):
@@ -51,11 +59,11 @@ class AgentModelHook(unittest.TestCase):
         self.assertIsNone(self.run_hook({'command': 'ls'}, tool='Bash'))
 
     def test_fork_and_definitions_that_pin_a_model_are_allowed(self):
-        self.agent(self.home / '.claude/agents', 'automattic-implementer-0123456789ab', 'sonnet')
+        self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
         self.agent(self.cwd / '.claude/agents', 'project-reviewer', 'opus')
-        for subagent in ('fork', 'automattic-implementer-0123456789ab', 'project-reviewer'):
+        for subagent in ('fork', 'automattic-builder-0123456789ab', 'project-reviewer'):
             with self.subTest(subagent=subagent):
-                self.assertIsNone(self.run_hook({'subagent_type': subagent, 'prompt': 'role_file: /r.md'}))
+                self.assertIsNone(self.run_hook({'subagent_type': subagent, 'prompt': assignment()}))
 
     def test_inherit_or_unpinned_definition_is_denied(self):
         self.agent(self.home / '.claude/agents', 'inheriting', 'inherit')
@@ -72,32 +80,46 @@ class AgentModelHook(unittest.TestCase):
         self.assertIsNone(self.run_hook({'subagent_type': 'toolkit:code-reviewer'}))
         self.assertEqual(self.run_hook({'subagent_type': 'toolkit:silent'})['permissionDecision'], 'deny')
 
-    def test_bundled_automattic_role_without_model_is_denied(self):
-        self.assertEqual(self.run_hook({'subagent_type': 'automattic:implementer'})['permissionDecision'], 'deny')
+    def test_bundled_automattic_agent_without_model_is_denied(self):
+        decision = self.run_hook({'subagent_type': 'automattic:builder', 'prompt': assignment()})
+        self.assertEqual(decision['permissionDecision'], 'deny')
 
-    def test_automattic_role_launch_needs_its_role_file(self):
-        self.agent(self.home / '.claude/agents', 'automattic-implementer-0123456789ab', 'sonnet')
-        for subagent, model in (('automattic:implementer', 'sonnet'), ('automattic-implementer-0123456789ab', None)):
+    def test_automattic_launch_needs_its_job_file_and_inputs(self):
+        self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
+        review = support.ROOT / 'skills/review/jobs/diff-review.md'
+        for subagent, model in (('automattic:builder', 'sonnet'), ('automattic-builder-0123456789ab', None)):
             with self.subTest(subagent=subagent):
-                launch = {'subagent_type': subagent, 'prompt': 'Implement ticket 3.', **({'model': model} if model else {})}
-                decision = self.run_hook(launch)
-                self.assertEqual(decision['permissionDecision'], 'deny')
-                self.assertIn('role_file', decision['permissionDecisionReason'])
-                launch['prompt'] = 'role_file: /plugin/roles/implementer.md\nImplement ticket 3.'
-                self.assertIsNone(self.run_hook(launch))
+                launch = {'subagent_type': subagent, **({'model': model} if model else {})}
+                for prompt, reason in (('Implement ticket 3.', 'No `job_file:` found'),
+                                       ('job_file: skills/dispatch/jobs/ticket.md', 'is not an absolute path'),
+                                       (assignment(drop=('worktree', 'brief')), 'Missing: brief, worktree'),
+                                       (assignment(review), 'Job diff-review is not done by builder')):
+                    decision = self.run_hook(dict(launch, prompt=prompt))
+                    self.assertEqual(decision['permissionDecision'], 'deny', prompt)
+                    self.assertIn(reason, decision['permissionDecisionReason'])
+                self.assertIsNone(self.run_hook(dict(launch, prompt=assignment())))
 
-    def test_generated_profile_whose_tools_drifted_from_its_role_is_denied(self):
+    def test_a_job_without_an_inputs_list_is_denied_not_skipped(self):
+        job = self.home / 'plugin/skills/dispatch/jobs/ticket.md'
+        job.parent.mkdir(parents=True)
+        job.write_text('---\nname: ticket\nagent: builder\n---\n')
+        decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',
+                                  'prompt': f'job_file: {job}'})
+        self.assertEqual(decision['permissionDecision'], 'deny')
+        self.assertIn('declares no inputs list', decision['permissionDecisionReason'])
+
+    def test_generated_profile_whose_tools_drifted_from_its_agent_is_denied(self):
         current = 'Read, Edit, Write, Bash, Grep, Glob, Skill, SendMessage, Monitor, TaskStop'
-        for name, tools in (('automattic-implementer-0123456789ab', 'Read, Edit, Write, Bash, Grep, Glob, Skill'),
-                            ('automattic-implementer-ba9876543210', current)):
+        for name, tools in (('automattic-builder-0123456789ab', 'Read, Edit, Write, Bash, Grep, Glob, Skill'),
+                            ('automattic-builder-ba9876543210', current)):
             (self.home / '.claude/agents' / f'{name}.md').write_text(
                 f'---\nname: {name}\ndescription: "x"\ntools: "{tools}"\nmodel: "sonnet"\n---\nBody\n')
-        launch = {'subagent_type': 'automattic-implementer-0123456789ab', 'prompt': 'role_file: /r.md'}
+        launch = {'subagent_type': 'automattic-builder-0123456789ab', 'prompt': assignment()}
         decision = self.run_hook(launch)
         self.assertEqual(decision['permissionDecision'], 'deny')
         for word in ('Monitor', 'SendMessage', 'TaskStop', 'agent_models.py'):
             self.assertIn(word, decision['permissionDecisionReason'])
-        self.assertIsNone(self.run_hook(dict(launch, subagent_type='automattic-implementer-ba9876543210')))
+        self.assertIsNone(self.run_hook(dict(launch, subagent_type='automattic-builder-ba9876543210')))
 
     def test_opt_out_and_malformed_input_never_block(self):
         self.assertIsNone(self.run_hook({'subagent_type': 'Explore'}, env={'AUTOMATTIC_AGENT_MODEL_HOOK': 'off'}))

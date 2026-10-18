@@ -31,7 +31,7 @@ a `#anchor` names a section inside it.
 
 Notation such as `/automattic:refine` and `/mattpocock-skills:tdd` identifies a
 skill, not a shell command. Use the active adapter's invocation mechanism. Shared
-roles own behavior; host adapters and selected executors own runtime operations.
+agents and jobs own behavior; host adapters and selected executors own runtime operations.
 Resolve dependency identity from the active catalog once per session: for Matt use
 the exact `mattpocock-skills:<name>` entry (or its verified host alias/path), never
 a bare colliding name such as `tdd`. Carry that resolved identity into
@@ -40,10 +40,10 @@ similarly named bundled skill. Refresh discovery after installation changes.
 Memory and copied alignment are discovery hints for runner capabilities; verify
 their claims against the current installed runner contract before distributing
 assignments. If deployment is uncertain or changed, record the resolved plugin
-root/version and relevant role/skill content hashes once, and verify workers use
+root/version and relevant agent/job/skill content hashes once, and verify workers use
 that source. A fresh development checkout is not proof that another host loaded it.
 No script is copied to a
-project. `plugin_root`, `repo`, `adapter`, and `role_file` in worker messages are
+project. `plugin_root`, `repo`, `adapter`, `agent_file` and `job_file` in worker messages are
 absolute paths, not assumed shell variables.
 
 Orchestrators and workers follow shared [assignment focus](workers/focus.md)
@@ -65,7 +65,7 @@ Worker blockers and review/check failures invoke [escalation checkpoints](routin
 before the next attempt; ordinary resumes reuse the saved choice.
 
 Include workers launched by dependency skills during planning/research in the same
-capacity and assignment log. Where a configured role applies, resolve it before
+capacity and assignment log. Where a configured agent applies, resolve it before
 launch; otherwise record the dependency's native selection and its provenance.
 Retain the assignment's stopping condition and observed model/effort; label missing
 execution evidence instead of treating a hard-coded model as a routed choice.
@@ -83,7 +83,7 @@ with their cause and recalibration action, deduplicating unchanged warnings.
 
 Explicit `--config-profile` or `AUTOMATTIC_PROFILE` selects a routing profile;
 otherwise use the configured router, defaulting to the built-in routing skill.
-Profile lookup is by role and worker runtime, not caller. Consume selection options
+Profile lookup is by agent and worker runtime, not caller. Consume selection options
 before forwarding phase arguments to the scheduler or review target helper.
 When `HERDR_ENV=1`, also read [Herdr environment guidance](herdr.md) before
 cross-runtime dispatch, even when no startup hook supplied it. Carry root-session

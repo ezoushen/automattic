@@ -20,7 +20,7 @@ class Fallbacks(RouterCase):
 
     def test_rule_first_router_consults_only_after_a_failure_or_without_a_rule(self):
         self.decision_router()
-        self.data['profiles'] = {'balanced': {'implementer': {'codex': {'candidate': 'sol', 'thinking': 'high'}}}}
+        self.data['profiles'] = {'balanced': {'builder': {'codex': {'candidate': 'sol', 'thinking': 'high'}}}}
         self.data['router'].update(fallback_profile='balanced', consult='after-failure')
         self.save()
         journal = self.root / 'decisions.jsonl'
@@ -49,7 +49,7 @@ class Fallbacks(RouterCase):
 
     def test_rule_first_router_settles_a_cross_runtime_pool_by_the_host_runtime(self):
         self.decision_router()
-        self.data['profiles'] = {'balanced': {'implementer': {'codex': {'candidate': 'sol'},
+        self.data['profiles'] = {'balanced': {'builder': {'codex': {'candidate': 'sol'},
                                                               'claude': {'candidate': 'opus'}}}}
         self.data['router'].update(fallback_profile='balanced', consult='after-failure')
         self.save()
@@ -67,7 +67,7 @@ class Fallbacks(RouterCase):
         self.data['runtimes']['pi'] = {'executors': {'herdr': {'type': 'skill', 'config': {
             'skill': 'herdr', 'instruction': 'Run one worker.'}}}}
         self.data['models']['glm'] = {'description': 'glm', 'runtimes': {'pi': {'id': 'dgx/glm'}}}
-        self.data['agents']['implementer']['candidates'].append('glm')
+        self.data['agents']['builder']['candidates'].append('glm')
         self.save()
         mixed = self.resolve(host='claude', assignment='Implement ticket 1.',
                              excluded_candidates={'opus': 'Claude weekly allowance critical.'})
@@ -82,7 +82,7 @@ class Fallbacks(RouterCase):
 
     def test_partial_fallback_profile_still_returns_host_selection(self):
         self.fallback_router()
-        self.data['profiles']['balanced']['implementer']['codex'] = {'thinking': 'high'}
+        self.data['profiles']['balanced']['builder']['codex'] = {'thinking': 'high'}
         self.save()
         result = self.resolve(assignment='Underspecified task.', target_runtime='codex')
         self.assertEqual(result['status'], 'selection_required')

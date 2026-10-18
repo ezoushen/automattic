@@ -11,17 +11,19 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / 'scripts'))
+import agent_defs  # noqa: E402
 # Built-in agents that follow the session model when no model is passed.
 INHERITING_BUILTINS = {None, '', 'general-purpose', 'Explore', 'Plan', 'claude'}
 REASON = (
     'Pass an explicit `model` to this Agent call; without it the subagent runs on the session model. '
     'Choose the cheapest adequate one: haiku for search, lookups and summaries; sonnet for research, '
     'review and bounded implementation; opus only for hard design, adversarial review or deep diagnosis. '
-    'Automattic role workers are routed with agent_models.py first.'
+    'Automattic agents are routed with agent_models.py --job first.'
 )
 
-ROLE_REASON = ('An Automattic role worker needs its assignment fields: pass absolute `adapter`, `role_file` and '
-               '`plugin_root` in the prompt (see the host adapter and the dispatch launch template).')
+ASSIGNMENT_REASON = ('An Automattic agent needs its assignment: write `job_file: <absolute job path>` and every input '
+                     'that job lists as `name: value` in the prompt (see the job file and the host adapter). ')
 
 
 def field(path, name):
@@ -41,14 +43,31 @@ def tools(path):
     return {tool.strip() for tool in value.split(',')} if value else None
 
 
+def assignment_problem(agent, prompt):
+    """Why a launch prompt cannot carry out its job, or None: the job file it names and that job's inputs."""
+    match = re.search(r'(?:^|\s)job_file:[ \t]*(\S+)', prompt, re.M)
+    if not match:
+        return 'No `job_file:` found.'
+    path = Path(match.group(1))
+    if not path.is_absolute() or path.parent.name != 'jobs' or not path.is_file():
+        return f'`job_file: {match.group(1)}` is not an absolute path to an existing skills/<owner>/jobs/<job>.md.'
+    job = agent_defs.load(path.parents[3])['jobs'].get(path.stem)
+    if job is None or job['agent'] != agent:
+        return f'Job {path.stem} is not done by {agent}.'
+    if not isinstance(job.get('inputs'), list):
+        return f'{path} declares no inputs list; fix the job file.'
+    missing = agent_defs.missing_inputs(job, prompt)
+    return f'Missing: {", ".join(missing)}.' if missing else None
+
+
 def stale_profile(name, cwd):
-    """Return why a generated `automattic-<role>-<digest>` profile no longer matches its role, or None."""
+    """Return why a generated `automattic-<agent>-<digest>` profile no longer matches its agent, or None."""
     match = re.fullmatch(r'automattic-([a-z0-9-]+)-[0-9a-f]{12}', name)
-    role = match and ROOT / 'agents' / f'{match.group(1)}.md'
+    agent = match and ROOT / 'agents' / f'{match.group(1)}.md'
     profile = match and definition(name, cwd)
-    if not (profile and role.is_file()) or None in (tools(profile), tools(role)) or tools(profile) == tools(role):
+    if not (profile and agent.is_file()) or None in (tools(profile), tools(agent)) or tools(profile) == tools(agent):
         return None
-    missing, extra = sorted(tools(role) - tools(profile)), sorted(tools(profile) - tools(role))
+    missing, extra = sorted(tools(agent) - tools(profile)), sorted(tools(profile) - tools(agent))
     return (f'{profile} was rendered from an older `agents/{match.group(1)}.md`: its tools differ '
             f'(missing: {", ".join(missing) or "none"}; extra: {", ".join(extra) or "none"}). Re-render it with '
             f'`agent_models.py --route ... --profile` as {ROOT}/harnesses/claude/adapter.md describes, and launch '
@@ -78,10 +97,12 @@ def main():
             return
         tool_input = event.get('tool_input') or {}
         subagent = tool_input.get('subagent_type') or ''
-        if re.fullmatch(r'automattic(:[a-z0-9-]+|-[a-z0-9-]+-[0-9a-f]{12})', subagent) \
-                and 'role_file' not in (tool_input.get('prompt') or ''):
-            deny(ROLE_REASON)
-            return
+        named = re.fullmatch(r'automattic(?::([a-z0-9-]+)|-([a-z0-9-]+)-[0-9a-f]{12})', subagent)
+        if named:
+            problem = assignment_problem(named.group(1) or named.group(2), tool_input.get('prompt') or '')
+            if problem:
+                deny(ASSIGNMENT_REASON + problem)
+                return
         stale = stale_profile(subagent, event.get('cwd') or os.getcwd())
         if stale:
             deny(stale)

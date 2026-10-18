@@ -11,7 +11,8 @@ Contents:
 
 ## Three tiers
 
-1. **Core:** the role file. Its gates apply whenever their condition holds, such as
+1. **Core:** the agent file and the core skills it names; the job file comes with
+   it. Their gates apply whenever their condition holds, such as
    the test and comment checks when a change touches tests or comments. Never
    re-decide or drop them per launch, and never send them to the decision model.
 2. **Situational:** other skills this assignment needs, picked by the orchestrator
@@ -19,8 +20,8 @@ Contents:
    `skills` field as absolute paths, or host skill names where no stable path
    exists, each with the fact that selected it.
 3. **On demand:** everything else. The worker finds it through the host's own skill
-   listing when a step needs it, and reports what it loaded beyond its role file
-   and the listed skills.
+   listing when a step needs it, and reports what it loaded beyond its agent and job
+   files and the listed skills.
 
 Hosts load only skill names and descriptions until a skill is used, so unlisted
 skills cost little. What costs is required reading the task doesn't need, and a long

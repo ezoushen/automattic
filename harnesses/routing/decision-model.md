@@ -32,7 +32,7 @@ After worker preflight, pass a compact text file with `--assignment` and the
 filtered `--eligible-candidates`. Include the problem, acceptance checks,
 uncertainty, relevant verified outcomes and user priorities. Reuse an existing
 assignment summary when suitable; do not send transcripts, full repositories or
-secrets. The helper adds the role, caller and eligible model descriptions, IDs,
+secrets. The helper adds the agent, job, caller and eligible model descriptions, IDs,
 resolved runtimes and model/effort options, excluding executor instructions and
 commands. The summary must fit 16000 characters and the request 64 KiB.
 For live decisions, also pass `--journal <absolute-session-decisions.jsonl>` and

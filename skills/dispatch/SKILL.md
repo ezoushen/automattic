@@ -9,7 +9,7 @@ argument-hint: "[effort|project|milestone|issue-ID|issue-URL] [--autofix]"
 
 First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
 One orchestrator owns scheduling, worktree integration and board updates.
-Workers receive the shared `roles/<role>.md` and only their task inputs. An effort
+Workers receive an agent file, a job file and only that job's inputs. An effort
 has a local slug for its branch, alignment and reports; tickets live in the
 configured tracker or, only for local Markdown, `.scratch/<slug>/issues/`.
 Read [board operations](board.md) and use the selected board throughout this skill.
@@ -127,11 +127,11 @@ below or record why it is excluded/blocked before reporting the invocation finis
    carry the runner's currently supported wait/status/log/cancel operations
    ([check execution](../../harnesses/checks/run.md#run-a-bounded-check)).
    Create reports directory, claim the ticket and record implementation started,
-   then start `implementer` with:
+   then start a `builder` with:
 
    ```text
-   adapter: <absolute active adapter>  role_file: <plugin_root>/roles/implementer.md
-   plugin_root: <absolute>  repo: <absolute main checkout>
+   adapter: <absolute active adapter>  plugin_root: <absolute>  repo: <absolute main checkout>
+   agent_file: <plugin_root>/agents/builder.md  job_file: <plugin_root>/skills/dispatch/jobs/ticket.md
    ticket: <canonical ID/URL or absolute local ticket path>
    ticket context: <current issue content, criteria, dependencies, priority and revision>
    focus: <highest-priority outcome, next acceptance condition and deferred optional work>
@@ -178,8 +178,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    review/repair and applicable E2E; integration alone does not retire it.
    Once an integrated build allows checks that only the user can observe
    (`Verify (user)`), send the user one request covering all of them.
-   On conflict, assign the shared repair role in the
-   spec worktree with branch, starting head, integration scope and conflict details.
+   On conflict, assign a builder the `merge-conflict` job and its inputs in the spec worktree.
    No other worker may use that worktree then; the orchestrator completes the merge.
 6. A blocked ticket is the orchestrator's work: research missing facts, diagnose
    defects, resolve engineering choices within accepted constraints, or return to
@@ -193,7 +192,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    verbatim. Resolve → ready.
    Two failed attempts at the same ticket → split it around one deterministic
    Verify per criterion; never an unchanged third attempt.
-   A worker-role restriction does not establish a human-only task. Separate missing
+   An agent's permission limit does not establish a human-only task. Separate missing
    authorization, access, capability and unresolved user choices. When the user has
    authorized the operation, the orchestrator may perform it within native permissions;
    a genuine operator-only restriction still applies. Verify target identities from
@@ -236,7 +235,7 @@ leaves the handoff blocked with its reason, never silently skipped or marked cle
 
 Do not call `Skill(automattic:review)` or ask the user to run `/review` to continue
 an ordinary dispatch. The public review skill remains user-invoked; its shared
-procedure is already part of this user-invoked dispatch. Native tool refusals
+procedure is already part of this dispatch. Native tool refusals
 remain binding, including those from reviewer dependencies; stop the denied action
 and record the gap. There is one review loop, maintained in the shared procedure.
 

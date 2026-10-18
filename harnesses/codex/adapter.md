@@ -1,6 +1,6 @@
 # Codex adapter
 
-Use the shared skills and roles. Resolve a dependency from the active skill catalog
+Use the shared skills, agents and jobs. Resolve a dependency from the active skill catalog
 and read it when its step applies; slash notation identifies a skill, not a shell
 command. Preserve the existing explicit invocation policy in `agents/openai.yaml`.
 
@@ -11,7 +11,7 @@ lines before acting on that doc.
 
 For planning phases, this adapter is sufficient. Before dispatch, starting/resuming
 a worker, or acting as one, also read [dispatch.md](dispatch.md). Load only the
-assigned role and its task inputs; do not preload every phase, role or dependency.
+assigned agent, job and its inputs; do not preload every phase, job or dependency.
 
 Apply shared instructions within the active runtime's instruction hierarchy.
 Carry forward the user's existing decisions and authorization across phases;
@@ -29,6 +29,6 @@ Omitted settings retain native defaults. This plugin does not
 set API pricing, caching, service tiers or account limits.
 
 Automattic does not block Git commands. The orchestrator can perform authorized
-publication and cleanup directly; workers retain their assigned role boundaries.
+publication and cleanup directly; workers retain their agent's permissions.
 Follow native permissions, and never route around a denial or treat Claude
 profile tool lists as Codex restrictions.

@@ -30,10 +30,11 @@ class YieldGateHook(unittest.TestCase):
         self.state = self.repo / '.scratch/effort/reports/workers.sqlite'
         execution = self.repo / '.scratch/effort/reports/execution.json'
         execution.parent.mkdir(parents=True)
-        execution.write_text(json.dumps({'role': 'implementer', 'settings': {'model': 'sonnet'}}))
+        execution.write_text(json.dumps({'agent': 'builder', 'job': 'ticket', 'settings': {'model': 'sonnet'}}))
         self.lifecycle('register', assignment='ticket-1', repo=str(self.repo), worktree=str(self.repo),
                        head='head-1', execution=str(execution), runtime='claude', worker='pane-1',
-                       native_session='native-1', owned=True)
+                       native_session='native-1', owned=True,
+                       packet=str(support.assignment_file(execution.parent, 'ticket')))
         self.lifecycle('startup', observed={'runtime': 'claude', 'model': 'sonnet'}, evidence=['native.jsonl:1'])
         self.lifecycle('submitted', evidence=['native.jsonl:2:accepted prompt'])
 
@@ -79,7 +80,8 @@ class YieldGateHook(unittest.TestCase):
         execution = self.state.parent / 'execution.json'
         self.lifecycle('register', 'ticket-2/1', None, assignment='ticket-2', repo=str(self.repo),
                        worktree=str(worktree), head='head-1', execution=str(execution), runtime='claude',
-                       worker='pane-2', native_session='native-2', owned=True)
+                       worker='pane-2', native_session='native-2', owned=True,
+                       packet=str(support.assignment_file(execution.parent, 'ticket')))
         self.assertIsNone(self.stop(cwd=worktree, pane=None))
         self.assertEqual(self.stop(pane=None)['decision'], 'block')
 

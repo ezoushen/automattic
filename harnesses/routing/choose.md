@@ -56,7 +56,8 @@ the selected executor applies settings and confirms what actually ran.
    dropping rejected fields or bypassing resolution.
 
 Use the plugin's Python environment, not a guessed system interpreter. Examples
-extend `<plugin_root>/.venv/bin/python -B <plugin_root>/scripts/agent_models.py --repo <repo> --harness <host> --role <role> --route`:
+extend `<plugin_root>/.venv/bin/python -B <plugin_root>/scripts/agent_models.py --repo <repo> --harness <host> --job <job> --route`;
+a launch also passes `--assignment <file>`, and `--list-candidates` takes `--agent <agent>` in place of `--job`:
 
 ```text
 --list-candidates
@@ -102,7 +103,7 @@ Every route from a pool of catalog models also returns `shadow_selection`: what 
 have chosen, without changing the route. For every candidate this host can reach
 through any runtime, except those the host excluded or training endpoints the
 repository does not allow, it draws a
-sample from a Beta(1 + successes, 1 + failures) acceptance rate for this role in the
+sample from a Beta(1 + successes, 1 + failures) acceptance rate for this agent and job in the
 [outcome ledger](../workers/collect.md#accept-and-record-outcomes), seeded by the assignment ID or text so a
 retry draws the same, and subtracts a cost weight when the model's `cost` is
 `subscription` or unstated: 0.15, rising to 0.4 when its provider's allowance is

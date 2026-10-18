@@ -7,8 +7,8 @@ in Codex or Pi.
 
 | Intent or problem | Action |
 |---|---|
-| Keep the executor, restore native model/thinking | `/automattic:models reset <role> --route` |
-| Clear only one override | `/automattic:models reset <role> --route thinking` or `model` |
+| Keep the executor, restore native model/thinking | `/automattic:models reset <agent> --route` |
+| Clear only one override | `/automattic:models reset <agent> --route thinking` or `model` |
 | Use the lower-layer configuration again | Ask the skill to remove the selected profile or shared agent entry |
 | Mask a personal executor selection for this project | Set the project agent entry to null; existing native preferences then apply |
 | Missing `jsonschema` | Use the prepared plugin Python environment, or run the [setup steps](executors.md#manual-setup-and-inspection) |
@@ -21,7 +21,7 @@ in Codex or Pi.
 
 The former `executors` package registry and `routes` format now fail with a migration
 diagnostic; they are never silently treated as native defaults. On explicit request,
-replace each route with an `agents.<role>` instance. A former Herdr route becomes a
+replace each route with an `agents.<agent>` instance. A former Herdr route becomes a
 `skill` instance selecting the installed Herdr skill and a concrete delegation
 instruction. Remove the old package registration only after translating its uses.
 For override mode, copy the desired effective destination preferences into the
@@ -30,13 +30,13 @@ Preview/validate the replacement before writing it. Existing `models.json` remai
 supported for unconfigured native workers; migrating it is optional and explicit.
 
 Installation preserves existing user configuration and writes no model/thinking
-presets; to pin a pair for a role, save it through the models skill. Reload native
+presets; to pin a pair for an agent, save it through the models skill. Reload native
 agent definitions when they change; existing workers retain their launch settings.
 
 ## Migrate earlier configurations
 
-Back up the file. Move `agents.<role>.default` to the appropriate
-`profiles.<name>.<role>.<worker-runtime>.candidate`, keeping pools in `agents`.
+Back up the file. Move `agents.<agent>.default` to the appropriate
+`profiles.<name>.<agent>.<worker-runtime>.candidate`, keeping pools in `agents`.
 Use `router.type: skill` or `decision-model` for adaptive selection, or select that profile explicitly.
 Keep per-model thinking baselines and bounds. Earlier `profiles.<name>.agents`
 entries require an explicit migration: shared models/routes/pools belong at the

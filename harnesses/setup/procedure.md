@@ -11,7 +11,7 @@ This file selects the flow and inspects settings. For edits read
 
 ## Select the configuration flow
 
-For new setup and natural-language configuration requests, use model definitions and role entries
+For new setup and natural-language configuration requests, use model definitions and agent entries
 in `executors.json`; **--route** is the explicit command spelling for that flow.
 Read [configuration examples](executors.md) and only the selected
 executor's schema/adapter. Preserve structured `/models` legacy commands without
@@ -23,12 +23,12 @@ preference harness for legacy settings. If omitted, use the current host; never
 infer it from a model name. It does not change the main session or supply tools.
 Use [host selection](../workers/launch.md#host-selection) to distinguish the
 caller from the worker runtime. A named-profile request uses
-`profiles.<name>.<role>.<worker-runtime>.candidate/thinking`; there is no `agents` or
+`profiles.<name>.<agent>.<worker-runtime>.candidate/thinking`; there is no `agents` or
 `choices` wrapper. Require the target runtime for a profile edit, establishing it
 from the requested candidate's binding when unambiguous. Preserve omitted fields.
 Profiles never replace pools or routes. `--config-profile` explicitly selects a
 profile router; host/Herdr names do not automatically select profiles.
-For reusable models, read [model definitions](catalog.md#configure-a-role).
+For reusable models, read [model definitions](catalog.md#configure-an-agent).
 Store descriptions under `models.<name>`; its `runtimes.<runtime>` bindings contain
 the registered `id` and thinking policy. Top-level `runtimes.<runtime>.executors`
 owns reusable launch routes indexed by caller context. For skill bridges, use
@@ -38,7 +38,7 @@ caller's route and preserve sibling routes when saving the complete runtime defi
 Use configured native routes
 for same-runtime work, including Pi, and a supported bridge for cross-runtime work.
 Herdr routes require a real managed environment. Provider connections stay in the runtime.
-Keep role pools shared. A routing profile may cover multiple worker runtimes.
+Keep agent pools shared. A routing profile may cover multiple worker runtimes.
 Preserve selection policy when changing only transport.
 For reusable skill usage, read [named skill executor types](executors.md#named-skill-executor-types).
 An executor-definition request selects this per-agent flow. Store the complete skill
@@ -50,7 +50,7 @@ been removed or reassigned as requested; preserve unrelated types and routes.
 ## Inspect effective settings
 
 For **show** or an inspection without arguments, show the host, router and selected profile/source, then each
-role's pool or fixed instance, settings and source.
+agent's pool or fixed instance, settings and source.
 Include shared decision backend, enabled families and offline calibration status;
 `decisions.py status` reports saved warnings without inference or state writes.
 Include a pool's candidates and descriptions, thinking defaults/allowed

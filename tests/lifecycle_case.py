@@ -29,7 +29,7 @@ class WorkerLifecycleCase(unittest.TestCase):
         self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'state')}))
         self.state = self.root / 'workers.sqlite'
         self.execution = self.root / 'execution.json'
-        self.execution.write_text(json.dumps({'harness': 'claude', 'role': 'implementer',
+        self.execution.write_text(json.dumps({'harness': 'claude', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'sonnet', 'effort': 'high'}}))
 
     def cli(self, action, *args, code=0):
@@ -46,10 +46,15 @@ class WorkerLifecycleCase(unittest.TestCase):
 
     def register(self, attempt='ticket-1/1', assignment='ticket-1', session='native-1',
                  worker='pane-1', code=0, owned=True, runtime='claude', **fields):
+        fields.setdefault('packet', str(self.packet()))
         return self.record('register', attempt, code=code, assignment=assignment,
                            repo=str(self.root), worktree=str(self.root), head='head-1',
                            execution=str(self.execution), runtime=runtime,
                            worker=worker, native_session=session, owned=owned, **fields)
+
+    def packet(self):
+        """A complete assignment for the job the current execution names."""
+        return support.assignment_file(self.root, json.loads(self.execution.read_text()).get('job', 'ticket'))
 
     def ready(self, attempt='ticket-1/1'):
         self.record('startup', attempt, observed={'runtime': 'claude', 'model': 'sonnet',
@@ -64,7 +69,7 @@ class WorkerLifecycleCase(unittest.TestCase):
     def collect(self, attempt='ticket-1/1', report=None):
         if report is None:
             report = self.root / (attempt.replace('/', '-') + '.md')
-            report.write_text('Verified assignment report at head-1\n')
+            report.write_text('## Implemented\n\nVerified assignment report at head-1\n')
         self.record('result', attempt, status='completed', head='head-1', report=str(report),
                     evidence=['checks.log@head-1'])
         return report
@@ -86,7 +91,7 @@ class WorkerLifecycleCase(unittest.TestCase):
         policy = {'enabled': ['worker-selection'], 'backend': {
             'protocol': 'systemone', 'endpoint': 'http://localhost:1241/v1/systemone', 'model': 'test-model'}}
         trace = decision_journal.trace_config(self.journal, self.root, assignment)
-        result = decisions.decide(policy, {'family': 'worker-selection', 'state': 'Role: implementer\n',
+        result = decisions.decide(policy, {'family': 'worker-selection', 'state': 'Agent: builder\nJob: ticket\n',
                                            'instruction': 'Choose a worker.', 'options': {'option_0': option}},
                                   trace=trace, transport=transport)
         execution = json.loads(self.execution.read_text())

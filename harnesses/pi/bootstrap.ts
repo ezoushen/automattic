@@ -11,7 +11,7 @@ export default function (pi) {
     const herdr = process.env.HERDR_ENV === "1"
       ? ` Herdr environment detected: before delegation also read ${root}/harnesses/herdr.md for routing, waits and cleanup.`
       : "";
-    const hint = `Automattic harness: pi. When using an Automattic skill, first read ${root}/harnesses/pi/adapter.md. Plugin root: ${root}. Load only this host adapter; pass its absolute path and the shared role file to workers.${herdr}`;
+    const hint = `Automattic harness: pi. When using an Automattic skill, first read ${root}/harnesses/pi/adapter.md. Plugin root: ${root}. Load only this host adapter; pass its absolute path and the agent and job files to workers.${herdr}`;
     // Returning systemPrompt forces the prompt for this run only, so runs that
     // start without a typed prompt revert to the structured one and every switch
     // invalidates the server's prefix cache. A section is diffed by Pi instead.

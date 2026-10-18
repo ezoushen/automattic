@@ -29,9 +29,9 @@ satisfy that requirement. Use an explicitly selected, preflighted external route
 with confirmed cleanup when authorized; otherwise keep the assignment queued.
 Do not launch a child first and discover this limitation during collection.
 
-Supply absolute `adapter`, `role_file`, `plugin_root`, `repo`, role inputs, relevant
-user decisions and exact failure evidence. Children read the adapter and assigned
-role, then verify worktree and branch. Pass paths instead of copied conversations.
+Supply absolute `adapter`, `agent_file`, `job_file`, `plugin_root`, `repo`, the job's inputs, relevant
+user decisions and exact failure evidence. Children read the adapter, agent file and job
+file, then verify worktree and branch. Pass paths instead of copied conversations.
 After session loss, inspect saved IDs; reconstruct absent agents from surviving
 files/worktrees and record replacement IDs.
 
@@ -47,13 +47,14 @@ spawn request proves the effective model. Do not rewrite global Codex configurat
 Derive the child ceiling from the current runtime's capacity, reserving the parent
 slot when its limit includes the parent. For the local Markdown board, pass that
 ceiling as `--max-live` on every scheduler call. Apply it to native tracker dispatch
-too; admit only free slots, counting reviewers/reproducers/E2E. Idle or interrupted
+too; admit only free slots, counting reviewer and verifier jobs. Idle or interrupted
 agents may still occupy slots. Interruption ends a turn; reconcile owned jobs under
 [job lifetime](../workers/resources.md#resource-and-job-lifetime). Release capacity only after
 their teardown and a supported close operation with confirmed status. When closing
 is unavailable, `followup_task` may continue only a collected, explicitly retained
-same-assignment repair/recheck with matching role, settings and permissions.
-A new ticket or role needs a fresh native conversation under
+same-assignment repair/recheck with matching agent, settings and permissions.
+A new ticket, another agent, or a job whose `independent_of` lists one the worker
+already did needs a fresh native conversation under
 [worker attempts](../workers/prepare.md). If the runtime cannot
 provide that context or release capacity, queue work and report the limitation.
 Workers complete their assigned scope directly; additional decomposition returns

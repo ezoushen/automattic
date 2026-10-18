@@ -45,7 +45,7 @@
       "propertyNames": { "type": "string", "minLength": 1, "not": { "pattern": "[\\s\\u0000-\\u001f]" } },
       "additionalProperties": {
         "type": "object",
-        "propertyNames": { "$ref": "#/$defs/roleName" },
+        "propertyNames": { "$ref": "#/$defs/agentName" },
         "additionalProperties": {
           "type": "object",
           "propertyNames": { "$ref": "#/$defs/runtimeName" },
@@ -95,7 +95,7 @@
       },
       "required": ["backend", "enabled"], "additionalProperties": false
     },
-    "roleName": { "enum": ["implementer", "spec-reviewer", "reproducer", "repair", "e2e-runner"] },
+    "agentName": { "enum": ["builder", "reviewer", "verifier"] },
     "router": {
       "oneOf": [
         {
@@ -153,7 +153,7 @@
     },
     "agents": {
       "type": "object",
-      "propertyNames": { "enum": ["implementer", "spec-reviewer", "reproducer", "repair", "e2e-runner"] },
+      "propertyNames": { "$ref": "#/$defs/agentName" },
       "additionalProperties": { "$ref": "#/$defs/agent" }
     },
     "agent": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/instance" }, { "$ref": "#/$defs/pool" }, { "$ref": "#/$defs/modelReference" }] },
