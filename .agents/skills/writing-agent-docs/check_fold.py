@@ -7,7 +7,7 @@ usage: check_fold.py --base BASE [--root DIR] [--config FILE] [--allow FILE] [--
 
 Lines compare after link targets are dropped, so moving text and retargeting its links
 is free, but a dropped, duplicated-then-lost or reworded line is reported. --allow names
-a JSON file: {"lines": [base lines that may be gone], "surface": ["removed skill x",
+a JSON file: {"lines": [base lines that may be gone, one entry per occurrence], "surface": ["removed skill x",
 "added skill y"]}. Exit 0: nothing differs; 1: differences; 2: invalid input.
 """
 import argparse
@@ -89,11 +89,11 @@ def export(root, base, target):
 
 def compare(root, base_root, config, fold, allow):
     differences = []
-    allowed_lines = {normalize(line) for line in allow.get('lines', [])}
+    allowed_lines = Counter(normalize(line) for line in allow.get('lines', []))
     missing = body_lines(base_root, config) - body_lines(root, config)
     for line, count in sorted(missing.items()):
-        if line not in allowed_lines:
-            differences.append({'kind': 'line', 'text': line, 'count': count})
+        if count > allowed_lines[line]:
+            differences.append({'kind': 'line', 'text': line, 'count': count - allowed_lines[line]})
     before, after = surface(base_root, fold), surface(root, fold)
     allowed = set(allow.get('surface', []))
     for verb, entries in (('removed', before - after), ('added', after - before)):

@@ -89,6 +89,17 @@ class FoldCheck(unittest.TestCase):
         self.write('skills/kinds/comments.md', '# Comments\n\nKeep them true.\n')
         self.assertEqual(self.differences(), {('line', 'Keep them true.')})
 
+    def test_an_allowed_line_forgives_one_occurrence_per_entry(self):
+        self.write('skills/kinds/comments.md', '# Comments\n\nKeep them true.\n\nKeep them true.\n')
+        self.git('add', '-A')
+        self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'two')
+        self.write('skills/kinds/comments.md', '# Comments\n')
+        allow = self.root.parent / 'allow.json'
+        allow.write_text(json.dumps({'lines': ['Keep them true.']}))
+        self.assertEqual(self.fold('--allow', str(allow)), [{'kind': 'line', 'text': 'Keep them true.', 'count': 1}])
+        allow.write_text(json.dumps({'lines': ['Keep them true.', 'Keep them true.']}))
+        self.assertEqual(self.fold('--allow', str(allow)), [])
+
     def test_a_changed_link_label_is_a_changed_line(self):
         self.write('skills/tool/SKILL.md', SKILL.replace('the job', 'a job'))
         self.assertEqual(self.differences(), {('line', 'Second rule, see [the job]().')})
