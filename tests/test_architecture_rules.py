@@ -110,6 +110,13 @@ class ArchitectureRules(Fixture):
         self.write('README.md', '# Project\n\nSee [tool](skills/tool/SKILL.md) and [loose](extra/loose.md).\n')
         self.assertEqual(self.check(), {('extra/loose.md', 1, 'unmapped', 'error')})
 
+    def test_an_anchored_link_to_a_doc_no_module_owns_is_not_a_crash(self):
+        self.write('shared/guide.md', GUIDE)
+        self.write('flows/a/one.md', '# One\n\nSee [readme](../../README.md#project).\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + '[one](../../flows/a/one.md)\n')
+        self.assertEqual(self.check(), set())
+
     def first_read_tree(self):
         self.architecture['levels'] = [['skills'], ['bootstrap'], ['flows'], ['runtime'], ['hosts']]
         self.architecture['modules']['bootstrap'] = {'docs': ['bootstrap.md']}

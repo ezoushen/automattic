@@ -380,6 +380,8 @@ def check(root, config, changed=None, architecture=None):
         limit = architecture.data.get('shared_section_links', 3)
         for (target, anchor), sources in sorted(anchored.items()):
             owner = architecture.module(target)
+            if owner is None:
+                continue
             isolated = architecture.modules[owner].get('isolated')
             outside = {src for src in sources if (m := architecture.module(src)) is not None and (m != owner or isolated)}
             if len(outside) >= limit:
