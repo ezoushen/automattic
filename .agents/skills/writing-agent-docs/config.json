@@ -1,0 +1,78 @@
+{
+  "docs": [
+    "skills/**/*.md",
+    "roles/*.md",
+    "harnesses/**/*.md",
+    "agents/*.md",
+    ".agents/skills/**/*.md"
+  ],
+  "linking": [
+    "README.md",
+    "docs/**/*.md",
+    "addons/**/*.md"
+  ],
+  "code": [
+    "scripts/*.py",
+    "scripts/*.sh",
+    "hooks/*.py",
+    "hooks/*.json",
+    "harnesses/**/*.ts",
+    "harnesses/**/*.json",
+    "tests/*.py",
+    "tests/*.mjs"
+  ],
+  "exclude": [
+    "tests/test_doc_checker.py"
+  ],
+  "code_doc_pattern": "(?:harnesses|skills|roles)/[\\w/-]+\\.md",
+  "entry_points": [
+    "skills/*/SKILL.md",
+    "harnesses/*/adapter.md",
+    "agents/*.md",
+    "roles/*.md",
+    ".agents/skills/*/SKILL.md"
+  ],
+  "skill_files": [
+    "skills/*/SKILL.md",
+    ".agents/skills/*/SKILL.md"
+  ],
+  "known_names": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CONTEXT.md",
+    "GLOSSARY.md"
+  ],
+  "max_bytes": 12288,
+  "description_budget": 4000,
+  "debt": {
+    "skills/dispatch/SKILL.md": {
+      "contents": true,
+      "bytes": 18139
+    },
+    "skills/dispatch/board.md": {
+      "contents": true
+    },
+    "skills/housekeeping/SKILL.md": {
+      "contents": true
+    },
+    "skills/mandate/SKILL.md": {
+      "contents": true
+    },
+    "skills/pipeline/SKILL.md": {
+      "contents": true
+    },
+    "skills/pr/writing.md": {
+      "contents": true
+    },
+    "skills/refine/workflow.md": {
+      "contents": true
+    },
+    "skills/remediate/SKILL.md": {
+      "contents": true
+    },
+    "skills/review/workflow.md": {
+      "contents": true,
+      "bytes": 28516
+    }
+  }
+}
