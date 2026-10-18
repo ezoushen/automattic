@@ -458,9 +458,9 @@ explicit base works offline. The target helper never fetches or checks out code.
 
 Automattic registers SessionStart to load the active adapter. In Claude it also
 registers two PreToolUse checks: Agent calls name a model and use a current worker
-profile (`hooks/agent-model.py`), and `gh pr create|edit` publishes only a linted
-`--body-file` (`hooks/pr-body.py`), plus a Stop check that keeps the session working
-while a lifecycle worker could finish unseen (`hooks/yield-gate.py`; Pi's extension
+profile (`hooks/agent_model.py`), and `gh pr create|edit` publishes only a linted
+`--body-file` (`hooks/pr_body.py`), plus a Stop check that keeps the session working
+while a lifecycle worker could finish unseen (`hooks/yield_gate.py`; Pi's extension
 and Codex's Stop hook apply the same gate). It has no Git command blocklist. The orchestrator performs authorized pushes and branch/worktree
 cleanup directly; workers retain their assigned role boundaries and native
 permissions still apply. Actual permission denials are respected.

@@ -97,12 +97,12 @@ Plan, and other plugins' agents. Choose the cheapest model that is adequate:
 - `opus` only for hard design, adversarial review or deep diagnosis.
 
 Forks keep the parent's model, so fork only when the shared context is worth it.
-The plugin's `PreToolUse` hook (`hooks/agent-model.py`) denies an Agent call with no
+The plugin's `PreToolUse` hook (`hooks/agent_model.py`) denies an Agent call with no
 model whose definition doesn't pin one. `AUTOMATTIC_AGENT_MODEL_HOOK=off` disables
-it. A second `PreToolUse` hook (`hooks/pr-body.py`) denies `gh pr create` and
+it. A second `PreToolUse` hook (`hooks/pr_body.py`) denies `gh pr create` and
 `gh pr edit` unless the description comes from a `--body-file` that passes
 `scripts/lint_pr_body.py`. `AUTOMATTIC_PR_HOOK=off` disables it. A `Stop` hook
-(`hooks/yield-gate.py`) applies the worker lifecycle's yield gate when the session
+(`hooks/yield_gate.py`) applies the worker lifecycle's yield gate when the session
 stops; `AUTOMATTIC_YIELD_HOOK=off` disables it. A non-Anthropic model needs a configured cross-runtime route (Herdr, Pi or
 Codex), not an Agent call. Offer those routes when a role's configured pool
 includes them and the assignment is long enough to justify the launch overhead.

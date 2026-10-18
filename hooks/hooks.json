@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.py\" claude",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py\" claude",
             "timeout": 5
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/agent-model.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/agent_model.py\"",
             "timeout": 5
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pr-body.py\"",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pr_body.py\"",
             "timeout": 5
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/yield-gate.py\" claude",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/yield_gate.py\" claude",
             "timeout": 20
           }
         ]

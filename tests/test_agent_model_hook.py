@@ -10,7 +10,7 @@ import unittest
 
 import support
 
-HOOK = support.HOOKS / 'agent-model.py'
+HOOK = support.HOOKS / 'agent_model.py'
 
 
 class AgentModelHook(unittest.TestCase):

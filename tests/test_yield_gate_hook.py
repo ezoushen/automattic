@@ -14,7 +14,7 @@ from unittest.mock import patch
 import support
 
 ROOT = support.ROOT
-HOOK = ROOT / 'hooks' / 'yield-gate.py'
+HOOK = ROOT / 'hooks' / 'yield_gate.py'
 LIFECYCLE = ROOT / 'scripts' / 'worker_lifecycle.py'
 
 

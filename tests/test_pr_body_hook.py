@@ -10,7 +10,7 @@ import unittest
 
 import support
 
-HOOK = support.HOOKS / 'pr-body.py'
+HOOK = support.HOOKS / 'pr_body.py'
 GOOD = '## Why\n\nLookups fall back to the shipped bundle when the feed is empty.\n'
 
 

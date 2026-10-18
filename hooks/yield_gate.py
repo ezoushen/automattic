@@ -73,7 +73,7 @@ def main():
         print(json.dumps({'missing': gaps(Path(sys.argv[2]))}))
         return 0
     if sys.argv[1:] not in (['claude'], ['codex']):
-        sys.exit('usage: yield-gate.py claude|codex < stop-hook-input, or yield-gate.py check <cwd>')
+        sys.exit('usage: yield_gate.py claude|codex < stop-hook-input, or yield_gate.py check <cwd>')
     payload = json.load(sys.stdin)
     if payload.get('stop_hook_active'):
         return 0

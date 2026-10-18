@@ -178,12 +178,12 @@ class CrossHarness(unittest.TestCase):
             config = json.loads((PLUGIN / relative).read_text())['hooks']
             expected = {'SessionStart', 'PreToolUse', 'Stop'} if harness == 'claude' else {'SessionStart', 'Stop'}
             assert set(config) == expected, (harness, config)
-            assert config['Stop'][0]['hooks'][0]['command'].endswith(f'hooks/yield-gate.py" {harness}'), config
+            assert config['Stop'][0]['hooks'][0]['command'].endswith(f'hooks/yield_gate.py" {harness}'), config
             if harness == 'claude':
                 guard = config['PreToolUse'][0]
-                assert guard['matcher'] == 'Agent|Task' and guard['hooks'][0]['command'].endswith('hooks/agent-model.py"')
+                assert guard['matcher'] == 'Agent|Task' and guard['hooks'][0]['command'].endswith('hooks/agent_model.py"')
                 guards = {entry['matcher']: entry['hooks'][0]['command'] for entry in config['PreToolUse']}
-                assert guards.get('Bash', '').endswith('hooks/pr-body.py"'), guards
+                assert guards.get('Bash', '').endswith('hooks/pr_body.py"'), guards
             hook = config['SessionStart'][0]['hooks'][0]
             command = hook['command'].replace('${CLAUDE_PLUGIN_ROOT}', str(PLUGIN)).replace('${PLUGIN_ROOT}', str(PLUGIN))
             import shlex
@@ -204,7 +204,7 @@ class CrossHarness(unittest.TestCase):
 
     def test_python_scripts_import_by_name_and_named_scripts_exist(self):
         import re
-        for path in (PLUGIN / 'scripts').glob('*.py'):
+        for path in [*(PLUGIN / 'scripts').glob('*.py'), *(PLUGIN / 'hooks').glob('*.py')]:
             assert path.stem.isidentifier(), f'{path.name}: Python scripts are named as importable modules'
         tracked = run('git', '-C', str(PLUGIN), 'ls-files', '-z').stdout.split('\0')
         for name in filter(None, tracked):
@@ -213,8 +213,8 @@ class CrossHarness(unittest.TestCase):
                 continue  # Fixtures quote recorded commands, including names from before a rename.
             if path.suffix not in {'.md', '.py', '.sh', '.json', '.yaml', '.mjs', '.ts'} or not path.is_file():
                 continue
-            for script in re.findall(r'scripts/([A-Za-z0-9_.-]+\.(?:py|sh))\b', path.read_text()):
-                assert (PLUGIN / 'scripts' / script).is_file(), (name, script)
+            for folder, script in re.findall(r'\b(scripts|hooks)/([A-Za-z0-9_.-]+\.(?:py|sh))\b', path.read_text()):
+                assert (PLUGIN / folder / script).is_file(), (name, folder, script)
 
     def test_shared_docs_fit_one_read_and_every_link_resolves(self):
         # Agents read a linked doc whole, with no way to jump to an anchor. Codex cuts

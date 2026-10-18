@@ -33,7 +33,7 @@ export default function (pi) {
     if (continued || event.outcome !== "completed" || process.env.AUTOMATTIC_YIELD_HOOK === "off") return undefined;
     let missing;
     try {
-      const output = execFileSync("python3", [`${root}/hooks/yield-gate.py`, "check", ctx.cwd],
+      const output = execFileSync("python3", [`${root}/hooks/yield_gate.py`, "check", ctx.cwd],
         { encoding: "utf8", timeout: 20000 });
       missing = JSON.parse(output).missing;
     } catch {
