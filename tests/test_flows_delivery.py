@@ -82,8 +82,8 @@ class DeliveryFlow(unittest.TestCase):
                     self.assertNotEqual(target.parts[0], 'skills')
 
     def test_the_board_does_not_link_the_review_flow_or_carry_the_split_rule(self):
-        self.assertNotIn('too large for one worker', (ROOT / 'flows/board/scope.md').read_text())
         for path in (ROOT / 'flows/board').rglob('*.md'):
+            self.assertNotIn('too large for one worker', path.read_text(), path)
             for target in targets(path):
                 self.assertNotEqual(target.parts[:2], ('flows', 'review'), path)
 
