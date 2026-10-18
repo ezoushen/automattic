@@ -6,7 +6,7 @@ import sys
 import unittest
 
 from lifecycle_case import WorkerLifecycleCase
-import decision_journal
+import journal_store
 
 
 class Outcomes(WorkerLifecycleCase):
@@ -27,7 +27,7 @@ class Outcomes(WorkerLifecycleCase):
         self.assertEqual((outcome['event'], outcome['status'], outcome['revision']), ('outcome', 'succeeded', 'head-1'))
         self.assertEqual(outcome['evidence'], [str(report), 'checks.log@head-1'])
         self.assertGreaterEqual(outcome['metrics']['worker_seconds'], 0)
-        self.assertTrue(decision_journal.check(self.journal, decision_id, 'completion', 'head-1')['complete'])
+        self.assertTrue(journal_store.check(self.journal, decision_id, 'completion', 'head-1')['complete'])
 
     def test_journal_capture_failure_is_reported_without_blocking_the_worker(self):
         decision_id = self.routed(runtime='executor-defined')
@@ -154,7 +154,7 @@ class Outcomes(WorkerLifecycleCase):
         receipt = self.cli('watch', '--attempt', 'ticket-1/1', '--input', str(request))
         triage = self.cli('status')['pending'][0]['payload']['triage']
         self.assertEqual(triage['status'], 'recorded')
-        decision = [row for row in decision_journal.read(journal) if row['event'] == 'decision'][0]
+        decision = [row for row in journal_store.read(journal) if row['event'] == 'decision'][0]
         self.assertEqual(decision['decision_id'], triage['decision_id'])
         self.assertEqual(decision['request']['family'], 'wake-triage')
         self.assertEqual(decision['assignment'], f"ticket-1/1/wake-{receipt['event_id']}")
@@ -163,7 +163,7 @@ class Outcomes(WorkerLifecycleCase):
         self.assertNotIn('triage', parent.read_text())
         self.record('reconciled', evidence=['native worker idle with its report'])
         self.collect(report=report)
-        assessment = [row for row in decision_journal.read(journal) if row['event'] == 'assessment'][0]
+        assessment = [row for row in journal_store.read(journal) if row['event'] == 'assessment'][0]
         self.assertEqual((assessment['expected'], assessment['source'], assessment['evidence']),
                          (['done'], 'objective', [str(report)]))
 

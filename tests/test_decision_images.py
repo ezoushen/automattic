@@ -18,7 +18,8 @@ from jsonschema import Draft202012Validator
 import support
 
 import decisions
-import decision_journal as journal
+import decision_journal as commands
+import journal_store as journal
 
 
 class DecisionImages(unittest.TestCase):
@@ -136,7 +137,7 @@ class DecisionImages(unittest.TestCase):
         original = copy.deepcopy(self.calls[0])
         self.image.unlink()
         before = self.path.read_bytes()
-        report = journal.replay(self.path, self.cases(result), self.policy['backend'], transport=self.transport)
+        report = commands.replay(self.path, self.cases(result), self.policy['backend'], transport=self.transport)
         self.assertTrue(report['complete'])
         self.assertEqual(self.calls[1], original)
         self.assertEqual(before, self.path.read_bytes())
@@ -162,7 +163,7 @@ class DecisionImages(unittest.TestCase):
                     assets[0].unlink()
                 count = len(self.calls)
                 with self.assertRaises((OSError, ValueError)):
-                    journal.replay(self.path, self.cases(first) + self.cases(second),
+                    commands.replay(self.path, self.cases(first) + self.cases(second),
                                    self.policy['backend'], transport=self.transport)
                 self.assertEqual(len(self.calls), count)
                 assets[0].write_bytes(saved)
@@ -216,7 +217,7 @@ class DecisionImages(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'narrow the cases'):
                 decisions.benchmark(self.policy, transport=self.transport)
             with self.assertRaisesRegex(ValueError, 'narrow the cases'):
-                journal.replay(self.path, self.cases(first) + self.cases(second),
+                commands.replay(self.path, self.cases(first) + self.cases(second),
                                self.policy['backend'], transport=self.transport)
         self.assertEqual(len(self.calls), 2)
 

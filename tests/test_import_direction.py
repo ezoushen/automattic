@@ -2,6 +2,7 @@
 """Scripts and hooks import only modules at or below their own layer (architecture.json)."""
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -80,10 +81,17 @@ class ImportDirection(unittest.TestCase):
         findings = [f for f in check_imports(support.ROOT, architecture) if f[2] == 'error']
         self.assertEqual(findings, [])
 
-    def test_the_known_import_cycles_are_recorded_as_debt(self):
-        debt = Architecture.load(DOC_CHECKER / 'architecture.json').debt['imports']
-        self.assertIn('scripts/decisions.py -> scripts/agent_models.py', debt)
-        self.assertIn('scripts/decision_journal.py -> scripts/decisions.py', debt)
+    def test_no_import_debt_remains_for_the_repository(self):
+        debt = Architecture.load(DOC_CHECKER / 'architecture.json').debt
+        self.assertEqual((debt.get('imports'), debt.get('import_cycles')), ([], []))
+
+    def test_the_config_modules_load_without_the_decision_backend_or_routing(self):
+        code = ("import sys; sys.path.insert(0, sys.argv[1]); import executor_config, journal_store; "
+                "loaded = {'decisions', 'agent_models', 'decision_journal'} & set(sys.modules); "
+                "print(','.join(sorted(loaded)))")
+        run = subprocess.run([sys.executable, '-B', '-c', code, str(support.ROOT / 'scripts')],
+                             capture_output=True, text=True)
+        self.assertEqual((run.returncode, run.stdout.strip(), run.stderr.strip()), (0, '', ''))
 
 
 if __name__ == '__main__':

@@ -19,8 +19,8 @@ import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent_defs  # noqa: E402
 import capacity  # noqa: E402
-import decision_journal  # noqa: E402
 import decisions  # noqa: E402
+import journal_store  # noqa: E402
 import native_settings  # noqa: E402
 import outcomes  # noqa: E402
 
@@ -208,12 +208,12 @@ def annotate(saved, kind, **fields):
     if not link:
         return None
     try:
-        _, latest = decision_journal._find(decision_journal.read(link['journal']), link['decision_id'])
+        _, latest = journal_store._find(journal_store.read(link['journal']), link['decision_id'])
         previous = latest.get(kind, {})
         if kind == 'action' and previous or kind == 'execution' and all(
                 previous.get(key) == fields[key] for key in ('requested', 'observed', 'revision')):
             return {kind: 'already recorded'}
-        decision_journal.record(link['journal'], dict(fields, event=kind, decision_id=link['decision_id']))
+        journal_store.record(link['journal'], dict(fields, event=kind, decision_id=link['decision_id']))
         return {kind: 'recorded'}
     except (OSError, ValueError, KeyError) as error:
         return {kind: f'not recorded: {error}'}
@@ -278,7 +278,7 @@ def triage(db, state, saved, event_id, capture):
     try:
         path.write_bytes(subprocess.run(capture, cwd=saved['worktree'], stdin=subprocess.DEVNULL,
                                         capture_output=True, timeout=15).stdout)
-        trace = decision_journal.trace_config(journal, saved['repo'], f"{saved['attempt']}/wake-{event_id}")
+        trace = journal_store.trace_config(journal, saved['repo'], f"{saved['attempt']}/wake-{event_id}")
         result = decisions.shadow(policy, decisions.wake_request(path), trace=trace)
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         result = {'status': 'unavailable', 'error': str(error)}
@@ -306,7 +306,7 @@ def assess_wake(db, saved, report):
             or Path(report).stat().st_mtime > receipt['recorded_at'] + 1):
         return None
     try:
-        decision_journal.record(label['journal'], {
+        journal_store.record(label['journal'], {
             'event': 'assessment', 'decision_id': label['decision_id'], 'actor': 'worker-lifecycle',
             'expected': ['done'], 'category': 'unknown', 'source': 'objective', 'evidence': [report],
             'reason': 'The completed report the host collected was written before this settled wake.'})

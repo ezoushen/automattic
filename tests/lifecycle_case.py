@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import support
 
-import decision_journal
+import journal_store
 import decisions
 
 
@@ -90,7 +90,7 @@ class WorkerLifecycleCase(unittest.TestCase):
                 'probabilities': {key: float(key == 'option_0') for key in question['criteria']}}}}
         policy = {'enabled': ['worker-selection'], 'backend': {
             'protocol': 'systemone', 'endpoint': 'http://localhost:1241/v1/systemone', 'model': 'test-model'}}
-        trace = decision_journal.trace_config(self.journal, self.root, assignment)
+        trace = journal_store.trace_config(self.journal, self.root, assignment)
         result = decisions.decide(policy, {'family': 'worker-selection', 'state': 'Agent: builder\nJob: ticket\n',
                                            'instruction': 'Choose a worker.', 'options': {'option_0': option}},
                                   trace=trace, transport=transport)
@@ -127,7 +127,7 @@ class WorkerLifecycleCase(unittest.TestCase):
                 'endpoint': f'http://127.0.0.1:{server.server_port}/v1/systemone'}
 
     def annotations(self, decision_id):
-        return [row for row in decision_journal.read(self.journal)
+        return [row for row in journal_store.read(self.journal)
                 if row['decision_id'] == decision_id and row['event'] != 'decision']
 
     def escalate(self, risk='possible-breach', attempt='ticket-1/1', **fields):

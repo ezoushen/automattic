@@ -12,7 +12,7 @@ import time
 import unittest
 
 from lifecycle_case import SCRIPT, WorkerLifecycleCase
-import decision_journal
+import journal_store
 
 
 class Waits(WorkerLifecycleCase):
@@ -154,7 +154,7 @@ class Waits(WorkerLifecycleCase):
         self.record('reconciled', evidence=['native worker still running tests'])
         time.sleep(1.1)
         self.collect()
-        self.assertEqual([row['event'] for row in decision_journal.read(journal)], ['decision'])
+        self.assertEqual([row['event'] for row in journal_store.read(journal)], ['decision'])
 
     def test_an_invalid_wait_is_refused_before_its_channel_is_checked(self):
         self.register()

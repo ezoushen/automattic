@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import support
 
-import decision_journal
+import journal_store
 import decisions
 
 
@@ -75,7 +75,7 @@ class OutcomeLedger(unittest.TestCase):
                 'probabilities': {key: float(key == 'option_0') for key in question['criteria']}}}}
         policy = {'enabled': ['worker-selection'], 'backend': {
             'protocol': 'systemone', 'endpoint': 'http://localhost:1241/v1/systemone', 'model': 'test-model'}}
-        trace = decision_journal.trace_config(journal, self.root, assignment)
+        trace = journal_store.trace_config(journal, self.root, assignment)
         return decisions.decide(policy, {'family': 'worker-selection', 'state': f'Agent: {agent}\nJob: {job}\n',
                                          'instruction': 'Choose a worker.', 'options': options},
                                 trace=trace, transport=transport)
@@ -128,19 +128,19 @@ class OutcomeLedger(unittest.TestCase):
                 ('t4/1', 'Agent: verifier\nJob: e2e-gate\n', None, None, {}),
                 # The lifecycle records success at completion, so its journal outcome is not an acceptance.
                 ('t5/1', 'Agent: builder\nJob: ticket\n', 'lifecycle', 'succeeded', {})):
-            trace = decision_journal.trace_config(journal, self.root, assignment)
+            trace = journal_store.trace_config(journal, self.root, assignment)
             result = decisions.decide(policy, {'family': 'worker-selection', 'state': state,
                                                'instruction': 'Choose a worker.', 'options': options},
                                       trace=trace, transport=transport)
             did = result['decision_id']
             lifecycle = chosen == 'lifecycle'
             chosen = None if lifecycle else chosen
-            decision_journal.record(journal, {'event': 'action', 'decision_id': did,
+            journal_store.record(journal, {'event': 'action', 'decision_id': did,
                                               'actor': 'worker-lifecycle' if lifecycle else 'host',
                                               'disposition': 'overridden' if chosen else 'accepted',
                                               'choice': chosen or 'option_0', 'reason': 'host choice'})
             if status:
-                decision_journal.record(journal, {'event': 'outcome', 'decision_id': did, 'status': status,
+                journal_store.record(journal, {'event': 'outcome', 'decision_id': did, 'status': status,
                                                   'evidence': ['report.md'], 'metrics': metrics})
         self.assertEqual(self.run_script(OUTCOMES, 'import', str(journal)), {'imported': 5, 'already': 0})
         self.assertEqual(self.run_script(OUTCOMES, 'import', str(journal)), {'imported': 0, 'already': 5})

@@ -17,7 +17,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent_defs  # noqa: E402
-import decision_journal  # noqa: E402
+import journal_store  # noqa: E402
 
 JOBS = agent_defs.load()['jobs']
 
@@ -137,7 +137,7 @@ def state_rows(path):
 
 def journal_rows(path):
     """Worker-selection outcomes from a decision journal, keyed by journal and decision."""
-    rows = decision_journal.read(path)
+    rows = journal_store.read(path)
     latest = {}
     for row in rows:
         if row['event'] in ('action', 'outcome'):

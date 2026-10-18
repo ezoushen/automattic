@@ -15,7 +15,8 @@ from unittest.mock import patch
 import support
 
 import decisions
-import decision_journal as journal
+import decision_journal as commands
+import journal_store as journal
 
 
 class DecisionJournal(unittest.TestCase):
@@ -68,7 +69,7 @@ class DecisionJournal(unittest.TestCase):
                 'observed': observed, 'evidence': ['worker.jsonl:11']}
 
     def cli(self, action, did, *args, code=0):
-        result = subprocess.run([sys.executable, '-B', str(Path(journal.__file__)), action,
+        result = subprocess.run([sys.executable, '-B', str(Path(commands.__file__)), action,
                                  '--journal', str(self.path), '--decision-id', did, *args],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, code, result.stdout + result.stderr)
@@ -97,7 +98,7 @@ class DecisionJournal(unittest.TestCase):
     def scorecard_cli(self, manifest, code=0):
         cases_path = self.root / 'scorecard.json'
         cases_path.write_text(json.dumps(manifest))
-        result = subprocess.run([sys.executable, '-B', str(Path(journal.__file__)), 'scorecard',
+        result = subprocess.run([sys.executable, '-B', str(Path(commands.__file__)), 'scorecard',
                                  '--journal', str(self.path), '--cases', str(cases_path)],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, code, result.stdout + result.stderr)
@@ -449,7 +450,7 @@ class DecisionJournal(unittest.TestCase):
         other = self.root / 'other.jsonl'
         self.path, first = other, self.path
         self.assess(self.shadow_decisions([0.9], 'wake-triage')[0], 'working', 'objective')
-        result = subprocess.run([sys.executable, '-B', str(Path(journal.__file__)), 'reliability',
+        result = subprocess.run([sys.executable, '-B', str(Path(commands.__file__)), 'reliability',
                                  '--journal', str(first), '--also', str(other)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(set(json.loads(result.stdout)['families']), {'failure-cause', 'wake-triage'})
@@ -460,7 +461,7 @@ class DecisionJournal(unittest.TestCase):
         self.assess(ids[1], 'flaky', 'host')
         self.assess(ids[2], 'missing-context', 'independent')
         output = self.root / 'suite.json'
-        report = journal.export_suite([self.path], output)
+        report = commands.export_suite([self.path], output)
         self.assertEqual((report['cases'], report['excluded']['host']), (2, 1))
         suite = decisions.load_suite(output)
         self.assertEqual(suite['kind'], 'adjudicated')
@@ -468,7 +469,7 @@ class DecisionJournal(unittest.TestCase):
                          {('environment',), ('missing-context',)})
         self.assertIn('rerun.log#1', suite['cases'][0]['evidence'])
         with self.assertRaises(FileExistsError):
-            journal.export_suite([self.path], output)
+            commands.export_suite([self.path], output)
 
     def test_repeated_journals_count_once_and_filtered_sources_stay_distinct(self):
         ids = self.shadow_decisions([0.9, 0.9])
@@ -477,13 +478,13 @@ class DecisionJournal(unittest.TestCase):
         twice = journal.reliability([self.path, self.path], sources=['objective'])['families']['failure-cause']
         self.assertEqual((twice['assessed'], twice['excluded_by_source'], twice['unassessed']), (1, 1, 0))
         output = self.root / 'suite.json'
-        self.assertEqual(journal.export_suite([self.path, self.path], output)['cases'], 1)
+        self.assertEqual(commands.export_suite([self.path, self.path], output)['cases'], 1)
 
     def test_export_suite_leaves_no_file_when_nothing_is_exportable(self):
         self.assess(self.shadow_decisions([0.9])[0], 'environment', 'host')
         output = self.root / 'suite.json'
         with self.assertRaises(ValueError):
-            journal.export_suite([self.path], output)
+            commands.export_suite([self.path], output)
         self.assertFalse(output.exists())
         self.assertEqual(sorted(p.name for p in self.root.iterdir() if 'suite' in p.name), [])
 
@@ -614,7 +615,7 @@ class DecisionJournal(unittest.TestCase):
         event_path.write_text(json.dumps({'event': 'outcome', 'decision_id': did, 'revision': 'abc',
                                          'status': 'failed', 'evidence': ['report.md@abc#invalid-run'],
                                          'metrics': {'host_recovery_seconds': 42}}))
-        result = subprocess.run([sys.executable, '-B', str(Path(journal.__file__)), 'record',
+        result = subprocess.run([sys.executable, '-B', str(Path(commands.__file__)), 'record',
                                  '--journal', str(self.path), '--event', str(event_path)],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -641,7 +642,7 @@ class DecisionJournal(unittest.TestCase):
         event_path.write_text(json.dumps({'event': 'action', 'decision_id': did, 'actor': 'host',
                                          'disposition': 'accepted', 'choice': 'repair-environment',
                                          'reason': 'Verified missing fixture.'}))
-        legacy = subprocess.run([sys.executable, '-B', str(Path(journal.__file__)), 'record',
+        legacy = subprocess.run([sys.executable, '-B', str(Path(commands.__file__)), 'record',
                                  '--journal', str(self.path), '--event', str(event_path)],
                                 capture_output=True, text=True)
         self.assertEqual(legacy.returncode, 0, legacy.stderr)
@@ -783,7 +784,7 @@ class DecisionJournal(unittest.TestCase):
         result = self.decide()
         before = self.path.read_bytes()
         self.calls.clear()
-        report = journal.replay(self.path, self.cases(result), self.policy['backend'], transport=self.transport)
+        report = commands.replay(self.path, self.cases(result), self.policy['backend'], transport=self.transport)
         self.assertEqual(len(self.calls), 3)
         self.assertEqual([x['variant'] for x in report['results']], ['original', 'reversed', 'paraphrase'])
         self.assertEqual([x['correct'] for x in report['results']], [True, False, True])
@@ -804,7 +805,7 @@ class DecisionJournal(unittest.TestCase):
             ([dict(cases[0], expected=['invented'])], self.policy['backend'], 12),
         ]:
             with self.assertRaises(ValueError):
-                journal.replay(self.path, bad_cases, backend, transport=self.transport, max_calls=max_calls)
+                commands.replay(self.path, bad_cases, backend, transport=self.transport, max_calls=max_calls)
         self.assertEqual(self.calls, [])
 
     def test_replay_stops_at_time_budget_and_never_retries_errors(self):
@@ -816,7 +817,7 @@ class DecisionJournal(unittest.TestCase):
             self.calls.append(payload)
             raise TimeoutError('timeout')
         with patch('time.monotonic', side_effect=lambda: tick[0]):
-            report = journal.replay(self.path, self.cases(result), self.policy['backend'],
+            report = commands.replay(self.path, self.cases(result), self.policy['backend'],
                                     transport=slow, budget_seconds=1)
         self.assertEqual(len(self.calls), 1)
         self.assertFalse(report['complete'])
