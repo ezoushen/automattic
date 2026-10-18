@@ -16,15 +16,15 @@ import time
 import urllib.request
 
 import decision_images
-import decision_journal
+import journal_store
+import executor_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FAMILIES = ('mandate', 'alignment', 'refinement', 'worker-selection', 'review-triage', 'recovery', 'delivery',
-            'skill-selection', 'failure-cause', 'wake-triage', 'test-shape')
+FAMILIES = journal_store.FAMILIES
 # Shadow System One labels for a failed check; the host assesses independently before seeing them.
 # Shadow families journal a hidden System One label for later host assessment; no phase checkpoint.
-SHADOW_FAMILIES = decision_journal.SHADOW_FAMILIES
+SHADOW_FAMILIES = journal_store.SHADOW_FAMILIES
 PHASE_FAMILIES = tuple(family for family in FAMILIES if family not in SHADOW_FAMILIES)
 WAKE_STATES = {
     'working': 'Output shows progress still underway, such as a running command, spinner or streaming text; keep waiting.',
@@ -464,7 +464,7 @@ def decide(policy, request, *, context=None, transport=None, trace=None, images=
         answer['shadow_auto_accept'] = None if confidence is None else confidence >= shadow['min_confidence']
     if trace:
         try:
-            did = decision_journal.append_decision(
+            did = journal_store.append_decision(
                 trace, policy['backend'], request, answer, capture, fingerprint(policy, context))
             answer.update(decision_id=did, journal=trace['path'])
         except (OSError, ValueError, KeyError, TypeError) as error:
@@ -487,10 +487,10 @@ def checkpoint(policy, family, request=None, *, context=None, transport=None, tr
     if skip is not None and skip not in CHECKPOINT_SKIPS:
         raise ValueError('Unsupported checkpoint skip')
     evidence = [] if evidence is None else evidence
-    if not isinstance(evidence, list) or not all(decision_journal.text(item) for item in evidence):
+    if not isinstance(evidence, list) or not all(journal_store.text(item) for item in evidence):
         raise ValueError('Checkpoint evidence must be references')
     if skip is not None:
-        if request is not None or not decision_journal.text(reason) or not evidence:
+        if request is not None or not journal_store.text(reason) or not evidence:
             raise ValueError('A skip requires reason and evidence, without a decision request')
     elif reason is not None or evidence:
         raise ValueError('Reason and evidence apply only to an explicit skip')
@@ -501,7 +501,7 @@ def checkpoint(policy, family, request=None, *, context=None, transport=None, tr
 
     def response(event, rows, reused):
         if event['status'] == 'consulted':
-            decision, _ = decision_journal._find(rows, event['decision_id'])
+            decision, _ = journal_store._find(rows, event['decision_id'])
             result = {key: value for key, value in decision['result'].items() if key != 'shadow_auto_accept'}
             result['decision_id'] = event['decision_id']
         else:
@@ -534,14 +534,14 @@ def checkpoint(policy, family, request=None, *, context=None, transport=None, tr
     # Serialize duplicate submissions without holding the append lock during inference.
     with os.fdopen(os.open(str(path) + '.checkpoint.lock', os.O_CREAT | os.O_RDWR, 0o600), 'a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        rows = decision_journal.read(path) if path.exists() else []
-        previous = decision_journal.find_checkpoint(rows, trace, family)
+        rows = journal_store.read(path) if path.exists() else []
+        previous = journal_store.find_checkpoint(rows, trace, family)
         if previous:
             if previous['input_hash'] != intent:
                 raise ValueError('Checkpoint inputs/configuration changed; use a new assignment/checkpoint identity')
             if previous['status'] == 'consulted' and images:
-                decision, _ = decision_journal._find(rows, previous['decision_id'])
-                decision_journal.restore_payload(path, decision)
+                decision, _ = journal_store._find(rows, previous['decision_id'])
+                journal_store.restore_payload(path, decision)
             return response(previous, rows, True)
         result, reused = None, False
         if skip is None:
@@ -556,7 +556,7 @@ def checkpoint(policy, family, request=None, *, context=None, transport=None, tr
                             for item in decision_images.identity(images)])):
                     raise ValueError('Captured checkpoint differs; use a new assignment/checkpoint identity')
                 if images:
-                    decision_journal.restore_payload(path, captured[0])
+                    journal_store.restore_payload(path, captured[0])
                 result = {key: value for key, value in captured[0]['result'].items()
                           if key != 'shadow_auto_accept'}
                 result['decision_id'] = captured[0]['decision_id']
@@ -566,7 +566,7 @@ def checkpoint(policy, family, request=None, *, context=None, transport=None, tr
             if 'decision_id' not in result:
                 return dict(result, checkpoint_recorded=False, reused=False)
         try:
-            event = decision_journal.append_checkpoint(
+            event = journal_store.append_checkpoint(
                 trace, family, intent, decision_id=result['decision_id'] if result else None,
                 skip=skip, reason=reason, evidence=evidence)
         except (OSError, ValueError) as error:
@@ -575,7 +575,7 @@ def checkpoint(policy, family, request=None, *, context=None, transport=None, tr
             result = dict(result, warnings=list(result.get('warnings', [])))
             result['warnings'].append(warning('journal_unavailable', f'Checkpoint record unavailable: {error}'))
             return dict(result, checkpoint_recorded=False, reused=reused)
-        return response(event, decision_journal.read(path), reused)
+        return response(event, journal_store.read(path), reused)
 
 
 def failure_request(summary_path):
@@ -624,7 +624,7 @@ def test_request(data):
     if not {'family', 'assertions', *TEST_LIMITS} <= set(data) <= {'family', 'assertions', 'context', *TEST_LIMITS}:
         raise ValueError('test-shape input requires exactly: family, claim, test, code, assertions, optional context')
     for field, limit in {**TEST_LIMITS, **({'context': TEST_CONTEXT_LIMIT} if 'context' in data else {})}.items():
-        if not decision_journal.text(data[field]) or len(data[field]) > limit:
+        if not journal_store.text(data[field]) or len(data[field]) > limit:
             raise ValueError(f'{field} must be nonblank text of at most {limit} characters')
     assertions = data['assertions']
     if not isinstance(assertions, list) or not 1 <= len(assertions) <= 40:
@@ -634,7 +634,7 @@ def test_request(data):
             raise ValueError('Each assertion requires exactly: ' + ', '.join(CHECKLIST))
         for field, allowed in CHECKLIST.items():
             value = entry[field]
-            if not decision_journal.text(value) or len(value) > 300 or (allowed and value not in allowed):
+            if not journal_store.text(value) or len(value) > 300 or (allowed and value not in allowed):
                 raise ValueError(f'assertion {field} must be ' + (' | '.join(allowed) if allowed else 'text of 1-300 characters'))
     # An expected failure checked only by its code or type can be satisfied by another rule; only a code trace decides that.
     unqualified = [entry['lines'] for entry in assertions
@@ -725,7 +725,7 @@ def shadow(policy, request, *, context=None, trace=None, reveal=False):
     if family not in policy['enabled']:
         return {'status': 'disabled', 'family': family}
     path = Path(trace['path'])
-    previous = [row for row in (decision_journal.read(path) if path.is_file() else [])
+    previous = [row for row in (journal_store.read(path) if path.is_file() else [])
                 if row['event'] == 'decision' and row['request']['family'] == family
                 and all(row.get(key) == trace.get(key) for key in ('repo', 'session', 'assignment'))]
     if previous:
@@ -740,15 +740,14 @@ def shadow(policy, request, *, context=None, trace=None, reveal=False):
 
 
 def load_policy(repo, user_executors, session=None):
-    import agent_models as models  # agent_models imports this module at load time
     repo = Path(repo).expanduser().resolve()
     if not repo.is_dir():
         raise ValueError('Repository directory does not exist')
-    layers = [(path, models.read_executors(path)) for path in
+    layers = [(path, executor_config.read_executors(path)) for path in
               (Path(user_executors).expanduser(), repo / '.automattic/executors.json')]
     session = session or os.environ.get('AUTOMATTIC_SESSION')
     if session:
-        layers.append((models.session_path(repo, session), models.read_session(repo, session)))
+        layers.append((executor_config.session_path(repo, session), executor_config.read_session(repo, session)))
     router = next((data['router'] for _, data in reversed(layers) if 'router' in data), None)
     return effective_policy(layers, router), decision_context(layers)
 
@@ -800,7 +799,7 @@ def main():
             raise ValueError('Family/skip fields apply only to checkpoint')
         if args.action == 'checkpoint' and args.family is None:
             raise ValueError('checkpoint requires --family')
-        trace = decision_journal.trace_config(args.journal, repo, args.assignment_id, session)
+        trace = journal_store.trace_config(args.journal, repo, args.assignment_id, session)
         if args.action == 'decide':
             result = decide(policy, json.loads(args.request.expanduser().read_text()), context=context, trace=trace)
         elif args.action == 'classify-failure':

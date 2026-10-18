@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 import support
+import journal_store
 from router_case import RouterCase, models
 
 
@@ -82,7 +83,7 @@ class DecisionRouting(RouterCase):
     def test_worker_selection_sees_earlier_outcomes_for_the_role(self):
         self.decision_router()
         journal = self.root / 'decisions.jsonl'
-        record = models.decisions.decision_journal.record
+        record = models.decisions.journal_store.record
         first = self.resolve(assignment='Implement ticket 1.', journal=journal, assignment_id='t1/attempt-1')
         did = first['decision_model']['decision_id']
         record(journal, {'event': 'action', 'decision_id': did, 'actor': 'host', 'disposition': 'accepted',
@@ -104,7 +105,7 @@ class DecisionRouting(RouterCase):
     def test_worker_selection_sees_quality_signals_attributed_to_earlier_work(self):
         self.decision_router()
         journal = self.root / 'decisions.jsonl'
-        record = models.decisions.decision_journal.record
+        record = models.decisions.journal_store.record
         first = self.resolve(assignment='Implement ticket 1.', journal=journal, assignment_id='t1/attempt-1')
         did = first['decision_model']['decision_id']
         record(journal, {'event': 'action', 'decision_id': did, 'actor': 'worker-lifecycle', 'disposition': 'accepted',
@@ -123,7 +124,7 @@ class DecisionRouting(RouterCase):
     def test_resume_reuses_its_decision_after_other_assignments_record_outcomes(self):
         self.decision_router()
         journal = self.root / 'decisions.jsonl'
-        record = models.decisions.decision_journal.record
+        record = models.decisions.journal_store.record
         first = self.resolve(assignment='Implement ticket 1.', journal=journal, assignment_id='a/1')
         other = self.resolve(assignment='Implement ticket 2.', journal=journal, assignment_id='b/1')
         did = other['decision_model']['decision_id']
@@ -142,7 +143,7 @@ class DecisionRouting(RouterCase):
     def test_resume_after_failure_reuses_its_decision(self):
         self.decision_router()
         journal = self.root / 'decisions.jsonl'
-        record = models.decisions.decision_journal.record
+        record = models.decisions.journal_store.record
         first = self.resolve(assignment='Implement ticket 1.', journal=journal, assignment_id='t1/attempt-1')
         did = first['decision_model']['decision_id']
         record(journal, {'event': 'action', 'decision_id': did, 'actor': 'host', 'disposition': 'accepted',
@@ -166,7 +167,7 @@ class DecisionRouting(RouterCase):
         result = self.resolve(assignment='Implement the agreed bounded fix.',
                               eligible_candidates=['sol'], target_runtime='codex',
                               journal=journal, assignment_id='ticket-2/attempt-1')
-        recorded = models.decisions.decision_journal.inspect(
+        recorded = models.decisions.journal_store.inspect(
             journal, result['decision_model']['decision_id'])['decision']
         self.assertEqual(len(self.requests), 2)  # one decision, scored in both option orders
         self.assertEqual(recorded['payload'], self.requests[0])
@@ -180,8 +181,8 @@ class DecisionRouting(RouterCase):
         self.assertEqual(resumed['decision_model']['decision_id'], result['decision_model']['decision_id'])
         self.assertTrue(resumed['decision_model']['reused'])
         self.assertEqual(len(self.requests), 2)  # one decision, scored in both option orders
-        trace = models.decisions.decision_journal.trace_config(journal, self.root, 'ticket-2/attempt-1')
-        check = models.decisions.decision_journal.check_checkpoint(journal, trace, 'worker-selection', 'launch')
+        trace = models.decisions.journal_store.trace_config(journal, self.root, 'ticket-2/attempt-1')
+        check = models.decisions.journal_store.check_checkpoint(journal, trace, 'worker-selection', 'launch')
         self.assertEqual(check['checkpoint_id'], result['decision_model']['checkpoint_id'])
         self.assertEqual(check['missing_evidence'], ['action'])
 
@@ -198,8 +199,8 @@ class DecisionRouting(RouterCase):
         self.assertEqual(result['decision_model']['checkpoint_status'], 'skipped')
         self.assertNotIn('decision_id', result['decision_model'])
         self.assertEqual(result['decision_model']['proposer'], 'resolver')
-        trace = models.decisions.decision_journal.trace_config(journal, self.root, 'ticket-3/attempt-1')
-        check = models.decisions.decision_journal.check_checkpoint(
+        trace = models.decisions.journal_store.trace_config(journal, self.root, 'ticket-3/attempt-1')
+        check = models.decisions.journal_store.check_checkpoint(
             journal, trace, 'worker-selection', 'completion')
         self.assertEqual(check['checkpoint_id'], result['decision_model']['checkpoint_id'])
         self.assertEqual(check['missing_evidence'], [])

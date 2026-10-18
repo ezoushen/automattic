@@ -18,7 +18,7 @@ from unittest.mock import patch
 import support
 
 import decisions
-import decision_journal as journal
+import journal_store as journal
 
 
 class Decisions(unittest.TestCase):
