@@ -80,6 +80,18 @@ class Decisions(unittest.TestCase):
         decisions.decide(self.policy, dict(self.request, family='recovery'), transport=self.recency_biased)
         self.assertEqual(len(self.calls), 1)  # Other families keep a single pass.
 
+    def test_skill_selection_is_scored_in_both_orders(self):
+        # A load/skip choice is a two-option list, so the last-listed bias would decide it alone.
+        request = dict(self.request, family='skill-selection', options={
+            'load': 'Give the worker this skill; the assignment changes tests.',
+            'skip': 'Leave the skill out; the assignment changes no tests.'})
+        self.policy['enabled'].append('skill-selection')
+        self.choice = 'load'
+        result = decisions.decide(self.policy, request, transport=self.transport)
+        self.assertEqual(result['order_balanced'], True)
+        self.assertEqual([list(c['questions']['skill-selection']['criteria'])[:2] for c in self.calls],
+                         [['load', 'skip'], ['skip', 'load']])
+
     def test_host_authored_options_of_uneven_length_are_flagged(self):
         # The backend tends to follow the most elaborated option, so lopsided host options get a warning.
         request = dict(self.request, options={
@@ -248,6 +260,22 @@ class Decisions(unittest.TestCase):
         for case in decisions.load_suite(decisions.ROOT / 'benchmarks/decisions.example.json')['cases']:
             Draft202012Validator(schema).validate(case['request'])
 
+    def test_schemas_accept_exactly_the_supported_families(self):
+        # Configuration and requests are validated against the schemas, so a family missing there cannot be enabled.
+        def enums(node):
+            if isinstance(node, dict):
+                if 'mandate' in node.get('enum', []):
+                    yield node['enum']
+                for value in node.values():
+                    yield from enums(value)
+            elif isinstance(node, list):
+                for value in node:
+                    yield from enums(value)
+        for name in ('decision.schema.json', 'executors.schema.json'):
+            with self.subTest(schema=name):
+                found = list(enums(json.loads((decisions.ROOT / 'schemas' / name).read_text())))
+                self.assertEqual(found, [list(decisions.FAMILIES)])
+
     def test_missing_baseline_status_does_not_write_or_call(self):
         self.policy['calibration'] = {'suite': str(self.suite()), 'baseline': str(self.root / 'missing.json')}
         self.assertEqual(decisions.monitor(self.policy, active=False)[0]['code'], 'uncalibrated')
@@ -285,7 +313,7 @@ class Decisions(unittest.TestCase):
 
     def test_every_configured_family_has_an_executable_checkpoint_and_handoff(self):
         phases = ('mandate', 'alignment', 'refinement', 'worker-selection',
-                  'review-triage', 'recovery', 'delivery')
+                  'review-triage', 'recovery', 'delivery', 'skill-selection')
         self.policy['enabled'] = list(decisions.FAMILIES)
         for family in phases:
             with self.subTest(family=family):
@@ -301,8 +329,8 @@ class Decisions(unittest.TestCase):
                                               'choice': self.choice, 'reason': 'Verified current evidence.'})
                 self.assertTrue(journal.check_checkpoint(trace['path'], trace, family, 'launch')['complete'])
                 self.assertFalse(journal.check_checkpoint(trace['path'], trace, family, 'completion')['complete'])
-        # Worker selection scores both option orders; the other families make one call.
-        self.assertEqual(len(self.calls), len(phases) + 1)
+        # Worker and skill selection score both option orders; the other families make one call.
+        self.assertEqual(len(self.calls), len(phases) + 2)  # two order-balanced families
         inventory = journal.inspect(self.root / 'phases.jsonl')
         self.assertEqual({row['family'] for row in inventory['checkpoints']}, set(phases))
 

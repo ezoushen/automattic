@@ -19,6 +19,10 @@ background or reasoning narration. Give more explanation when requested or
 needed for a decision, and retain all required evidence in the report, including
 complete report sections returned by read-only workers.
 
+Read each skill the assignment lists before the step it serves. Load another
+skill when a step needs it. Report each skill you loaded beyond your role file and
+the listed ones, with its reason, and any listed skill you never used. See [assignment skills](skills.md).
+
 ## Worker return and checkpoints
 
 The assignment names the bounded deliverable, required checks and their phase/owners,

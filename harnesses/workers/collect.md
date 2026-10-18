@@ -50,6 +50,10 @@ an error does not fix its settings mismatch or resolve its design hold. Continue
 board transition and review handoff once their prerequisites pass; monitoring alone
 does not dispatch the next phase.
 
+Record the skills the worker reports loading on demand, and listed skills it
+did not use, in the [launch decision record](../routing/report.md); see
+[record and learn](skills.md#record-and-learn).
+
 ## Accept and record outcomes
 
 When the orchestrator accepts a completed result and integrates it, record

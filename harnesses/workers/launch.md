@@ -6,6 +6,7 @@ Contents:
 - [Host selection](#host-selection)
 - [Resolution and models](#resolution-and-models)
 - [Assignment and outcome](#assignment-and-outcome)
+- [Fan-out](#fan-out)
 
 Core owns assignments, scope, capacity, worktrees and acceptance gates. Three
 built-in executor adapters own invocation and collection: `subagent`, `skill`,
@@ -116,7 +117,7 @@ resolution never permits launching with omitted settings.
 
 Supply a unique assignment ID, canonical repo, assigned worktree, branch/head,
 pinned review base, absolute shared role/core paths, scope/priorities, task inputs,
-permissions, model policy/settings and expected evidence. Use fresh worker context.
+[situational skills](skills.md), permissions, model policy/settings and expected evidence. Use fresh worker context.
 Carry the user's current allowance priority, required deliverable and deferred
 optional work in both the compact routing input and the worker assignment. Existing
 acceptance gates remain part of the deliverable. A quota concern does not imply a
@@ -141,3 +142,15 @@ finished process, settled pane or empty output does not prove acceptance. Apply
 shared review/verification gates after collection. On timeout or session loss,
 reconcile the same run before retrying; never duplicate uncertain live work. Keep
 pending approvals for the user and clean up only this assignment's resources.
+
+## Fan-out
+
+Size a fan-out by how many parts can proceed without each other's results, not by
+idle capacity. A question one search or read answers gets no worker; one coherent
+change gets one worker. Launch independent siblings together, within
+[shared capacity](resources.md#shared-capacity).
+Each sibling's assignment states its objective, its boundary and what the other
+siblings cover, so no two workers repeat the same investigation and no part is left
+unowned. A worker that writes its own report returns status, decisive evidence and
+the report path; a read-only worker still returns its complete report sections. When results come back overlapping or shallow, sharpen
+the assignments rather than adding workers.

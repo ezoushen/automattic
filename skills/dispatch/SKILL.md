@@ -142,6 +142,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    brief: <absolute alignment.md>  report: <absolute reports/key.md>
    evidence: <absolute main-checkout reports/evidence/key/attempt/head directory>
    worktree: <absolute>  branch: <assigned branch>  project instructions: <paths and applicable facts>
+   skills: <situational skill paths or names, each with its fact>
    comments: <previous failing command/output, if any>
    ```
 
@@ -149,8 +150,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    registered in the run report with its assignment, device reservation and result,
    including ad-hoc ones the user requests mid-run. Status answers read that one
    record. Record the returned agent ID through board operations and complete the
-   [launch decision record](../../harnesses/routing/report.md),
-   including runtime-confirmed settings or explicit missing evidence.
+   [launch decision record](../../harnesses/routing/report.md).
    If spawning fails, reconcile whether a child was actually created before retrying.
 5. When a worker finishes, perform the selected board's acceptance checks for report
    structure and branch ancestry; then judge assigned implementation criteria and

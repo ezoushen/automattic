@@ -21,7 +21,7 @@ import decision_journal
 
 ROOT = Path(__file__).resolve().parents[1]
 FAMILIES = ('mandate', 'alignment', 'refinement', 'worker-selection', 'review-triage', 'recovery', 'delivery',
-            'failure-cause', 'wake-triage', 'test-shape')
+            'skill-selection', 'failure-cause', 'wake-triage', 'test-shape')
 # Shadow System One labels for a failed check; the host assesses independently before seeing them.
 # Shadow families journal a hidden System One label for later host assessment; no phase checkpoint.
 SHADOW_FAMILIES = decision_journal.SHADOW_FAMILIES
@@ -77,7 +77,7 @@ TEST_CONTEXT_LIMIT = 6000
 WITHOUT_RULE = {'no': 'the result changes', 'default': 'the default gives the same result',
                 'other-rule': 'another rule gives the same result', 'unknown': 'unknown'}
 ROUTE_CONFIDENCE = 0.8  # Measured: on pattern-type tests, confidence separates right from wrong answers (AUC 0.95).
-ORDER_BALANCED = ('worker-selection', 'test-shape')
+ORDER_BALANCED = ('worker-selection', 'test-shape', 'skill-selection')
 CHECKPOINT_SKIPS = ('settled', 'required-action', 'human-reserved')
 RECOVERY_OPTIONS = {
     'retain-worker': 'A focused correction or normal wait fits the current worker.',
@@ -158,7 +158,8 @@ def request_choice(backend, request, transport=None, *, images=None, wire_payloa
     real = [key for key in question['criteria'] if key != 'abstain']
     if request['family'] in ORDER_BALANCED and len(real) >= 2 and wire_payload is None:
         # Local models favor the last-listed option; score the reversed order too and average.
-        # Other families keep one pass: older shadow pilots stay comparable, and phase families are host-authored.
+        # Other families keep one pass: older shadow pilots stay comparable, and most phase families are host-authored
+        # choices of uneven shape. Skill selection is a two-option load/skip list, which the bias would decide alone.
         # A replay sends its recorded payload once, so its order variants still measure the raw backend.
         mirrored = dict(payload, questions={**payload['questions'], qid: dict(question, criteria={
             **{key: question['criteria'][key] for key in reversed(real)},

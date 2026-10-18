@@ -5,6 +5,7 @@ Rules for the orchestrator and its workers, in the order a worker runs.
 | File | Read |
 |---|---|
 | [launch.md](launch.md) | before every launch: resolve the executor and build the assignment |
+| [skills.md](skills.md) | while building an assignment: which skills the worker gets |
 | [thinking.md](thinking.md) | when a resolved agent allows the orchestrator to adjust thinking |
 | [focus.md](focus.md) | throughout an assignment: priorities, checkpoints, return and blocked continuation |
 | [resources.md](resources.md) | before admitting a batch, reserving a resource or starting an owned job |
