@@ -18,7 +18,7 @@ import subprocess
 import sys
 from urllib.parse import unquote
 
-sys.dont_write_bytecode = True  # a hook checks a clean tree; importing must not dirty it
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from architecture import Architecture  # noqa: E402
 

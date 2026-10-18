@@ -35,7 +35,6 @@ MOVED = {
     'flows/setup/models-skill.md': None,
     'flows/setup/README.md': None,
 }
-# built from parts: the doc checker flags a literal path to a doc that no longer exists
 OLD = [('skills', 'dispatch', 'board.md'), ('skills', 'dispatch', 'project-loop.md'),
        ('skills', 'dispatch', 'conventions.md'), ('skills', 'refine', 'workflow.md'), ('harnesses', 'setup')]
 
@@ -60,7 +59,7 @@ class Flows(unittest.TestCase):
         for path in sorted(FLOWS.rglob('*.md')):
             flow = path.relative_to(FLOWS).parts[0]
             if flow not in ALLOWED:
-                continue  # review and remediation are checked in test_flows_review_remediation.py
+                continue
             for target in targets(path):
                 with self.subTest(doc=str(path.relative_to(ROOT)), target=str(target)):
                     top = target.parts[0]

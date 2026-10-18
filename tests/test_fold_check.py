@@ -129,10 +129,11 @@ class FoldCheck(unittest.TestCase):
         allow.write_text(json.dumps({'surface': ['removed kind comments', 'added kind comments2']}))
         self.assertEqual(self.differences(), {('kind', 'removed comments'), ('kind', 'added comments2')})
         self.assertEqual(self.differences('--allow', str(allow)), set())
-        # A job moved to another flow folder is the same job.
+
+    def test_a_job_moved_to_another_flow_folder_is_the_same_job(self):
         (self.root / 'flows/delivery/jobs').mkdir(parents=True)
         (self.root / 'skills/tool/jobs/ticket.md').rename(self.root / 'flows/delivery/jobs/ticket.md')
-        self.assertEqual({kind for kind, _ in self.differences('--allow', str(allow))}, {'line'})
+        self.assertEqual({kind for kind, _ in self.differences()}, {'line'})
 
     def test_a_bad_base_is_invalid_input(self):
         result = subprocess.run([sys.executable, str(TOOL), '--root', str(self.root), '--config', str(self.config),
