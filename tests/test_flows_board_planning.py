@@ -59,6 +59,8 @@ class Flows(unittest.TestCase):
     def test_a_flow_doc_links_only_its_own_flow_or_lower_modules(self):
         for path in sorted(FLOWS.rglob('*.md')):
             flow = path.relative_to(FLOWS).parts[0]
+            if flow not in ALLOWED:
+                continue  # review and remediation are checked in test_flows_review_remediation.py
             for target in targets(path):
                 with self.subTest(doc=str(path.relative_to(ROOT)), target=str(target)):
                     top = target.parts[0]

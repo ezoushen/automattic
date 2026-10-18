@@ -352,7 +352,7 @@ checkpoint before dependent work; a plan-only request remains planning only.
 Use `/automattic:walkthrough <branch|PR-number|PR-URL>` in Claude,
 `$automattic:walkthrough <target>` in Codex, or `/skill:walkthrough <target>` in Pi
 when you want to understand a change and form a judgment. `--base <ref>` selects
-the comparison. The [walkthrough](skills/walkthrough/SKILL.md) explains WHY / WHAT /
+the comparison. The [walkthrough](flows/review/guided.md) explains WHY / WHAT /
 HOW using the shared show-me guidance, deepens through your questions, and guides
 the next step. It can finish with shared understanding and review criteria.
 When you ask to proceed, it continues into the shared review procedure in the same
@@ -376,7 +376,7 @@ decision pauses dependent detail review while independent scopes continue. Matt'
 Standards/Spec review runs once for each eligible implementation batch; later rounds
 reopen only affected scope and evidence. Security, testability, integrity and
 maintainability are lenses within these layers. Documentation correctness stays a
-hard gate. See [review layers](skills/review/layers.md).
+hard gate. See [review layers](flows/review/layers.md).
 
 Review starts assessment directly, reusing any accepted walkthrough decisions.
 By default it produces local comment drafts without changing source code.
@@ -422,7 +422,7 @@ does not delete unrelated files, retire branches or replace the review gate.
 `misleading-comments` or a free-form goal. Invoke
 `/automattic:remediate [kind|"goal"] [--base <ref> | <path>... | --project]` in Claude,
 `$automattic:remediate ...` in Codex or `/skill:remediate ...` in Pi; OpenCode uses
-its native skill discovery. The skill's [arguments](skills/remediate/SKILL.md#arguments)
+its native skill discovery. The skill's [arguments](flows/remediation/procedure.md#arguments)
 table lists each value and its default.
 It runs only when explicitly requested. Scope defaults to the established diff;
 named paths repair after proof, while whole-project scans report first and wait
@@ -432,12 +432,12 @@ A test is [tautological](standards/kinds/tautological-tests.md) when a defect in
 the behavior it claims leaves it passing; review applies the same check to every
 added or modified test by reading: an assertion checklist, routing by the decision
 model, and a code trace for expected failures checked only by code.
-The [comment audit](skills/remediate/SKILL.md#comment-audit) lists added plain
+The [comment audit](flows/remediation/procedure.md#comment-audit) lists added plain
 comment lines as review candidates, with language and syntax limits documented
 there. Remediation supplies its own proof and test-first repair procedure.
 
-The [shared review procedure](skills/review/workflow.md) owns the review workflow's
-repair loop with its own [Standards/Spec method](skills/review/method.md) and reuses Matt's
+The [shared review procedure](flows/review/review.md) owns the review workflow's
+repair loop with its own [Standards/Spec method](flows/review/method.md) and reuses Matt's
 grilling, diagnosis and TDD where applicable.
 `/automattic:review`, `/automattic:walkthrough` and `/automattic:dispatch` retain
 `disable-model-invocation: true`. Manual review forwards its target and flags;

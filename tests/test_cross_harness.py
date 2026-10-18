@@ -227,8 +227,10 @@ class CrossHarness(unittest.TestCase):
     def test_remediate_skill_and_its_kinds(self):
         import re
         path = PLUGIN / 'skills/remediate/SKILL.md'
-        source = path.read_text()
-        metadata = source.split('---', 2)[1]
+        entry = path.read_text()
+        source = (PLUGIN / 'flows/remediation/procedure.md').read_text()
+        assert '](../../flows/remediation/procedure.md)' in entry
+        metadata = entry.split('---', 2)[1]
         assert re.search(r'^name: remediate$', metadata, re.M)
         assert re.search(r'^disable-model-invocation: true$', metadata, re.M)
         hint = re.search(r'^argument-hint: (.+)$', metadata, re.M).group(1)
@@ -249,11 +251,11 @@ class CrossHarness(unittest.TestCase):
             definition = PLUGIN / 'standards/kinds' / f'{kind}.md'
             assert definition.is_file()
             assert f'standards/kinds/{kind}.md' in source
-        assert 'mattpocock' not in source.lower()
+        assert 'mattpocock' not in (entry + source).lower()
 
     def test_remediate_proof_experiments_follow_the_kind(self):
         import re
-        skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
+        skill = (PLUGIN / 'flows/remediation/procedure.md').read_text()
         prove = re.search(r'^2\. \*\*Prove\.\*\*(.+?)^3\. ', skill, re.M | re.S).group(1)
         prove = ' '.join(prove.split())
         assert "only where the kind's Proof calls for them" in prove, prove
@@ -263,13 +265,13 @@ class CrossHarness(unittest.TestCase):
         kind = (PLUGIN / 'standards/kinds/tautological-tests.md').read_text()
         proof = ' '.join(re.search(r'^## Proof$(.+?)^## Repair$', kind, re.M | re.S).group(1).split())
         assert 'Confirming a finding changes no code and runs no test' in proof, proof
-        job = ' '.join((PLUGIN / 'skills/review/jobs/reproduce.md').read_text().split())
+        job = ' '.join((PLUGIN / 'flows/review/jobs/reproduce.md').read_text().split())
         assert 'When the assigned proof steps are reading-only, edit and run nothing' in job, job
 
     def test_both_callers_of_the_tautological_kind_still_require_a_reproduce_job(self):
-        review = ' '.join((PLUGIN / 'skills/review/jobs/diff-review.md').read_text().split())
+        review = ' '.join((PLUGIN / 'flows/review/jobs/diff-review.md').read_text().split())
         assert 'A flag you would dismiss is disputed: send it to a [reproduce](reproduce.md) job' in review, review
-        remediate = ' '.join((PLUGIN / 'skills/remediate/SKILL.md').read_text().split())
+        remediate = ' '.join((PLUGIN / 'flows/remediation/procedure.md').read_text().split())
         assert "Send disputed or UNVERIFIED findings to a reviewer's [reproduce](../review/jobs/reproduce.md)" in remediate
 
     def test_remediate_detection_covers_every_test(self):
@@ -283,7 +285,7 @@ class CrossHarness(unittest.TestCase):
         assert 'A flag you would dismiss is disputed and needs independent verification' in proof, proof
         routing = ' '.join((PLUGIN / 'runtime/decisions/test-shape.md').read_text().split())
         assert 'A flagged test is not resubmitted' in routing, routing
-        skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
+        skill = (PLUGIN / 'flows/remediation/procedure.md').read_text()
         detect = ' '.join(re.search(r'^1\. \*\*Detect read-only\.\*\*(.+?)^2\. ', skill, re.M | re.S).group(1).split())
         assert "run them for every test in scope during detection, before selecting candidates" in detect, detect
         assert 'For a paths or whole-project scan, reconcile the file inventory' in detect, detect

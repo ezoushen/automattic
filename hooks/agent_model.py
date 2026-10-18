@@ -50,7 +50,7 @@ def assignment_problem(agent, prompt):
         return 'No `job_file:` found.'
     path = Path(match.group(1))
     if not path.is_absolute() or path.parent.name != 'jobs' or not path.is_file():
-        return f'`job_file: {match.group(1)}` is not an absolute path to an existing skills/<owner>/jobs/<job>.md.'
+        return f'`job_file: {match.group(1)}` is not an absolute path to an existing <skills|flows>/<owner>/jobs/<job>.md.'
     job = agent_defs.load(path.parents[3])['jobs'].get(path.stem)
     if job is None or job['agent'] != agent:
         return f'Job {path.stem} is not done by {agent}.'

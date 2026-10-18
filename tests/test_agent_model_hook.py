@@ -86,7 +86,7 @@ class AgentModelHook(unittest.TestCase):
 
     def test_automattic_launch_needs_its_job_file_and_inputs(self):
         self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
-        review = support.ROOT / 'skills/review/jobs/diff-review.md'
+        review = support.ROOT / 'flows/review/jobs/diff-review.md'
         for subagent, model in (('automattic:builder', 'sonnet'), ('automattic-builder-0123456789ab', None)):
             with self.subTest(subagent=subagent):
                 launch = {'subagent_type': subagent, **({'model': model} if model else {})}
@@ -98,6 +98,17 @@ class AgentModelHook(unittest.TestCase):
                     self.assertEqual(decision['permissionDecision'], 'deny', prompt)
                     self.assertIn(reason, decision['permissionDecisionReason'])
                 self.assertIsNone(self.run_hook(dict(launch, prompt=assignment())))
+
+    def test_a_job_under_a_flow_is_resolved_like_one_under_a_skill(self):
+        self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
+        job = self.home.joinpath('plugin', 'flows', 'review', 'jobs', 'ticket.md')
+        job.parent.mkdir(parents=True)
+        job.write_text(TICKET.read_text())
+        launch = {'subagent_type': 'automattic-builder-0123456789ab'}
+        self.assertIsNone(self.run_hook(dict(launch, prompt=assignment(job))))
+        decision = self.run_hook(dict(launch, prompt=assignment(job, drop=('worktree',))))
+        self.assertEqual(decision['permissionDecision'], 'deny')
+        self.assertIn('Missing: worktree', decision['permissionDecisionReason'])
 
     def test_a_job_without_an_inputs_list_is_denied_not_skipped(self):
         job = self.home / 'plugin/skills/dispatch/jobs/ticket.md'

@@ -25,7 +25,7 @@ alternatives — the principal can veto. All three planning skills append to one
 | Delivery | `/automattic:pr` (optional) | the description assembled from the artefacts above | `pr.md`, the PR | a URL |
 
 For a change you want to understand before assessing it, use
-[/automattic:walkthrough](../walkthrough/SKILL.md). It teaches and discusses the PR,
+[/automattic:walkthrough](../../flows/review/guided.md). It teaches and discusses the PR,
 then can hand agreed criteria into the same review procedure when requested.
 It is optional; direct review starts assessment without this learning step.
 
@@ -96,7 +96,7 @@ Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
 work. Planning uses [mandate's question policy](../../flows/planning/question-filter.md)
 with grilling's internal design-tree reasoning. The review skill supplies scope,
 priority and allowed mutation
-context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
+context and its own [Standards/Spec method](../../flows/review/method.md). Simplicity is part of that review.
 Honor each dependency's actual invocation
 policy in the active catalog; never bypass a denied invocation by copying its body.
 For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,
@@ -116,7 +116,7 @@ authorized. Retrospective evidence stays in the existing reports or journals.
 ## Delivery composition
 
 Dispatch's handoff applies housekeeping and runs the [shared review
-procedure](../review/workflow.md); only an explicit implementation-only request
+procedure](../../flows/review/review.md); only an explicit implementation-only request
 omits review. Existing accepted alignment supplies scope, non-goals, priorities
 and test seams. Without those decisions, review records provisional priorities or
 asks for material human choices. Follow-ups never expand the current review batch;
