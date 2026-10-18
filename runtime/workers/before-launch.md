@@ -28,7 +28,7 @@ Pools use a routing skill, a System One decision model or a sparse profile under
 `selection_required` is an internal request for a decision, not executable settings.
 Use the named `selection_router` and submit the result before dispatch.
 Announce the [routing decision and attribution](../routing/report.md).
-Worker blockers and review/check failures invoke [escalation checkpoints](../routing/recovery.md#escalation-checkpoints)
+Worker blockers and review/check failures invoke [escalation checkpoints](recovery.md#escalation-checkpoints)
 before the next attempt; ordinary resumes reuse the saved choice.
 
 ## Dependency-launched workers
@@ -49,7 +49,7 @@ When `HERDR_ENV=1`, also read Herdr environment guidance (`hosts/herdr.md`) befo
 cross-runtime dispatch, even when no startup hook supplied it. Carry root-session
 identity and canonical repo to assignments; retain their resolved settings on resume.
 Workers own their bounded task; further scoping and delegation belong to the
-orchestrator under [job lifetime](resources.md#resource-and-job-lifetime).
+orchestrator under [job lifetime](../resources/resources.md#resource-and-job-lifetime).
 Agent-chosen thinking changes require the selected agent's allowed set or legacy
 opt-in and the
 [automatic adjustment path](thinking.md); explicit

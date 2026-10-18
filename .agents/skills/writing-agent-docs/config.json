@@ -61,7 +61,7 @@
   "debt": {
     "skills/dispatch/SKILL.md": {
       "contents": true,
-      "bytes": 18124
+      "bytes": 18104
     },
     "skills/dispatch/board.md": {
       "contents": true
@@ -83,7 +83,7 @@
     },
     "skills/review/workflow.md": {
       "contents": true,
-      "bytes": 27168
+      "bytes": 27148
     }
   },
   "architecture": "architecture.json"

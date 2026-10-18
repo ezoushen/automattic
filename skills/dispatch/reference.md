@@ -18,7 +18,7 @@ Runtime lifecycle belongs in the host adapter or explicitly selected executor.
 - **Waiting is not completion.** Follow the host's wait lifecycle while a build
   mutex or worker remains active; report success only after its result is verified.
   A missing user decision or resource grant follows
-  [blocked continuation](../../harnesses/workers/focus.md#blocked-continuation).
+  [blocked continuation](../../runtime/workers/focus.md#blocked-continuation).
 - **Required compile coverage.** Check the project's applicable compile gates;
   one task's success does not prove coverage of another module.
 - **Check affected entry points together.** Trace a shared defect through its

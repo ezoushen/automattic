@@ -44,7 +44,7 @@ export default function (pi) {
     const content = "These lifecycle workers could finish without waking you:\n"
       + missing.map((gap) => `- ${gap}\n`).join("")
       + "Arm a notified wait, recover the receipt or collect the result (for a worker that is gone, "
-      + `a failed or cancelled result whose report says what was lost) before stopping (${root}/harnesses/workers/wait.md).`;
+      + `a failed or cancelled result whose report says what was lost) before stopping (${root}/runtime/workers/wait.md).`;
     return { entries: [{ type: "custom_message", customType: "automattic_yield_gate", content, display: true }], continue: true };
   });
 

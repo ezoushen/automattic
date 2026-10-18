@@ -1,6 +1,6 @@
 # Record actions and outcomes
 
-The [worker lifecycle](../workers/prepare.md) records the action, execution and
+The worker lifecycle records the action, execution and
 outcome for an attempt whose registered execution applied the recommendation, and
 attributes later quality signals to that outcome. Use the direct annotation
 commands below for overrides and for workers outside the lifecycle, with the

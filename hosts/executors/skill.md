@@ -9,7 +9,7 @@ path, install a substitute or invoke a similarly named sub-agent. Skill invocati
 rules still apply: reading instructions is not a workaround for an explicit-only
 invocation restriction. Report an unavailable or non-composable skill as a blocker.
 The coordinator may recover through another allowed candidate under the shared
-[recovery policy](../../harnesses/routing/recovery.md#feedback-and-recovery); this executor does not
+[recovery policy](../../runtime/workers/recovery.md#feedback-and-recovery); this executor does not
 choose replacement models or bypass invocation restrictions.
 
 Provide `executor_config.instruction` followed by the current shared assignment

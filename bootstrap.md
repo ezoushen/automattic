@@ -16,10 +16,10 @@ worker lifecycle's yield gate when a run settles); explicit
 harness selection is also sufficient. Native permissions still apply.
 
 Shared docs are grouped by reader, each folder with a README that lists its files:
-[workers](harnesses/workers/README.md) (launch, wait for, collect and retire workers),
-[routing](harnesses/routing/README.md) (choose and report worker models),
-[decisions](harnesses/decisions/README.md) (decision checkpoints and journals),
-[checks](harnesses/checks/README.md) (plan and run checks), [setup](harnesses/setup/README.md)
+[workers](runtime/workers/README.md) (launch, wait for, collect and retire workers),
+[routing](runtime/routing/README.md) (choose and report worker models),
+[decisions](runtime/decisions/README.md) (decision checkpoints and journals),
+[checks](runtime/checks/README.md) (plan and run checks), [setup](harnesses/setup/README.md)
 (configuration format and procedure) and `hosts/executors/` (one guide per executor type).
 A link names the file to read; read it whole. Each doc in these folders fits one read, and
 a `#anchor` names a section inside it.
@@ -28,7 +28,7 @@ Notation such as `/automattic:refine` and `/mattpocock-skills:tdd` identifies a
 skill, not a shell command. Use the active adapter's invocation mechanism. Shared
 agents and jobs own behavior; host adapters and selected executors own runtime operations.
 
-Orchestrators and workers follow shared [assignment focus](harnesses/workers/focus.md)
+Orchestrators and workers follow shared [assignment focus](runtime/workers/focus.md)
 for priority, scope and concise updates.
 
 `/automattic:setup-automattic` guides configuration and `/automattic:models` handles direct
@@ -45,10 +45,10 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 | Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the required-check watch in `skills/pr/SKILL.md` |
 | Before mandate/alignment questions, including a request to "grill" the plan | `skills/mandate/SKILL.md#filter-questions`: it owns question depth and continuation |
 | Explicit phase composition, such as refinement after research | [refinement procedure](skills/refine/workflow.md#explicit-phase-composition) |
-| Before each worker launch, including workers that dependency skills launch | [launch](harnesses/workers/launch.md), [before launch](harnesses/workers/before-launch.md), then the host's worker part, which its session part names |
-| Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](harnesses/routing/recovery.md#escalation-checkpoints); ordinary resumes reuse the saved choice |
-| Before the first phase checkpoint, when `decisions.enabled` has a family | [phase checkpoints](harnesses/decisions/checkpoint.md#phase-checkpoints) |
+| Before each worker launch, including workers that dependency skills launch | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
+| Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](runtime/workers/recovery.md#escalation-checkpoints); ordinary resumes reuse the saved choice |
+| Before the first phase checkpoint, when `decisions.enabled` has a family | [phase checkpoints](runtime/decisions/checkpoint.md#phase-checkpoints) |
 | `HERDR_ENV=1`, before cross-runtime dispatch, even when no hook supplied it | `hosts/herdr.md` |
 | Choosing or updating a tracker, board or destination; project workflow | [tracker and project conventions](skills/dispatch/conventions.md), [board operations](skills/dispatch/board.md) |
-| After a compaction or resume | re-read this bootstrap and the host session part before the next worker launch or phase checkpoint; [long sessions](harnesses/workers/long-sessions.md) |
+| After a compaction or resume | re-read this bootstrap and the host session part before the next worker launch or phase checkpoint; [long sessions](runtime/workers/long-sessions.md) |
 | A user correction to how you work | record it under the ledger's `## Standing directives` (`skills/mandate/SKILL.md#record-and-continue`) or the host's project memory; a compaction summary is not a durable store |

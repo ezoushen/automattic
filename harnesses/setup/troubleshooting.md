@@ -11,7 +11,7 @@ in Codex or Pi.
 | Clear only one override | `/automattic:models reset <agent> --route thinking` or `model` |
 | Use the lower-layer configuration again | Ask the skill to remove the selected profile or shared agent entry |
 | Mask a personal executor selection for this project | Set the project agent entry to null; existing native preferences then apply |
-| Missing `jsonschema` | Use the prepared plugin Python environment, or run the [setup steps](executors.md#manual-setup-and-inspection) |
+| Missing `jsonschema` | Use the prepared plugin Python environment, or run the [setup steps](../../runtime/config/executors.md#manual-setup-and-inspection) |
 | Named agent, skill or provider unavailable | Exclude the failed capability and use a suitable allowed pool candidate; report exhaustion if none remain |
 | Unsupported model, thinking or inheritance | Exclude that combination; recover within the pool without approximating settings or breaking user pins |
 | Settings appear ignored | Inspect with --route; configured agents bypass legacy models.json and active workers retain their launch settings |

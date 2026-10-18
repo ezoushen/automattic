@@ -43,7 +43,7 @@ before field names, using one representative agent from the actual configuration
 - **Which workflow decisions are delegated:** enabled decision families and their
   calibration evidence. Worker selection and recovery are separate opt-ins; showing
   a backend or profile does not activate it.
-- **How decisions are checked:** the [decision journal](../../harnesses/decisions/journal.md)
+- **How decisions are checked:** the [decision journal](../../runtime/decisions/journal.md)
   links recommendations, host choices, observed worker settings and outcomes. Explain
   missing evidence and calibration warnings; inspection does not run a replay.
 

@@ -37,7 +37,7 @@ review. Publication requires its own request.
 3. Check the active adapter, selected executor tools and permissions. Verify assigned
    repository/worktree identities before starting workers. Automattic does not
    require a Git denial probe or impose a Git-command blocklist.
-   Reconcile the [shared capacity budget](../../harnesses/workers/resources.md#shared-capacity)
+   Reconcile the [shared capacity budget](../../runtime/resources/resources.md#shared-capacity)
    across known sessions/accounts before admitting the batch; local scheduler
    capacity is not an account-wide allocation.
 4. Resolve and validate the selected board and invocation scope using board
@@ -81,7 +81,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    [mandate's authority rules](../mandate/SKILL.md#establish-authority). Keep local runtime state
    and canonical issue state distinct, and apply authorized tracker transitions
    at the project's actual milestones. Read pending receipts and attention items
-   under [worker waits](../../harnesses/workers/wait.md#wake-and-yield)
+   under [worker waits](../../runtime/workers/wait.md#wake-and-yield)
    before new dispatch; design holds pause dependent work until their ruling and
    updated criteria are recorded. Reconcile persisted live tickets with
    selected executor's run status and on-disk reports before starting replacements. An absent agent is
@@ -104,7 +104,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    and shared account capacity, refreshing reservations before each launch.
    An empty candidate list is not completion: inspect scoped execution counts. Live work → arm a
    notified wait for each worker, pass the lifecycle's
-   [yield gate](../../harnesses/workers/wait.md#wake-and-yield), then yield. Ready work without
+   [yield gate](../../runtime/workers/wait.md#wake-and-yield), then yield. Ready work without
    a candidate → identify area/capacity/dependency/integration waits. If none can be
    resolved within scope, record the attempted resolution and block those tickets.
 4. For each candidate, from `repo`, ensure `feat/<slug>` and its spec worktree
@@ -122,10 +122,10 @@ below or record why it is excluded/blocked before reporting the invocation finis
    merge the base's later fixes into the dependent branch before accepting it.
    Prepare fresh and recreated worktrees with the same project-identified gitignored
    build inputs; verify required paths without printing credential-bearing files.
-   Plan the assigned checks using [plan and accept checks](../../harnesses/checks/plan.md#plan-and-accept-checks).
+   Plan the assigned checks using [plan and accept checks](../../runtime/checks/plan.md#plan-and-accept-checks).
    Verify the runner's current contract and the worker's checkpoint capability;
    carry the runner's currently supported wait/status/log/cancel operations
-   ([check execution](../../harnesses/checks/run.md#run-a-bounded-check)).
+   ([check execution](../../runtime/checks/run.md#run-a-bounded-check)).
    Create reports directory, claim the ticket and record implementation started,
    then start a `builder` with:
 
@@ -150,7 +150,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    registered in the run report with its assignment, device reservation and result,
    including ad-hoc ones the user requests mid-run. Status answers read that one
    record. Record the returned agent ID through board operations and complete the
-   [launch decision record](../../harnesses/routing/report.md).
+   [launch decision record](../../runtime/routing/report.md).
    If spawning fails, reconcile whether a child was actually created before retrying.
 5. When a worker finishes, perform the selected board's acceptance checks for report
    structure and branch ancestry; then judge assigned implementation criteria and
@@ -161,19 +161,19 @@ below or record why it is excluded/blocked before reporting the invocation finis
    Accept the worker's recorded checks at their commit; do not rerun them.
    Collecting through the worker lifecycle records the decision outcome. Otherwise
    record it against that acceptance evidence or mark it unknown, then run the
-   [completion record check](../../harnesses/decisions/annotate.md#check-a-handoff)
+   [completion record check](../../runtime/decisions/annotate.md#check-a-handoff)
    for the recorded decision. Preserve any capture gap explicitly; bookkeeping
    failure does not justify repeating implementation or inventing passing evidence.
-   Apply [worker return and checkpoints](../../harnesses/workers/focus.md#worker-return-and-checkpoints):
+   Apply [worker return and checkpoints](../../runtime/workers/focus.md#worker-return-and-checkpoints):
    a failed/incomplete return hands recovery to the host, not verification to the user.
    Missing assigned implementation evidence → blocked with the exact failure in the issue or run report.
-   Accepted → retain the [check evidence](../../harnesses/checks/run.md#retain-evidence)
+   Accepted → retain the [check evidence](../../runtime/checks/run.md#retain-evidence)
    outside the ticket worktree, verify its report links, then merge its branch in
    the spec worktree. Record implementation integrated, record lifecycle `accepted`
    on the attempt with the integrated commit, and apply the project's
    corresponding tracker transition. Not accepted → record lifecycle `declined` with
    the reason. Retiring its worker first requires an
-   [acceptance decision](../../harnesses/workers/collect.md#accept-and-record-outcomes), usually `deferred`
+   [acceptance decision](../../runtime/workers/collect.md#accept-and-record-outcomes), usually `deferred`
    until these checks finish. Keep the ticket worktree through the remaining
    review/repair and applicable E2E; integration alone does not retire it.
    Once an integrated build allows checks that only the user can observe
@@ -182,7 +182,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    No other worker may use that worktree then; the orchestrator completes the merge.
 6. A blocked ticket is the orchestrator's work: research missing facts, diagnose
    defects, resolve engineering choices within accepted constraints, or return to
-   align/refine for design errors. Apply [escalation checkpoints](../../harnesses/routing/recovery.md#escalation-checkpoints)
+   align/refine for design errors. Apply [escalation checkpoints](../../runtime/workers/recovery.md#escalation-checkpoints)
    before retrying a worker, and report the retain/replacement decision.
    Read scoped source/diffs when needed to resolve
    the block. Before asking the user to provide or start a resource, check what is already
@@ -246,7 +246,7 @@ dispatch. Read and execute [Verify autofix through E2E](../review/workflow.md#ve
 before returning from an autofix handoff, including when all code findings are closed.
 `pr` still requires current review/E2E evidence as well as done tickets.
 Once the remaining gates are complete or explicitly excluded, retire an unused
-ticket worktree through [housekeeping's retirement checks](../housekeeping/SKILL.md#retire-a-worktree).
+ticket worktree through [housekeeping's retirement checks](../../runtime/resources/retire-worktree.md).
 Keep the effort worktree and any checkout still needed by an active assignment.
 Then reconcile the overall queue under the board's continuation rules. Return a
 final result only when that scope is complete or cannot progress past documented

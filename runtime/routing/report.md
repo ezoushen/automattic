@@ -11,9 +11,9 @@ and executor, **who proposed**, **who accepted or overrode**, **how it was selec
 and the concrete evidence/reason. Use actual identities where available; label an
 unavailable host model ID as unknown. Distinguish requested from runtime-confirmed
 settings, and preserve the policy source/session and resolved JSON. Record the
-[situational skills](../workers/skills.md#record-and-learn) with their sources.
+situational skills with their sources.
 
-For a recorded backend decision, the [worker lifecycle](../workers/prepare.md)
+For a recorded backend decision, the worker lifecycle
 records it when the registered execution applied the recommendation: the
 `action` at registration, the `execution` at verified startup and the `outcome`
 at collection. Later review defects, repair rounds, reverts and owner-found

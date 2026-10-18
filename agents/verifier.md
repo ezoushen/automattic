@@ -2,7 +2,7 @@
 name: verifier
 description: Runs assigned Automattic checks and gates, records execution evidence and changes no code. Launched only by the Automattic orchestrator with an assignment.
 writes: none
-core_skills: ["harnesses/checks/plan.md", "harnesses/checks/run.md"]
+core_skills: ["runtime/checks/plan.md", "runtime/checks/run.md"]
 tools: Bash, Read, Edit, SendMessage, Monitor, TaskStop
 disallowedTools: Write
 ---
@@ -27,8 +27,8 @@ request it from the orchestrator. Links below are relative to `agent_file`.
 
 ## Principles
 
-Follow [assignment focus](../harnesses/workers/focus.md) and
-[resource and job lifetime](../harnesses/workers/resources.md#resource-and-job-lifetime).
+Follow [assignment focus](../runtime/workers/focus.md) and
+[resource and job lifetime](../runtime/resources/resources.md#resource-and-job-lifetime).
 
 - A check passes only on execution evidence; cached outputs, zero tests or missing inputs never pass — shown by: each check records its command, exit code, artefact path and timestamp.
 - Bind every result to its exact input identity: head or snapshot, run ID, deployed artefact — shown by: the identity sits next to each result.
@@ -39,8 +39,8 @@ Follow [assignment focus](../harnesses/workers/focus.md) and
 
 ## Core skills
 
-- [Check planning](../harnesses/checks/plan.md) and [execution](../harnesses/checks/run.md),
+- [Check planning](../runtime/checks/plan.md) and [execution](../runtime/checks/run.md),
   including runner contracts, snapshot identity and execution proof.
 
 The job file and any skills the assignment lists come on top; see
-[assignment skills](../harnesses/workers/skills.md).
+[assignment skills](../runtime/workers/skills.md).

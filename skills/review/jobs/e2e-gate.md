@@ -19,7 +19,7 @@ project checks, source instructions and reusable evidence. An Automattic effort
 also supplies its selected tickets' `touches` union. Verify the assigned head.
 For a pre-delivery snapshot check, verify the supplied immutable input identity;
 retain that identity rather than attributing dirty execution to HEAD alone.
-Use [worker return and checkpoints](../../../harnesses/workers/focus.md#worker-return-and-checkpoints)
+Use [worker return and checkpoints](../../../runtime/workers/focus.md#worker-return-and-checkpoints)
 for estimates, milestones and bounded failed/incomplete returns. Before a full run,
 verify interaction/readback, localized permissions, recording and fixture/event
 alignment through the project's actual driver. Repeated invalid scenario runs
@@ -27,13 +27,13 @@ without new evidence need host recovery, not another full measurement batch.
 
 ## Finish line
 
-Before executing or accepting checks, apply [plan and accept checks](../../../harnesses/checks/plan.md#plan-and-accept-checks)
+Before executing or accepting checks, apply [plan and accept checks](../../../runtime/checks/plan.md#plan-and-accept-checks)
 to the supplied evidence. Record each reuse/execute decision and its reason in the
 existing report. Reconcile a blanket freshness instruction with the actual project
 requirements; a phase change alone does not justify rerunning every gate.
 Execute applicable project gates using existing boot/wait/teardown scripts. Respect
 documented scope exclusions and operator-only boundaries; an unavailable required
-check remains incomplete. Follow check [planning](../../../harnesses/checks/plan.md) and [execution](../../../harnesses/checks/run.md) for local
+check remains incomplete. Follow check [planning](../../../runtime/checks/plan.md) and [execution](../../../runtime/checks/run.md) for local
 resource coordination, remote runner discovery, snapshot identity and execution
 proof. Verify transported scripts/artifacts; missing-input pipelines and zero tests
 cannot pass. Use required-output checks when the runner supplies authoritative markers.
@@ -60,7 +60,7 @@ artefacts. Return control for the review's existing repair loop; do not fix code
 ask the user to restart testing. The orchestrator continues independent safe checks.
 Tear down owned processes/devices and report anything still reserved.
 On a user pause, retain completed checks/iterations and use
-[resume interrupted checks](../../../harnesses/checks/plan.md#resume-interrupted-checks).
+[resume interrupted checks](../../../runtime/checks/plan.md#resume-interrupted-checks).
 
 Done when you finish the assigned checks or return at the verified failure,
 unavailable required resource, or repeated invalid attempt described above. Missing

@@ -35,7 +35,7 @@ at the agreed seams. Documentation-only work uses code-comments' checks.
 Choose the smallest sufficient verification: the focused and affected checks the
 assignment tiers for you, and the full gate only when the assignment names you for
 it. Use the assignment's explicit E2E owner under
-[worker return and checkpoints](../../../harnesses/workers/focus.md#worker-return-and-checkpoints);
+[worker return and checkpoints](../../../runtime/workers/focus.md#worker-return-and-checkpoints);
 do not silently absorb the entire review/repair/E2E workflow into implementation.
 Reuse passing evidence only when relevant code, inputs and environment match; retain
 its original head and provenance. Run missing or invalidated checks and repair
@@ -47,8 +47,8 @@ Use a focused negative control when necessary, not blanket mutation testing.
 For changed parsers, accessors or lifecycles, account for affected entry points
 and input classes; use a table when it clarifies coverage or the project requires it.
 
-Run builds under check [planning](../../../harnesses/checks/plan.md) and
-[execution](../../../harnesses/checks/run.md), with the project's required environment
+Run builds under check [planning](../../../runtime/checks/plan.md) and
+[execution](../../../runtime/checks/run.md), with the project's required environment
 and only its necessary resource coordination. A local build lock is optional; remote
 queues own their capacity. Use verified snapshot identity for intermediate checks
 rather than committing solely to give evidence a revision. Use the project's
@@ -76,7 +76,7 @@ applicable; every ticket checkbox as `[x]` or the reason it stays `[ ]`.
 For a later-phase criterion, name its assigned owner and phase; pending verification
 is not a failed implementation check or proof of ticket completion.
 Use the supplied evidence directory and the shared
-[retention contract](../../../harnesses/checks/run.md#retain-evidence); report any
+[retention contract](../../../runtime/checks/run.md#retain-evidence); report any
 missing input. Planned checks and local substitutes for required remote checks stay
 unchecked.
 

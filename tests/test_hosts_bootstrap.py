@@ -23,12 +23,12 @@ TRIGGERS = {
     r'creat\w+ a PR': 'standards/pr.md',
     r'mandate/alignment questions': 'skills/mandate/SKILL.md#filter-questions',
     r'explicit phase composition': 'skills/refine/workflow.md',
-    r'before .*worker launch': 'harnesses/workers/launch.md',
-    r'worker blockers': 'harnesses/routing/recovery.md#escalation-checkpoints',
-    r'decisions\.enabled': 'harnesses/decisions/checkpoint.md#phase-checkpoints',
+    r'before .*worker launch': 'runtime/workers/launch.md',
+    r'worker blockers': 'runtime/workers/recovery.md#escalation-checkpoints',
+    r'decisions\.enabled': 'runtime/decisions/checkpoint.md#phase-checkpoints',
     r'HERDR_ENV=1': 'hosts/herdr.md',
     r'tracker': 'skills/dispatch/conventions.md',
-    r'compaction': 'harnesses/workers/long-sessions.md',
+    r'compaction': 'runtime/workers/long-sessions.md',
     r'correction': 'skills/mandate/SKILL.md#record-and-continue',
 }
 PATH = re.compile(r'(?:[\w.-]+/)*[\w.-]+\.md(?:#[\w-]+)?')

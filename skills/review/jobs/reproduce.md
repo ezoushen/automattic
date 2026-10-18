@@ -25,8 +25,8 @@ it.
 Diagnosis only: never repair the finding. Use Matt Pocock's `diagnosing-bugs` only
 when the finding needs its diagnosis discipline; its fix phase is outside this job.
 A successful workaround alone does not establish the root cause. Run and minimize
-the evidence in isolation under check [planning](../../../harnesses/checks/plan.md)
-and [execution](../../../harnesses/checks/run.md), with stable input identity and only
+the evidence in isolation under check [planning](../../../runtime/checks/plan.md)
+and [execution](../../../runtime/checks/run.md), with stable input identity and only
 necessary resource coordination. When the assigned proof steps are reading-only,
 edit and run nothing.
 

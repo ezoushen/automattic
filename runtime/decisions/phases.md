@@ -14,7 +14,7 @@ planning/review loop. No backend or decision family is enabled by default.
 ## Phase checkpoints
 
 Read effective configuration once per root session, refreshing after changes.
-Only enabled families consult [the shared skill](../../skills/decision/SKILL.md).
+Only enabled families consult the [decision workflow](workflow.md).
 The following defines each extension point; worker selection and recovery are the
 initial opt-ins. Other families consult the same helper only after explicit
 enablement. When no family is enabled, keep the ordinary host flow without creating
@@ -30,7 +30,7 @@ families need no checkpoint or check call: configuration is their record.
 | `worker-selection` | After preflight: which permitted model/thinking pair fits this assignment? | Existing router, pins, candidate eligibility and executor |
 | `review-triage` | After a review layer: which proposed grouping or next investigation fits the evidence? | Finding proof, all required coverage, priorities and comment policy |
 | `recovery` | At a blocker, confirmed review defect or failed required check: which permitted recovery action addresses the cause? | Attempt budget, safe handoff and unchanged acceptance gates |
-| `skill-selection` | Before a launch, per [open skill candidate](../workers/skills.md#open-candidates): load or skip? | Agent core gates, user-named skills and the assignment's facts |
+| `skill-selection` | Before a launch, per open skill candidate: load or skip? | Agent core gates, user-named skills and the assignment's facts |
 | `delivery` | After assembling delivery evidence: which unresolved follow-up needs attention? | Verified tests/revisions and publication authorization |
 
 Worker and skill selection score both option orders and average them (`order_balanced`),
@@ -94,7 +94,7 @@ on each tool call. The host's context preparation and checking cost also count.
 
 ## Recovery
 
-At existing [escalation checkpoints](../routing/recovery.md#escalation-checkpoints), reconcile
+At existing escalation checkpoints, reconcile
 the worker/jobs and budget before constructing options. No remaining authorized
 attempt means follow the existing stop rule, without a recovery inference call.
 Include current settings, concrete failure, attempted correction, available context,

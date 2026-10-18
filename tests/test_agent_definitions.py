@@ -19,7 +19,7 @@ disallowedTools: Write
 
 ## Permissions
 
-Never edits source; see [shared rules](../harnesses/rules.md).
+Never edits source; see [shared rules](../runtime/rules.md).
 
 ## Principles
 
@@ -63,7 +63,7 @@ class Definitions(unittest.TestCase):
         self.write('agents/checker.md', AGENT)
         self.write('skills/craft/SKILL.md', '---\nname: craft\ndescription: Craft.\n---\n')
         self.write('skills/craft/jobs/inspect.md', JOB)
-        self.write('harnesses/rules.md', '# Rules\n')
+        self.write('runtime/rules.md', '# Rules\n')
         self.write('scripts/tool.py', "JOB = 'inspect'\n")
 
     def write(self, name, text):
@@ -208,7 +208,7 @@ class Definitions(unittest.TestCase):
         self.assertEqual(set(loaded['agents']), {'builder', 'reviewer', 'verifier'})
         for name, agent in loaded['agents'].items():
             for item in agent['core_skills']:
-                self.assertTrue(':' in item or item.startswith(('standards/', 'harnesses/')), (name, item))
+                self.assertTrue(':' in item or item.startswith(('standards/', 'runtime/')), (name, item))
         self.assertEqual(set(loaded['jobs']), {'ticket', 'merge-conflict', 'diff-review', 'repair', 'reproduce',
                                                'e2e-gate', 'audit'})
         # Configuration is validated against this enum, so an agent missing there cannot be configured.

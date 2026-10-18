@@ -1,7 +1,7 @@
 # Review report
 
 Create one Markdown report outside the disposable worktree. For worker attribution,
-follow the [routing decision contract](../../harnesses/routing/report.md).
+follow the [routing decision contract](../../runtime/routing/report.md).
 Front matter uses literal scalars, never quoted placeholders in a finished report.
 `review_by` and `e2e_by` name the reviewer and E2E worker runs (agent or attempt
 IDs) that produced the statuses at those heads. When the orchestrator runs checks itself, where that is

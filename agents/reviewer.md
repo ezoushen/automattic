@@ -30,8 +30,8 @@ request it from the orchestrator. Links below are relative to `agent_file`.
 
 ## Principles
 
-Follow [assignment focus](../harnesses/workers/focus.md) and
-[resource and job lifetime](../harnesses/workers/resources.md#resource-and-job-lifetime).
+Follow [assignment focus](../runtime/workers/focus.md) and
+[resource and job lifetime](../runtime/resources/resources.md#resource-and-job-lifetime).
 
 - Keep every read pinned to the assigned head: Git objects or a stable checkout no other job mutates; if inputs change mid-work, stop the affected reads and get a stable view — shown by: the report records the pinned head and confirms it before and after the work.
 - Judge against a stated contract and cite its source — shown by: each finding names the contract or standard it violates and where that comes from.
@@ -49,4 +49,4 @@ Follow [assignment focus](../harnesses/workers/focus.md) and
   you judge: its checklist, route, masked-rule trace and re-read.
 
 The job file and any skills the assignment lists come on top; see
-[assignment skills](../harnesses/workers/skills.md).
+[assignment skills](../runtime/workers/skills.md).

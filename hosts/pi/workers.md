@@ -2,13 +2,13 @@
 
 ## Delegation
 
-Resolve [executors](../../harnesses/workers/launch.md) first. The operations below apply to `native`;
+Resolve [executors](../../runtime/workers/launch.md) first. The operations below apply to `native`;
 an explicitly selected external executor owns its launch/lifecycle and settings.
 Native dispatch requires Pi's `subagent` capability (provided here by pi-subagents).
 Inspect its current schema and `subagent({ action: "list", capabilities: true })`
 before assigning work. Use `action: "guide", topic: "tool-reference"` for unfamiliar
 operations. A missing delegation capability blocks that native launch. Return the
-gap to [pool recovery](../../harnesses/routing/recovery.md#feedback-and-recovery); use only an already
+gap to [pool recovery](../../runtime/workers/recovery.md#feedback-and-recovery); use only an already
 configured suitable alternative. Do not install a provider to force a launch.
 
 Use the registered generic `worker` with the assigned `agent_file` (builder, reviewer

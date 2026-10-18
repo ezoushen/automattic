@@ -23,8 +23,8 @@ separate copies of skills or scripts.
 | `benchmarks/` | Synthetic decision calibration examples |
 | `addons/show-me/` | Shared presentation reference and thin manual show-me entry |
 | `hosts/herdr.md`, `hosts/executors/` | Herdr environment guidance; Bash, Sub-agent and Skill execution adapters |
-| `harnesses/workers/`, `routing/`, `decisions/`, `checks/` | Shared runtime rules by reader, each file small enough for one read |
-| `harnesses/setup/` | Configuration procedure for the setup-automattic and models skills |
+| `runtime/workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/` | Shared runtime rules by reader, each file small enough for one read; a module depends only on those after it in this order, and the configuration format is in `config/` |
+| `harnesses/setup/` | Configuration change procedure for the setup-automattic and models skills |
 | `agents/` | Three worker agents (builder, reviewer, verifier): permissions, principles and core skills; Claude loads them natively |
 | `hooks/` | Shared session-start hook; Claude hook registration |
 | `plugin.json`, `.claude-plugin/`, `.codex-plugin/` | Portable metadata and compatibility registration |
@@ -198,7 +198,7 @@ activities the coordinator's tokens went to. It reads Claude, Codex and Pi
 transcripts.
 
 `scripts/allowance.py status` reports the Claude Code and Codex allowance windows and
-their pressure levels; see [selection](harnesses/routing/choose.md#allowance) for the
+their pressure levels; see [selection](runtime/routing/choose.md#allowance) for the
 status-line line that feeds Claude's.
 
 `scripts/outcomes.py summary [--agent <agent>] [--job <job>]` counts each candidate's accepted,
@@ -232,7 +232,7 @@ older Automattic model overrides for that agent. Other agents stay unchanged. Th
 skill prepares the isolated validator environment when needed, validates the
 configuration and reports where it was saved. It does not start a worker.
 
-Inside Herdr, [caller-specific routes](harnesses/setup/catalog.md#caller-specific-skill-routes) let
+Inside Herdr, [caller-specific routes](runtime/config/catalog.md#caller-specific-skill-routes) let
 Claude/Codex use native workers for same-runtime work and Herdr for other destinations.
 The [Herdr guidance](hosts/herdr.md) covers waits and automatic cleanup of owned workers.
 
@@ -257,28 +257,28 @@ For bounded thinking, use `thinking={"default":"medium","allowed":["medium","hig
 An agent can define a pool of allowed candidates. The `router` chooses through a
 skill, a built-in System One decision-model client, or a named profile. Profiles
 use `profiles.<name>.<agent>.<worker-runtime>.candidate/thinking`; omitted fields
-leave selection unchanged. See [routers and sparse profiles](harnesses/setup/routers.md#routers-and-sparse-profiles)
+leave selection unchanged. See [routers and sparse profiles](runtime/config/routers.md#routers-and-sparse-profiles)
 for examples. The built-in [model-routing skill](skills/model-routing/SKILL.md)
 chooses in the host's existing context, without a separate model call.
 For a local Jev/OpenJev service, configure its endpoint and model ID under
 `decisions.backend`, enable `worker-selection`, and select
 `router: {"type":"decision-model"}`. The
-[decision-model router](harnesses/routing/decision-model.md) selects a
+[decision-model router](runtime/routing/decision-model.md) selects a
 permitted model/effort pair and falls back to host judgment if unavailable or
-undecided. The [shared decision loop](harnesses/decisions/phases.md) uses the same backend
+undecided. The [shared decision loop](runtime/decisions/phases.md) uses the same backend
 for recovery and other explicitly enabled phase checkpoints. The configured
 checkpoint helper records consultations or justified skips, reuses unchanged
 resumes and checks expected phase records at existing handoffs. Enable only the
 desired families. Labeled calibration replays establish a
 baseline; active use warns about changed configuration or possible behavioral drift.
 Synthetic examples are integration checks, not evidence of production accuracy.
-The [decision journal](harnesses/decisions/journal.md) retains exact prompts, responses,
+The [decision journal](runtime/decisions/journal.md) retains exact prompts, responses,
 host actions, requested/observed worker settings and outcomes beside session artifacts.
 Use `/automattic:decision retro <journal>` for an offline retrospective, or
 `/automattic:decision replay <journal> <cases>` for an explicitly requested, bounded
 wording/order experiment. Replay preserves live settings and the calibration baseline;
 it does not train a model.
-Existing checkpoints accept [bounded image evidence](harnesses/decisions/images.md)
+Existing checkpoints accept [bounded image evidence](runtime/decisions/images.md)
 for visual choices, with hashed retained assets and exact replay; screenshots do not
 replace executed acceptance evidence.
 
@@ -287,7 +287,7 @@ rescoping, independent review and replacements; workers complete their scope
 without creating nested teams. Existing fixed instances and thinking bounds remain
 supported. Configuration inspection never starts a router or worker.
 
-The [configuration guide](harnesses/setup/executors.md) contains executor examples
+The [configuration guide](runtime/config/executors.md) contains executor examples
 and manual setup; [reset and troubleshooting](harnesses/setup/troubleshooting.md)
 covers reset recipes and fixes. Choose:
 
@@ -297,7 +297,7 @@ covers reset recipes and fixes. Choose:
 
 Encapsulate reusable skill usage under `executor_types.<name>`, then select
 `{"type":"<name>"}` in a route or agent. See
-[named skill executor types](harnesses/setup/executors.md#named-skill-executor-types).
+[named skill executor types](runtime/config/executors.md#named-skill-executor-types).
 
 Define each model once under `models` with a task-fit description and runtime
 bindings. Each binding holds its registered `id` and thinking policy; top-level
@@ -313,7 +313,7 @@ Configuration lives in `.automattic/executors.json` or
 Use `router: {"type":"profile","profile":"balanced"}`, `--config-profile <name>`,
 or `AUTOMATTIC_PROFILE` to select a routing profile. With no router configured,
 the host uses `automattic:model-routing`; no host/Herdr profile is selected implicitly.
-See [host selection](harnesses/workers/launch.md#host-selection) for precedence.
+See [host selection](runtime/workers/launch.md#host-selection) for precedence.
 User-defined executor types encapsulate skill usage; built-in executors remain
 subagent, skill and bash. OpenCode's native dispatch workflow is not implemented;
 a configured external executor owns its lifecycle and needs runtime verification.

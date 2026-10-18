@@ -13,7 +13,7 @@ This file selects the flow and inspects settings. For edits read
 
 For new setup and natural-language configuration requests, use model definitions and agent entries
 in `executors.json`; **--route** is the explicit command spelling for that flow.
-Read [configuration examples](executors.md) and only the selected
+Read [configuration examples](../../runtime/config/executors.md) and only the selected
 executor's schema/adapter. Preserve structured `/models` legacy commands without
 --route, --config-profile, --scope session or pool options, and explicit models.json
 requests, using
@@ -21,18 +21,18 @@ requests, using
 The optional harness argument means the host for per-agent setup and the target
 preference harness for legacy settings. If omitted, use the current host; never
 infer it from a model name. It does not change the main session or supply tools.
-Use [host selection](../workers/launch.md#host-selection) to distinguish the
+Use [host selection](../../runtime/workers/launch.md#host-selection) to distinguish the
 caller from the worker runtime. A named-profile request uses
 `profiles.<name>.<agent>.<worker-runtime>.candidate/thinking`; there is no `agents` or
 `choices` wrapper. Require the target runtime for a profile edit, establishing it
 from the requested candidate's binding when unambiguous. Preserve omitted fields.
 Profiles never replace pools or routes. `--config-profile` explicitly selects a
 profile router; host/Herdr names do not automatically select profiles.
-For reusable models, read [model definitions](catalog.md#configure-an-agent).
+For reusable models, read [model definitions](../../runtime/config/catalog.md#configure-an-agent).
 Store descriptions under `models.<name>`; its `runtimes.<runtime>` bindings contain
 the registered `id` and thinking policy. Top-level `runtimes.<runtime>.executors`
 owns reusable launch routes indexed by caller context. For skill bridges, use
-[caller-specific routes](catalog.md#caller-specific-skill-routes).
+[caller-specific routes](../../runtime/config/catalog.md#caller-specific-skill-routes).
 Establish both the caller and worker runtime before editing; update the requested
 caller's route and preserve sibling routes when saving the complete runtime definition.
 Use configured native routes
@@ -40,7 +40,7 @@ for same-runtime work, including Pi, and a supported bridge for cross-runtime wo
 Herdr routes require a real managed environment. Provider connections stay in the runtime.
 Keep agent pools shared. A routing profile may cover multiple worker runtimes.
 Preserve selection policy when changing only transport.
-For reusable skill usage, read [named skill executor types](executors.md#named-skill-executor-types).
+For reusable skill usage, read [named skill executor types](../../runtime/config/executors.md#named-skill-executor-types).
 An executor-definition request selects this per-agent flow. Store the complete skill
 instance under `executor_types.<name>` and reference it with `{"type":"<name>"}`.
 Keep destination routes and model settings separate; a definition name is not a host.

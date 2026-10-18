@@ -237,25 +237,17 @@ class TargetFolders(Fixture):
         self.assertEqual(self.run_repository_config(), {'code-path'})
 
 
-# The harness-to-skill links measured on 2026-10-19 that break the layers (grep of `](../skills/` from
-# harnesses/); the other links from harnesses/ to skills/ go from the bootstrap down to flows or standards.
-RUNTIME_TO_SKILL_DEBT = [
-    'harnesses/checks/run.md -> skills/housekeeping/SKILL.md',
-    'harnesses/decisions/journal.md -> skills/decision/SKILL.md',
-    'harnesses/decisions/phases.md -> skills/decision/SKILL.md',
-    'harnesses/routing/decision-model.md -> skills/decision/SKILL.md',
-    'harnesses/setup/apply.md -> skills/decision/SKILL.md',
-    'harnesses/setup/executors.md -> skills/setup-automattic/SKILL.md',
-    'harnesses/setup/routers.md -> skills/model-routing/SKILL.md',
-]
+RUNTIME_MODULES = ('workers', 'checks', 'routing', 'resources', 'decisions', 'config')
 
 
 class RepositoryDebt(unittest.TestCase):
-    def test_the_upward_links_from_harnesses_to_skills_are_recorded_as_debt(self):
-        debt = json.loads((support.ROOT / '.agents/skills/writing-agent-docs/architecture.json').read_text())['debt']
-        self.assertEqual(set(RUNTIME_TO_SKILL_DEBT) - set(debt['links']), set())
-        self.assertEqual({link for link in debt['links'] if link.startswith('harnesses/') and ' -> skills/' in link},
-                         set(RUNTIME_TO_SKILL_DEBT))
+    def test_the_runtime_modules_record_no_debt(self):
+        data = json.loads((support.ROOT / '.agents/skills/writing-agent-docs/architecture.json').read_text())
+        runtime_docs = [glob for name in RUNTIME_MODULES for glob in data['modules'][name]['docs']]
+        self.assertTrue(all(glob.startswith('runtime/') for glob in runtime_docs), runtime_docs)
+        debt = data['debt']
+        self.assertEqual([link for link in debt['links'] if link.startswith('runtime/')], [])
+        self.assertEqual([cycle for cycle in debt['cycles'] if set(cycle) & set(RUNTIME_MODULES)], [])
 
 
 if __name__ == "__main__":

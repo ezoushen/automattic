@@ -41,7 +41,7 @@ independent permitted work.
    this target. Before starting workers, verify the active adapter, selected executor
    tools, permissions and capacity. Unconfigured native review can run locally where
    permitted when child tools are absent. For an unavailable configured worker,
-   follow [pool recovery](../../harnesses/routing/recovery.md#feedback-and-recovery):
+   follow [pool recovery](../../runtime/workers/recovery.md#feedback-and-recovery):
    automatically select a suitable allowed alternative, preserving explicit user
    pins and permission boundaries. Read-only review does not require an implementation board.
    Record the resolver's profile/source, executor and requested settings before
@@ -109,7 +109,7 @@ coverage when an upstream decision blocks it. Carry accepted alignment forward.
 The coordinator owns direction/scope; one reviewer owns the implementation batch
 and its Matt axes. Share the layer decisions and permitted coverage before launch.
 At each completed layer, run the configured
-[`review-triage` checkpoint](../../harnesses/decisions/checkpoint.md#configured-checkpoint-command)
+[`review-triage` checkpoint](../../runtime/decisions/checkpoint.md#configured-checkpoint-command)
 before choosing an investigation or finding grouping. Identify the layer and head
 in its phase assignment and check that record before leaving the layer. This also
 applies without autofix; a clean, fully covered layer records an evidenced skip.
@@ -158,7 +158,7 @@ Record the command, working directory, exit status and diagnostic. A missing fil
 or failed setup is an execution gap, not a reproduced defect or a disproved finding;
 correct permitted setup and rerun before judging the result.
 All review checks, including those run by the orchestrator, follow
-check [planning](../../harnesses/checks/plan.md) and [execution](../../harnesses/checks/run.md) for runner inputs, execution proof and
+check [planning](../../runtime/checks/plan.md) and [execution](../../runtime/checks/run.md) for runner inputs, execution proof and
 project-required resource coordination. A remote queue needs no local build mutex.
 
 Out-of-scope candidates go immediately to `## Follow-ups` with location, rationale,
@@ -194,10 +194,10 @@ Batch compatible confirmed findings after the layer's findings are consolidated.
 Attribute each confirmed finding to the collected worker attempt that introduced it,
 when known, with the lifecycle's `attribute --kind review-defect`; a repair attempt
 names the attempt it fixes in `repairs`
-([attribution](../../harnesses/workers/collect.md#accept-and-record-outcomes),
-[repair registration](../../harnesses/workers/prepare.md)).
+([attribution](../../runtime/workers/collect.md#accept-and-record-outcomes),
+[repair registration](../../runtime/workers/prepare.md)).
 Before assigning the next repair or retry, apply the shared
-[escalation checkpoints](../../harnesses/routing/recovery.md#escalation-checkpoints)
+[escalation checkpoints](../../runtime/workers/recovery.md#escalation-checkpoints)
 to this evidence: run the configured `recovery` checkpoint for the action before
 deciding who executes it. A worker-routing call alone does not satisfy recovery.
 Check this phase record before acting, record its outcome at the repair handoff,
@@ -267,7 +267,7 @@ the local repair branch without changing the author's branch or the user's
 checkout. Finish intended tracked housekeeping changes before pinning that head.
 
 Prepare the per-check reuse/execute plan using
-[plan and accept checks](../../harnesses/checks/plan.md#plan-and-accept-checks), including
+[plan and accept checks](../../runtime/checks/plan.md#plan-and-accept-checks), including
 implementation, review and repair evidence. Pass that plan to the e2e-gate job;
 preserve justified reuse in its assignment rather than replacing it with a demand
 for fresh execution of every gate. Missing run preconditions require fresh evidence
@@ -286,7 +286,7 @@ locally where permitted. Reserve required devices through the configured
 for standalone review. Do not create local tickets for remote boards or standalone
 reviews. Reconcile interrupted reservations and release only after actual teardown.
 Supply the expected duration and next milestone under
-[worker return and checkpoints](../../harnesses/workers/focus.md#worker-return-and-checkpoints).
+[worker return and checkpoints](../../runtime/workers/focus.md#worker-return-and-checkpoints).
 Accept a bounded failed/incomplete return promptly and take the existing recovery
 action; keep the workflow gated and reuse already completed valid segments.
 
@@ -301,7 +301,7 @@ approval round for already authorized testing.
 Write the check-by-check evidence, reuse reasons, exclusions and gaps under `## E2E`.
 Before accepting a pass, verify the scenario's expected versus observed activity
 and invalid-run conditions, not just its exit code or the worker's summary.
-On resumption, apply [resume interrupted checks](../../harnesses/checks/plan.md#resume-interrupted-checks).
+On resumption, apply [resume interrupted checks](../../runtime/checks/plan.md#resume-interrupted-checks).
 Give each unfinished gate its next action and responsible job, or the concrete
 blocker that prevents progress. "Awaiting stakeholder decision" needs an identified
 decision beyond executing already authorized verification.

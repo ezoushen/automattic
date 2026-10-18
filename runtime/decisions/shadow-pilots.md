@@ -23,7 +23,7 @@ is not correctness; local provider scores are uncalibrated.
 This opt-in pilot measures whether System One can classify failed checks before
 any workflow depends on it. Enable it by adding `failure-cause` to
 `decisions.enabled`. Run required gates through
-[`run_check.py`](../checks/run.md#run-a-bounded-check) with `--classify-failure`, and a failed
+`run_check.py` with `--classify-failure`, and a failed
 check is classified automatically. For a failure outside `run_check.py`, run:
 
 ```bash
@@ -79,8 +79,8 @@ output, the step the host performs when inspecting a worker after a wait wakes,
 times out or stalls. Enable it by adding `wake-triage` to `decisions.enabled`.
 A notified lifecycle wait armed with `capture` classifies each wake itself, after
 delivering its receipt, and a completed collection straight after a settled wake
-records the objective `done` label ([waits](../workers/wait.md#wake-and-yield),
-[collection](../workers/collect.md#collect-a-result)).
+records the objective `done` label (lifecycle waits and
+collection).
 For other wakes, save the worker's pane or log capture to a file (or, under
 Herdr, name the file for the helper to write) before inspecting it and run:
 
@@ -119,7 +119,7 @@ The helper sends the last 8,000 bytes of the capture, framed as untrusted output
 plus the optional seconds since the last observed output. It chooses among
 `working`, `done`, `needs-input`, `error` and `stalled`, or abstains. As with
 failure cause, output omits the label, a disabled family neither calls the backend
-nor writes, and the host continues the [worker lifecycle](../workers/wait.md)
+nor writes, and the host continues the worker lifecycle
 unchanged. After reconciling the worker, for any result other than `settled`, record the state actually found with the
 `assessment` command above; for an automatic wake, its `decision_id` is in the
 receipt's `triage` field. The worker's later observable state is the objective

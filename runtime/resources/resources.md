@@ -25,7 +25,7 @@ budget with the current owner. Without a shared mechanism, report the coordinati
 limit and avoid competing batches against the known account. Automattic's local
 board cannot enforce an account-wide ceiling across unrelated processes.
 
-On throttling or quota errors, apply [availability recovery](../routing/recovery.md#feedback-and-recovery)
+On throttling or quota errors, apply availability recovery
 to the evidenced service/account. Do not restart every interrupted worker at once
 or treat an error response as proof that its existing job has stopped. Reconcile
 live handles and retained reports before replacement, and retain the failure and
@@ -41,9 +41,9 @@ and evidence needed for that assignment. Review is a separate scoped assignment.
 Workers surface blocking failures or repeated unproductive approaches promptly
 through the executor's existing progress/report channel, with attempted actions,
 evidence and live-job state. The orchestrator applies the
-[escalation checkpoints](../routing/recovery.md#escalation-checkpoints) when receiving that
+escalation checkpoints when receiving that
 evidence; it need not wait for a final completion report.
-Workers surface an [early design decision](design-hold.md)
+Workers surface an early design decision
 when unsure how to proceed within the agreement or when findings might break it,
 including public contracts, platform exceptions and governing criteria. Stop only
 dependent edits and supply the requirement, evidence and decision-brief path.
@@ -57,12 +57,12 @@ current canonical criteria. Carry unaffected accepted decisions forward.
 A forwarding executor may transport the request to its one worker, without becoming
 an additional reasoning or delegation layer.
 
-Use [check execution](../checks/run.md) for bounded failure controls, complete attempt logs
+Use check execution for bounded failure controls, complete attempt logs
 and evidence that survives checkout retirement.
 
 The coordinator reserves verified exclusive resources before launching dependent
 experiments: mutable build outputs, device, fixture, shared service or worktree.
-Follow [resource coordination](../checks/plan.md#coordinate-the-actual-resource): a local
+Follow resource coordination: a local
 mutex is optional, and a remote scheduler owns its execution capacity. Launch one
 experiment at a time only when they need the same exclusive resource. Other
 analysis can proceed. Record ownership and waiting work in the existing
@@ -111,7 +111,7 @@ shared-host command-pattern kill that can affect another session. A local client
 exit does not prove a remote job or device lease ended. If teardown cannot be
 proved, report incomplete cleanup and retain the reservation. Never delete a
 required shared lock to unblock it.
-For checks resumed after interruption, follow [check recovery](../checks/plan.md#resume-interrupted-checks)
+For checks resumed after interruption, follow check recovery
 to preserve completed evidence and restart only what the measurement requires.
 
 For work owned by another session, hand over the required dependency or result,
@@ -127,7 +127,7 @@ through the executor's supported close operation. If capacity requires earlier
 retirement, preserve evidence, clear the handle and resolve a replacement normally.
 With no close operation, record the completed handle; release scheduler capacity
 only after actual work has ended. Leave the parent session and unrelated user agents
-alone. Herdr-specific operations live in Herdr guidance (`hosts/herdr.md`).
+alone. Herdr-specific operations live in Herdr guidance.
 
 ## Runner contract checks
 

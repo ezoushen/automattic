@@ -22,13 +22,13 @@ runtime. Show any such conflict for the user to resolve. Merely choosing a skill
 is not permission to install it or run a validation job.
 
 For catalog entries, pools, bounded thinking or **--scope session**, read
-[models and runtime routes](catalog.md) and [session scope](session.md). These options select
+[models and runtime routes](../../runtime/config/catalog.md) and [session scope](../../runtime/config/session.md). These options select
 the per-agent flow. Accept a pool as structured JSON or construct it from the
 user's named candidates as catalog references or complete executor/model policies.
 Catalog membership alone does not grant every agent access. For agent grading,
 research the exact model/runtime, choose candidates by the agent's obligations, and
 put conditional task limits in model descriptions. Keep dated comparisons in research
-journals; use [assignment selection](../routing/choose.md)
+journals; use [assignment selection](../../runtime/routing/choose.md)
 to filter each task. Pools have no model default; `--candidate <id>` identifies
 the candidate to edit. Migrate old defaults explicitly using that guide.
 For a per-candidate change, establish the target from the request before editing;
@@ -65,11 +65,11 @@ saved change. Explicit profile selection changes the view, not the saved router.
 For a **router** request, store `{"type":"skill","skill":"<name>"}` with
 optional user-specific `instruction`, `{"type":"profile","profile":"<name>"}`,
 or `{"type":"decision-model"}` with the backend configured under
-[`decisions`](routers.md#decision-backend). For a decisions request, preserve
+[`decisions`](../../runtime/config/routers.md#decision-backend). For a decisions request, preserve
 the effective object, then edit backend, enabled families or calibration as requested.
 Enable only explicitly requested families. Record the registered endpoint/model and
 known revision; absolute suite/baseline paths belong to the chosen config scope.
-Calibration commands belong to the [decision skill](../../skills/decision/SKILL.md);
+Calibration commands belong to the [decision workflow](../../runtime/decisions/workflow.md);
 configuration edits and inspection remain offline. An old inline decision router
 still applies to worker selection when shared decisions are absent.
 Removing `decisions` reveals the lower object or legacy inline worker router; it
@@ -107,7 +107,7 @@ Never replace the user's model choice with a guessed supported value.
 For string thinking, store `allow_thinking_override` alongside that binding's
 thinking, or in a complete instance's `models` override policy. Enable it only when requested; a model/thinking change alone does not grant
 adaptation. Preserve it when changing one setting. Follow the
-[automatic adjustment contract](../workers/thinking.md)
+[automatic adjustment contract](../../runtime/workers/thinking.md)
 for one-run agent decisions. Resetting all model settings to inherit also clears
 this permission; resetting only thinking preserves it.
 

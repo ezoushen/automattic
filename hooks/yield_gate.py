@@ -17,7 +17,7 @@ import time
 
 ROOT = Path(__file__).resolve().parent.parent
 RECENT_SECONDS = 24 * 3600
-GUIDE = ROOT / 'harnesses/workers/wait.md'
+GUIDE = ROOT / 'runtime/workers/wait.md'
 
 
 def lifecycle():

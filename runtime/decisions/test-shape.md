@@ -1,7 +1,7 @@
 # Test-effectiveness routing
 
 `classify-test` routes one added or modified test for the
-[tautological-tests](../../standards/kinds/tautological-tests.md) check. The
+tautological-tests check. The
 reviewing agent writes the checklist as JSON and runs:
 
 ```bash

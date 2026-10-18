@@ -72,7 +72,7 @@ The runner cannot tear down processes detached into another session, simulator o
 remote service. Use the project's owned job IDs and teardown procedure for those.
 Hard-killing the runner bypasses cleanup. A normal command exit also does not prove
 background jobs stopped: reconcile owned jobs under
-[resource and job lifetime](../workers/resources.md#resource-and-job-lifetime) before releasing
+[resource and job lifetime](../resources/resources.md#resource-and-job-lifetime) before releasing
 the reservation. Cleanup uncertainty leaves the gate incomplete.
 
 ## Prove the failure path
@@ -108,5 +108,5 @@ Acceptance requires the retained artifacts to exist and support the claimed resu
 A checked box, reported pass or surviving Git commit cannot replace missing output.
 Recover existing evidence first; rerun only the missing or invalidated checks when
 needed. The lifecycle owner applies
-[worktree retirement](../../skills/housekeeping/SKILL.md#retire-a-worktree) after the
+[worktree retirement](../resources/retire-worktree.md) after the
 remaining gates and verifies that removal cannot break these evidence links.

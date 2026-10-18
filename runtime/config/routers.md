@@ -14,13 +14,13 @@
 }
 ```
 
-The [model-routing skill](../../skills/model-routing/SKILL.md) guides the host's judgment
+The model-routing skill guides the host's judgment
 within its existing context. Add `instruction` only for user-specific preferences.
 An installed routing skill can call Jev or another decision model and return the
 same selection contract. That is a selection interface, not a worker executor;
 inspection never loads the skill, calls an API or installs a dependency.
 For a service exposing System One directly, use the built-in
-[decision-model router](../routing/decision-model.md).
+decision-model router.
 
 A profile router applies sparse overrides after establishing the worker runtime:
 

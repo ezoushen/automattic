@@ -113,8 +113,8 @@ def agent_problems(root, path):
             continue
         resolved = (path.parent / target.split('#')[0]).resolve()
         if resolved not in linkable and not any((root / folder).resolve() in resolved.parents
-                                                for folder in ('standards', 'harnesses')):
-            problems.append(f'{name}: links outside core skills, standards and harnesses: {target}')
+                                                for folder in ('standards', 'runtime')):
+            problems.append(f'{name}: links outside core skills, standards and runtime: {target}')
     return problems
 
 

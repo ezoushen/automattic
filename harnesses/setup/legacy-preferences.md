@@ -1,6 +1,6 @@
 # Legacy native model preferences
 
-For new per-agent setup, use the [executor configuration guide](executors.md).
+For new per-agent setup, use the [executor configuration guide](../../runtime/config/executors.md).
 This document covers existing models.json files and native control mappings.
 
 No file means no Automattic override. Keep the destination's native model and
@@ -8,7 +8,7 @@ thinking defaults; bundled agents do not pin them. Never create preferences
 during installation or infer them from task
 complexity. These settings affect delegated workers only, not the main session.
 
-Worker launches first use [executor resolution](../workers/launch.md). New per-agent
+Worker launches first use [executor resolution](../../runtime/workers/launch.md). New per-agent
 executor/model settings live together in `executors.json`; `thinking` is normalized
 to `settings.effort`. Their inherit/override policy never reads this legacy file.
 The preferences below remain supported only for unconfigured native workers.
@@ -70,7 +70,7 @@ provider failures. If policy substitutes a model or a requested setting cannot b
 applied, report the requested and actual values and stop that affected assignment;
 continue independent work. Do not change account settings or bypass permissions.
 These legacy fixed preferences define no alternative pool. Configured pools use
-the separate [availability recovery policy](../routing/recovery.md#feedback-and-recovery).
+the separate [availability recovery policy](../../runtime/workers/recovery.md#feedback-and-recovery).
 
 Record agent, requested settings/sources, native agent/run ID and confirmed model
 and effort with the existing worker evidence. Mark unavailable runtime metadata

@@ -20,7 +20,7 @@ the retained state remains the collection source after a callback or context is 
 The wait wrapper requires a POSIX host with `ps` and process-group controls; use
 the supported native wait/collection path when those controls are unavailable.
 
-After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](retire.md).
+After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](../resources/retire.md).
 
 1. Resolve settings from the **calling** host and save the resolver JSON. A Pi
    coordinator remains `--harness pi` when its selected destination is Codex.

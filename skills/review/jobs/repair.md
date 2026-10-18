@@ -41,7 +41,7 @@ real implementation; if it fails there, stop and report a suspected runtime bug.
 Run the checks the assignment tiers for you once for the completed batch: affected
 suites, and the full gate only when the assignment names you for it; repeat only
 checks invalidated by subsequent changes. Follow check
-[planning](../../../harnesses/checks/plan.md) and [execution](../../../harnesses/checks/run.md)
+[planning](../../../runtime/checks/plan.md) and [execution](../../../runtime/checks/run.md)
 for snapshot proof, execution output and project-required resource coordination;
 do not commit temporary probes just for identity.
 

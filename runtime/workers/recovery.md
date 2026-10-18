@@ -5,7 +5,7 @@
 Classify the observed response before recovering. HTTP 429 alone does not establish
 exhausted credit: inspect the service's error details and retry metadata. For a
 temporary rate limit, retain the supported retry time, reduce admission against
-the [shared account budget](../workers/resources.md#shared-capacity), and use a bounded retry
+the [shared account budget](../resources/resources.md#shared-capacity), and use a bounded retry
 only when availability can change. If an eligible alternative is available, the
 ordinary fallback can continue immediately. Proven exhausted quota or an outage
 excludes candidates on the affected service/account; a new model name on that
@@ -21,7 +21,7 @@ Exclude other candidates sharing a proven failed service/account or capability;
 switching from one Codex model to another does not cure an exhausted Codex account.
 Do not ask for another approval when a suitable configured alternative exists.
 If resolution requests selection, follow its `selection_router` through the
-[assignment selection flow](choose.md). A profile preference excluded by availability does not get retried;
+[assignment selection flow](../routing/choose.md). A profile preference excluded by availability does not get retried;
 its candidate-specific thinking is also released for the replacement. State the
 switch and continue the same assignment, scope and gates. Never lower
 an effort bound or approximate a setting to force a launch.
@@ -54,7 +54,7 @@ boundaries, without a new polling loop or separate model-quality review:
 
 | Checkpoint | Evidence and decision |
 | --- | --- |
-| Unaccepted public API/ABI or behavior change, new platform exception, ADR conflict or stale acceptance criterion | Apply the [early design hold](../workers/design-hold.md). Complete the decision brief before adjudication; record the ruling and update canonical criteria before dependent work resumes. |
+| Unaccepted public API/ABI or behavior change, new platform exception, ADR conflict or stale acceptance criterion | Apply the [early design hold](design-hold.md). Complete the decision brief before adjudication; record the ruling and update canonical criteria before dependent work resumes. |
 | Worker reports a blocker or repeated unproductive attempts | Inspect the failing approach and current run state. Decide whether to supply context, repair the environment, rescope or reconsider the worker. |
 | A review layer completes or a required verification check fails | Use consolidated confirmed findings and failed checks before assigning the next repair. One material contract miss can justify escalation; comment counts alone cannot. |
 | Before retrying or resuming after a failure | Compare new evidence with the saved decision and remaining attempt budget. Reuse the choice when nothing material changed; resolve an evidenced mismatch before another attempt. |

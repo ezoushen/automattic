@@ -58,7 +58,7 @@ the summary allows effort selection even for a sole candidate. When filtering
 leaves exactly one model/effort option, the resolver sends no request; with a journal
 it records a `settled` worker-selection checkpoint and reports `sole-option` as the
 selection source, so there is no decision ID to annotate. Persist and
-reuse the returned decision until an [escalation checkpoint](recovery.md#escalation-checkpoints)
+reuse the returned decision until an escalation checkpoint
 warrants a replacement; resume alone does not invalidate it.
 
 Successful output includes `decision_model` provenance: returned model, option
@@ -67,7 +67,7 @@ reason records the service's choice; it is not a generated rationale. Confidence
 measures score concentration, not calibrated correctness; no universal confidence
 threshold is imposed. Preflight and final verification still apply.
 `decision_warnings` carries calibration status and detected benchmark regressions;
-surface new warnings using the [decision skill](../../skills/decision/SKILL.md).
+surface new warnings using the [decision workflow](../decisions/workflow.md).
 Configured periodic calibration replays are separate diagnostic requests and never
 replace the saved baseline or consume worker attempts.
 
@@ -82,7 +82,7 @@ request states. The default, `"always"`, consults on every `--assignment`.
 
 With an optional `"fallback_profile": "<profile>"` on the decision-model router, an
 outage, timeout, abstention or invalid answer first applies that
-[sparse profile](../setup/routers.md#routers-and-sparse-profiles) deterministically. The result reports
+[sparse profile](../config/routers.md#routers-and-sparse-profiles) deterministically. The result reports
 `selection_source: fallback-profile` with the `selection_error`, the decision record
 and a `decision_fallback` entry in `decision_warnings`; report that warning so a
 backend outage stays visible. Configuration, journal-identity or eligibility errors

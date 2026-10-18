@@ -132,11 +132,6 @@
   },
   "config": {
    "docs": [
-    "harnesses/setup/catalog.md",
-    "harnesses/setup/executors.md",
-    "harnesses/setup/routers.md",
-    "harnesses/setup/legacy-preferences.md",
-    "harnesses/setup/session.md",
     "runtime/config/**/*.md"
    ],
    "code": [
@@ -154,8 +149,6 @@
   },
   "resources": {
    "docs": [
-    "harnesses/workers/resources.md",
-    "harnesses/workers/retire.md",
     "runtime/resources/**/*.md"
    ],
    "code": [
@@ -166,8 +159,6 @@
   },
   "workers": {
    "docs": [
-    "harnesses/workers/*.md",
-    "harnesses/routing/recovery.md",
     "runtime/workers/**/*.md"
    ],
    "code": [
@@ -177,7 +168,6 @@
   },
   "checks": {
    "docs": [
-    "harnesses/checks/*.md",
     "runtime/checks/**/*.md"
    ],
    "code": [
@@ -186,7 +176,6 @@
   },
   "routing": {
    "docs": [
-    "harnesses/routing/*.md",
     "runtime/routing/**/*.md"
    ],
    "code": [
@@ -196,7 +185,6 @@
   },
   "decisions": {
    "docs": [
-    "harnesses/decisions/*.md",
     "runtime/decisions/**/*.md"
    ],
    "code": [
@@ -251,45 +239,14 @@
  },
  "debt": {
   "links": [
-   "harnesses/checks/run.md -> skills/housekeeping/SKILL.md",
-   "harnesses/decisions/annotate.md -> harnesses/workers/prepare.md",
-   "harnesses/decisions/journal.md -> skills/decision/SKILL.md",
-   "harnesses/decisions/phases.md -> harnesses/routing/recovery.md",
-   "harnesses/decisions/phases.md -> harnesses/workers/skills.md",
-   "harnesses/decisions/phases.md -> skills/decision/SKILL.md",
-   "harnesses/decisions/shadow-pilots.md -> harnesses/checks/run.md",
-   "harnesses/decisions/shadow-pilots.md -> harnesses/workers/collect.md",
-   "harnesses/decisions/shadow-pilots.md -> harnesses/workers/wait.md",
-   "harnesses/decisions/test-shape.md -> standards/kinds/tautological-tests.md",
-   "harnesses/routing/README.md -> harnesses/routing/recovery.md",
-   "harnesses/routing/choose.md -> harnesses/routing/recovery.md",
-   "harnesses/routing/choose.md -> harnesses/workers/collect.md",
-   "harnesses/routing/decision-model.md -> harnesses/routing/recovery.md",
-   "harnesses/routing/decision-model.md -> skills/decision/SKILL.md",
-   "harnesses/routing/report.md -> harnesses/workers/prepare.md",
-   "harnesses/routing/report.md -> harnesses/workers/skills.md",
-   "harnesses/setup/apply.md -> skills/decision/SKILL.md",
-   "harnesses/setup/executors.md -> harnesses/routing/choose.md",
-   "harnesses/setup/executors.md -> harnesses/setup/procedure.md",
-   "harnesses/setup/executors.md -> skills/setup-automattic/SKILL.md",
-   "harnesses/setup/legacy-preferences.md -> harnesses/routing/recovery.md",
-   "harnesses/setup/legacy-preferences.md -> harnesses/workers/launch.md",
-   "harnesses/setup/routers.md -> harnesses/routing/decision-model.md",
-   "harnesses/setup/routers.md -> skills/model-routing/SKILL.md",
-   "harnesses/workers/resources.md -> harnesses/checks/plan.md",
-   "harnesses/workers/resources.md -> harnesses/checks/run.md",
-   "harnesses/workers/resources.md -> harnesses/routing/recovery.md",
-   "harnesses/workers/resources.md -> harnesses/workers/design-hold.md",
    "skills/align/SKILL.md -> skills/mandate/SKILL.md",
    "skills/align/SKILL.md -> skills/pr/SKILL.md",
-   "skills/decision/SKILL.md -> skills/model-routing/SKILL.md",
    "skills/dispatch/SKILL.md -> skills/housekeeping/SKILL.md",
    "skills/dispatch/SKILL.md -> skills/mandate/SKILL.md",
    "skills/dispatch/SKILL.md -> skills/walkthrough/SKILL.md",
    "skills/dispatch/board.md -> skills/refine/workflow.md",
    "skills/dispatch/board.md -> skills/review/workflow.md",
    "skills/dispatch/reference.md -> skills/pipeline/SKILL.md",
-   "skills/model-routing/SKILL.md -> skills/decision/SKILL.md",
    "skills/models/SKILL.md -> skills/setup-automattic/SKILL.md",
    "skills/pipeline/SKILL.md -> skills/mandate/SKILL.md",
    "skills/pipeline/SKILL.md -> skills/pr/SKILL.md",
@@ -308,31 +265,20 @@
   ],
   "cycles": [
    [
-    "agents",
     "board",
     "bootstrap",
-    "checks",
-    "config",
-    "decisions",
     "delivery",
     "planning",
     "remediation",
-    "resources",
     "review",
-    "routing",
-    "setup",
-    "skills",
-    "standards",
-    "workers"
+    "skills"
    ]
   ],
   "first_read": {
-   "skills/align/SKILL.md": 20863,
-   "skills/decision/SKILL.md": 66412,
-   "skills/dispatch/SKILL.md": 38168,
-   "skills/model-routing/SKILL.md": 43152,
-   "skills/pipeline/SKILL.md": 48148,
-   "skills/review/SKILL.md": 39404
+   "skills/align/SKILL.md": 20835,
+   "skills/dispatch/SKILL.md": 38120,
+   "skills/pipeline/SKILL.md": 45988,
+   "skills/review/SKILL.md": 39360
   },
   "imports": [
    "scripts/decision_journal.py -> scripts/decisions.py",

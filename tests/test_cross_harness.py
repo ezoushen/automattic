@@ -281,7 +281,7 @@ class CrossHarness(unittest.TestCase):
         assert 'a generated or default value is not an observation' in proof, proof
         assert '`unknown` only when the code does not settle it' in proof, proof
         assert 'A flag you would dismiss is disputed and needs independent verification' in proof, proof
-        routing = ' '.join((PLUGIN / 'harnesses/decisions/test-shape.md').read_text().split())
+        routing = ' '.join((PLUGIN / 'runtime/decisions/test-shape.md').read_text().split())
         assert 'A flagged test is not resubmitted' in routing, routing
         skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
         detect = ' '.join(re.search(r'^1\. \*\*Detect read-only\.\*\*(.+?)^2\. ', skill, re.M | re.S).group(1).split())

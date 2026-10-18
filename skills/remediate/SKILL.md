@@ -83,7 +83,7 @@ report that boundary for a separate implementation task.
    exact command/trace or contract-to-code comparison and deciding observation.
    Run experiments only where the kind's Proof calls for them: temporary negative
    controls in isolation, restored after saving proof, with owned processes reconciled
-   under [check execution](../../harnesses/checks/run.md). A candidate the kind's Proof
+   under [check execution](../../runtime/checks/run.md). A candidate the kind's Proof
    confirms needs no further run.
    Send disputed or UNVERIFIED findings to a reviewer's [reproduce](../review/jobs/reproduce.md)
    job through normal routing, never to the worker that raised them, with the kind's

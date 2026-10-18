@@ -128,7 +128,7 @@ verification gap; do not invent wider acceptance criteria or require a productio
 rollout outside the agreed scope.
 
 Validate correctness with an executed repro or a concrete input/execution trace
-showing the failure. Builds follow check [planning](../../../harnesses/checks/plan.md) and [execution](../../../harnesses/checks/run.md), including
+showing the failure. Builds follow check [planning](../../../runtime/checks/plan.md) and [execution](../../../runtime/checks/run.md), including
 runner input identity and only project-required resource coordination.
 Experiments must not alter reviewed production code; record exact commands/results.
 Design/simplicity claims need requirement/caller evidence and a behavior-preserving

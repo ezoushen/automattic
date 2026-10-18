@@ -50,7 +50,7 @@ before proceeding. Preserve artifacts used by the PR's claims.
    structural markers alone are not proof. Follow-ups are separate future work, not PR
    blockers or implied permission to implement them. Missing/stale evidence means
    return to the corresponding phase, never call an implemented branch delivered.
-   Run the configured [`delivery` checkpoint](../../harnesses/decisions/checkpoint.md#configured-checkpoint-command)
+   Run the configured [`delivery` checkpoint](../../runtime/decisions/checkpoint.md#configured-checkpoint-command)
    for follow-up attention after checking the evidence, or record an evidenced skip
    when no discretionary choice remains. Check this phase record at delivery.
    Required gates and publication permission are facts the backend cannot waive.
@@ -79,7 +79,7 @@ before proceeding. Preserve artifacts used by the PR's claims.
    every required check is green and the approval path is known. The same watch
    follows every later push to the PR branch.
 6. **After the merge, on request:** apply the
-   [worktree retirement checks](../housekeeping/SKILL.md#retire-a-worktree), then
+   [worktree retirement checks](../../runtime/resources/retire-worktree.md), then
    delete `feat/<slug>` and its recorded ticket branches only after downstream
    dependencies no longer need them. Retain useful timing/retrospective evidence
    in the existing reports or journals.

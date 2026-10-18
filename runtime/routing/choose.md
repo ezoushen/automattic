@@ -6,7 +6,7 @@ Contents:
 - [Local capacity](#local-capacity)
 
 Read this when a resolver result includes `candidate_pool` or when choosing thinking
-within configured bounds. Session overrides are under [session scope](../setup/session.md). Fixed configurations
+within configured bounds. Session overrides are under [session scope](../config/session.md). Fixed configurations
 retain their existing behavior. The orchestrator chooses; the resolver validates;
 the selected executor applies settings and confirms what actually ran.
 
@@ -49,7 +49,7 @@ the selected executor applies settings and confirms what actually ran.
    [report the decision](report.md) before passing it once to the
    selected executor. A `selection_required` result cannot launch a worker or
    render a native profile. Reuse the snapshot on ordinary resume; new failure
-   evidence invokes the [escalation checkpoints](recovery.md#escalation-checkpoints).
+   evidence invokes the escalation checkpoints.
    A resolver error supplies no launch settings. Preserve the last valid snapshot;
    write a replacement to a temporary file and promote it only after successful
    resolution and JSON validation. Recover through supported choices rather than
@@ -104,7 +104,7 @@ have chosen, without changing the route. For every candidate this host can reach
 through any runtime, except those the host excluded or training endpoints the
 repository does not allow, it draws a
 sample from a Beta(1 + successes, 1 + failures) acceptance rate for this agent and job in the
-[outcome ledger](../workers/collect.md#accept-and-record-outcomes), seeded by the assignment ID or text so a
+outcome ledger, seeded by the assignment ID or text so a
 retry draws the same, and subtracts a cost weight when the model's `cost` is
 `subscription` or unstated: 0.15, rising to 0.4 when its provider's allowance is
 `elevated` and 1.0 when `critical` (see below); `allowance` shows the levels used. The highest utility is its `choice`; `agrees` compares it

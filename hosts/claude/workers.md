@@ -1,6 +1,6 @@
 # Claude Code workers
 
-Before launching a worker, resolve [executors](../../harnesses/workers/launch.md) with the plugin's
+Before launching a worker, resolve [executors](../../runtime/workers/launch.md) with the plugin's
 validator Python and `agent_models.py --route --repo <canonical-repo> --harness claude
 --job <job>`; include any explicit configuration profile. Record the full result,
 without piping through head/tail or masking its exit status. Inspect the pool with
@@ -34,7 +34,7 @@ needed controls and supply the parent's actual recipient/handle in the assignmen
 Workers send checkpoints to that parent; lifecycle actions cover only their assigned
 jobs. A native task stop does not cancel a remote job: use the runner's own cancel
 and confirm teardown. If messaging is unavailable, use the shared
-[bounded return](../../harnesses/workers/focus.md#worker-return-and-checkpoints) fallback.
+[bounded return](../../runtime/workers/focus.md#worker-return-and-checkpoints) fallback.
 Regenerate a configured profile after a shipped profile changes; its content-derived
 name changes with the tool list. An older registered snapshot retains its old tools,
 and the Agent-model hook denies launching one whose tools differ from its shipped agent.
@@ -71,7 +71,7 @@ An unavailable effort does not establish that another profile is registered.
 Only a successful new resolution supplies launch settings. If none is adequate,
 report the missing registration/control; a resolver error cannot be bypassed with
 a model-only launch. Preserve explicit pins and the main session's settings.
-At launch, follow the shared [decision record](../../harnesses/routing/report.md):
+At launch, follow the shared [decision record](../../runtime/routing/report.md):
 record the host action (the worker lifecycle does this for workers it registers) and inspect the first child assistant entry's `message.model`,
 `effort` and `perTurnEffort` (or equivalent native metadata). Read only those fields,
 not the whole transcript. An absent field remains unverified; conflicting fields
@@ -109,7 +109,7 @@ If the user explicitly requests a persistent goal and this runtime supports it,
 install it through the actual native goal operation using dispatch's scoped
 completion condition. Do not assume that printing `/goal` executes it. Read the
 current goal contract; do not depend on a particular evaluator, idle cadence or
-turn limit. Follow shared [blocked continuation](../../harnesses/workers/focus.md#blocked-continuation)
+turn limit. Follow shared [blocked continuation](../../runtime/workers/focus.md#blocked-continuation)
 for unresolved user decisions and resource grants. Without a goal, keep waiting
 for live workers in the current run.
 
