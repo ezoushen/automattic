@@ -1,3 +1,14 @@
 #!/usr/bin/env bash
 # Enable once per clone: git config core.hooksPath .githooks
-exec "$(git rev-parse --show-toplevel)/scripts/test-all.sh"
+set -uo pipefail
+root=$(git rev-parse --show-toplevel)
+# Agent-facing docs first: fast, and it names each problem in the changed files.
+# It reads the working tree, so unstaged edits count too. Warnings do not block.
+checker="$root/.agents/skills/writing-agent-docs/check_docs.py"
+command -v python3 >/dev/null || { echo "pre-commit: python3 not found; the doc check needs it" >&2; exit 1; }
+if git rev-parse -q --verify HEAD >/dev/null; then
+  python3 "$checker" --changed HEAD || exit 1
+else
+  python3 "$checker" || exit 1
+fi
+exec "$root/scripts/test-all.sh"

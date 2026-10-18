@@ -26,7 +26,8 @@ smells to judge. `--changed <base>` limits per-file rules to files changed since
 base, plus untracked files, and flags references such as `the example above` on
 added lines; renamed files keep their old lines. Links, anchors, orphans and code paths are always checked repo-wide,
 because moving a file breaks the files that link it. `--json` prints findings for
-scripts. `tests/test_cross_harness.py` runs the whole-repository check.
+scripts. The pre-commit hook (`.githooks/pre-commit`) runs it with `--changed HEAD`
+before the test suite, and `tests/test_cross_harness.py` runs the whole-repository check.
 
 [config.json](config.json) says which files are agent docs, which files' links
 count, where code names doc paths, the byte budget and the recorded debt.
