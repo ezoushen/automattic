@@ -41,7 +41,6 @@
     "skills/*/SKILL.md",
     "agents/*.md",
     ".agents/skills/*/SKILL.md",
-    "skills/*/jobs/*.md",
     "bootstrap.md",
     "hosts/*/session.md",
     "flows/*/jobs/*.md"
@@ -59,10 +58,6 @@
   "max_bytes": 12288,
   "description_budget": 4000,
   "debt": {
-    "skills/dispatch/SKILL.md": {
-      "contents": true,
-      "bytes": 18090
-    },
     "skills/pipeline/SKILL.md": {
       "contents": true
     },

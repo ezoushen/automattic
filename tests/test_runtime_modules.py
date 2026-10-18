@@ -49,7 +49,7 @@ class RuntimeModules(unittest.TestCase):
             self.assertTrue((ROOT / target).is_file(), target)
 
     def test_housekeeping_keeps_a_pointer_to_worktree_retirement(self):
-        text = (ROOT / 'skills/housekeeping/SKILL.md').read_text()
+        text = (ROOT / 'flows/delivery/housekeeping.md').read_text()
         self.assertIn('## Retire a worktree\n\nFollow [worktree retirement](../../runtime/resources/retire-worktree.md).', text)
         self.assertNotIn('git -C <checkout> status --porcelain --ignored', text)
         self.assertIn('git -C <checkout> status --porcelain --ignored', (RUNTIME / 'resources/retire-worktree.md').read_text())

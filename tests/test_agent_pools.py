@@ -147,7 +147,7 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
         assignment = self.root / 'assignment.json'
         assignment.write_text(json.dumps({'assignment_id': 'frozen-1', 'worktree': str(self.root),
                                           'agent_file': str(models.ROOT / 'agents/builder.md'),
-                                          'job_file': str(models.ROOT / 'skills/dispatch/jobs/ticket.md'),
+                                          'job_file': str(models.ROOT / 'flows/delivery/jobs/ticket.md'),
                                           'head': 'fixture-head', 'prompt': 'Return received settings.'}))
         result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/bash_executor.py'),
                                  '--execution', str(frozen), '--assignment', str(assignment)],

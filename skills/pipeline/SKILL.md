@@ -30,7 +30,7 @@ then can hand agreed criteria into the same review procedure when requested.
 It is optional; direct review starts assessment without this learning step.
 
 Configuration is optional and separate from the delivery phases. Use
-[/automattic:setup-automattic](../setup-automattic/SKILL.md) to understand the current setup and update it
+/automattic:setup-automattic to understand the current setup and update it
 at user, project or session scope. Use `/automattic:models` for direct settings requests;
 see [configuration examples](../../runtime/config/executors.md). Existing native behavior
 continues without configuration. Setup does not start workers or change review gates.
@@ -100,7 +100,7 @@ context and its own [Standards/Spec method](../../flows/review/method.md). Simpl
 Honor each dependency's actual invocation
 policy in the active catalog; never bypass a denied invocation by copying its body.
 For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,
-evidence, refresh and self-check. The [PR phase](../pr/SKILL.md) owns delivery
+evidence, refresh and self-check. The PR phase (`/automattic:pr`) owns delivery
 evidence and publication.
 Planning and execution skills keep shared methods by reference (`/automattic:refine`
 applies `/mattpocock-skills:to-tickets`' slicing rules unchanged). `/automattic:refine` also

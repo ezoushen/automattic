@@ -11,7 +11,7 @@ Runtime lifecycle belongs in the host adapter or explicitly selected executor.
 - **Reports live in the main checkout.** Durable evidence must survive removal of
   disposable worktrees and their gitignored `.scratch/` directories.
 - **A finding needs concrete evidence.** Use an executed repro or a traced failure
-  path; the [diff-review](../../flows/review/jobs/diff-review.md) job defines evidence for scoped design and documentation issues.
+  path; the [diff-review](../review/jobs/diff-review.md) job defines evidence for scoped design and documentation issues.
 - **Scope every review and verify the range first.** Supply the pinned base/head,
   assigned checkout and accepted scope to the reviewer;
   a tool's default range or working directory does not establish this target.
@@ -47,4 +47,4 @@ Repo-specific ones belong in the project loop file. Universal ones:
   the relevant code, inputs and environment, as defined by the assigned job.
 
 For the workflow-wide failure modes and their owners, see the
-[pipeline map](../pipeline/SKILL.md#failure-modes-and-where-the-loop-catches-them).
+pipeline skill's map of failure modes and where the loop catches them.

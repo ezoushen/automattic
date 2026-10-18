@@ -64,7 +64,7 @@ defaults for omitted fields. Adapters translate settings into native controls;
 workload labels do not select models.
 
 PR descriptions use WHAT / WHY / HOW, adapted to the repository's PR template.
-The [PR skill](skills/pr/SKILL.md#description) reuses Matt's writing reference when
+The [PR skill](flows/delivery/pr.md#description) reuses Matt's writing reference when
 available and existing verification evidence; Automattic owns delivery and publication.
 
 Existing project-management conventions take precedence over Matt's setup options.
@@ -408,7 +408,7 @@ it automatically while writing comments or invoke `/automattic:code-comments`.
 Its [research basis](standards/code-comments-sources.md) separates common
 principles from language-specific style choices. Review owns the hard gate.
 
-[housekeeping](skills/housekeeping/SKILL.md) removes task-created disposable
+[housekeeping](flows/delivery/housekeeping.md) removes task-created disposable
 intermediates and test outputs, preserves required evidence and updates affected
 project documentation using existing conventions. Maintained docs describe current
 behavior; retained development history belongs in `journals/` or the project's

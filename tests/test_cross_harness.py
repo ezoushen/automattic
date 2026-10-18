@@ -224,6 +224,13 @@ class CrossHarness(unittest.TestCase):
         result = run(sys.executable, str(checker), '--root', str(PLUGIN), ok=False)
         assert result.returncode == 0, result.stdout + result.stderr
 
+    def test_oversized_selected_work_is_split_by_delivery_and_children_inherit_the_selection(self):
+        split = (PLUGIN / 'flows/delivery/split-work.md').read_text()
+        assert '](../planning/refinement.md' in split and 'too large for one worker' in split
+        assert '](split-work.md' in (PLUGIN / 'flows/delivery/dispatch.md').read_text()
+        scope = (PLUGIN / 'flows/board/scope.md').read_text()
+        assert "inherit the parent's selection" in scope and 'Keep the parent outstanding' in scope
+
     def test_remediate_skill_and_its_kinds(self):
         import re
         path = PLUGIN / 'skills/remediate/SKILL.md'

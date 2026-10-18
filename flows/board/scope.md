@@ -14,12 +14,8 @@ pre-existing status, a round cap or a token budget cannot silently drop accepted
 work. If a budget prevents continuation, report incomplete with the remaining work.
 Batch readiness and overall completion must agree with the known outstanding items.
 
-Each implementation/review batch remains narrow. Selected work too large for one
-worker is split using the shared refinement procedure,
-within native permissions and existing tracker-write authorization. Its children
-inherit the parent's selection even in a fixed selection; splitting is not delivery.
-Reuse existing child issues and dependencies; dispatch ready children rather than
-refining an already executable breakdown again.
+Each implementation/review batch remains narrow. Children of selected work split
+for size inherit the parent's selection even in a fixed selection; splitting is not delivery.
 Keep the parent outstanding until its required outcomes are satisfied. Complexity
 or risk may justify separate batches and stronger checks, not silently dropping work.
 

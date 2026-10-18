@@ -80,7 +80,6 @@
   },
   "delivery": {
    "docs": [
-    "skills/dispatch/**/*.md",
     "flows/delivery/**/*.md"
    ]
   },
@@ -234,23 +233,10 @@
   "decision_families": "schemas/decision.schema.json"
  },
  "debt": {
-  "links": [
-   "skills/dispatch/SKILL.md -> skills/housekeeping/SKILL.md",
-   "skills/dispatch/reference.md -> skills/pipeline/SKILL.md",
-   "skills/pipeline/SKILL.md -> skills/pr/SKILL.md",
-   "skills/pipeline/SKILL.md -> skills/setup-automattic/SKILL.md",
-   "skills/pr/SKILL.md -> skills/housekeeping/SKILL.md",
-   "skills/setup-automattic/SKILL.md -> skills/pipeline/SKILL.md"
-  ],
-  "cycles": [
-   [
-    "delivery",
-    "skills"
-   ]
-  ],
+  "links": [],
+  "cycles": [],
   "first_read": {
-   "skills/dispatch/SKILL.md": 35145,
-   "skills/pipeline/SKILL.md": 45661
+   "skills/pipeline/SKILL.md": 39818
   },
   "imports": [],
   "import_cycles": []

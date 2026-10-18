@@ -27,8 +27,8 @@ MOVED = {
 }
 JOBS = {'diff-review': ('reviewer', 'flows/review'), 'repair': ('builder', 'flows/review'),
         'reproduce': ('reviewer', 'flows/review'), 'e2e-gate': ('verifier', 'flows/review'),
-        'audit': ('reviewer', 'flows/remediation'), 'ticket': ('builder', 'skills/dispatch'),
-        'merge-conflict': ('builder', 'skills/dispatch')}
+        'audit': ('reviewer', 'flows/remediation'), 'ticket': ('builder', 'flows/delivery'),
+        'merge-conflict': ('builder', 'flows/delivery')}
 # built from parts: the doc checker flags a literal path to a doc that no longer exists
 OLD = [('skills', 'review', 'workflow.md'), ('skills', 'review', 'layers.md'), ('skills', 'review', 'jobs'),
        ('skills', 'remediate', 'jobs')]

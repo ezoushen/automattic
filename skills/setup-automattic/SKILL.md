@@ -94,5 +94,5 @@ Calibration runs and live worker probes are separate requests, not setup checks.
 Finish an explanation when the user's question is answered; no configuration change
 is required. Finish an edit with the saved path/scope, effective result and any
 remaining runtime check. If the user wants to begin work afterward, point to the
-appropriate phase in the [pipeline map](../pipeline/SKILL.md) and carry existing
+appropriate phase in the pipeline map (`/automattic:pipeline`) and carry existing
 authorization forward. A setup tour alone does not launch a workflow.
