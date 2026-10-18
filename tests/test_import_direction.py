@@ -55,6 +55,16 @@ class ImportDirection(unittest.TestCase):
         self.assertIn('scripts/low.py', message)
         self.assertIn('scripts/high.py', message)
 
+    def test_package_qualified_imports_name_the_script_they_import(self):
+        self.write('scripts/high.py', 'X = 1\n')
+        for form in ('import scripts.high', 'from scripts.high import X', 'from scripts import high'):
+            with self.subTest(form=form):
+                self.write('scripts/low.py', form + '\n')
+                self.assertEqual(self.errors(), [('scripts/low.py', 1, 'import-direction')])
+                self.write('hooks/run.py', form.replace('high', 'low') + '\n')
+                self.write('scripts/low.py', 'X = 1\n')
+                self.assertEqual(self.errors(), [])
+
     def test_a_script_path_named_as_a_string_is_a_dependency_too(self):
         self.write('scripts/high.py', 'X = 1\n')
         self.write('scripts/top.py', 'from high import X\n')

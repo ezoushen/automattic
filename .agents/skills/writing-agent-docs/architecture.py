@@ -155,21 +155,24 @@ def check_imports(root, architecture):
                 for glob in architecture.data.get('owned_code', []) for path in sorted(root.glob(glob))
                 if path.is_file() and str(path.relative_to(root)) not in files]
     stems = {Path(name).stem: name for name in sorted(files)}
-    edges = []
+    edges = set()
     for name in sorted(files):
         tree = ast.parse((root / name).read_text(), name)
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 found = [alias.name for alias in node.names]
             elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
-                found = [node.module]
+                found = [node.module] + [f'{node.module}.{alias.name}' for alias in node.names]
             elif isinstance(node, ast.Constant) and isinstance(node.value, str):
                 found = [match.group(1) for match in re.finditer(r'(?:scripts|hooks)/(\w+)\.py', node.value)]
             else:
                 continue
             for module in found:
-                target = stems.get(module.split('.')[0])
+                parts = module.split('.')
+                if parts[0] in ('scripts', 'hooks') and len(parts) > 1:
+                    parts = parts[1:]
+                target = stems.get(parts[0])
                 if target and target != name:
-                    edges.append((name, node.lineno, target))
+                    edges.add((name, node.lineno, target))
     debt = architecture.debt
-    return findings + architecture.assess(edges, 'code', 'import-direction', debt.get('imports', []), debt.get('import_cycles', []))
+    return findings + architecture.assess(sorted(edges), 'code', 'import-direction', debt.get('imports', []), debt.get('import_cycles', []))
