@@ -112,6 +112,17 @@ class FoldCheck(unittest.TestCase):
         self.assertIn(('command', 'added run sub:save'), found)
         self.assertTrue(any(kind == 'job' and text.startswith('removed ticket') for kind, text in found), found)
 
+    def test_a_removed_flag_alias_or_positional_choice_is_a_command_difference(self):
+        self.write('scripts/run.py', SCRIPT + "parser.add_argument('--thinking', '--effort')\n"
+                   "parser.add_argument('action', choices=('record', 'retire'))\n")
+        self.git('add', '-A')
+        self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'flags')
+        self.assertEqual(self.differences(), set())
+        self.write('scripts/run.py', SCRIPT + "parser.add_argument('--thinking')\n"
+                   "parser.add_argument('action', choices=('record',))\n")
+        self.assertEqual(self.differences(), {('command', 'removed run option:--effort'),
+                                              ('command', 'removed run choice:action=retire')})
+
     def test_surface_differences_listed_as_deliberate_are_accepted_and_moved_files_keep_their_surface(self):
         (self.root / 'skills/kinds/comments.md').rename(self.root / 'skills/kinds/comments2.md')
         allow = self.root.parent / 'allow.json'

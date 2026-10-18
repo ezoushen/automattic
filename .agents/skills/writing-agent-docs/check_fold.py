@@ -62,8 +62,16 @@ def surface(root, fold):
                 continue
             if node.func.attr == 'add_parser':
                 found.add(('command', f'{path.stem} sub:{node.args[0].value}'))
-            elif node.func.attr == 'add_argument' and node.args[0].value.startswith('-'):
-                found.add(('command', f'{path.stem} option:{node.args[0].value}'))
+            elif node.func.attr == 'add_argument':
+                names = [arg.value for arg in node.args if isinstance(arg, ast.Constant) and isinstance(arg.value, str)]
+                for name in names:
+                    if name.startswith('-'):
+                        found.add(('command', f'{path.stem} option:{name}'))
+                for keyword in node.keywords:
+                    if keyword.arg == 'choices' and isinstance(keyword.value, (ast.Tuple, ast.List)):
+                        for choice in keyword.value.elts:
+                            if isinstance(choice, ast.Constant):
+                                found.add(('command', f'{path.stem} choice:{names[0]}={choice.value}'))
     schema = fold.get('decision_families')
     if schema and (root / schema).is_file():
         for family in json.loads((root / schema).read_text())['properties']['family']['enum']:
