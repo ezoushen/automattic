@@ -481,7 +481,12 @@ per clone with `git config core.hooksPath .githooks`:
 - `pre-push` checks out each pushed commit into a temporary worktree and runs the
   whole-repo doc check and this suite there, so the result is the pushed code's.
   Commits the remote already has are not rerun; an older commit without the checker
-  or suite is pushed with a warning.
+  or suite is pushed with a warning. The checks run in a session of their own, without
+  a terminal: Ctrl-C or any signal to the hook reaches them once, as the same signal,
+  followed by TERM after 2 s and KILL after 5 s, and the temporary worktree is
+  removed. Not covered: a check that starts its own session (`setsid`), and `kill -9`
+  of the hook, which leaves the checks running; the next push removes their worktree
+  once they have finished.
 
 `--no-verify` skips either hook. Tests are `unittest` cases, so
 one file, class or test runs on its own. The default suite needs an installed `claude`

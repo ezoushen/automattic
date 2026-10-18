@@ -23,7 +23,10 @@
   ],
   "exclude": [
     "tests/test_doc_checker.py",
-    "tests/test_git_hooks.py"
+    "tests/test_git_hooks.py",
+    "tests/test_pre_push.py",
+    "tests/test_pre_push_signals.py",
+    "tests/hook_case.py"
   ],
   "code_doc_pattern": "(?:harnesses|skills|roles)/[\\w/-]+\\.md",
   "entry_points": [

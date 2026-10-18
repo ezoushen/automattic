@@ -2,44 +2,125 @@
 # Before a push: the whole-repo doc check and the full test suite, run on each pushed
 # commit in a temporary worktree, so uncommitted edits cannot change the result.
 # Enable once per clone: git config core.hooksPath .githooks
+# Limits: a check that starts its own session (setsid) is not stopped by a signal, and
+# kill -9 of the hook leaves the checks running; the next push reclaims their worktree
+# once they end.
 set -uo pipefail
 zero=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
+prefix=automattic-pre-push
+tmp=${TMPDIR:-/tmp}
+tmp=${tmp%/}
+follow=2  # seconds after a signal before TERM follows it (script background jobs ignore INT and QUIT)
+grace=5  # seconds after a signal before what remains is killed
 tested=' '
 base=''
+child=''
+
+alive() { ps -p "$1" >/dev/null 2>&1; }
+group_alive() { ps -A -o pgid= | grep -qx " *$1"; }
+
+# A directory left by a run that is over: named automattic-pre-push.XXXXXX, holding the
+# numeric PID of a hook that is gone and, when recorded, a process group with no members.
+stale() {
+  local owner group
+  case "${1##*/}" in "$prefix".??????) ;; *) return 1 ;; esac
+  owner=$(cat "$1/pid" 2>/dev/null) || return 1
+  case "$owner" in '' | *[!0-9]*) return 1 ;; esac
+  alive "$owner" && return 1
+  group=$(cat "$1/group" 2>/dev/null)
+  case "$group" in
+    '' | *[!0-9]*)  # killed before recording its checks: wait an hour in case they still run
+      [ -n "$(find "$1" -maxdepth 0 -mmin +60 2>/dev/null)" ]; return ;;
+  esac
+  ! group_alive "$group"
+}
+
+# Reclaim what runs killed outright left behind (kill -9 cannot be trapped).
+git worktree list --porcelain </dev/null | sed -n 's/^worktree //p' | while IFS= read -r path; do
+  [ "${path##*/}" = tree ] || continue
+  dir=${path%/tree}
+  case "${dir##*/}" in "$prefix".??????) ;; *) continue ;; esac
+  if [ -d "$dir" ]; then stale "$dir" || continue; fi  # a vanished directory has nothing left to protect
+  git worktree remove --force "$path" </dev/null 2>/dev/null
+  rm -rf "$dir"
+done
+for dir in "$tmp/$prefix".??????; do
+  [ -d "$dir" ] && stale "$dir" && rm -rf "$dir"
+done
+
 cleanup() {
   if [ -n "$base" ]; then
-    git worktree remove --force "$base/tree" 2>/dev/null
+    git worktree remove --force "$base/tree" </dev/null 2>/dev/null
     rm -rf "$base"
     base=''
   fi
 }
+# The checks run in a session of their own, so terminal signals reach only the hook and
+# arrive at the checks once, from here, as the same signal; the whole group stops,
+# including descendants that were reparented. What still runs after the grace is killed.
+stop() {
+  local signal=$1 status=$2 start=$SECONDS followed=''
+  [ -n "$child" ] || child=$(jobs -p | head -n 1)
+  if [ -n "$child" ]; then
+    kill -s "$signal" -- "-$child" 2>/dev/null || kill -s "$signal" "$child" 2>/dev/null
+    while [ $((SECONDS - start)) -lt "$grace" ] && { group_alive "$child" || alive "$child"; }; do
+      sleep 0.2
+      if [ -z "$followed" ] && [ "$signal" != TERM ] && [ $((SECONDS - start)) -ge "$follow" ]; then
+        kill -s TERM -- "-$child" 2>/dev/null
+        followed=1
+      fi
+    done
+    kill -s KILL -- "-$child" 2>/dev/null
+    kill -s KILL "$child" 2>/dev/null
+    wait "$child" 2>/dev/null
+  fi
+  exit "$status"
+}
 trap cleanup EXIT
-trap 'exit 130' INT TERM
+trap 'stop INT 130' INT
+trap 'stop TERM 143' TERM
+trap 'stop HUP 129' HUP
+trap 'stop QUIT 131' QUIT
+
+# New session (no controlling terminal), and default actions for the signals a
+# background command or Python leaves ignored.
+session='import os, signal, sys
+os.setsid()
+for name in ("SIGINT", "SIGQUIT", "SIGPIPE", "SIGXFSZ"):
+    signal.signal(getattr(signal, name), signal.SIG_DFL)
+os.execvp(sys.argv[1], sys.argv[1:])'
 
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$zero" ] && continue          # a deletion pushes no commits
   [ "$local_sha" = "$remote_sha" ] && continue    # the remote already has it
   commit=$(git rev-parse -q --verify "$local_sha^{commit}" </dev/null) || continue  # not a commit
   case "$tested" in *" $commit "*) continue ;; esac
-  base=$(mktemp -d) || exit 1
+  command -v python3 >/dev/null || { echo "pre-push: python3 not found; the checks need it" >&2; exit 1; }
+  base=$(mktemp -d "$tmp/$prefix.XXXXXX") || exit 1
+  echo $$ > "$base/pid"
   git worktree add -q --detach "$base/tree" "$commit" </dev/null || exit 1
   echo "pre-push: checking $local_ref at ${commit:0:12}" >&2
   (
     cd "$base/tree" || exit 1
     unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
-    checker=.agents/skills/writing-agent-docs/check_docs.py
-    if [ -f "$checker" ]; then
-      python3 "$checker" || exit 1
-    else
-      echo "pre-push: no doc checker at ${commit:0:12}; skipped" >&2
-    fi
-    if [ -x scripts/test-all.sh ]; then
-      scripts/test-all.sh
-    else
-      echo "pre-push: no test suite at ${commit:0:12}; skipped" >&2
-    fi
-  ) </dev/null  # the ref list is on stdin; nothing in the loop may read it
+    exec python3 -c "$session" bash -c '
+      checker=.agents/skills/writing-agent-docs/check_docs.py
+      if [ -f "$checker" ]; then
+        python3 "$checker" || exit 1
+      else
+        echo "pre-push: no doc checker at $0; skipped" >&2
+      fi
+      if [ -x scripts/test-all.sh ]; then
+        exec scripts/test-all.sh
+      else
+        echo "pre-push: no test suite at $0; skipped" >&2
+      fi' "${commit:0:12}"
+  ) </dev/null &  # the ref list is on stdin; nothing in the loop may read it
+  child=$!
+  echo "$child" > "$base/group"  # its session leader: the group id, for reclaim after kill -9
+  wait "$child"
   status=$?
+  child=''
   cleanup
   if [ "$status" != 0 ]; then
     echo "pre-push: checks failed for $local_ref at ${commit:0:12}; push stopped" >&2
