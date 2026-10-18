@@ -29,8 +29,8 @@ def git(root, *args):
     return subprocess.run(['git', '-C', str(root), *args], check=True, capture_output=True, text=True).stdout
 
 
-class DocChecker(unittest.TestCase):
-    """Each rule reports the smell at its file and line, and a clean tree reports nothing."""
+class Fixture(unittest.TestCase):
+    """A fixture repository, written and checked through the checker's command line."""
 
     def setUp(self):
         directory = tempfile.TemporaryDirectory(prefix='doc checker ')
@@ -51,7 +51,12 @@ class DocChecker(unittest.TestCase):
 
     def check_full(self, *args):
         config = Path(self.config_dir.name) / 'checker.json'
-        config.write_text(json.dumps(self.config))
+        settings = dict(self.config)
+        if getattr(self, 'architecture', None) is not None:
+            architecture = Path(self.config_dir.name) / 'architecture.json'
+            architecture.write_text(json.dumps(self.architecture))
+            settings['architecture'] = 'architecture.json'
+        config.write_text(json.dumps(settings))
         result = subprocess.run([sys.executable, str(CHECKER), '--root', str(self.root), '--config', str(config),
                                  '--json', *args], capture_output=True, text=True)
         assert result.returncode in (0, 1), result.stderr
@@ -64,6 +69,16 @@ class DocChecker(unittest.TestCase):
         keys = [(f['path'], f['line'], f['code'], f['severity']) for f in findings]
         assert len(keys) == len(set(keys)), f'duplicate findings: {findings}'
         return set(keys)
+
+    def commit(self):
+        if not (self.root / '.git').exists():
+            git(self.root, 'init', '-q')
+        git(self.root, 'add', '-A')
+        git(self.root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base')
+
+
+class DocChecker(Fixture):
+    """Each rule reports the smell at its file and line, and a clean tree reports nothing."""
 
     def test_a_clean_tree_has_no_findings(self):
         self.assertEqual(self.check(), set())
@@ -228,12 +243,6 @@ class DocChecker(unittest.TestCase):
                    + 'The steps below follow [the tool](../skills/tool/SKILL.md).\n'
                    + 'Read the [steps below](#steps).\n')
         self.assertEqual(self.check(), {('shared/guide.md', 7, 'positional', 'warning')})
-
-    def commit(self):
-        if not (self.root / '.git').exists():
-            git(self.root, 'init', '-q')
-        git(self.root, 'add', '-A')
-        git(self.root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base')
 
     def test_changed_lines_with_positional_references_are_flagged_only_when_added(self):
         self.write('shared/guide.md', GUIDE + '\nUse the command below.\n')

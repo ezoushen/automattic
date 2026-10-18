@@ -18,6 +18,9 @@ import subprocess
 import sys
 from urllib.parse import unquote
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from architecture import Architecture  # noqa: E402
+
 INLINE_LINK = re.compile(r'!?\[((?:[^\[\]]|\[[^\]]*\])*)\]\(\s*(<[^>]*>|(?:[^()\s]|\([^()\s]*\))+)'
                          r'(?:\s+(?:"[^"]*"|\'[^\']*\'|\([^)]*\)))?\s*\)')
 REFERENCE = re.compile(r'^\s{0,3}\[(?!\^)([^\]]+)\]:\s*(<[^>]*>|[^\s<>]*[./#:][^\s<>]*)'
@@ -191,7 +194,37 @@ def tracked_names(root):
         return {path.name for path in root.rglob('*.md') if '.git' not in path.parts}
 
 
-def check(root, config, changed=None):
+def first_read(root, architecture, rel):
+    """Findings for each skill whose first reads (bootstrap, the largest host session, the
+    skill and the files its opening links) are over the budget; recorded debt may only shrink."""
+    settings = architecture.data.get('first_read')
+    findings = []
+    for skill in expand(root, settings['skills']) if settings else []:
+        sessions = expand(root, settings['host_session'])
+        reads = {skill, *expand(root, settings['bootstrap'])}
+        reads.update(sorted(sessions, key=lambda path: path.stat().st_size)[-1:])
+        for number, line in prose(skill):
+            if re.match(r'##\s', line):
+                break
+            for _, link in links(line):
+                target = (skill.parent / unquote(link.split('#')[0].split('?')[0])).resolve()
+                if link.split('#')[0] and not re.match(r'[a-z][\w+.-]*:', link, re.I) and target.suffix == '.md' and target.is_file():
+                    reads.add(target)
+        total, limit = sum(path.stat().st_size for path in reads), settings['budget']
+        recorded = architecture.debt.get('first_read', {}).get(rel(skill))
+        if total <= limit and recorded is not None:
+            findings.append(Finding(rel(skill), 1, 'warning', 'stale-debt', 'within the first-read budget now; remove its recorded size'))
+        elif total > limit and recorded is not None and total <= recorded:
+            if total < recorded:
+                findings.append(Finding(rel(skill), 1, 'warning', 'debt',
+                                        f'first reads total {total} bytes, over {limit}; lower the recorded size to {total}'))
+        elif total > limit:
+            findings.append(Finding(rel(skill), 1, 'error', 'first-read',
+                                    f'first reads total {total} bytes, over {limit}: bootstrap, host session, this skill and its opening links'))
+    return findings
+
+
+def check(root, config, changed=None, architecture=None):
     findings = []
     rel = lambda path: str(path.relative_to(root))
     docs = expand(root, config['docs'])
@@ -288,7 +321,7 @@ def check(root, config, changed=None):
                                 f'{config["description_budget"]}; hosts shorten descriptions to fit their skill list'))
 
     # Links and anchors, repo-wide; collect what each doc reaches.
-    reached = set()
+    reached, edges, anchored = set(), [], {}
     for path in linking:
         for number, line in prose(path):
             for _, link in links(line):
@@ -303,6 +336,9 @@ def check(root, config, changed=None):
                     continue
                 if resolved != path.resolve():
                     reached.add(resolved)
+                    edges.append((rel(path), number, rel(resolved)))
+                    if anchor:
+                        anchored.setdefault((rel(resolved), anchor), set()).add(rel(path))
                 if anchor and resolved.suffix == '.md' and anchor not in outline(resolved)[0]:
                     findings.append(Finding(rel(path), number, 'error', 'anchor', f'{link}: no such heading'))
 
@@ -319,6 +355,21 @@ def check(root, config, changed=None):
     for path in docs:
         if path not in entry and path.resolve() not in reached:
             findings.append(Finding(rel(path), 1, 'error', 'orphan', 'no doc or code links it, so no agent reaches it'))
+    if architecture:
+        for path in docs:
+            if architecture.module(rel(path)) is None:
+                findings.append(Finding(rel(path), 1, 'error', 'unmapped', 'no module in the architecture file owns this doc'))
+        debt = architecture.debt
+        for found in architecture.assess(edges, 'docs', 'direction', debt.get('links', []), debt.get('cycles', [])):
+            findings.append(Finding(*found))
+        limit = architecture.data.get('shared_section_links', 3)
+        for (target, anchor), sources in sorted(anchored.items()):
+            owner = architecture.module(target)
+            outside = {src for src in sources if architecture.module(src) not in (None, owner)}
+            if len(outside) >= limit:
+                findings.append(Finding(target, 1, 'warning', 'shared-section',
+                                        f'#{anchor} is linked from {len(outside)} files in other modules; make it its own file'))
+        findings.extend(first_read(root, architecture, rel))
     return sorted(findings, key=lambda f: (f['path'], f['line'], f['code'], f['message']))
 
 
@@ -332,11 +383,12 @@ def main():
     try:
         root = (args.root or Path(git(Path.cwd(), 'rev-parse', '--show-toplevel').strip())).resolve()
         config = json.loads(args.config.read_text())
+        architecture = Architecture.load(args.config.parent / config['architecture']) if config.get('architecture') else None
         changed = changed_files(root, args.changed) if args.changed else None
     except (InputError, OSError, ValueError) as error:
         print(f'check_docs.py: {error}', file=sys.stderr)
         return 2
-    findings = check(root, config, changed)
+    findings = check(root, config, changed, architecture)
     if args.json:
         print(json.dumps(findings, indent=1))
     else:

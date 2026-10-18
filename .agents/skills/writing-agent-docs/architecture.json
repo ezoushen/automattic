@@ -1,0 +1,365 @@
+{
+ "levels": [
+  [
+   "skills",
+   "hooks"
+  ],
+  [
+   "bootstrap"
+  ],
+  [
+   "delivery",
+   "remediation"
+  ],
+  [
+   "review"
+  ],
+  [
+   "planning"
+  ],
+  [
+   "board",
+   "setup"
+  ],
+  [
+   "agents"
+  ],
+  [
+   "standards"
+  ],
+  [
+   "hosts"
+  ],
+  [
+   "workers"
+  ],
+  [
+   "checks"
+  ],
+  [
+   "routing"
+  ],
+  [
+   "resources"
+  ],
+  [
+   "decisions"
+  ],
+  [
+   "config"
+  ],
+  [
+   "addons"
+  ]
+ ],
+ "modules": {
+  "skills": {
+   "docs": [
+    "skills/*/SKILL.md",
+    ".agents/skills/*/SKILL.md"
+   ],
+   "isolated": true
+  },
+  "hooks": {
+   "code": [
+    "hooks/*.py"
+   ]
+  },
+  "bootstrap": {
+   "docs": [
+    "harnesses/README.md",
+    "bootstrap.md"
+   ]
+  },
+  "board": {
+   "docs": [
+    "skills/dispatch/board.md",
+    "flows/board/**/*.md"
+   ],
+   "code": [
+    "scripts/next_tickets.py"
+   ]
+  },
+  "delivery": {
+   "docs": [
+    "skills/dispatch/**/*.md",
+    "flows/delivery/**/*.md"
+   ]
+  },
+  "remediation": {
+   "docs": [
+    "skills/remediate/jobs/*.md",
+    "flows/remediation/**/*.md"
+   ]
+  },
+  "standards": {
+   "docs": [
+    "skills/remediate/kinds/*.md",
+    "skills/code-comments/references/*.md",
+    "skills/pr/writing.md",
+    "standards/**/*.md"
+   ],
+   "code": [
+    "scripts/comment_audit.py",
+    "scripts/lint_pr_body.py"
+   ]
+  },
+  "review": {
+   "docs": [
+    "skills/review/**/*.md",
+    "flows/review/**/*.md"
+   ],
+   "code": [
+    "scripts/review_target.py"
+   ]
+  },
+  "planning": {
+   "docs": [
+    "skills/refine/*.md",
+    "flows/planning/**/*.md"
+   ]
+  },
+  "agents": {
+   "docs": [
+    "agents/*.md"
+   ]
+  },
+  "hosts": {
+   "docs": [
+    "harnesses/claude/**/*.md",
+    "harnesses/codex/**/*.md",
+    "harnesses/opencode/**/*.md",
+    "harnesses/pi/**/*.md",
+    "harnesses/herdr.md",
+    "harnesses/executors/*.md",
+    "hosts/**/*.md"
+   ],
+   "code": [
+    "scripts/bash_executor.py"
+   ],
+   "unlinked": true
+  },
+  "config": {
+   "docs": [
+    "harnesses/setup/catalog.md",
+    "harnesses/setup/executors.md",
+    "harnesses/setup/routers.md",
+    "harnesses/setup/legacy-preferences.md",
+    "harnesses/setup/session.md",
+    "runtime/config/**/*.md"
+   ],
+   "code": [
+    "scripts/agent_defs.py",
+    "scripts/decision_journal.py",
+    "scripts/decision_images.py",
+    "scripts/native_settings.py"
+   ]
+  },
+  "setup": {
+   "docs": [
+    "harnesses/setup/*.md",
+    "flows/setup/**/*.md"
+   ]
+  },
+  "resources": {
+   "docs": [
+    "harnesses/workers/resources.md",
+    "harnesses/workers/retire.md",
+    "runtime/resources/**/*.md"
+   ],
+   "code": [
+    "scripts/capacity.py",
+    "scripts/allowance.py",
+    "scripts/claude_usage.py"
+   ]
+  },
+  "workers": {
+   "docs": [
+    "harnesses/workers/*.md",
+    "harnesses/routing/recovery.md",
+    "runtime/workers/**/*.md"
+   ],
+   "code": [
+    "scripts/worker_lifecycle.py",
+    "scripts/effort_spend.py"
+   ]
+  },
+  "checks": {
+   "docs": [
+    "harnesses/checks/*.md",
+    "runtime/checks/**/*.md"
+   ],
+   "code": [
+    "scripts/run_check.py"
+   ]
+  },
+  "routing": {
+   "docs": [
+    "harnesses/routing/*.md",
+    "runtime/routing/**/*.md"
+   ],
+   "code": [
+    "scripts/agent_models.py",
+    "scripts/outcomes.py"
+   ]
+  },
+  "decisions": {
+   "docs": [
+    "harnesses/decisions/*.md",
+    "runtime/decisions/**/*.md"
+   ],
+   "code": [
+    "scripts/decisions.py"
+   ]
+  },
+  "addons": {
+   "docs": [
+    "addons/**/*.md"
+   ]
+  }
+ },
+ "first_read": {
+  "budget": 20480,
+  "bootstrap": [
+   "harnesses/README.md",
+   "bootstrap.md"
+  ],
+  "host_session": [
+   "harnesses/*/adapter.md",
+   "hosts/*/session.md"
+  ],
+  "skills": [
+   "skills/*/SKILL.md"
+  ]
+ },
+ "shared_section_links": 3,
+ "debt": {
+  "links": [
+   "agents/builder.md -> skills/code-comments/SKILL.md",
+   "agents/builder.md -> skills/housekeeping/SKILL.md",
+   "agents/reviewer.md -> skills/code-comments/SKILL.md",
+   "harnesses/README.md -> harnesses/herdr.md",
+   "harnesses/README.md -> skills/mandate/SKILL.md",
+   "harnesses/checks/run.md -> skills/housekeeping/SKILL.md",
+   "harnesses/claude/adapter.md -> skills/review/workflow.md",
+   "harnesses/decisions/annotate.md -> harnesses/workers/prepare.md",
+   "harnesses/decisions/journal.md -> skills/decision/SKILL.md",
+   "harnesses/decisions/phases.md -> harnesses/routing/recovery.md",
+   "harnesses/decisions/phases.md -> harnesses/workers/skills.md",
+   "harnesses/decisions/phases.md -> skills/decision/SKILL.md",
+   "harnesses/decisions/shadow-pilots.md -> harnesses/checks/run.md",
+   "harnesses/decisions/shadow-pilots.md -> harnesses/workers/collect.md",
+   "harnesses/decisions/shadow-pilots.md -> harnesses/workers/wait.md",
+   "harnesses/decisions/test-shape.md -> skills/remediate/kinds/tautological-tests.md",
+   "harnesses/routing/README.md -> harnesses/routing/recovery.md",
+   "harnesses/routing/choose.md -> harnesses/routing/recovery.md",
+   "harnesses/routing/choose.md -> harnesses/workers/collect.md",
+   "harnesses/routing/decision-model.md -> harnesses/routing/recovery.md",
+   "harnesses/routing/decision-model.md -> skills/decision/SKILL.md",
+   "harnesses/routing/report.md -> harnesses/workers/prepare.md",
+   "harnesses/routing/report.md -> harnesses/workers/skills.md",
+   "harnesses/setup/apply.md -> skills/decision/SKILL.md",
+   "harnesses/setup/catalog.md -> harnesses/executors/skill.md",
+   "harnesses/setup/executors.md -> harnesses/executors/bash.md",
+   "harnesses/setup/executors.md -> harnesses/executors/skill.md",
+   "harnesses/setup/executors.md -> harnesses/executors/subagent.md",
+   "harnesses/setup/executors.md -> harnesses/routing/choose.md",
+   "harnesses/setup/executors.md -> harnesses/setup/procedure.md",
+   "harnesses/setup/executors.md -> skills/setup-automattic/SKILL.md",
+   "harnesses/setup/legacy-preferences.md -> harnesses/routing/recovery.md",
+   "harnesses/setup/legacy-preferences.md -> harnesses/workers/launch.md",
+   "harnesses/setup/procedure.md -> harnesses/README.md",
+   "harnesses/setup/routers.md -> harnesses/routing/decision-model.md",
+   "harnesses/setup/routers.md -> skills/model-routing/SKILL.md",
+   "harnesses/workers/launch.md -> harnesses/README.md",
+   "harnesses/workers/resources.md -> harnesses/checks/plan.md",
+   "harnesses/workers/resources.md -> harnesses/checks/run.md",
+   "harnesses/workers/resources.md -> harnesses/herdr.md",
+   "harnesses/workers/resources.md -> harnesses/routing/recovery.md",
+   "harnesses/workers/resources.md -> harnesses/workers/design-hold.md",
+   "skills/align/SKILL.md -> skills/mandate/SKILL.md",
+   "skills/align/SKILL.md -> skills/pr/SKILL.md",
+   "skills/brief/SKILL.md -> skills/housekeeping/SKILL.md",
+   "skills/decision/SKILL.md -> skills/model-routing/SKILL.md",
+   "skills/dispatch/SKILL.md -> skills/housekeeping/SKILL.md",
+   "skills/dispatch/SKILL.md -> skills/mandate/SKILL.md",
+   "skills/dispatch/SKILL.md -> skills/walkthrough/SKILL.md",
+   "skills/dispatch/board.md -> skills/refine/workflow.md",
+   "skills/dispatch/board.md -> skills/review/workflow.md",
+   "skills/dispatch/reference.md -> skills/pipeline/SKILL.md",
+   "skills/housekeeping/SKILL.md -> skills/code-comments/SKILL.md",
+   "skills/model-routing/SKILL.md -> skills/decision/SKILL.md",
+   "skills/models/SKILL.md -> skills/setup-automattic/SKILL.md",
+   "skills/pipeline/SKILL.md -> skills/mandate/SKILL.md",
+   "skills/pipeline/SKILL.md -> skills/pr/SKILL.md",
+   "skills/pipeline/SKILL.md -> skills/setup-automattic/SKILL.md",
+   "skills/pipeline/SKILL.md -> skills/walkthrough/SKILL.md",
+   "skills/pr/SKILL.md -> skills/housekeeping/SKILL.md",
+   "skills/refine/workflow.md -> skills/dispatch/jobs/ticket.md",
+   "skills/refine/workflow.md -> skills/dispatch/project-loop.md",
+   "skills/remediate/SKILL.md -> skills/code-comments/SKILL.md",
+   "skills/remediate/jobs/audit.md -> skills/remediate/SKILL.md",
+   "skills/remediate/kinds/misleading-comments.md -> skills/code-comments/SKILL.md",
+   "skills/remediate/kinds/tautological-tests.md -> skills/review/jobs/reproduce.md",
+   "skills/review/SKILL.md -> skills/walkthrough/SKILL.md",
+   "skills/review/jobs/diff-review.md -> skills/code-comments/SKILL.md",
+   "skills/review/jobs/diff-review.md -> skills/housekeeping/SKILL.md",
+   "skills/review/method.md -> skills/code-comments/SKILL.md",
+   "skills/review/workflow.md -> skills/walkthrough/SKILL.md",
+   "skills/setup-automattic/SKILL.md -> skills/mandate/SKILL.md",
+   "skills/setup-automattic/SKILL.md -> skills/pipeline/SKILL.md",
+   "skills/walkthrough/SKILL.md -> skills/brief/SKILL.md",
+   "skills/walkthrough/SKILL.md -> skills/mandate/SKILL.md"
+  ],
+  "cycles": [
+   [
+    "agents",
+    "board",
+    "bootstrap",
+    "checks",
+    "config",
+    "decisions",
+    "delivery",
+    "hosts",
+    "planning",
+    "remediation",
+    "resources",
+    "review",
+    "routing",
+    "setup",
+    "skills",
+    "standards",
+    "workers"
+   ]
+  ],
+  "first_read": {
+   "skills/align/SKILL.md": 34681,
+   "skills/brief/SKILL.md": 24821,
+   "skills/code-comments/SKILL.md": 23524,
+   "skills/decision/SKILL.md": 79247,
+   "skills/dispatch/SKILL.md": 51980,
+   "skills/housekeeping/SKILL.md": 27570,
+   "skills/mandate/SKILL.md": 28664,
+   "skills/model-routing/SKILL.md": 56968,
+   "skills/models/SKILL.md": 31816,
+   "skills/pipeline/SKILL.md": 61966,
+   "skills/pr/SKILL.md": 26459,
+   "skills/refine/SKILL.md": 32200,
+   "skills/remediate/SKILL.md": 29847,
+   "skills/review/SKILL.md": 54558,
+   "skills/setup-automattic/SKILL.md": 30681,
+   "skills/walkthrough/SKILL.md": 29866
+  },
+  "imports": [
+   "scripts/decision_journal.py -> scripts/decisions.py",
+   "scripts/decisions.py -> scripts/agent_models.py"
+  ],
+  "import_cycles": [
+   [
+    "config",
+    "decisions",
+    "routing"
+   ]
+  ]
+ }
+}
