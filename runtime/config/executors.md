@@ -34,13 +34,13 @@ reviewer's entry for reproduce only. The agent entry covers every other job.
 To use another execution path, replace only that agent's `executor` object with
 one of the following. Executor selection and model policy are separate choices.
 
-**Named sub-agent** (`hosts/executors/subagent.md`), for example the official Codex plugin's delegate in Claude:
+**Named sub-agent**, for example the official Codex plugin's delegate in Claude:
 
 ```json
 {"type":"subagent","config":{"agent":"codex:codex-rescue"}}
 ```
 
-**Skill** (`hosts/executors/skill.md`), with the instruction supplied after selecting the installed skill:
+**Skill**, with the instruction supplied after selecting the installed skill:
 
 ```json
 {
@@ -57,7 +57,7 @@ invocation rules still apply; names are not assumed available across hosts.
 For different delegation skills in Claude Code and Codex, configure
 [caller-specific skill routes](catalog.md#caller-specific-skill-routes).
 
-**Bash**, for a program implementing the assignment/result contract (`hosts/executors/bash.md`):
+**Bash**, for a program implementing the assignment/result contract ([Bash executor](bash-executor.md)):
 
 ```json
 {"type":"bash","config":{"argv":["bash","/absolute/path/to/worker.sh"]}}

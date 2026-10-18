@@ -85,6 +85,15 @@ class ArchitectureDocs(unittest.TestCase):
                          ['skills/pipeline/SKILL.md', 'bootstrap.md'])
         self.assertFalse({'tests/test_architecture_docs.py', 'tests/test_import_direction.py'} & set(config['exclude']))
 
+    def test_a_runtime_doc_names_no_path_in_a_higher_layer_and_the_bash_contract_lives_in_runtime_config(self):
+        higher = re.compile(r'`(?:hosts|flows|skills|standards|agents)/[^`]*`')
+        for path in sorted((ROOT / 'runtime').rglob('*.md')):
+            self.assertEqual(higher.findall(path.read_text()), [], path)
+        contract = ROOT / 'runtime/config/bash-executor.md'
+        self.assertIn('assignment/result contract', contract.read_text())
+        self.assertFalse((ROOT / 'hosts/executors' / 'bash.md').exists())
+        self.assertIn('](../../runtime/config/bash-executor.md)', (ROOT / 'hosts/executors/README.md').read_text())
+
     def test_no_recorded_debt_remains(self):
         base = ROOT / '.agents/skills/writing-agent-docs'
         self.assertEqual(json.loads((base / 'config.json').read_text())['debt'], {})
