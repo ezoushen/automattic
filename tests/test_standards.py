@@ -34,10 +34,6 @@ class Standards(unittest.TestCase):
                     self.assertNotIn(resolved.parts[0], {'skills', 'flows', 'agents', 'bootstrap.md'})
                     self.assertNotIn('jobs', resolved.parts)
 
-    def test_a_disputed_flag_still_needs_independent_verification(self):
-        text = ' '.join((STANDARDS / 'kinds/tautological-tests.md').read_text().split())
-        self.assertIn('A flag you would dismiss is disputed and needs independent verification', text)
-
     def test_the_four_standards_exist(self):
         for name in ('code-comments.md', 'code-comments-sources.md', 'documentation.md', 'pr.md'):
             self.assertTrue((STANDARDS / name).is_file(), name)

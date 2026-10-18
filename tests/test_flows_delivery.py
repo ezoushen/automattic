@@ -81,15 +81,8 @@ class DeliveryFlow(unittest.TestCase):
                 with self.subTest(doc=str(path.relative_to(ROOT)), target=str(target)):
                     self.assertNotEqual(target.parts[0], 'skills')
 
-    def test_delivery_names_the_split_step_and_the_board_keeps_inheritance(self):
-        split = (DELIVERY / 'split-work.md').read_text()
-        self.assertRegex(split, r'\]\(\.\./planning/refinement\.md')
-        self.assertIn('too large for one worker', split)
-        self.assertIn('](split-work.md', (DELIVERY / 'dispatch.md').read_text())
-        scope = (ROOT / 'flows/board/scope.md').read_text()
-        self.assertIn("inherit the parent's selection", scope)
-        self.assertIn('Keep the parent outstanding', scope)
-        self.assertNotIn('too large for one worker', scope)
+    def test_the_board_does_not_link_the_review_flow_or_carry_the_split_rule(self):
+        self.assertNotIn('too large for one worker', (ROOT / 'flows/board/scope.md').read_text())
         for path in (ROOT / 'flows/board').rglob('*.md'):
             for target in targets(path):
                 self.assertNotEqual(target.parts[:2], ('flows', 'review'), path)

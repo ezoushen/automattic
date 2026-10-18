@@ -72,7 +72,7 @@ class FoldCheck(unittest.TestCase):
         (self.root / 'skills/tool/jobs/ticket.md').rename(self.root / 'skills/tool/jobs/build.md')
         self.write('skills/tool/SKILL.md', SKILL.replace('jobs/ticket.md', 'jobs/build.md')
                    .replace('First rule.\n\n', 'First rule.\n\nSee [moved](moved.md).\n\n'))
-        self.write('skilmoved.md', '# Moved\n\nNew home.\n')
+        self.write('skills/tool/moved.md', '# Moved\n\nNew home.\n')
         self.assertEqual(self.differences(), set())
 
     def test_a_dropped_body_line_is_reported_and_an_edit_listed_as_deliberate_is_accepted(self):
