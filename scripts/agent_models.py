@@ -765,7 +765,8 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
             'thinking_baseline': thinking['default'] if bounded else thinking,
             **({'thinking_allowed': thinking['allowed']} if bounded else {}),
             'route_source': source, **metadata,
-            'executor_guide': str(ROOT / 'hosts/executors' / f'{kind}.md')}
+            'executor_guide': str(ROOT / ('runtime/config/bash-executor.md' if kind == 'bash'
+                                           else f'hosts/executors/{kind}.md'))}
 
 
 def read_config(path):
