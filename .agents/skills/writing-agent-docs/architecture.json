@@ -234,7 +234,10 @@
    "scripts/*.py",
    "hooks/*.py"
   ],
-  "decision_families": "schemas/decision.schema.json"
+  "decision_families": "schemas/decision.schema.json",
+  "family_groups": [
+   "SHADOW_FAMILIES"
+  ]
  },
  "debt": {
   "links": [],

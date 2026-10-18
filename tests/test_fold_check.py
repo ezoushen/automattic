@@ -10,6 +10,8 @@ import unittest
 import support
 
 TOOL = support.ROOT / '.agents/skills/writing-agent-docs/check_fold.py'
+sys.path.insert(0, str(TOOL.parent))
+import check_fold  # noqa: E402
 CONFIG = {'docs': ['skills/**/*.md', 'agents/*.md', 'standards/**/*.md'], 'architecture': 'architecture.json'}
 ARCHITECTURE = {
     'levels': [['all']], 'modules': {'all': {}},
@@ -21,6 +23,7 @@ ARCHITECTURE = {
         'hooks': ['hooks/hooks.json'],
         'commands': ['scripts/*.py'],
         'decision_families': 'schemas/decision.schema.json',
+        'family_groups': ['SHADOW_FAMILIES'],
     },
 }
 SKILL = '---\nname: tool\ndescription: Runs the tool.\n---\n\n# Tool\n\nFirst rule.\n\nSecond rule, see [the job](jobs/ticket.md).\n'
@@ -157,6 +160,19 @@ class FoldCheck(unittest.TestCase):
                    .replace("from consts import LEVELS\n", ''))
         self.write('scripts/consts.py', shared)
         self.assertEqual(self.differences(), set())
+        recorded = {text for kind, text in check_fold.surface(self.root, ARCHITECTURE['fold']) if kind == 'command'}
+        self.assertIn('run choice:--level=low', recorded)
+        self.assertEqual({text for text in recorded if text.startswith('run choice:--made')}, set())
+
+    def test_moving_a_family_between_the_shadow_and_phase_groups_is_a_surface_difference(self):
+        self.write('scripts/groups.py', "SHADOW_FAMILIES = ('failure-cause', 'wake-triage')\nPHASE = tuple(f for f in ())\n")
+        self.git('add', '-A')
+        self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'groups')
+        self.assertEqual(self.differences(), set())
+        self.write('scripts/groups.py', "SHADOW_FAMILIES = ('failure-cause',)\nPHASE = tuple(f for f in ())\n")
+        self.assertEqual(self.differences(), {('decision-family', 'removed SHADOW_FAMILIES wake-triage')})
+        self.write('scripts/groups.py', "SHADOW_FAMILIES = ('failure-cause', 'wake-triage', 'review')\n")
+        self.assertEqual(self.differences(), {('decision-family', 'added SHADOW_FAMILIES review')})
 
     def test_surface_differences_listed_as_deliberate_are_accepted_and_moved_files_keep_their_surface(self):
         (self.root / 'skills/kinds/comments.md').rename(self.root / 'skills/kinds/comments2.md')

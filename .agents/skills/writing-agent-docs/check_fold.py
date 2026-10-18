@@ -113,6 +113,10 @@ def surface(root, fold):
                     if keyword.arg == 'choices':
                         for choice in constants.values(path.stem, keyword.value):
                             found.add(('command', f'{path.stem} choice:{names[0]}={choice}'))
+    for name in fold.get('family_groups', []):
+        for stem in constants.defs:
+            for family in constants.named(stem, name):
+                found.add(('decision-family', f'{name} {family}'))
     schema = fold.get('decision_families')
     if schema and (root / schema).is_file():
         for family in json.loads((root / schema).read_text())['properties']['family']['enum']:
