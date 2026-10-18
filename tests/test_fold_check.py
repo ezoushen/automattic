@@ -134,6 +134,19 @@ class FoldCheck(unittest.TestCase):
         self.assertEqual(self.differences(), {('command', 'removed run option:--effort'),
                                               ('command', 'removed run choice:action=retire')})
 
+    def test_choices_taken_from_a_module_level_constant_are_recorded_and_unresolvable_ones_are_skipped(self):
+        script = ("import argparse\nimport other\n\nMODES = ('fast', 'slow')\nKINDS = {'a': 1, 'b': 2}\n"
+                  "parser = argparse.ArgumentParser()\nparser.add_argument('--mode', choices=MODES)\n"
+                  "parser.add_argument('--kind', choices=sorted(KINDS))\n"
+                  "parser.add_argument('--other', choices=other.VALUES)\n")
+        self.write('scripts/run.py', script)
+        self.git('add', '-A')
+        self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'constants')
+        self.assertEqual(self.differences(), set())
+        self.write('scripts/run.py', script.replace("('fast', 'slow')", "('fast',)").replace("'b': 2", ''))
+        self.assertEqual(self.differences(), {('command', 'removed run choice:--mode=slow'),
+                                              ('command', 'removed run choice:--kind=b')})
+
     def test_surface_differences_listed_as_deliberate_are_accepted_and_moved_files_keep_their_surface(self):
         (self.root / 'skills/kinds/comments.md').rename(self.root / 'skills/kinds/comments2.md')
         allow = self.root.parent / 'allow.json'

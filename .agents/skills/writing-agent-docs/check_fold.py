@@ -38,6 +38,35 @@ def body_lines(root, config):
     return lines
 
 
+def module_constants(tree):
+    """Module-level names bound to a literal tuple, list, set or dict of constants, as their values (dict keys)."""
+    constants = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            values = literal_choices(node.value, {})
+            if values:
+                constants[node.targets[0].id] = values
+    return constants
+
+
+def literal_choices(node, constants):
+    """Constant values a `choices` expression names, or [] when it is not a literal or a module constant.
+
+    A name resolves through the module's own constants, also inside sorted/tuple/list/set; attributes
+    of other modules and computed values are not recorded.
+    """
+    if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+        return [item.value for item in node.elts if isinstance(item, ast.Constant)]
+    if isinstance(node, ast.Dict):
+        return [key.value for key in node.keys if isinstance(key, ast.Constant)]
+    if isinstance(node, ast.Name):
+        return constants.get(node.id, [])
+    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in ('sorted', 'tuple', 'list', 'set')
+            and len(node.args) == 1):
+        return literal_choices(node.args[0], constants)
+    return []
+
+
 def surface(root, fold):
     """Feature-surface entries as (kind, text); file locations never appear, so moves are free."""
     found = set()
@@ -56,7 +85,9 @@ def surface(root, fold):
         for event in json.loads(path.read_text()).get('hooks', {}):
             found.add(('hook-event', f'{path.parent.name}/{event}'))
     for path in files('commands'):
-        for node in ast.walk(ast.parse(path.read_text(), str(path))):
+        tree = ast.parse(path.read_text(), str(path))
+        constants = module_constants(tree)
+        for node in ast.walk(tree):
             if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.args
                     and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
                 continue
@@ -68,10 +99,9 @@ def surface(root, fold):
                     if name.startswith('-'):
                         found.add(('command', f'{path.stem} option:{name}'))
                 for keyword in node.keywords:
-                    if keyword.arg == 'choices' and isinstance(keyword.value, (ast.Tuple, ast.List)):
-                        for choice in keyword.value.elts:
-                            if isinstance(choice, ast.Constant):
-                                found.add(('command', f'{path.stem} choice:{names[0]}={choice.value}'))
+                    if keyword.arg == 'choices':
+                        for choice in literal_choices(keyword.value, constants):
+                            found.add(('command', f'{path.stem} choice:{names[0]}={choice}'))
     schema = fold.get('decision_families')
     if schema and (root / schema).is_file():
         for family in json.loads((root / schema).read_text())['properties']['family']['enum']:
