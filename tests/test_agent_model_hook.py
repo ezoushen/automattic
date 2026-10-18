@@ -99,6 +99,13 @@ class AgentModelHook(unittest.TestCase):
                     self.assertIn(reason, decision['permissionDecisionReason'])
                 self.assertIsNone(self.run_hook(dict(launch, prompt=assignment())))
 
+    def test_the_denial_offers_only_the_job_location_that_resolves(self):
+        decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',
+                                  'prompt': 'job_file: flows/delivery/jobs/ticket.md'})
+        reason = decision['permissionDecisionReason']
+        self.assertIn('flows/<flow>/jobs/<job>.md', reason)
+        self.assertNotIn('skills', reason)
+
     def test_a_job_under_a_flow_is_resolved_like_one_under_a_skill(self):
         self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
         job = self.home.joinpath('plugin', 'flows', 'review', 'jobs', 'ticket.md')

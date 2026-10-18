@@ -5,7 +5,8 @@ Modules sit in ordered levels, top first. A module may depend on a module in a l
 level and on itself; it may not depend on a higher level, a sibling in its own level or
 a module marked `unlinked` (injected by path, never linked). A module marked `isolated`
 may not even link its own other files. Violations recorded under `debt` are tolerated;
-a debt entry may only shrink, so a new violation is an error and a fixed one is stale.
+a debt entry covers every link between its two files and may only shrink, so a violation
+between any other pair is an error and a fixed one is stale.
 """
 import ast
 import json

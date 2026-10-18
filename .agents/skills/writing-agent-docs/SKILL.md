@@ -35,8 +35,10 @@ count, where code names doc paths, the byte budget and the recorded debt.
 [architecture.json](architecture.json) holds the module architecture: ordered levels
 (top may depend on lower ones and on itself, never on a sibling or a higher level),
 which files each module owns, the first-read budget and the debt for that contract.
-Debt entries only shrink: a new violation is an error and a fixed one is `stale-debt`.
-A doc that no module owns is `unmapped`, so a new folder needs a module before its docs pass.
+Debt entries only shrink: one entry covers every link between its two files, a violation
+between any other pair is an error, and a fixed one is `stale-debt`.
+A doc, or a script or hook under `owned_code`, that no module owns is `unmapped`, so a new
+folder needs a module before its files pass.
 
 `tests/test_import_direction.py` applies the same levels to the imports of `scripts/`
 and `hooks/`, including imports inside functions. To prove a restructuring lost nothing
@@ -127,7 +129,7 @@ every old body line is still present. Then search the moved text for `above`,
 **Keep an agent file to what all its jobs share.** `agents/<name>.md` holds
 permissions, principles and core skills only. Every line must hold for every job of
 that agent; a rule that only some jobs need belongs in their
-`skills/<owner>/jobs/<job>.md`. End each principle with `shown by:` and the
+`flows/<flow>/jobs/<job>.md`. End each principle with `shown by:` and the
 observable evidence that it was followed. State rules directly, without identity
 phrasing such as "you are" or "act as an expert". `tests/test_agent_definitions.py`
 checks the structure.

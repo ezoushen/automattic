@@ -57,6 +57,10 @@ class ArchitectureDocs(unittest.TestCase):
         self.assertRegex(flat, r'Resolve dependency identity from the active catalog once per session: .*'
                                r'never a bare colliding name such as `tdd`.*\]\(runtime/workers/before-launch\.md\)')
 
+    def test_no_doc_points_at_a_retired_location_or_a_moved_bootstrap(self):
+        self.assertNotIn('skills/<owner>/jobs', SKILL)
+        self.assertNotIn('this bootstrap', (ROOT / 'runtime/workers/long-sessions.md').read_text())
+
     def test_no_recorded_debt_remains(self):
         import json
         base = ROOT / '.agents/skills/writing-agent-docs'
