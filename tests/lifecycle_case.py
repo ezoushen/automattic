@@ -17,7 +17,7 @@ import decision_journal
 import decisions
 
 
-SCRIPT = support.script('worker-lifecycle.py')
+SCRIPT = support.script('worker_lifecycle.py')
 
 
 class WorkerLifecycleCase(unittest.TestCase):

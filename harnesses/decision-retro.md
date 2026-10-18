@@ -10,7 +10,7 @@ Choose one journal in the root session's existing effort/review artifact directo
 such as `decisions-<root-session-id>.jsonl`, following the project's storage convention.
 Pass `--journal <absolute-path>`
 and `--assignment-id <ticket/attempt-or-phase-checkpoint>` to `decisions.py checkpoint`
-or the `agent-models.py --route --assignment ...` call. Include `--session` when
+or the `agent_models.py --route --assignment ...` call. Include `--session` when
 using session overrides. Low-level `decide` and router callers without `--journal`
 retain unrecorded behavior; configured phase consultations require recording.
 Skills supply these arguments for live backend decisions. Offline pool

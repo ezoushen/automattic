@@ -12,7 +12,7 @@ from unittest.mock import patch
 import support
 
 PLUGIN = support.ROOT
-SCRIPT = PLUGIN / 'scripts/next-tickets.py'
+SCRIPT = PLUGIN / 'scripts/next_tickets.py'
 
 
 def run(*args, cwd=None, ok=True, input=None):
@@ -201,6 +201,20 @@ class CrossHarness(unittest.TestCase):
                 assert (str(PLUGIN / 'harnesses/herdr.md') in context) == (herdr == '1')
                 assert str(PLUGIN / 'harnesses' / harness / 'adapter.md') in context
                 assert f'/harnesses/{other}/' not in context
+
+    def test_python_scripts_import_by_name_and_named_scripts_exist(self):
+        import re
+        for path in (PLUGIN / 'scripts').glob('*.py'):
+            assert path.stem.isidentifier(), f'{path.name}: Python scripts are named as importable modules'
+        tracked = run('git', '-C', str(PLUGIN), 'ls-files', '-z').stdout.split('\0')
+        for name in filter(None, tracked):
+            path = PLUGIN / name
+            if name.startswith('tests/'):
+                continue  # Fixtures quote recorded commands, including names from before a rename.
+            if path.suffix not in {'.md', '.py', '.sh', '.json', '.yaml', '.mjs', '.ts'} or not path.is_file():
+                continue
+            for script in re.findall(r'scripts/([A-Za-z0-9_.-]+\.(?:py|sh))\b', path.read_text()):
+                assert (PLUGIN / 'scripts' / script).is_file(), (name, script)
 
     def test_remediate_skill_and_its_kinds(self):
         import re

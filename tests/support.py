@@ -18,9 +18,9 @@ def script(filename):
 
 
 def load_script(filename, name=None):
-    """Import a script from scripts/, including hyphenated ones, as a module."""
+    """Import a fresh copy of a script from scripts/ as a module."""
     path = SCRIPTS / filename
-    spec = importlib.util.spec_from_file_location(name or path.stem.replace('-', '_'), path)
+    spec = importlib.util.spec_from_file_location(name or path.stem, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

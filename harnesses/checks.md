@@ -117,7 +117,7 @@ Prefer an existing project runner that already preserves full output, propagates
 failure and tears down owned jobs. Otherwise, on POSIX hosts:
 
 ```sh
-python3 "<plugin_root>/scripts/run-check.py" \
+python3 "<plugin_root>/scripts/run_check.py" \
   --timeout <seconds> --log "<retained-evidence>/attempt-01.log" -- \
   <project-check-command> <args>
 ```

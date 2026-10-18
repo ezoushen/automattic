@@ -5,7 +5,7 @@ compaction. The coordinator owns its state; workers return evidence through thei
 assigned channel. Keep one absolute `workers.sqlite` path per orchestration run in
 the main checkout's retained reports directory, `.scratch/<slug>/reports/workers.sqlite`;
 the yield hooks read only that location. Use the maintained
-`scripts/worker-lifecycle.py`; do not copy it into the project. Read-only workers
+`scripts/worker_lifecycle.py`; do not copy it into the project. Read-only workers
 only return evidence. If the coordinator itself cannot write
 coordination state, preserve the gap and use supported native waits and reports.
 
@@ -367,7 +367,7 @@ Before writing any new artifact, prefer the direct form when the worker can invo
 the permitted lifecycle command. It creates no intermediate request/brief file:
 
 ```sh
-python3 /absolute/plugin/scripts/worker-lifecycle.py escalate \
+python3 /absolute/plugin/scripts/worker_lifecycle.py escalate \
   --state /absolute/reports/workers.sqlite --attempt ticket-12/implementation-1 \
   --risk possible-breach --criteria /absolute/canonical-ticket.md \
   --brief /absolute/decision-brief.md --reason 'API compatibility is uncertain' \

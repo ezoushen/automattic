@@ -12,7 +12,7 @@ from unittest.mock import patch
 import support
 
 
-models = support.load_script('agent-models.py', 'models')
+models = support.load_script('agent_models.py', 'models')
 
 
 class RouterCase(unittest.TestCase):

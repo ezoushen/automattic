@@ -293,8 +293,8 @@ is not correctness; local provider scores are uncalibrated.
 This opt-in pilot measures whether System One can classify failed checks before
 any workflow depends on it. Enable it by adding `failure-cause` to
 `decisions.enabled`. Run required gates through
-[run-check](checks.md#run-a-bounded-check) with `--classify-failure`, and a failed
-check is classified automatically. For a failure outside run-check, run:
+[`run_check.py`](checks.md#run-a-bounded-check) with `--classify-failure`, and a failed
+check is classified automatically. For a failure outside `run_check.py`, run:
 
 ```bash
 <plugin_root>/.venv/bin/python -B <plugin_root>/scripts/decisions.py classify-failure \

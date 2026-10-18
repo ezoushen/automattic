@@ -3,7 +3,6 @@
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import os
@@ -20,12 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import capacity  # noqa: E402
 import decision_journal  # noqa: E402
 import decisions  # noqa: E402
+import native_settings  # noqa: E402
 import outcomes  # noqa: E402
-
-
-spec = importlib.util.spec_from_file_location('native_settings', Path(__file__).with_name('native-settings.py'))
-native_settings = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(native_settings)
 
 
 def require(value, message):

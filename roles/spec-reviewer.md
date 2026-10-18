@@ -57,7 +57,7 @@ Check every added or modified test with
 checklist, route it, trace masked rules and re-read flags, dismissing false alarms
 with cited evidence. Report a finding only with that kind's cited proof.
 
-For added comments, run `python3 <plugin_root>/scripts/comment-audit.py --repo
+For added comments, run `python3 <plugin_root>/scripts/comment_audit.py --repo
 <worktree> --base <diff_base> --head <head>` on the pinned reviewed diff and retain
 the JSON output as evidence. Its entries are candidates, not verdicts; inspect
 changed comments outside its supported syntax too. Apply code-comments and the

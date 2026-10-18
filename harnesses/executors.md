@@ -217,7 +217,7 @@ stdlib-only. Ordinary dispatch never installs dependencies automatically.
 After saving the requested configuration, inspect one role without starting work:
 
 ```sh
-"<plugin_root>/.venv/bin/python" "<plugin_root>/scripts/agent-models.py" --repo "<project>" --harness claude --role spec-reviewer --route
+"<plugin_root>/.venv/bin/python" "<plugin_root>/scripts/agent_models.py" --repo "<project>" --harness claude --role spec-reviewer --route
 ```
 
 Replace `claude` with the current host (`claude`, `codex`, `pi`, or `opencode`).
@@ -231,7 +231,7 @@ running or resumable workers keep their launch settings.
 Before every worker launch, the orchestrator runs:
 
 ```sh
-"<python>" "<plugin_root>/scripts/agent-models.py" --repo "<canonical-main-checkout>" --harness <host> --role <role> --route
+"<python>" "<plugin_root>/scripts/agent_models.py" --repo "<canonical-main-checkout>" --harness <host> --role <role> --route
 ```
 
 Use plugin `.venv/bin/python` when present; otherwise use a Python environment
@@ -464,7 +464,7 @@ Workers surface an [early design decision](worker-lifecycle.md#hold-a-design-dec
 when unsure how to proceed within the agreement or when findings might break it,
 including public contracts, platform exceptions and governing criteria. Stop only
 dependent edits and supply the requirement, evidence and decision-brief path.
-Use the supplied attempt/state with `worker-lifecycle.py escalate` and its armed
+Use the supplied attempt/state with `worker_lifecycle.py escalate` and its armed
 parent channel before dependent work. A read-only or unsupported progress channel
 returns the structured blocker immediately; the coordinator records the hold.
 Within-agreement uncertainty uses the phase's optional decision consultation or

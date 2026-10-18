@@ -17,7 +17,7 @@ import decision_journal
 import decisions
 
 
-LIFECYCLE = support.script('worker-lifecycle.py')
+LIFECYCLE = support.script('worker_lifecycle.py')
 OUTCOMES = support.script('outcomes.py')
 
 

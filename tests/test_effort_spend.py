@@ -13,8 +13,8 @@ from unittest.mock import patch
 import support
 
 
-SCRIPT = support.script('effort-spend.py')
-LIFECYCLE = support.script('worker-lifecycle.py')
+SCRIPT = support.script('effort_spend.py')
+LIFECYCLE = support.script('worker_lifecycle.py')
 
 
 class EffortSpend(unittest.TestCase):
@@ -195,7 +195,7 @@ class EffortSpend(unittest.TestCase):
         host = self.claude_host([
             ('2026-10-14T01:59:00Z', 'before', 1000, []),
             'Dispatch the ready tickets.',
-            ('2026-10-14T02:00:01Z', 'h1', 10, [bash('cd /repo && python3 /p/scripts/worker-lifecycle.py watch '
+            ('2026-10-14T02:00:01Z', 'h1', 10, [bash('cd /repo && python3 /p/scripts/worker_lifecycle.py watch '
                                                      '--state s --attempt t1/1 --input w.json')]),
             ('2026-10-14T02:00:02Z', 'h2', 20, [bash('FOO=1 herdr agent prompt w1 "go"')]),
             receipt,
@@ -203,7 +203,7 @@ class EffortSpend(unittest.TestCase):
             ('2026-10-14T02:00:04Z', 'h4', 40, [bash('git -C /repo merge --ff-only t1')]),
             ('2026-10-14T02:00:05Z', 'h5', 50, []),
             'Stop hook feedback:\nThese lifecycle workers could finish without waking you:\n- t1/1',
-            ('2026-10-14T02:00:06Z', 'h6', 60, [bash('python3 /p/scripts/run-check.py --label unit -- make test')]),
+            ('2026-10-14T02:00:06Z', 'h6', 60, [bash('python3 /p/scripts/run_check.py --label unit -- make test')]),
             ('2026-10-14T02:00:07Z', 'h7', 70, [bash('# find the device\ncd /repo\nadb -s emulator devices')]),
             ('2026-10-14T03:00:00Z', 'after', 1000, [])])
         result = self.report('--host', str(host), '--since', '2026-10-14T02:00:00Z',
@@ -220,7 +220,7 @@ class EffortSpend(unittest.TestCase):
         receipt = json.dumps({'event_id': 3, 'kind': 'hold', 'attempt': 't1/1'})
         usage = {'input': 1, 'output': 7, 'cacheRead': 0, 'cacheWrite': 0}
         pi = self.pi_transcript('host-p', [
-            receipt, (usage, [('bash', {'command': 'python3 /p/scripts/worker-lifecycle.py ack --event-id 3'})]),
+            receipt, (usage, [('bash', {'command': 'python3 /p/scripts/worker_lifecycle.py ack --event-id 3'})]),
             {'customType': 'automattic_yield_gate', 'content': 'x'}, (usage, [('read', {'path': '/r.md'})]),
             {'customType': 'background-task-notification', 'content': '<background-task-notification>x'},
             (usage, [])])
@@ -295,7 +295,7 @@ class EffortSpend(unittest.TestCase):
     def test_lifecycle_calls_through_aliases_are_named_and_shell_keywords_are_not_programs(self):
         self.attempt('t1/1', 't1', 'sess-a')
         bash = lambda command: {'type': 'tool_use', 'name': 'Bash', 'input': {'command': command}}
-        lifecycle = '/plugin/scripts/worker-lifecycle.py'
+        lifecycle = '/plugin/scripts/worker_lifecycle.py'
         commands = [
             f'P=/r; L={lifecycle}; PY=/v/bin/python; $PY -B $L ack --state $P/w.sqlite --event-id 3',
             f'L="/v/bin/python -B {lifecycle}"; $L status --state /r/w.sqlite',
@@ -317,14 +317,14 @@ class EffortSpend(unittest.TestCase):
     def test_wrappers_heredocs_and_continuations_do_not_hide_the_command(self):
         self.attempt('t1/1', 't1', 'sess-a')
         bash = lambda command: {'type': 'tool_use', 'name': 'Bash', 'input': {'command': command}}
-        lifecycle = '/a/scripts/worker-lifecycle.py'
+        lifecycle = '/a/scripts/worker_lifecycle.py'
         commands = [
             f'nohup /v/bin/python {lifecycle} submit --state /s/w.sqlite --input /t/w.json > /t/o 2>&1 &',
             f'timeout 60 python3 {lifecycle} status --state /s/w.sqlite',
             f"cat > /t/n.md <<'EOF'\nthe worker's report\nEOF\npython3 {lifecycle} record --input /t/r.json",
             f"python3 - <<'EOF'\nprint(x.decode().strip())\nEOF\npython3 {lifecycle} retire --input /t/r.json",
             "cat > /t/a.txt <<'EOF'\nport the fork's cache\nEOF\n"
-            '.venv/bin/python -B scripts/agent-models.py --role implementer --route --assignment /t/a.txt',
+            '.venv/bin/python -B scripts/agent_models.py --role implementer --route --assignment /t/a.txt',
             f'python3 {lifecycle} --help 2>&1 | head -5',
             'case "$x" in\n  a) echo one ;;\n  *) gh pr list ;;\nesac',
             'for f in a.proto \\\n  b.proto; do curl -sO "$f"; done',
@@ -337,6 +337,19 @@ class EffortSpend(unittest.TestCase):
                          {'lifecycle:submit': 1, 'lifecycle:status': 2, 'lifecycle:record': 4, 'lifecycle:retire': 8,
                           'routing': 16, 'lifecycle:?': 32, 'command:echo': 64, 'command:curl': 128,
                           'lifecycle:watch': 256, 'lifecycle:ack': 512})
+
+    def test_transcripts_from_before_the_underscore_rename_keep_their_activities(self):
+        self.attempt('t1/1', 't1', 'sess-a')
+        bash = lambda command: {'type': 'tool_use', 'name': 'Bash', 'input': {'command': command}}
+        commands = ['L=/p/scripts/worker-lifecycle.py; python3 $L ack --event-id 3',
+                    'python3 /p/scripts/worker-lifecycle.py --state /s/w.sqlite collect',
+                    'python3 /p/scripts/run-check.py --label unit -- make test',
+                    'python3 /p/scripts/agent-models.py --role implementer --route']
+        host = self.claude_host(['go'] + [(f'2026-10-14T02:00:0{index}Z', f'h{index}', 2 ** index, [bash(command)])
+                                          for index, command in enumerate(commands)])
+        result = self.report('--host', str(host), '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')
+        self.assertEqual({key: value['output'] for key, value in result['host']['by_activity'].items()},
+                         {'lifecycle:ack': 1, 'lifecycle:collect': 2, 'check': 4, 'routing': 8})
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the mechanical rules of a PR description before publishing it.
 
-Usage: lint-pr-body.py <pr.md> [--title TITLE] [--published NUMBER [--repo OWNER/NAME]]
+Usage: lint_pr_body.py <pr.md> [--title TITLE] [--published NUMBER [--repo OWNER/NAME]]
 Prints {"errors": [...], "warnings": [...]} and exits 1 when there are errors.
 Judgment rules (baseline choice, explanations, scope) stay in skills/pr/writing.md.
 """

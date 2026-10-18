@@ -13,7 +13,7 @@ from unittest.mock import patch
 import support
 
 
-models = support.load_script('agent-models.py', 'models')
+models = support.load_script('agent_models.py', 'models')
 
 
 def worker(model, default='medium', allowed=('medium', 'high'), executor=None):
@@ -148,7 +148,7 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
         assignment.write_text(json.dumps({'assignment_id': 'frozen-1', 'worktree': str(self.root),
                                           'role_file': str(models.ROOT / 'roles/implementer.md'),
                                           'head': 'fixture-head', 'prompt': 'Return received settings.'}))
-        result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/bash-executor.py'),
+        result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/bash_executor.py'),
                                  '--execution', str(frozen), '--assignment', str(assignment)],
                                 text=True, capture_output=True, check=True)
         report = json.loads(json.loads(result.stdout)['report'])
@@ -221,7 +221,7 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
             models.session_path(self.root, 'run')
 
     def test_cli_inspection_and_session_write(self):
-        args = [sys.executable, '-B', str(models.ROOT / 'scripts/agent-models.py'),
+        args = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
                 '--repo', str(self.root), '--harness', 'codex', '--role', 'implementer',
                 '--user-executors', str(self.user), '--route']
         def cli(*extra, ok=True):

@@ -6,7 +6,7 @@ skills with `/automattic:<phase>`; use the Skill tool for available dependencies
 Confirm required dependency skills are installed before dispatch.
 
 Before launching a worker, resolve [executors](../executors.md) with the plugin's
-validator Python and `agent-models.py --route --repo <canonical-repo> --harness claude
+validator Python and `agent_models.py --route --repo <canonical-repo> --harness claude
 --role <role>`; include any explicit configuration profile. Record the full result,
 without piping through head/tail or masking its exit status. Inspect the pool with
 `--list-candidates`, establish the available model/effort pairs below, then select
@@ -97,7 +97,7 @@ The plugin's `PreToolUse` hook (`hooks/agent-model.py`) denies an Agent call wit
 model whose definition doesn't pin one. `AUTOMATTIC_AGENT_MODEL_HOOK=off` disables
 it. A second `PreToolUse` hook (`hooks/pr-body.py`) denies `gh pr create` and
 `gh pr edit` unless the description comes from a `--body-file` that passes
-`scripts/lint-pr-body.py`. `AUTOMATTIC_PR_HOOK=off` disables it. A `Stop` hook
+`scripts/lint_pr_body.py`. `AUTOMATTIC_PR_HOOK=off` disables it. A `Stop` hook
 (`hooks/yield-gate.py`) applies the worker lifecycle's yield gate when the session
 stops; `AUTOMATTIC_YIELD_HOOK=off` disables it. A non-Anthropic model needs a configured cross-runtime route (Herdr, Pi or
 Codex), not an Agent call. Offer those routes when a role's configured pool

@@ -9,7 +9,7 @@ import unittest
 
 import support
 
-SCRIPT = support.script('comment-audit.py')
+SCRIPT = support.script('comment_audit.py')
 
 
 class CommentAudit(unittest.TestCase):

@@ -17,7 +17,7 @@ Migrate them to agent instances only on explicit request.
 To inspect model preferences directly, independently of routing, run:
 
 ```sh
-python3 "<plugin_root>/scripts/agent-models.py" --repo "<repo>" --harness <harness> --role <role>
+python3 "<plugin_root>/scripts/agent_models.py" --repo "<repo>" --harness <harness> --role <role>
 ```
 
 `repo` is the canonical project checkout supplied by the orchestrator. Carry it

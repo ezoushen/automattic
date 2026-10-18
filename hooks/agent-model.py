@@ -17,7 +17,7 @@ REASON = (
     'Pass an explicit `model` to this Agent call; without it the subagent runs on the session model. '
     'Choose the cheapest adequate one: haiku for search, lookups and summaries; sonnet for research, '
     'review and bounded implementation; opus only for hard design, adversarial review or deep diagnosis. '
-    'Automattic role workers are routed with agent-models.py first.'
+    'Automattic role workers are routed with agent_models.py first.'
 )
 
 ROLE_REASON = ('An Automattic role worker needs its assignment fields: pass absolute `adapter`, `role_file` and '
@@ -51,7 +51,7 @@ def stale_profile(name, cwd):
     missing, extra = sorted(tools(role) - tools(profile)), sorted(tools(profile) - tools(role))
     return (f'{profile} was rendered from an older `agents/{match.group(1)}.md`: its tools differ '
             f'(missing: {", ".join(missing) or "none"}; extra: {", ".join(extra) or "none"}). Re-render it with '
-            f'`agent-models.py --route ... --profile` as {ROOT}/harnesses/claude/adapter.md describes, and launch '
+            f'`agent_models.py --route ... --profile` as {ROOT}/harnesses/claude/adapter.md describes, and launch '
             f'the name it returns.')
 
 

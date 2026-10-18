@@ -267,7 +267,7 @@ bypasses profile overrides; an explicit thinking pin wins over profile thinking.
    dropping rejected fields or bypassing resolution.
 
 Use the plugin's Python environment, not a guessed system interpreter. Examples
-extend `<plugin_root>/.venv/bin/python -B <plugin_root>/scripts/agent-models.py --repo <repo> --harness <host> --role <role> --route`:
+extend `<plugin_root>/.venv/bin/python -B <plugin_root>/scripts/agent_models.py --repo <repo> --harness <host> --role <role> --route`:
 
 ```text
 --list-candidates

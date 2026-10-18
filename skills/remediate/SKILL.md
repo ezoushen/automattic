@@ -119,7 +119,7 @@ report that boundary for a separate implementation task.
 Run from any directory, resolving the script from `plugin_root`:
 
 ```sh
-python3 <plugin_root>/scripts/comment-audit.py --repo <repo> --base <base> [--head <head>] [paths...]
+python3 <plugin_root>/scripts/comment_audit.py --repo <repo> --base <base> [--head <head>] [paths...]
 ```
 
 It emits a JSON list of `{file, line, text}` for added plain comment lines,

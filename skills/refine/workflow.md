@@ -129,7 +129,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    is not approval. Apply authorized changes to the selected board; do not claim
    a failed remote write succeeded. Validate the resulting issue graph and return
    canonical IDs/URLs. Only for local Markdown, write the files and run
-   `python3 "<plugin_root>/scripts/next-tickets.py" --repo "<repo>" <slug> --check`.
+   `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" <slug> --check`.
 
 ## Definition of Ready
 

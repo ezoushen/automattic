@@ -197,7 +197,7 @@ class Profiles(RouterCase):
     def test_pending_selection_cannot_render_native_launch_profile(self):
         import subprocess
         import sys
-        result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/agent-models.py'),
+        result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
                                  '--repo', str(self.root), '--user-executors', str(self.user),
                                  '--harness', 'claude', '--role', 'implementer', '--route', '--profile'],
                                 capture_output=True, text=True)

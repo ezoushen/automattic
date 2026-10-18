@@ -44,7 +44,7 @@ before proceeding. Preserve artifacts used by the PR's claims.
    [board's delivery gate](../dispatch/board.md). Remote issues are checked
    directly alongside Git and reports; no local ticket mirror or scheduler call.
    For local Markdown only, run
-   `python3 "<plugin_root>/scripts/next-tickets.py" --repo "<repo>" <slug> --delivery`.
+   `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" <slug> --delivery`.
    Require implemented/integrated work and a clean review plus passed E2E for the
    current effort head and pinned base. Read coverage, decisions and artifacts too;
    structural markers alone are not proof. Follow-ups are separate future work, not PR

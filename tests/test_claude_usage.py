@@ -11,7 +11,7 @@ import unittest
 import support
 
 
-SCRIPT = support.script('claude-usage.py')
+SCRIPT = support.script('claude_usage.py')
 
 
 class ClaudeUsage(unittest.TestCase):

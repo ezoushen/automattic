@@ -180,7 +180,7 @@ class Decisions(unittest.TestCase):
         """A disposable copy of the decision scripts, so fingerprint probes never touch the checkout."""
         root = self.root / 'plugin'
         (root / 'scripts').mkdir(parents=True, exist_ok=True)
-        for name in ('decisions.py', 'agent-models.py', 'decision_images.py'):
+        for name in ('decisions.py', 'agent_models.py', 'decision_images.py'):
             shutil.copy(decisions.ROOT / 'scripts' / name, root / 'scripts' / name)
         return root
 
@@ -188,7 +188,7 @@ class Decisions(unittest.TestCase):
         root = self.plugin_root()
         with patch.object(decisions, 'ROOT', root):
             self.baseline()
-            path = root / 'scripts/agent-models.py'
+            path = root / 'scripts/agent_models.py'
             path.write_text(path.read_text() + '\n# routing tweak\n')
             self.assertNotIn('calibration_stale',
                              [w['code'] for w in decisions.calibration_status(self.policy)])
@@ -492,7 +492,7 @@ class CheckpointCLI(unittest.TestCase):
         self.assertEqual(self.calls, [])
         session = self.root / 'session.json'
         session.write_text(json.dumps(self.config))
-        self.cli('agent-models.py', '--repo', self.repo, '--user-executors', self.user,
+        self.cli('agent_models.py', '--repo', self.repo, '--user-executors', self.user,
                  '--harness', 'codex', '--role', 'spec-reviewer', '--route', '--session', 'root-1',
                  '--save-session', session)
         result = self.phase('review-triage', 'review/head-a', '--session', 'root-1', '--request', self.request)

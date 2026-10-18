@@ -15,7 +15,7 @@ import support
 
 ROOT = support.ROOT
 HOOK = ROOT / 'hooks' / 'yield-gate.py'
-LIFECYCLE = ROOT / 'scripts' / 'worker-lifecycle.py'
+LIFECYCLE = ROOT / 'scripts' / 'worker_lifecycle.py'
 
 
 class YieldGateHook(unittest.TestCase):

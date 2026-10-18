@@ -439,7 +439,7 @@ class DecisionRouting(RouterCase):
         self.decision_router()
         assignment = self.root / 'assignment.txt'
         assignment.write_text('Implement the exact supplied fix and run its regression test.')
-        command = [sys.executable, '-B', str(models.ROOT / 'scripts/agent-models.py'),
+        command = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
                    '--repo', str(self.root), '--harness', 'codex', '--role', 'implementer',
                    '--route', '--user-executors', str(self.user), '--assignment', str(assignment),
                    '--eligible-candidates', '["sol"]']

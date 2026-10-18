@@ -10,8 +10,8 @@ from unittest.mock import patch
 
 import support
 
-SCRIPT = support.script('review-target.py')
-rt = support.load_script('review-target.py', 'review_target')
+SCRIPT = support.script('review_target.py')
+rt = support.load_script('review_target.py', 'review_target')
 
 
 class ReviewTarget(unittest.TestCase):

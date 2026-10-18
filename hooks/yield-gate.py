@@ -21,7 +21,7 @@ GUIDE = ROOT / 'harnesses/worker-lifecycle.md'
 
 
 def lifecycle():
-    spec = importlib.util.spec_from_file_location('worker_lifecycle', ROOT / 'scripts/worker-lifecycle.py')
+    spec = importlib.util.spec_from_file_location('worker_lifecycle', ROOT / 'scripts/worker_lifecycle.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

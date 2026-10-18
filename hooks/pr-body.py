@@ -26,7 +26,7 @@ VARIABLE = re.compile(r'\$(?:([A-Za-z_][A-Za-z0-9_]*)|\{([A-Za-z_][A-Za-z0-9_]*)
 
 
 def linter():
-    spec = importlib.util.spec_from_file_location('lint_pr_body', ROOT / 'scripts/lint-pr-body.py')
+    spec = importlib.util.spec_from_file_location('lint_pr_body', ROOT / 'scripts/lint_pr_body.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.lint
@@ -174,7 +174,7 @@ def main():
         return  # A broken check must never block work.
     if errors:
         reason = (f'Before publishing a PR description, read {GUIDE} and fix: ' + '; '.join(errors) +
-                  f'. Check the file with `python3 {ROOT}/scripts/lint-pr-body.py <file>`.')
+                  f'. Check the file with `python3 {ROOT}/scripts/lint_pr_body.py <file>`.')
         print(json.dumps({'hookSpecificOutput': {
             'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': reason}}))
 

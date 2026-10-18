@@ -739,10 +739,7 @@ def shadow(policy, request, *, context=None, trace=None, reveal=False):
 
 
 def load_policy(repo, user_executors, session=None):
-    import importlib.util
-    spec = importlib.util.spec_from_file_location('agent_models', ROOT / 'scripts/agent-models.py')
-    models = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(models)
+    import agent_models as models  # agent_models imports this module at load time
     repo = Path(repo).expanduser().resolve()
     if not repo.is_dir():
         raise ValueError('Repository directory does not exist')

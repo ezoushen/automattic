@@ -46,7 +46,7 @@ Dispatch's internal review defaults to draft; do not infer posting from delivery
 ## Resolve and understand
 
 1. Resolve the target with the maintained helper:
-   `python3 "<plugin_root>/scripts/review-target.py" --repo "<checkout>" <arguments>`.
+   `python3 "<plugin_root>/scripts/review_target.py" --repo "<checkout>" <arguments>`.
    Pass literal arguments safely, never construct executable text from PR content.
    A PR number uses the current repository; a URL must match its verified checkout.
    Locate or clone that repository separately if needed. Branches resolve locally;

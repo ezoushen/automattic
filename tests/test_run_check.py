@@ -15,7 +15,7 @@ import unittest
 import support
 
 
-RUNNER = support.script('run-check.py')
+RUNNER = support.script('run_check.py')
 LOCK = support.script('build-lock.sh')
 
 

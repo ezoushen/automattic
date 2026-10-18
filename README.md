@@ -75,9 +75,9 @@ project's authorization, priority and completion rules; no synchronization servi
 Local Markdown scheduler use, from any directory (not required for remote trackers):
 
 ```sh
-python3 /path/to/automattic/scripts/next-tickets.py --repo /path/to/project feature-name --check
-python3 /path/to/automattic/scripts/next-tickets.py --repo /path/to/project feature-name --max-live 3
-python3 /path/to/automattic/scripts/next-tickets.py --repo /path/to/project feature-name --set feature-name/01 status=implementing --counts
+python3 /path/to/automattic/scripts/next_tickets.py --repo /path/to/project feature-name --check
+python3 /path/to/automattic/scripts/next_tickets.py --repo /path/to/project feature-name --max-live 3
+python3 /path/to/automattic/scripts/next_tickets.py --repo /path/to/project feature-name --set feature-name/01 status=implementing --counts
 ```
 
 Omit the slug for all efforts. An unknown slug or argument fails. Scope controls

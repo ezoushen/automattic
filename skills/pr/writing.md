@@ -118,7 +118,7 @@ details in reports and inline only the essentials.
 Run the mechanical checks:
 
 ```bash
-python3 "<plugin_root>/scripts/lint-pr-body.py" .scratch/<slug>/pr.md --title "<title>" [--published <n>]
+python3 "<plugin_root>/scripts/lint_pr_body.py" .scratch/<slug>/pr.md --title "<title>" [--published <n>]
 ```
 
 The linter checks:

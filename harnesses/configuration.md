@@ -205,7 +205,7 @@ remove executor selection when the user asks only to reset models.
 ## Validate and report
 
 Validate candidate executor JSON with `validate_execution_config` from
-`scripts/agent-models.py` before replacing the original, then resolve every affected
+`scripts/agent_models.py` before replacing the original, then resolve every affected
 role with --route --list-candidates, including every affected profile. Resolve
 profile overrides with the relevant --target-runtime and candidate to check thinking.
 A pending selection is valid and never authorizes a worker probe. Preserve unrelated

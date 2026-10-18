@@ -12,7 +12,7 @@ Save the resolver JSON and assignment JSON in the existing effort state, then us
 the Python environment described in [executor configuration](../executors.md):
 
 ```sh
-"<python>" "<plugin_root>/scripts/bash-executor.py" --execution "<resolved.json>" --assignment "<assignment.json>"
+"<python>" "<plugin_root>/scripts/bash_executor.py" --execution "<resolved.json>" --assignment "<assignment.json>"
 ```
 
 The assignment requires nonempty `assignment_id`, absolute existing `worktree`

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lint-pr-body.py checks the mechanical rules of a PR description before it is published."""
+"""lint_pr_body.py checks the mechanical rules of a PR description before it is published."""
 import json
 import os
 from pathlib import Path
@@ -10,7 +10,7 @@ import unittest
 
 import support
 
-SCRIPT = support.script('lint-pr-body.py')
+SCRIPT = support.script('lint_pr_body.py')
 
 GOOD = """## Summary
 **Each build now reads one packaged value store.** Android APK shrinks by 1.5%.

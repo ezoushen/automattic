@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Automattic scheduler. Run from any directory; state stays in the main checkout.
 
-  next-tickets.py --repo /path/to/repo [slug] [--max-live N] [action]
+  next_tickets.py --repo /path/to/repo [slug] [--max-live N] [action]
 
 No action: JSON candidates. No slug: all efforts. Other efforts still hold locks.
 Actions: --board, --counts, --check, --accept TICKET,

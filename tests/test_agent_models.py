@@ -15,8 +15,8 @@ from unittest.mock import patch
 import support
 
 
-SCRIPT = support.script('agent-models.py')
-models = support.load_script('agent-models.py', 'agent_models')
+SCRIPT = support.script('agent_models.py')
+models = support.load_script('agent_models.py', 'agent_models')
 
 
 class Preferences(unittest.TestCase):

@@ -326,7 +326,7 @@ Give an evaluator the cases without the assessment.
    response. A replacement candidate uses the same account, while another permitted
    candidate uses a different available account. State admission and recovery.
 5. Monitor is disabled. A native wait expires while the remote job remains running.
-   The client returns 124; a different retained `run-check.py` summary says
+   The client returns 124; a different retained `run_check.py` summary says
    `exit_source: command`, `command_exit_code: 124`, `timed_out: false`.
    State status/progress/cleanup and whether another job should be submitted.
 6. The installed tracker CLI rejects an optional JSON field. Repeat with required

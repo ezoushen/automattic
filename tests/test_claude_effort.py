@@ -17,7 +17,7 @@ class ClaudeNativeEffort(unittest.TestCase):
     """A generated Claude profile sets subagent effort; a profile without one inherits the parent."""
 
     def test_profile_effort_and_parent_inheritance(self):
-        models = support.load_script('agent-models.py', 'agent_models')
+        models = support.load_script('agent_models.py', 'agent_models')
         for override in ('high', None):
             requests = []
             settings = {'model': 'claude-opus-5-5'}

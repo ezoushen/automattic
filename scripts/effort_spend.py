@@ -17,7 +17,8 @@ TOOL_ACTIVITIES = {'read': {'Read', 'Grep', 'Glob', 'LS', 'read', 'grep', 'find'
                    'edit': {'Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'edit', 'write', 'apply_patch'},
                    'agent': {'Agent', 'Task', 'SendMessage'}}
 READ_COMMANDS = {'cat', 'sed', 'head', 'tail', 'rg', 'grep', 'ls', 'find', 'wc', 'jq'}
-SCRIPTS = {'run-check.py': 'check', 'agent-models.py': 'routing', 'decisions.py': 'routing',
+# Transcripts from before the scripts were renamed name them with '-'; script_name reads both.
+SCRIPTS = {'run_check.py': 'check', 'agent_models.py': 'routing', 'decisions.py': 'routing',
            'decision_journal.py': 'routing'}
 SEPARATORS = ';&|()\n'
 OPTION_VALUES = {'git': {'-C', '-c', '--git-dir', '--work-tree'}, 'herdr': {'--session'}}
@@ -149,6 +150,10 @@ BUILTINS = {'for', 'while', 'until', 'if', 'case', 'select', 'in', 'done', 'fi',
             'wait', 'return', 'exit', 'function'}
 
 
+def script_name(token):
+    return Path(token).name.replace('-', '_')
+
+
 def simple_commands(command):
     """Each simple command's words without leading assignments, skipping function bodies and case
     patterns, with the names that hold the lifecycle script: variables assigned it and functions that run it."""
@@ -158,13 +163,13 @@ def simple_commands(command):
             segment = segment[1:]
         while segment and ASSIGNMENT.fullmatch(segment[0]):
             name, value = ASSIGNMENT.fullmatch(segment[0]).groups()
-            if 'worker-lifecycle.py' in value:
+            if 'worker_lifecycle.py' in value.replace('-', '_'):
                 aliases.add(name)
             segment = segment[1:]
         if body is not None:
             if segment == ['}']:
                 body = None
-            elif any(token.endswith('worker-lifecycle.py') for token in segment):
+            elif any(script_name(token) == 'worker_lifecycle.py' for token in segment):
                 aliases.add(body)
             continue
         if separator == '()' and len(segment) == 1 and IDENTIFIER.fullmatch(segment[0]):
@@ -192,7 +197,7 @@ def script_index(segment, runs):
 
 def lifecycle_action(segment, aliases):
     """The lifecycle action a simple command runs, or None when it does not run the script."""
-    index = script_index(segment, lambda index, token: token.endswith('worker-lifecycle.py')
+    index = script_index(segment, lambda index, token: script_name(token) == 'worker_lifecycle.py'
                          or token.startswith('$') and token.lstrip('$').strip('{}') in aliases
                          or index == 0 and token in aliases)
     if index is None:
@@ -212,9 +217,9 @@ def command_activity(command):
         action = lifecycle_action(tokens, aliases)
         if action:
             return 'lifecycle:' + action
-        index = script_index(tokens, lambda index, token: Path(token).name in SCRIPTS)
+        index = script_index(tokens, lambda index, token: script_name(token) in SCRIPTS)
         if index is not None:
-            return SCRIPTS[Path(tokens[index]).name]
+            return SCRIPTS[script_name(tokens[index])]
     for tokens in commands:
         if tokens[0] in BUILTINS or tokens[0] in aliases:
             continue

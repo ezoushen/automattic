@@ -2,7 +2,7 @@
 
 Choose the project's configured tracker under the runtime bootstrap's conventions.
 Use one board for an effort. A remote board never requires `.scratch/*/issues`,
-local ticket front matter, or `next-tickets.py`. Local reports, alignment and
+local ticket front matter, or `next_tickets.py`. Local reports, alignment and
 worker recovery notes are evidence, not a ticket mirror.
 
 ## Overall scope and batches
@@ -53,7 +53,7 @@ backlog. Reuse this completion condition if a native persistent goal was request
 ## Local Markdown board
 
 Only for projects using local tickets: run
-`python3 "<plugin_root>/scripts/next-tickets.py" --repo "<repo>" [slug]`
+`python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" [slug]`
 with `--max-live <runtime ceiling>` on scheduling calls. This board uses
 `.scratch/<slug>/issues/NN-<title>.md`. An omitted slug selects all local efforts;
 a supplied slug never widens. `TICKET_PRIORITY=a,b` orders efforts when requested.

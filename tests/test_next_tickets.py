@@ -13,8 +13,8 @@ import support
 os.environ.pop("TICKET_PRIORITY", None)
 os.environ.pop("MAX_LIVE", None)
 
-SCRIPT = support.script("next-tickets.py")
-nt = support.load_script("next-tickets.py", "next_tickets")
+SCRIPT = support.script("next_tickets.py")
+nt = support.load_script("next_tickets.py", "next_tickets")
 ready, can_verify, counts, report_problems, MAX_LIVE = (
     nt.ready, nt.can_verify, nt.counts, nt.report_problems, nt.MAX_LIVE)
 

@@ -2,15 +2,11 @@
 """Run an explicitly selected Bash executor with a structured assignment on stdin."""
 
 import argparse
-import importlib.util
 import json
 from pathlib import Path
 import subprocess
 
-
-spec = importlib.util.spec_from_file_location('agent_models', Path(__file__).with_name('agent-models.py'))
-models = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(models)
+import agent_models as models
 
 
 def run(execution, assignment):

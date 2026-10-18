@@ -109,7 +109,7 @@ class PrBodyHook(unittest.TestCase):
                         "python3 - pr.md <<'EOF'\nprint(1)\nEOF\ngh pr edit 3 --body-file pr.md"):
             with self.subTest(command=command):
                 self.assert_denied(command, 'literal')
-        self.assertIsNone(self.run_hook('python3 lint-pr-body.py pr.md && gh pr edit 3 --body-file pr.md'))
+        self.assertIsNone(self.run_hook('python3 lint_pr_body.py pr.md && gh pr edit 3 --body-file pr.md'))
 
     def test_unresolvable_body_file_is_denied(self):
         for command in ('S=/tmp/x; gh pr edit 12 --body-file $S/pr.md', 'gh pr edit 12 --body-file missing.md'):

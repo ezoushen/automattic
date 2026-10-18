@@ -95,7 +95,7 @@ class AgentModelHook(unittest.TestCase):
         launch = {'subagent_type': 'automattic-implementer-0123456789ab', 'prompt': 'role_file: /r.md'}
         decision = self.run_hook(launch)
         self.assertEqual(decision['permissionDecision'], 'deny')
-        for word in ('Monitor', 'SendMessage', 'TaskStop', 'agent-models.py'):
+        for word in ('Monitor', 'SendMessage', 'TaskStop', 'agent_models.py'):
             self.assertIn(word, decision['permissionDecisionReason'])
         self.assertIsNone(self.run_hook(dict(launch, subagent_type='automattic-implementer-ba9876543210')))
 

@@ -16,7 +16,7 @@ from jsonschema import Draft202012Validator
 import support
 
 
-models, bash = support.load_script('agent-models.py', 'agent-models'), support.load_script('bash-executor.py', 'bash-executor')
+models, bash = support.load_script('agent_models.py', 'agent_models'), support.load_script('bash_executor.py', 'bash_executor')
 
 
 def instance(kind='subagent', config=None, policy=None):
@@ -43,7 +43,7 @@ class Executors(unittest.TestCase):
             user = root / 'user.json'
             data = {'agents': {'spec-reviewer': instance()}, 'profiles': {'balanced': {}}}
             user.write_text(json.dumps(data))
-            cli = [sys.executable, '-B', str(models.ROOT / 'scripts/agent-models.py'), '--repo', str(root),
+            cli = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'), '--repo', str(root),
                    '--user-executors', str(user), '--user-config', str(root/'absent-models.json'),
                    '--harness', 'claude', '--role', 'spec-reviewer', '--config-profile', 'balanced']
             with patch.dict(os.environ, {'AUTOMATTIC_PROFILE': '', 'AUTOMATTIC_SESSION': '', 'HERDR_ENV': ''}):
@@ -197,7 +197,7 @@ class Executors(unittest.TestCase):
             fails(resolve)
             project.write_text('{}')
 
-            cli = [sys.executable, '-B', str(models.ROOT / 'scripts/agent-models.py'),
+            cli = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'),
                    '--repo', str(root), '--user-config', str(preferences), '--user-executors', str(user),
                    '--harness', 'claude', '--role', 'spec-reviewer', '--route']
             result = subprocess.run(cli + ['--route-choice', json.dumps(override), '--thinking', 'low'],
@@ -261,7 +261,7 @@ print(json.dumps({'assignment_id': 'wrong' if mode == 'mismatch' else assignment
             result_path, assignment_path = root / 'execution.json', root / 'assignment.json'
             result_path.write_text(json.dumps(execution()))
             assignment_path.write_text(json.dumps(assignment))
-            result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/bash-executor.py'),
+            result = subprocess.run([sys.executable, '-B', str(models.ROOT / 'scripts/bash_executor.py'),
                                      '--execution', str(result_path), '--assignment', str(assignment_path)],
                                     capture_output=True, text=True, check=True)
             assert json.loads(result.stdout)['assignment_id'] == 'review-1'

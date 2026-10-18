@@ -15,7 +15,7 @@ from unittest.mock import patch
 import support
 
 
-LIFECYCLE = support.script('worker-lifecycle.py')
+LIFECYCLE = support.script('worker_lifecycle.py')
 
 
 class Capacity(unittest.TestCase):
