@@ -29,13 +29,13 @@ def validate_execution_config(data, location):
     """Validate only bundled schemas; configuration never loads code or remote schemas."""
     if isinstance(data, dict) and ({'routes', 'executors'} & data.keys()):
         raise ValueError(f'{location}: legacy executor packages/routes require explicit migration '
-                         'to agents.<role>.executor.type/config; see harnesses/executors.md')
+                         'to agents.<role>.executor.type/config; see harnesses/setup/troubleshooting.md')
     if isinstance(data, dict) and isinstance(data.get('models'), dict):
         for name, definition in data['models'].items():
             if isinstance(definition, dict) and ({'model', 'executors'} & definition.keys()):
                 raise ValueError(f'{location}: models.{name} requires runtime bindings; move the model ID '
                                  f'to models.{name}.runtimes.<runtime>.id and launch routes to top-level runtimes; '
-                                 'see harnesses/selection.md')
+                                 'see harnesses/setup/catalog.md')
     if isinstance(data, dict):
         profiles = data.get('profiles', {})
         agents = data.get('agents', {})
@@ -46,7 +46,7 @@ def validate_execution_config(data, location):
         if isinstance(agents, dict) and any(isinstance(entry, dict) and 'candidates' in entry and 'default' in entry
                                            for entry in agents.values()):
             raise ValueError(f'{location}: migrate pool defaults to sparse routing profiles; '
-                             'agents define candidates only; see harnesses/selection.md')
+                             'agents define candidates only; see harnesses/setup/troubleshooting.md')
     validate_schema(data, location, 'executors.schema.json')
     calibration = data.get('decisions', {}).get('calibration')
     if calibration and Path(calibration['suite']).resolve() == Path(calibration['baseline']).resolve():
@@ -83,7 +83,7 @@ def validate_schema(data, location, name):
         from referencing import Registry, Resource
     except ImportError as error:
         raise ValueError('Executor configuration requires jsonschema. Use the plugin .venv/bin/python '
-                         'after installing requirements.txt; see harnesses/executors.md') from error
+                         'after installing requirements.txt; see harnesses/setup/executors.md') from error
     schema_root = ROOT / 'schemas'
     registry = Registry().with_resources(
         (path.as_uri(), Resource.from_contents(json.loads(path.read_text())))

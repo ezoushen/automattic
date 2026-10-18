@@ -1,0 +1,39 @@
+# Retire a worker
+
+For Herdr, `collect` with `disposition.kind: retire` closes the registered
+conversation's pane after final use. An already collected result uses `retire
+--state ... --attempt ... --input /absolute/retire.json`, with `session`, `pane`
+and `jobs_evidence`. The helper checks ownership, intact collected report,
+acknowledged receipts, stopped waits, native runtime/conversation identity and
+idle/done state before closing. The registered `worker` must be the returned pane
+ID, unique agent name, or explicit `session/pane/name` handle; use the latter for
+retained cross-session records. The inherited caller pane is excluded and, when caller context is present,
+`pane current --current` resolves moved caller IDs in the explicit session. A
+missing caller in that session is allowed; other resolution errors fail closed.
+Outside a pane, the host must verify that the target is its owned worker. Job reconciliation and
+creation ownership are still host-verified assertions; the helper cannot inspect
+all native worker jobs or authenticate ownership claims.
+
+Closure is recorded only after `pane get` returns the native `pane_not_found`
+error. A transport error or replaced conversation never counts as closure. If a
+pane disappeared before any retirement intent, the host must inspect its native
+closure and reconcile owned jobs, then use the evidence-backed `record closed`
+path; absence alone does not establish ownership or safe cleanup. A
+retirement intent survives interruption: retry the original target after its
+monitor is gone, and confirm absence without closing another pane or duplicating
+the result. Native pane IDs are not reused. Retirement closes the shared native
+conversation for all its historical attempts; `status` includes `native_closed_by`
+on each historical attempt to identify that final attempt. Earlier retained
+attempts no longer reserve its live handle,
+but the retired conversation cannot be registered again; later work starts with
+a fresh native session and a compact handoff. Only the final registered attempt may
+retire a conversation, after all its attempts have intact results, consumed receipts
+and stopped waits. A retirement intent blocks registration of a continuation;
+work gates reject the retired conversation across its history. Retain incomplete/active/blocked
+workers with their concrete next use or capability limitation. For other native
+transports, close through the installed lifecycle tool, confirm closure, then
+record `closed` with native evidence. The helper requires a
+collected intact report and acknowledged receipts. Retain only a stated next use
+or a concrete runtime/ownership limitation, with `retain`, `reason`, `next_use` and
+evidence. An unsupported close operation leaves capacity unavailable until the
+runtime confirms release. Existing user panes stay with their owner.

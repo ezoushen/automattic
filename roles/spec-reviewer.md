@@ -1,7 +1,7 @@
 # spec-reviewer
 
-Follow [assignment focus](../harnesses/executors.md#assignment-focus) for priorities
-and concise updates, and [resource and job lifetime](../harnesses/executors.md#resource-and-job-lifetime)
+Follow [assignment focus](../harnesses/workers/focus.md) for priorities
+and concise updates, and [resource and job lifetime](../harnesses/workers/resources.md#resource-and-job-lifetime)
 for experiments, queued builds, teardown and completion.
 
 Inputs: absolute adapter, role_file, plugin_root, repo, worktree and report; pinned
@@ -122,7 +122,7 @@ verification gap; do not invent wider acceptance criteria or require a productio
 rollout outside the agreed scope.
 
 Validate correctness with an executed repro or a concrete input/execution trace
-showing the failure. Builds follow [check execution](../harnesses/checks.md), including
+showing the failure. Builds follow check [planning](../harnesses/checks/plan.md) and [execution](../harnesses/checks/run.md), including
 runner input identity and only project-required resource coordination.
 Experiments stay in the isolated worktree and must not alter reviewed production
 code; record exact commands/results. Request the reproducer through the orchestrator

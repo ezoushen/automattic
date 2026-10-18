@@ -4,9 +4,9 @@ Select with `harness=opencode`; there is no Automattic OpenCode bootstrap extens
 Load shared skills through OpenCode's native skill discovery and preserve their
 explicit invocation policy. Resolve dependencies from the active catalog.
 
-Resolve [executors](../executors.md) first. A configured external executor, such as
+Resolve [executors](../workers/launch.md) first. A configured external executor, such as
 the Herdr skill, owns invocation and collection through its own adapter. Apply
-[pool recovery](../selection.md#feedback-and-recovery) for availability failures.
+[pool recovery](../routing/recovery.md#feedback-and-recovery) for availability failures.
 The native settings procedure below does not implement that external lifecycle.
 
 For model management, use only the settings returned by executor resolution.

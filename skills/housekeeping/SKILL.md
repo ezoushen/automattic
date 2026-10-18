@@ -33,7 +33,7 @@ Preserve reports and the logs/screenshots they cite, unresolved failure evidence
 follow-ups and interruption/resume state. `.scratch/` is often working evidence,
 not a directory to empty. Remove experimental edits surgically without restoring
 over someone else's changes.
-Apply [evidence retention](../../harnesses/checks.md#retain-evidence) to deletion by
+Apply [evidence retention](../../harnesses/checks/run.md#retain-evidence) to deletion by
 size/type and outside worktrees too; verify proof and downstream references before
 removing recordings or traces. Derived summaries may have narrower audit value.
 
@@ -52,7 +52,7 @@ complete or explicitly excluded, and no assignment, queued command or owned job
 still needs the checkout. Integration and a clean Git status are insufficient:
 ignored build directories can contain the only acceptance evidence.
 
-Follow [evidence retention](../../harnesses/checks.md#retain-evidence) before removal.
+Follow [evidence retention](../../harnesses/checks/run.md#retain-evidence) before removal.
 Verify the retained copies and report links from outside the retiring checkout.
 Missing evidence or uncertain ownership keeps it available for recovery. Use the
 host's managed worktree retirement tool when provided; otherwise remove the exact

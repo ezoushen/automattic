@@ -216,6 +216,66 @@ class CrossHarness(unittest.TestCase):
             for script in re.findall(r'scripts/([A-Za-z0-9_.-]+\.(?:py|sh))\b', path.read_text()):
                 assert (PLUGIN / 'scripts' / script).is_file(), (name, script)
 
+    def test_shared_docs_fit_one_read_and_every_link_resolves(self):
+        # Agents read a linked doc whole, with no way to jump to an anchor. Codex cuts
+        # the middle out of a tool output over its token limit (8k tokens here, 10k by
+        # default) and Claude Code moves a shell output over about 30 KB to a file, so
+        # each shared doc stays small enough for one read.
+        import re
+
+        def outline(path):
+            """Anchors (GitHub style, duplicates numbered) and level-2 sections outside code fences."""
+            slugs, sections, seen, fenced = [], [], {}, False
+            for line in path.read_text().splitlines():
+                if line.startswith('```'):
+                    fenced = not fenced
+                elif not fenced and (match := re.match(r'(#{1,6}) (.+)', line)):
+                    slug = re.sub(r'[^\w\- ]', '', match.group(2).lower()).replace(' ', '-')
+                    slugs.append(slug if slug not in seen else f'{slug}-{seen[slug]}')
+                    seen[slug] = seen.get(slug, 0) + 1
+                    if match.group(1) == '##':
+                        sections.append((match.group(2), slugs[-1]))
+            return slugs, sections
+
+        for path in (PLUGIN / 'harnesses').rglob('*.md'):
+            text = path.read_text()
+            assert len(text.encode()) <= 12 * 1024, f'{path.relative_to(PLUGIN)}: over 12 KiB; split it by reader'
+            lines = text.splitlines()
+            _, sections = outline(path)
+            if len(lines) > 100 and len(sections) >= 3:
+                assert 'Contents:' in lines[:30], f'{path.relative_to(PLUGIN)}: a long doc starts with its contents'
+                start = lines.index('Contents:') + 1
+                listed = []
+                for line in lines[start:]:
+                    if not (match := re.match(r'- \[(.+)\]\(#([^)]+)\)$', line)):
+                        break
+                    listed.append(match.groups())
+                assert listed == sections, (str(path.relative_to(PLUGIN)), listed, sections)
+        documents = [PLUGIN / 'README.md'] + [path for folder in ('skills', 'harnesses', 'roles', 'addons', 'docs')
+                                              for path in (PLUGIN / folder).rglob('*.md')]
+        reached = set()
+        for path in documents:
+            for link in re.findall(r'\]\(([^)\s]+)\)', path.read_text()):
+                if '://' in link or '<' in link or link.startswith('mailto:'):
+                    continue
+                target, _, anchor = link.partition('#')
+                target = (path.parent / target).resolve() if target else path.resolve()
+                assert target.exists(), (str(path.relative_to(PLUGIN)), link)
+                if target != path.resolve():
+                    reached.add(target)
+                if anchor and target.suffix == '.md':
+                    assert anchor in outline(target)[0], (str(path.relative_to(PLUGIN)), link)
+        tracked = run('git', '-C', str(PLUGIN), 'ls-files', '-z').stdout.split('\0')
+        for name in filter(None, tracked):
+            if Path(name).suffix in {'.py', '.sh', '.mjs', '.ts', '.json'} and (PLUGIN / name).is_file():
+                for doc in re.findall(r'harnesses/[\w/-]+\.md', (PLUGIN / name).read_text()):
+                    assert (PLUGIN / doc).is_file(), (name, doc)
+                    reached.add((PLUGIN / doc).resolve())
+        for path in (PLUGIN / 'harnesses').rglob('*.md'):
+            if path.name == 'adapter.md':
+                continue  # The startup hook names the active host's adapter.
+            assert path.resolve() in reached, f'{path.relative_to(PLUGIN)}: no doc links it, so no agent reaches it'
+
     def test_remediate_skill_and_its_kinds(self):
         import re
         path = PLUGIN / 'skills/remediate/SKILL.md'
@@ -265,7 +325,7 @@ class CrossHarness(unittest.TestCase):
         assert 'a generated or default value is not an observation' in proof, proof
         assert '`unknown` only when the code does not settle it' in proof, proof
         assert 'A flag you would dismiss is disputed: the reproducer decides it' in proof, proof
-        routing = ' '.join((PLUGIN / 'harnesses/decisions.md').read_text().split())
+        routing = ' '.join((PLUGIN / 'harnesses/decisions/test-shape.md').read_text().split())
         assert 'A flagged test is not resubmitted' in routing, routing
         skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
         detect = ' '.join(re.search(r'^1\. \*\*Detect read-only\.\*\*(.+?)^2\. ', skill, re.M | re.S).group(1).split())

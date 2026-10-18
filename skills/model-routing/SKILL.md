@@ -8,10 +8,10 @@ argument-hint: "[assignment and eligible worker choices]"
 
 Read the [runtime bootstrap](../../harnesses/README.md) and active host adapter.
 Choose in the host's existing context. This skill returns a decision; the existing
-executor handles dispatch. Use [selection](../../harnesses/selection.md#choose-for-an-assignment)
+executor handles dispatch. Use [selection](../../harnesses/routing/choose.md)
 for resolver arguments, profile overrides and recovery.
 When the configured router is `decision-model`, use its compact assignment input
-as described in [System One routing](../../harnesses/selection.md#decision-model-router).
+as described in [System One routing](../../harnesses/routing/decision-model.md).
 Supply `--assignment`, `--journal` and `--assignment-id` together for a live backend
 choice, plus `--after-failure "<evidence>"` when retrying after a failed attempt. A missing-input or invalid-JSON error is a call/configuration problem to
 correct, not evidence that the backend is unavailable. Host `--selection` is not
@@ -45,10 +45,10 @@ human approval gate. Return `candidate: null` only when no permitted worker fits
 
 Select one owner for the bounded assignment. The worker completes it directly;
 the orchestrator owns splitting, independent review and replacement. Reuse the
-choice through ordinary resumes. At [escalation checkpoints](../../harnesses/selection.md#escalation-checkpoints),
+choice through ordinary resumes. At [escalation checkpoints](../../harnesses/routing/recovery.md#escalation-checkpoints),
 judge whether new evidence warrants retaining, adjusting or replacing it.
 Announce initial choices and reconsiderations through the
-[decision report](../../harnesses/selection.md#report-routing-decisions), naming
+[decision report](../../harnesses/routing/report.md), naming
 the proposer, orchestrator, method and evidence.
 
 After a router failure or abstention, preserve the failure and exclusions in the decision

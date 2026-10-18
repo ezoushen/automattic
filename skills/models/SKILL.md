@@ -9,7 +9,7 @@ argument-hint: "[request|show|set|reset] [role|router|decisions|profile|model-de
 
 Read [runtime bootstrap](../../harnesses/README.md) and the active host adapter.
 Handle the user's direct inspection, change or reset with the
-[shared configuration procedure](../../harnesses/configuration.md). It owns the
+[shared configuration procedure](../../harnesses/setup/procedure.md). It owns the
 current shape, legacy command compatibility, scope precedence and validation.
 No arguments means read-only inspection; a one-run choice is not a saved default.
 

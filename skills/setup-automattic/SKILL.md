@@ -13,7 +13,7 @@ no request to change settings, stay read-only. A scope flag focuses the discussi
 it does not itself authorize edits. No board, new session or configuration file is
 required to have this conversation.
 
-Use the [shared configuration procedure](../../harnesses/configuration.md) for
+Use the [shared configuration procedure](../../harnesses/setup/procedure.md) for
 inspection and any requested changes. Read only the relevant referenced branches.
 It is the same procedure used by models; do not invoke the explicit-only models
 skill or require the user to type a second command. This adds a guided entry point,
@@ -43,7 +43,7 @@ before field names, using one representative role from the actual configuration:
 - **Which workflow decisions are delegated:** enabled decision families and their
   calibration evidence. Worker selection and recovery are separate opt-ins; showing
   a backend or profile does not activate it.
-- **How decisions are checked:** the [decision journal](../../harnesses/decision-retro.md)
+- **How decisions are checked:** the [decision journal](../../harnesses/decisions/journal.md)
   links recommendations, host choices, observed worker settings and outcomes. Explain
   missing evidence and calibration warnings; inspection does not run a replay.
 

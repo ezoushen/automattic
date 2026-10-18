@@ -12,7 +12,7 @@ The workflow protocol stays in the plugin.
 Record required commands and their applicability. Run them directly unless the
 project establishes an exclusive shared resource. Identify the actual resource,
 conflicting commands and existing owner/coordination under
-[check execution](../../harnesses/checks.md#coordinate-the-actual-resource).
+[check execution](../../harnesses/checks/plan.md#coordinate-the-actual-resource).
 Machine load uses the shared concurrency budget, not a blanket build mutex.
 
 For an optional local `build-lock.sh` convention, verify its `BUILD_LOCK` resource
@@ -22,7 +22,7 @@ ownership. Resolve the installed plugin path; do not copy the wrapper.
 For remote execution, name and load the runner's current skill/contract. Point to
 it for snapshot transport, inputs, wait/cancel and resource scheduling rather than
 copying internals into alignment. Do not wrap a remote queue in a local mutex.
-Use the [check runner](../../harnesses/checks.md#run-a-bounded-check) only when the
+Use the [check runner](../../harnesses/checks/run.md#run-a-bounded-check) only when the
 existing runner lacks the required deadline and retained-output behavior.
 
 ## Hot files and areas
@@ -42,7 +42,7 @@ the runner's supported invocation or transfer. Name the corpus a
 Distinguish pre-PR verification from operator-only pilots, production rollouts and
 post-merge checks, including which are actual prerequisites for the selected scope.
 Identify the owner of each implementation/runtime check and valid reuse at later
-handoffs under [worker return and checkpoints](../../harnesses/executors.md#worker-return-and-checkpoints).
+handoffs under [worker return and checkpoints](../../harnesses/workers/focus.md#worker-return-and-checkpoints).
 For live operations, name the authoritative target inventory, required execution
 identity/configuration, reservations and permitted operator. State how to verify
 post-state and restore the prior configuration. Use an idle representative target
@@ -69,7 +69,7 @@ fields or value-presence flags from configuration; keep credentials out of outpu
 ## Run evidence
 
 Keep timings, findings and execution snapshots in existing run reports or journals.
-Use the [retention contract](../../harnesses/checks.md#retain-evidence) for files those
+Use the [retention contract](../../harnesses/checks/run.md#retain-evidence) for files those
 reports cite; a report in the main checkout does not preserve worktree-local logs.
 Maintained project instructions contain only current commands, constraints and
 reusable conventions; they are not a running retrospective.

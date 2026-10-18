@@ -1,5 +1,10 @@
 # Runtime bootstrap
 
+Contents:
+- [Long sessions](#long-sessions)
+- [Explicit phase composition](#explicit-phase-composition)
+- [Project conventions](#project-conventions)
+
 The registered Claude/Codex SessionStart hook or Pi bootstrap extension supplies
 `Automattic harness: claude|codex|pi`, the absolute plugin root, and the active
 adapter path. Read **only that host adapter** once
@@ -14,6 +19,15 @@ plugin root before workers start. Consume this selection before forwarding phase
 arguments to command-line helpers. The bootstrap supplies context (Pi's also applies the
 worker lifecycle's yield gate when a run settles); explicit
 harness selection is also sufficient. Native permissions still apply.
+
+Shared docs are grouped by reader, each folder with a README that lists its files:
+[workers](workers/README.md) (launch, wait for, collect and retire workers),
+[routing](routing/README.md) (choose and report worker models),
+[decisions](decisions/README.md) (decision checkpoints and journals),
+[checks](checks/README.md) (plan and run checks), [setup](setup/README.md)
+(configuration format and procedure) and `executors/` (one guide per executor type).
+A link names the file to read; read it whole. Each doc in these folders fits one read, and
+a `#anchor` names a section inside it.
 
 Notation such as `/automattic:refine` and `/mattpocock-skills:tdd` identifies a
 skill, not a shell command. Use the active adapter's invocation mechanism. Shared
@@ -32,7 +46,7 @@ No script is copied to a
 project. `plugin_root`, `repo`, `adapter`, and `role_file` in worker messages are
 absolute paths, not assumed shell variables.
 
-Orchestrators and workers follow shared [assignment focus](executors.md#assignment-focus)
+Orchestrators and workers follow shared [assignment focus](workers/focus.md)
 for priority, scope and concise updates.
 
 Before mandate/alignment questions, read the shared
@@ -41,13 +55,13 @@ user asks to "grill" the current plan. It owns question depth and continuation;
 the dependency's exhaustive interview requires an explicit request for that depth.
 
 Before each direct worker assignment, the orchestrator resolves
-[optional executors](executors.md). Unconfigured native dispatch retains its existing
+[optional executors](workers/launch.md). Unconfigured native dispatch retains its existing
 preferences. Configured execution applies the resolved settings once to one worker.
-Pools use a routing skill, a System One decision model or a sparse profile under [selection](selection.md).
+Pools use a routing skill, a System One decision model or a sparse profile under [selection](routing/choose.md).
 `selection_required` is an internal request for a decision, not executable settings.
 Use the named `selection_router` and submit the result before dispatch.
-Announce the [routing decision and attribution](selection.md#report-routing-decisions).
-Worker blockers and review/check failures invoke [escalation checkpoints](selection.md#escalation-checkpoints)
+Announce the [routing decision and attribution](routing/report.md).
+Worker blockers and review/check failures invoke [escalation checkpoints](routing/recovery.md#escalation-checkpoints)
 before the next attempt; ordinary resumes reuse the saved choice.
 
 Include workers launched by dependency skills during planning/research in the same
@@ -58,7 +72,7 @@ execution evidence instead of treating a hard-coded model as a routed choice.
 
 Before the first phase checkpoint, inspect effective `decisions.enabled` using
 offline status for this repo/session and retain it until configuration changes.
-When any family is enabled, run the [configured checkpoint command](decisions.md#configured-checkpoint-command)
+When any family is enabled, run the [configured checkpoint command](decisions/checkpoint.md#configured-checkpoint-command)
 at each reached phase's named boundary and check its expected phase record before
 handoff. Include an evidence-backed skip when no consultation is needed. With no
 enabled families, retain the ordinary host flow without a journal or phase checks.
@@ -75,13 +89,13 @@ When `HERDR_ENV=1`, also read [Herdr environment guidance](herdr.md) before
 cross-runtime dispatch, even when no startup hook supplied it. Carry root-session
 identity and canonical repo to assignments; retain their resolved settings on resume.
 Workers own their bounded task; further scoping and delegation belong to the
-orchestrator under [job lifetime](executors.md#resource-and-job-lifetime).
+orchestrator under [job lifetime](workers/resources.md#resource-and-job-lifetime).
 Agent-chosen thinking changes require the selected agent's allowed set or legacy
 opt-in and the
-[automatic adjustment path](executors.md#automatic-thinking-adjustments); explicit
+[automatic adjustment path](workers/thinking.md); explicit
 user override flags are not a substitute for that permission.
 `/automattic:setup-automattic` guides configuration and `/automattic:models` handles direct
-settings requests. Both use the [configuration procedure](configuration.md) only
+settings requests. Both use the [configuration procedure](setup/procedure.md) only
 for user-requested changes; workflow execution reads
 configuration without invoking either explicit-only skill.
 

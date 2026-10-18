@@ -66,7 +66,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    When that result can make later work unnecessary, give the later work a blocking
    edge and retain it as deferred scope until the result is accepted.
    Before adopting the split/grouping, run the configured
-   [`refinement` checkpoint](../../harnesses/decisions.md#configured-checkpoint-command)
+   [`refinement` checkpoint](../../harnesses/decisions/checkpoint.md#configured-checkpoint-command)
    with viable cuts and their evidence, or an evidenced skip for settled cuts.
    Check this phase record before declaring the breakdown ready.
 3. **Draw the edges.** Preserve native blocking relationships and issue IDs in a
@@ -107,7 +107,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    or stop condition. Derive workload conversions from the actual inputs and runner.
    For runner deliverables, state whether the ticket delivers a scaffold or the
    complete downstream procedure. List the promised stages and use the shared
-   [runner contract checks](../../harnesses/executors.md#runner-contract-checks).
+   [runner contract checks](../../harnesses/workers/resources.md#runner-contract-checks).
 5. **Execution inputs.** Determine areas, devices and workload from the project
    conventions; pass them with the issue context to dispatch. Do not require new
    tracker fields or labels. For local Markdown, encode them as front matter:

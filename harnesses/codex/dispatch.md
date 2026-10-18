@@ -1,6 +1,6 @@
 # Codex dispatch runtime
 
-Resolve [executors](../executors.md) first. Default to native children, not sidebar
+Resolve [executors](../workers/launch.md) first. Default to native children, not sidebar
 tasks. An explicitly selected external executor owns its launch/lifecycle and
 settings; the native operations below apply only to `executor: native`. Complete
 the shared dispatch preflight: active adapter, native tools, permissions and
@@ -49,12 +49,12 @@ slot when its limit includes the parent. For the local Markdown board, pass that
 ceiling as `--max-live` on every scheduler call. Apply it to native tracker dispatch
 too; admit only free slots, counting reviewers/reproducers/E2E. Idle or interrupted
 agents may still occupy slots. Interruption ends a turn; reconcile owned jobs under
-[job lifetime](../executors.md#resource-and-job-lifetime). Release capacity only after
+[job lifetime](../workers/resources.md#resource-and-job-lifetime). Release capacity only after
 their teardown and a supported close operation with confirmed status. When closing
 is unavailable, `followup_task` may continue only a collected, explicitly retained
 same-assignment repair/recheck with matching role, settings and permissions.
 A new ticket or role needs a fresh native conversation under
-[worker attempts and collection](../worker-lifecycle.md). If the runtime cannot
+[worker attempts](../workers/prepare.md). If the runtime cannot
 provide that context or release capacity, queue work and report the limitation.
 Workers complete their assigned scope directly; additional decomposition returns
 to the orchestrator.

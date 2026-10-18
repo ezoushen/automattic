@@ -32,10 +32,10 @@ It is optional; direct review starts assessment without this learning step.
 Configuration is optional and separate from the delivery phases. Use
 [/automattic:setup-automattic](../setup-automattic/SKILL.md) to understand the current setup and update it
 at user, project or session scope. Use `/automattic:models` for direct settings requests;
-see [configuration examples](../../harnesses/executors.md). Existing native behavior
+see [configuration examples](../../harnesses/setup/executors.md). Existing native behavior
 continues without configuration. Setup does not start workers or change review gates.
 
-Optional [workflow decisions](../../harnesses/decisions.md) use a shared backend only
+Optional [workflow decisions](../../harnesses/decisions/phases.md) use a shared backend only
 at explicitly enabled checkpoints. Worker selection chooses within the allowed pool;
 recovery considers the cause before rerouting. The host accepts or overrides each
 recommendation, reports its source and surfaces calibration warnings. Existing

@@ -60,7 +60,7 @@ class YieldGateHook(unittest.TestCase):
         self.assertEqual(decision['decision'], 'block')
         self.assertIn('ticket-1/1: no armed wait', decision['reason'])
         self.assertIn(str(self.state), decision['reason'])
-        self.assertIn('worker-lifecycle.md', decision['reason'])
+        self.assertIn('workers/wait.md', decision['reason'])
         # A stop that a stop hook already continued is let through, so a gap the host cannot fix never loops.
         self.assertIsNone(self.stop(active=True))
         self.assertIsNone(self.stop(env={'AUTOMATTIC_YIELD_HOOK': 'off'}))

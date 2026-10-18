@@ -60,7 +60,7 @@ principles quoted in the Mandate section. A ruling that judges only API coherenc
 has not checked those principles. Report each deviation as a material fork.
 
 Before selecting an approach or the next investigation, run the configured
-[`alignment` checkpoint](../../harnesses/decisions.md#configured-checkpoint-command)
+[`alignment` checkpoint](../../harnesses/decisions/checkpoint.md#configured-checkpoint-command)
 with concrete alternatives and evidence. Preserve accepted choices; record an
 evidenced skip when the approach is already settled. Check this phase record
 before declaring alignment ready.

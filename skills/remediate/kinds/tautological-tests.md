@@ -26,7 +26,7 @@ that looks fine at a glance is where hollow checks hide.
 
 1. **Checklist.** State the claim in one sentence, then record every assertion,
    including those made inside helpers the test calls, with the fields of the
-   [checklist contract](../../../harnesses/decisions.md#test-effectiveness-routing):
+   [checklist contract](../../../harnesses/decisions/test-shape.md):
    where its expected value comes from, whether it can run, whether an expected
    failure (any rejection, including a refused or degraded state) is checked by its
    reason or only by code or type, how strictly it compares, and what it would see
@@ -42,7 +42,7 @@ that looks fine at a glance is where hollow checks hide.
    (a test you already suspect is re-read whatever the route), `flagged` names a
    shape, and `escalate` (low confidence, orders disagree, or the model is disabled)
    gets one more round with the context it lacked, as the
-   [routing contract](../../../harnesses/decisions.md#test-effectiveness-routing)
+   [routing contract](../../../harnesses/decisions/test-shape.md)
    describes. When nothing new can be collected or round 2 escalates, decide by
    reading the cited lines.
 3. **Trace a masked rule.** For each expected failure on the `trace` route, find the

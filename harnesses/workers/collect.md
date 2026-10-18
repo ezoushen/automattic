@@ -1,0 +1,91 @@
+# Collect and accept a result
+
+## Collect a result
+
+Collect the actual assignment with `result`: `status` (`completed`, `blocked`,
+`failed` or `cancelled`), checked `head`, an existing absolute retained `report`,
+and verification `evidence`. A wait receipt is not an assignment result. Record
+completion only after the normal scope and acceptance checks. The helper retains
+the report digest and requires the checked revision at `gate --stage accept
+--revision ...`; a missing or changed report fails that gate. Keep collected reports
+immutable; snapshot a canonical report before its next authorized append. Later
+attempts retain their own report snapshots. Other evidence links and live runtime
+gates remain under the shared acceptance contract.
+
+For a checked result, use `collect --state ... --attempt ... --input
+/absolute/result.json` after native inspection and wait reconciliation. The input
+contains `status`, checked `head`, existing immutable `report`, verification
+`evidence`, and a required `disposition`:
+
+```json
+{
+  "status": "completed", "head": "checked-revision",
+  "report": "/absolute/retained-report.md", "evidence": ["native-result-and-checks"],
+  "disposition": {
+    "kind": "retire", "session": "explicit-owned-herdr-session", "pane": "returned-pane-id",
+    "jobs_evidence": ["owned-jobs-and-waits-reconciled"],
+    "acceptance": {"decision": "deferred", "reason": "acceptance checks not run yet"}
+  }
+}
+```
+
+For a completed implementer, `acceptance` goes inside `disposition` (see acceptance
+below); other roles omit it.
+
+Collection persists the report and its digest, acknowledges only that attempt's
+wait/result receipts, then performs the chosen disposition. A completed collection
+straight after a settled, triaged wake records that wake's `done` label. To retain context,
+use `disposition` with `kind: retain`, `reason`, `next_use` and `evidence`.
+Retention may preserve a pending design-hold receipt; it does not acknowledge the
+escalation, permit reuse, clear the hold or authorize dependent work. Mismatch and
+hold receipts need explicit acknowledgement after the coordinator consumes them.
+If retirement fails, the intact result stays collected. Resume with the same
+status/head/report and valid disposition; do not overwrite the report or resubmit
+productive work. Receipt acknowledgement survives restarts without deleting logs
+or history. Other native transports use the recorded result/disposition protocol
+and their supported native closure interface; record unsupported closure explicitly.
+
+Acknowledge other consumed receipts with `ack --event-id ...`. Acknowledging
+an error does not fix its settings mismatch or resolve its design hold. Continue the
+board transition and review handoff once their prerequisites pass; monitoring alone
+does not dispatch the next phase.
+
+## Accept and record outcomes
+
+When the orchestrator accepts a completed result and integrates it, record
+`accepted` on that attempt with the integrated `commit` and evidence. It is allowed
+after the worker's session closed, once per attempt. Acceptance is the
+orchestrator's judgement, not the worker's `completed` claim; the
+[effort spend report](../../docs/effort-spend.md) counts accepted tickets from it.
+
+Closing or retiring a completed implementer attempt that is neither accepted nor
+declined settles it: the `closed` record, the `retire` input and the `collect`
+retire `disposition` each carry `"acceptance": {"decision": "accepted", "commit":
+"...", "evidence": ["..."]}` (nonempty evidence) once integrated, `{"decision":
+"declined", "reason": "..."}` when its criteria are unmet, or `{"decision":
+"deferred", "reason": "..."}` when acceptance checks are still to run, which is
+usual when retiring at collection. A missing decision is refused before the pane
+closes. A deferred attempt asks for `record acceptance or decline` in `status` until
+`accepted` or `declined` (with `reason` and evidence) is recorded; both are allowed
+after the session closed, and each excludes the other.
+
+Each collected attempt's outcome (result, acceptance or decline, reverts) also goes
+to a machine-wide ledger, `$XDG_STATE_HOME/automattic/outcomes.sqlite`, with its
+candidate and role, whatever routed it. `scripts/outcomes.py summary` counts
+successes, failures and pending attempts per role and candidate: an implementer
+succeeds when accepted, other roles when completed; a decline, revert or failed
+result fails, and a blocked result, which waits on something outside the worker,
+counts neither way. `outcomes.py import <decisions.jsonl | workers.sqlite>...` adds
+past decision journals and lifecycle state files once. A lifecycle attempt replaces
+the journal copy of its routing decision, whichever is imported first, and a
+journal's `succeeded` counts as accepted only when the host recorded it. A journal
+cannot tell a blocked result from a failed one, so prefer the state file;
+re-importing a state file refreshes its rows. Sources it cannot read are listed under `errors` with exit 1;
+the others are still imported. A failed ledger write is reported as `ledger` and never blocks the record.
+
+Later evidence about collected work goes back to its attempt:
+`attribute --state ... --attempt <collected attempt> --kind review-defect|revert|owner-defect
+[--count <n>] --evidence <reference>` for a confirmed review finding, a reverted
+integration or a defect the user found. Registering a repair with `repairs`
+attributes its `repair-round`. Each signal updates the routed outcome, so later
+routing sees it.

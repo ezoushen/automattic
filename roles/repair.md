@@ -1,7 +1,7 @@
 # repair
 
-Follow [assignment focus](../harnesses/executors.md#assignment-focus) for priorities
-and concise updates, and [resource and job lifetime](../harnesses/executors.md#resource-and-job-lifetime)
+Follow [assignment focus](../harnesses/workers/focus.md) for priorities
+and concise updates, and [resource and job lifetime](../harnesses/workers/resources.md#resource-and-job-lifetime)
 for experiments, queued builds, teardown and completion.
 
 Before repairs, read [code-comments](../skills/code-comments/SKILL.md) once and
@@ -34,7 +34,7 @@ behavioral defect's original repro red, apply the smallest repairs and show thos
 repros green. Run the checks the assignment tiers for you once for the completed
 batch: affected suites, and the full gate only when the assignment names you for it;
 repeat only checks invalidated by subsequent changes. Follow
-[check execution](../harnesses/checks.md) for snapshot proof, execution output and
+check [planning](../harnesses/checks/plan.md) and [execution](../harnesses/checks/run.md) for snapshot proof, execution output and
 project-required resource coordination; do not commit temporary probes just for identity.
 
 Commit scoped review repairs on the assigned local branch. For an implementation
