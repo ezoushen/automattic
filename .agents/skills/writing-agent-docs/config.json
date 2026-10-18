@@ -57,13 +57,6 @@
   ],
   "max_bytes": 12288,
   "description_budget": 4000,
-  "debt": {
-    "skills/pipeline/SKILL.md": {
-      "contents": true
-    },
-    "standards/pr.md": {
-      "contents": true
-    }
-  },
+  "debt": {},
   "architecture": "architecture.json"
 }

@@ -6,6 +6,15 @@ disable-model-invocation: true
 
 # pipeline
 
+Contents:
+- [Guides and configuration](#guides-and-configuration)
+- [The outer loop](#the-outer-loop)
+- [Failure modes and where the loop catches them](#failure-modes-and-where-the-loop-catches-them)
+- [Re-entry](#re-entry)
+- [Matt Pocock's skills underneath](#matt-pococks-skills-underneath)
+- [Left to the human](#left-to-the-human)
+- [Delivery composition](#delivery-composition)
+
 First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 
 The automattic plugin: six phase skills, one artefact directory `.scratch/<slug>/`, one principle: the
@@ -23,6 +32,8 @@ alternatives — the principal can veto. All three planning skills append to one
 | Execution | `/automattic:dispatch` | scheduling on `blocked_by`, capacity and area locks; worktrees and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` | implementation status and review report |
 | Review | `/automattic:review` | direction → blast radius → implementation, complete layer batches, scoped invalidation, reproduction, optional autofix with applicable E2E, local comment drafts and follow-ups | review and verification report | reviewed commit, gate outcomes and unresolved findings |
 | Delivery | `/automattic:pr` (optional) | the description assembled from the artefacts above | `pr.md`, the PR | a URL |
+
+## Guides and configuration
 
 For a change you want to understand before assessing it, use
 [/automattic:walkthrough](../../flows/review/guided.md). It teaches and discusses the PR,

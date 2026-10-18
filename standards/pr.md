@@ -1,5 +1,15 @@
 # Writing and refreshing a PR description
 
+Contents:
+- [Structure](#structure)
+- [Title](#title)
+- [Numbers](#numbers)
+- [Leave out](#leave-out)
+- [Diagrams](#diagrams)
+- [Length](#length)
+- [Refreshing an existing PR](#refreshing-an-existing-pr)
+- [Self-check before every publish](#self-check-before-every-publish)
+
 Read this before writing a PR description and before every later edit or push to a
 PR branch, whether or not `/automattic:pr` was invoked. It applies to free-text
 requests such as "update the PR description".

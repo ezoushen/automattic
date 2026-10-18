@@ -235,9 +235,7 @@
  "debt": {
   "links": [],
   "cycles": [],
-  "first_read": {
-   "skills/pipeline/SKILL.md": 39818
-  },
+  "first_read": {},
   "imports": [],
   "import_cycles": []
  },
