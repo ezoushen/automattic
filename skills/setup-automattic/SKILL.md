@@ -13,7 +13,7 @@ no request to change settings, stay read-only. A scope flag focuses the discussi
 it does not itself authorize edits. No board, new session or configuration file is
 required to have this conversation.
 
-Use the [shared configuration procedure](../../harnesses/setup/procedure.md) for
+Use the [shared configuration procedure](../../flows/setup/procedure.md) for
 inspection and any requested changes. Read only the relevant referenced branches.
 It is the same procedure used by models; do not invoke the explicit-only models
 skill or require the user to type a second command. This adds a guided entry point,
@@ -58,7 +58,7 @@ Keep the explanation in chat before asking for a decision.
 
 Follow the user's question rather than a questionnaire over every field. Recommend
 the next useful topic with its tradeoff, leave room for questions, and apply the
-[question filter](../mandate/SKILL.md#filter-questions) to material unresolved choices.
+[question filter](../../flows/planning/question-filter.md) to material unresolved choices.
 Discover facts from configuration and installed contracts yourself. Reuse stated
 preferences; a fully specified change can proceed without a mandatory tour.
 

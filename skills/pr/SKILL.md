@@ -18,20 +18,7 @@ that artefact in the report or ledger, and inline the figure in the PR body.
 
 ## Repository approval path
 
-Read the project's current branch requirements, PR author identity and established
-approval convention before publication. Record the requirements and known path
-in the existing delivery report: an eligible independent reviewer, an already configured bot/App
-author, or existing explicit user authorization for an administrative merge when
-the repository permits it. An author cannot satisfy their own independent-review
-requirement. Do not invent a bot, change branch rules or treat an impossible
-self-review as live work that more waiting will resolve.
-
-PR publication does not authorize merging. Carry forward a user's already explicit
-merge/admin-merge authorization when applicable, without asking again; it never
-waives required verification. Without an authorized path, name the exact approval
-blocker for merging and its resume event. Pending approval does not block authorized
-PR creation. Continue independent authorized work instead of polling an unchanged
-requirement. Recheck the path if author or branch rules change.
+Follow the [approval path](../../flows/board/approval-path.md).
 
 ## Steps
 
@@ -41,7 +28,7 @@ tracked content, return that delta to review and refresh required delivery evide
 before proceeding. Preserve artifacts used by the PR's claims.
 
 1. **Confirm delivery evidence**, from the main checkout, using the selected
-   [board's delivery gate](../dispatch/board.md). Remote issues are checked
+   [board's delivery gate](../../flows/board/board.md). Remote issues are checked
    directly alongside Git and reports; no local ticket mirror or scheduler call.
    For local Markdown only, run
    `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" <slug> --delivery`.

@@ -41,7 +41,7 @@ recovery considers the cause before rerouting. The host accepts or overrides eac
 recommendation, reports its source and surfaces calibration warnings. Existing
 phase owners and gates remain in place; there is no second planning/review loop.
 
-Dispatch reuses [existing project execution facts](../dispatch/project-loop.md):
+Dispatch reuses [existing project execution facts](../../flows/board/project-loop.md):
 commands, areas/resources, verification and environment constraints. Missing
 facts go in the effort's alignment/report; no new maintained setup file is required.
 Run history stays in reports/journals. Workers call shared plugin scripts directly.
@@ -93,7 +93,7 @@ human-authorized merge by the orchestrator.
 
 Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
 `diagnosing-bugs`, `domain-modeling`, `prototype` and `grilling` for their respective
-work. Planning uses [mandate's question policy](../mandate/SKILL.md#filter-questions)
+work. Planning uses [mandate's question policy](../../flows/planning/question-filter.md)
 with grilling's internal design-tree reasoning. The review skill supplies scope,
 priority and allowed mutation
 context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
@@ -120,7 +120,7 @@ procedure](../review/workflow.md); only an explicit implementation-only request
 omits review. Existing accepted alignment supplies scope, non-goals, priorities
 and test seams. Without those decisions, review records provisional priorities or
 asks for material human choices. Follow-ups never expand the current review batch;
-dispatch's [overall selection](../dispatch/board.md#overall-scope-and-batches)
+dispatch's [overall selection](../../flows/board/scope.md)
 determines whether they enter the next batch under existing authorization.
 
 `review --autofix` owns scoped repairs, local effort integration and applicable E2E

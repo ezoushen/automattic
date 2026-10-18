@@ -19,7 +19,7 @@ Shared docs are grouped by reader, each folder with a README that lists its file
 [workers](runtime/workers/README.md) (launch, wait for, collect and retire workers),
 [routing](runtime/routing/README.md) (choose and report worker models),
 [decisions](runtime/decisions/README.md) (decision checkpoints and journals),
-[checks](runtime/checks/README.md) (plan and run checks), [setup](harnesses/setup/README.md)
+[checks](runtime/checks/README.md) (plan and run checks), [setup](flows/setup/README.md)
 (configuration format and procedure) and `hosts/executors/` (one guide per executor type).
 A link names the file to read; read it whole. Each doc in these folders fits one read, and
 a `#anchor` names a section inside it.
@@ -32,7 +32,7 @@ Orchestrators and workers follow shared [assignment focus](runtime/workers/focus
 for priority, scope and concise updates.
 
 `/automattic:setup-automattic` guides configuration and `/automattic:models` handles direct
-settings requests. Both use the [configuration procedure](harnesses/setup/procedure.md) only
+settings requests. Both use the [configuration procedure](flows/setup/procedure.md) only
 for user-requested changes; workflow execution reads
 configuration without invoking either explicit-only skill.
 
@@ -43,12 +43,12 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 | When | Read |
 |---|---|
 | Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the required-check watch in `skills/pr/SKILL.md` |
-| Before mandate/alignment questions, including a request to "grill" the plan | `skills/mandate/SKILL.md#filter-questions`: it owns question depth and continuation |
-| Explicit phase composition, such as refinement after research | [refinement procedure](skills/refine/workflow.md#explicit-phase-composition) |
+| Before mandate/alignment questions, including a request to "grill" the plan | [question filter](flows/planning/question-filter.md): it owns question depth and continuation |
+| Explicit phase composition, such as refinement after research | [refinement procedure](flows/planning/refinement.md#explicit-phase-composition) |
 | Before each worker launch, including workers that dependency skills launch | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
 | Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](runtime/workers/recovery.md#escalation-checkpoints); ordinary resumes reuse the saved choice |
 | Before the first phase checkpoint, when `decisions.enabled` has a family | [phase checkpoints](runtime/decisions/checkpoint.md#phase-checkpoints) |
 | `HERDR_ENV=1`, before cross-runtime dispatch, even when no hook supplied it | `hosts/herdr.md` |
-| Choosing or updating a tracker, board or destination; project workflow | [tracker and project conventions](skills/dispatch/conventions.md), [board operations](skills/dispatch/board.md) |
+| Choosing or updating a tracker, board or destination; project workflow | [tracker and project conventions](flows/board/conventions.md), [board operations](flows/board/board.md) |
 | After a compaction or resume | re-read this bootstrap and the host session part before the next worker launch or phase checkpoint; [long sessions](runtime/workers/long-sessions.md) |
-| A user correction to how you work | record it under the ledger's `## Standing directives` (`skills/mandate/SKILL.md#record-and-continue`) or the host's project memory; a compaction summary is not a durable store |
+| A user correction to how you work | record it under the ledger's `## Standing directives` ([record and continue](flows/planning/record.md)) or the host's project memory; a compaction summary is not a durable store |

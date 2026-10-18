@@ -24,7 +24,7 @@ separate copies of skills or scripts.
 | `addons/show-me/` | Shared presentation reference and thin manual show-me entry |
 | `hosts/herdr.md`, `hosts/executors/` | Herdr environment guidance; Bash, Sub-agent and Skill execution adapters |
 | `runtime/workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/` | Shared runtime rules by reader, each file small enough for one read; a module depends only on those after it in this order, and the configuration format is in `config/` |
-| `harnesses/setup/` | Configuration change procedure for the setup-automattic and models skills |
+| `flows/board/`, `flows/planning/`, `flows/setup/` | Shared flows: board operations and tracker conventions; question filter, authority, ledger record and refinement; configuration change procedure for the setup-automattic and models skills |
 | `agents/` | Three worker agents (builder, reviewer, verifier): permissions, principles and core skills; Claude loads them natively |
 | `hooks/` | Shared session-start hook; Claude hook registration |
 | `plugin.json`, `.claude-plugin/`, `.codex-plugin/` | Portable metadata and compatibility registration |
@@ -181,7 +181,7 @@ project or session scope, with a focused diff and effective result. It follows t
 project's existing tracker and verification conventions without creating a competing
 setup. No worker launch or calibration run is part of inspection.
 
-`setup-automattic` and `models` use one [configuration procedure](harnesses/setup/procedure.md).
+`setup-automattic` and `models` use one [configuration procedure](flows/setup/procedure.md).
 Use `models` for direct inspection/edits when you already know the setting; no second
 command is needed during a guided setup.
 
@@ -288,7 +288,7 @@ without creating nested teams. Existing fixed instances and thinking bounds rema
 supported. Configuration inspection never starts a router or worker.
 
 The [configuration guide](runtime/config/executors.md) contains executor examples
-and manual setup; [reset and troubleshooting](harnesses/setup/troubleshooting.md)
+and manual setup; [reset and troubleshooting](flows/setup/troubleshooting.md)
 covers reset recipes and fixes. Choose:
 
 - **Sub-agent:** the host's native worker or an installed named delegate.
@@ -321,9 +321,9 @@ a configured external executor owns its lifecycle and needs runtime verification
 Existing `models.json` preferences still apply to unconfigured native workers.
 Older structured `/models` commands without `--route`, `--config-profile`, session scope
 or pool options keep that behavior; see
-[legacy model preferences](harnesses/setup/legacy-preferences.md). New agent instances do not merge
+[legacy model preferences](flows/setup/legacy-preferences.md). New agent instances do not merge
 those files. Old executor-package/`routes` files need the explicit
-[migration](harnesses/setup/troubleshooting.md#migration).
+[migration](flows/setup/troubleshooting.md#migration).
 
 ## On-demand briefing
 

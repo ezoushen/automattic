@@ -12,7 +12,7 @@ One orchestrator owns scheduling, worktree integration and board updates.
 Workers receive an agent file, a job file and only that job's inputs. An effort
 has a local slug for its branch, alignment and reports; tickets live in the
 configured tracker or, only for local Markdown, `.scratch/<slug>/issues/`.
-Read [board operations](board.md) and use the selected board throughout this skill.
+Read [board operations](../../flows/board/board.md) and use the selected board throughout this skill.
 Use [reference.md](reference.md) when a rule's rationale or a known failure mode
 needs explanation.
 
@@ -25,7 +25,7 @@ review. Publication requires its own request.
 
 ## Setup
 
-1. Resolve existing project instructions using [project-loop.md](project-loop.md).
+1. Resolve existing project instructions using [project loop](../../flows/board/project-loop.md).
    Reuse established sources; no new setup document is required. Pass the relevant
    sources and uncovered facts in assignments. The project defines required
    compile, suite and E2E gates; do not invent extra suites for every ticket.
@@ -45,7 +45,7 @@ review. Publication requires its own request.
    do not create local ticket files or call the local scheduler for them.
 
 A supplied scope is never widened, even to unblock it. Use the board's
-[overall scope and batches](board.md#overall-scope-and-batches) rules to preserve
+[overall scope](../../flows/board/scope.md) rules to preserve
 backlog-wide requests across narrower batches, including selected parent/child work.
 Consider other efforts' live work for capacity, area and device conflicts without modifying them through
 a scoped call. One orchestrator per main checkout; two independent
@@ -78,7 +78,7 @@ below or record why it is excluded/blocked before reporting the invocation finis
    Refresh human changes to scope, criteria and priority before assigning work;
    materially changed active work returns for alignment. A principle the user states
    mid-dispatch is recorded verbatim and checked against the plan under
-   [mandate's authority rules](../mandate/SKILL.md#establish-authority). Keep local runtime state
+   [authority rules](../../flows/planning/authority.md). Keep local runtime state
    and canonical issue state distinct, and apply authorized tracker transitions
    at the project's actual milestones. Read pending receipts and attention items
    under [worker waits](../../runtime/workers/wait.md#wake-and-yield)

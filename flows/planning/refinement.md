@@ -1,5 +1,12 @@
 # Shared refinement procedure
 
+Contents:
+- [Process](#process)
+- [Definition of Ready](#definition-of-ready)
+- [Then](#then)
+- [Explicit phase composition](#explicit-phase-composition)
+- [Local Markdown ticket template](ticket-template.md)
+
 Used by the explicit refinement skill or an explicitly requested refinement phase
 inside a composed task (for example, research followed by refinement). Dispatch
 also uses it to split already-selected work into executable tickets, preserving
@@ -24,7 +31,7 @@ adapts to the project's ticket convention. Create or update canonical work items
 in the configured tracker under the shared bootstrap's project-conventions rules.
 Output: canonical issue IDs/URLs for a remote tracker; otherwise local tickets
 under `.scratch/<slug>/issues/NN-<title>.md`, numbered in dependency order.
-Remote dispatch consumes those issues directly under [board operations](../dispatch/board.md);
+Remote dispatch consumes those issues directly under [board operations](../board/board.md);
 do not create local issue files or require local front matter for remote tickets.
 
 Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
@@ -38,7 +45,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
 
 1. **Read the brief and existing project instructions.** `alignment.md` supplies
    the goal, boundaries and observable outcomes the criteria assert. Resolve areas,
-   hot files and verification from [project execution facts](../dispatch/project-loop.md).
+   hot files and verification from [project execution facts](../board/project-loop.md).
    Reuse established areas; when missing, name them from modules/shared resources
    and record them in the effort alignment for dispatch. Tickets using the same
    exclusive GPU, serving lane or mutable fixture must share a reservation even
@@ -76,7 +83,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    An edge the brief settles is a fact; one it does not settle is a ledger row with
    a hinge, appended to `.scratch/<slug>/ledger.md`.
 4. **Prepare each ticket** using the project's issue template, or the local-only
-   template below. Reuse an existing matching issue rather than duplicating it.
+   [template](ticket-template.md). Reuse an existing matching issue rather than duplicating it.
    The story is one sentence from the
    actor's side. Each criterion is an observable outcome, Given/When/Then, with a
    `Verify` line naming the command or the test that proves it and who can observe
@@ -122,7 +129,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
 6. **Present a compact breakdown:** each ticket's outcome, dependency and decisive
    verification, plus material slicing tradeoffs and consequential ledger rows.
    Explain a rejected cut only when it was a viable alternative with a different
-   outcome, risk or verification cost. Apply mandate's question filter; routine
+   outcome, risk or verification cost. Apply mandate's [question filter](question-filter.md); routine
    cuts within accepted scope need no additional interview.
    Carry forward existing authorization; obtain any still-required scope or
    publication decision for the concrete breakdown. An unrelated reply or silence
@@ -143,38 +150,10 @@ from scheduling readiness: a complete spec can still wait on a dependency. Use
 the tracker's existing conventions for those states. A ticket that still needs a
 material question answered is not spec-ready; use `/automattic:mandate`'s filter.
 
-## Local Markdown ticket template
-
-```markdown
----
-ticket: <slug>/NN
-status: ready
-blocked_by: []
-touches: [<area>]
-devices: []
-model: standard
-worker:
----
-# NN: <title, a behaviour not a component>
-
-**Story:** As a <actor>, I want <capability>, so that <benefit>.
-
-**Delivers:** the end-to-end behaviour this ticket makes work, from the actor's side. Brief: `.scratch/<slug>/alignment.md` · <outcome and approach it realises>.
-
-**Blocked by:** <NN: title>, or "None (can start immediately)".
-
-## Acceptance criteria
-- [ ] Given <state>, when <action>, then <observable outcome>.
-      Verify (code|agent|user): <command, test name or user check>
-- [ ] …
-
-## Comments
-```
-
 ## Then
 
 `/automattic:dispatch` schedules the tickets on `blocked_by` and `touches`; its builders
-follow the [ticket](../dispatch/jobs/ticket.md) job, using `alignment.md`
+follow the ticket job, using `alignment.md`
 as the spec.
 
 ## Explicit phase composition

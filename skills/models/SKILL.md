@@ -9,10 +9,10 @@ argument-hint: "[request|show|set|reset] [agent|router|decisions|profile|model-d
 
 Read [runtime bootstrap](../../bootstrap.md) and the host session part.
 Handle the user's direct inspection, change or reset with the
-[shared configuration procedure](../../harnesses/setup/procedure.md). It owns the
+[shared configuration procedure](../../flows/setup/procedure.md). It owns the
 current shape, legacy command compatibility, scope precedence and validation.
 No arguments means read-only inspection; a one-run choice is not a saved default.
 
 For a guided explanation of the whole setup, offer
-[setup-automattic](../setup-automattic/SKILL.md). A direct, fully specified change needs no walkthrough
+`/automattic:setup-automattic`. A direct, fully specified change needs no walkthrough
 or repeated approval. Apply existing authorization and report its effective result.

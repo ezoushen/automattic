@@ -51,7 +51,7 @@ report the gap and continue the factual explanation.
    the user. After a tangent, return to the remaining decision. Adapt depth to the
    user; a fixed question count or an answered scope question does not establish
    readiness to review.
-4. **Summarize understanding.** Apply [mandate's question filter](../mandate/SKILL.md#filter-questions)
+4. **Summarize understanding.** Apply [mandate's question filter](../../flows/planning/question-filter.md)
    to material unresolved choices. Summarize intended behavior, scope, constraints,
    accepted tradeoffs, open questions and recommended review priorities. When the
    user has enough context, recommend reviewing or exploring a remaining question.

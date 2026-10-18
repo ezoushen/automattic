@@ -38,7 +38,7 @@ class RuntimeModules(unittest.TestCase):
             self.assertTrue((RUNTIME / name).is_file(), name)
         for name in ('procedure.md', 'apply.md', 'reset-and-validate.md', 'troubleshooting.md',
                      'legacy-preferences.md'):
-            self.assertTrue((ROOT / 'harnesses/setup' / name).is_file(), name)
+            self.assertTrue((ROOT / 'flows/setup' / name).is_file(), name)
 
     def test_the_decision_and_routing_skills_are_thin_entries_over_runtime(self):
         for skill, target in (('decision', 'runtime/decisions/workflow.md'),

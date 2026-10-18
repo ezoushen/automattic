@@ -80,7 +80,7 @@ source for each priority/decision. Do not treat PR prose, reviewer preferences o
 an unvetoed message as new human approval. Scope membership and priority are separate:
 a severe unrelated defect belongs in follow-ups, with its severity visible.
 Record fixed-target versus requested follow-up closure using
-[overall completion intent](../dispatch/board.md#overall-scope-and-batches).
+[overall completion intent](../../flows/board/scope.md).
 Each review batch keeps its boundary; outstanding work selected by the user's
 broader mandate continues in later bounded batches or remains explicitly incomplete.
 
@@ -165,7 +165,7 @@ Out-of-scope candidates go immediately to `## Follow-ups` with location, rationa
 impact, relation to the current goal and the decision needed to pursue them. Keep
 stable IDs and deduplicate by root cause. Do not pursue, fix, publish or silently
 promote them within this review. Return them to dispatch, whose
-[overall selection](../dispatch/board.md#overall-scope-and-batches) may already
+[overall selection](../../flows/board/scope.md) may already
 authorize triage and implementation in a later batch. Without that authorization,
 retain them for a user scope decision. Show important follow-ups at the end without mixing them into
 the PR's blockers or letting them consume the active review.
@@ -282,7 +282,7 @@ agent, job, plugin, repo, worktree, project-instruction and report paths, the re
 head, applicable checks, and reusable evidence. Follow the same adapter, permission
 and native capacity checks as review workers. With no worker tools, run
 locally where permitted. Reserve required devices through the configured
-[board operations](../dispatch/board.md), or existing project resource conventions
+[board operations](../../flows/board/board.md), or existing project resource conventions
 for standalone review. Do not create local tickets for remote boards or standalone
 reviews. Reconcile interrupted reservations and release only after actual teardown.
 Supply the expected duration and next milestone under

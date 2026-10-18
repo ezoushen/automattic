@@ -32,7 +32,7 @@ def validate_execution_config(data, location):
     """Validate only bundled schemas; configuration never loads code or remote schemas."""
     if isinstance(data, dict) and ({'routes', 'executors'} & data.keys()):
         raise ValueError(f'{location}: legacy executor packages/routes require explicit migration '
-                         'to agents.<agent>.executor.type/config; see harnesses/setup/troubleshooting.md')
+                         'to agents.<agent>.executor.type/config; see flows/setup/troubleshooting.md')
     if isinstance(data, dict) and isinstance(data.get('models'), dict):
         for name, definition in data['models'].items():
             if isinstance(definition, dict) and ({'model', 'executors'} & definition.keys()):
@@ -49,7 +49,7 @@ def validate_execution_config(data, location):
         if isinstance(agents, dict) and any(isinstance(entry, dict) and 'candidates' in entry and 'default' in entry
                                            for entry in agents.values()):
             raise ValueError(f'{location}: migrate pool defaults to sparse routing profiles; '
-                             'agents define candidates only; see harnesses/setup/troubleshooting.md')
+                             'agents define candidates only; see flows/setup/troubleshooting.md')
     validate_schema(data, location, 'executors.schema.json')
     calibration = data.get('decisions', {}).get('calibration')
     if calibration and Path(calibration['suite']).resolve() == Path(calibration['baseline']).resolve():

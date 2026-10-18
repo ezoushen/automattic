@@ -21,15 +21,15 @@ HOSTS = ('claude', 'codex', 'pi', 'opencode')
 # trigger wording in the bootstrap table -> the owner document its row must name
 TRIGGERS = {
     r'creat\w+ a PR': 'standards/pr.md',
-    r'mandate/alignment questions': 'skills/mandate/SKILL.md#filter-questions',
-    r'explicit phase composition': 'skills/refine/workflow.md',
+    r'mandate/alignment questions': 'flows/planning/question-filter.md',
+    r'explicit phase composition': 'flows/planning/refinement.md',
     r'before .*worker launch': 'runtime/workers/launch.md',
     r'worker blockers': 'runtime/workers/recovery.md#escalation-checkpoints',
     r'decisions\.enabled': 'runtime/decisions/checkpoint.md#phase-checkpoints',
     r'HERDR_ENV=1': 'hosts/herdr.md',
-    r'tracker': 'skills/dispatch/conventions.md',
+    r'tracker': 'flows/board/conventions.md',
     r'compaction': 'runtime/workers/long-sessions.md',
-    r'correction': 'skills/mandate/SKILL.md#record-and-continue',
+    r'correction': 'flows/planning/record.md',
 }
 PATH = re.compile(r'(?:[\w.-]+/)*[\w.-]+\.md(?:#[\w-]+)?')
 

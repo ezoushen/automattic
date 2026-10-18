@@ -11,7 +11,7 @@ First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 
 Turn the accepted mandate into a plan sufficient to split and verify. Reuse the
 conversation and existing alignment; a separate mandate invocation is optional.
-Apply [mandate's question filter](../mandate/SKILL.md#filter-questions) before each
+Apply [mandate's question filter](../../flows/planning/question-filter.md) before each
 question round, including requests to grill the design. Record consequential
 decisions in the same ledger. Preserve the distinction between accepted user
 decisions and reversible agent choices.
@@ -52,7 +52,7 @@ record the blocked criterion and next action rather than discovering it at deliv
 Point at the project's current runner contract and record only the task-specific
 gates, inputs and ownership; do not copy transport or snapshot internals into the
 plan. Refresh affected assumptions when that contract changes. For an accepted
-delivery goal, establish the repository's [approval path](../pr/SKILL.md#repository-approval-path)
+delivery goal, establish the repository's [approval path](../../flows/board/approval-path.md)
 early so an impossible self-review is not discovered only after implementation.
 
 Check the brief, and any design ruling it adopts, against the user's recorded
@@ -105,6 +105,6 @@ resources do not depend on the open decision; overall status remains incomplete.
 
 Ready for refinement when the outcomes, boundaries, approach and verification are
 clear enough for executable tickets and no unresolved decision blocks that scope.
-Close with the same exit block as [mandate](../mandate/SKILL.md#record-and-continue):
+Close with the same exit block as [mandate](../../flows/planning/record.md):
 user decisions, agent decisions open to veto, pending user actions, and any
 carried-over findings with their disposition.
