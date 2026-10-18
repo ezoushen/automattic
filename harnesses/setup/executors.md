@@ -64,6 +64,10 @@ model/thinking settings:
 }
 ```
 
+A job can have its own entry of the same shape under top-level `jobs`, for example
+`{"jobs": {"reproduce": {"candidates": ["sonnet", "glm"]}}}`; it replaces the
+reviewer's entry for reproduce only. The agent entry covers every other job.
+
 To use another execution path, replace only that agent's `executor` object with
 one of the following. Executor selection and model policy are separate choices.
 

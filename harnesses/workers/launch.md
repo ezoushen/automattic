@@ -66,7 +66,9 @@ and update calibration monitoring state. Only explicit session save/reset
 operations change the session configuration.
 
 Agent precedence is **one-run choice → session → project → user → existing native**.
-Agent entries replace in full. Model, runtime, routing profile and executor-type
+Agent entries replace in full. A top-level `jobs.<job>` entry has the same shape and,
+within the same layer, replaces its agent's entry for that job only; a higher layer's
+agent entry still wins over a lower layer's job entry. Model, runtime, routing profile and executor-type
 definitions merge by name across user → project → session, replacing each definition
 in full; `router` and `decisions` each replace the lower object in full.
 References expand after this merge.

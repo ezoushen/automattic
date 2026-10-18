@@ -206,6 +206,7 @@ class Definitions(unittest.TestCase):
         # Configuration is validated against this enum, so an agent missing there cannot be configured.
         schema = json.loads((support.ROOT / 'schemas/executors.schema.json').read_text())
         self.assertEqual(schema['$defs']['agentName']['enum'], sorted(loaded['agents']))
+        self.assertEqual(schema['$defs']['jobName']['enum'], sorted(loaded['jobs']))
 
 
 if __name__ == '__main__':

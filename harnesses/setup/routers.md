@@ -39,7 +39,10 @@ A profile router applies sparse overrides after establishing the worker runtime:
 ```
 
 `builder.codex` means the worker runs in Codex, including a Claude caller that
-launches it through a bridge. The host still determines which launch routes exist.
+launches it through a bridge. A job name beside the agent names (for example
+`"repair": {"codex": {"candidate": "sol"}}`) overrides the agent's entry for that job.
+For a job with its own pool, an agent-level pin applies only where its candidate is
+in that pool; a job-level pin must be. The host still determines which launch routes exist.
 No `choices` wrapper is used. Missing candidate, thinking, agent or runtime leaves
 that part of selection unchanged; an empty profile is valid. Profiles do not alter
 pools or executors. Candidate overrides must belong to the agent pool and have a

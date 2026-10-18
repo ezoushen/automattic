@@ -54,7 +54,7 @@ def validate_execution_config(data, location):
     calibration = data.get('decisions', {}).get('calibration')
     if calibration and Path(calibration['suite']).resolve() == Path(calibration['baseline']).resolve():
         raise ValueError(f'{location}: calibration suite and baseline must be different files')
-    groups = [data.get('agents', {})]
+    groups = [data.get('agents', {}), data.get('jobs', {})]
     policies = [binding for definition in data.get('models', {}).values()
                 for binding in definition['runtimes'].values()]
     for runtime, definition in data.get('runtimes', {}).items():
@@ -518,6 +518,18 @@ def expand_model(name, catalog, runtimes, host, target_runtime=None):
     return None, f'No configured route from {host!r} to model runtimes {ordered} in this environment'
 
 
+def profile_entry(profile, agent, job, job_pool=None):
+    """A routing profile's overrides for this job, or else for its agent. When the job has its own pool,
+    an agent-level override applies only where its candidate belongs to that pool."""
+    if job in profile:
+        return profile[job]
+    entry = profile.get(agent, {})
+    if job_pool is None:
+        return entry
+    return {runtime: override for runtime, override in entry.items()
+            if override.get('candidate') is None or override['candidate'] in job_pool}
+
+
 def resolve_execution(repo, user_config, user_executors, host, agent, task, choice=None, config_profile=None,
                       adaptive_thinking=None, *, job=None, session_id=None, candidate=None, selection=None,
                       eligible_candidates=None, list_candidates=False, target_runtime=None, assignment=None,
@@ -553,7 +565,7 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
     for name in (profile, router.get('fallback_profile')):
         if name is not None and name not in profiles:
             raise ValueError(f'Unknown routing profile {name!r}; define it in executors.json')
-    overrides = profiles[profile][0].get(agent, {}) if profile is not None else {}
+    overrides = profile_entry(profiles[profile][0], agent, job) if profile is not None else {}
     metadata = {'config_profile': profile, 'profile_source': profiles[profile][1] if profile else None,
                 'router': router, 'router_source': router_source, 'profile_overrides': overrides,
                 'decision_policy': decision_policy, **session}
@@ -568,10 +580,12 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
     executor_types = {name: (definition, f'{path}:executor_types.{name}')
                       for path, data in layers for name, definition in data.get('executor_types', {}).items()}
     instance, source = None, None
+    # Layers run user → project → session; within one layer a job's entry wins over its agent's.
     for path, data in layers:
-        if agent in data.get('agents', {}):
-            instance = data['agents'][agent]
-            source = f'{path}:agents.{agent}'
+        if job in data.get('jobs', {}):
+            instance, source = data['jobs'][job], f'{path}:jobs.{job}'
+        elif agent in data.get('agents', {}):
+            instance, source = data['agents'][agent], f'{path}:agents.{agent}'
     if choice is not None:
         validate_execution_config({'agents': {agent: choice}}, 'task choice')
         if 'executor' not in choice:
@@ -579,6 +593,9 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
         instance, source = choice, 'task choice'
     pooled = instance is not None and 'candidates' in instance
     configured_candidates = list(instance['candidates']) if pooled else []
+    job_pool = configured_candidates if pooled and ':jobs.' in (source or '') else None
+    if profile is not None and job_pool is not None:
+        overrides = metadata['profile_overrides'] = profile_entry(profiles[profile][0], agent, job, job_pool)
     definitions = {}
     if target_runtime is not None and target_runtime not in HARNESSES:
         raise ValueError(f'Unknown target runtime {target_runtime!r}')
@@ -603,7 +620,7 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
             if name is None:
                 continue
             if name not in instance['candidates']:
-                raise ValueError(f'Profile candidate {name!r} is outside the {agent} pool')
+                raise ValueError(f'Profile candidate {name!r} is outside the pool at {source}')
             if isinstance(instance['candidates'], list):
                 if name not in catalog or runtime not in catalog[name][0]['runtimes']:
                     raise ValueError(f'Profile candidate {name!r} has no {runtime!r} binding')
@@ -715,7 +732,7 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
             rule_profile = router.get('fallback_profile')
             if rule_profile is None:
                 raise ValueError('router consult "after-failure" needs a fallback_profile as its rule route')
-            rule = profiles[rule_profile][0].get(agent, {})
+            rule = profile_entry(profiles[rule_profile][0], agent, job, job_pool)
             usable = [runtime for runtime, entry in rule.items()
                       if entry.get('candidate') in (eligible_candidates or pool['candidates'])
                       and definitions.get(entry['candidate'], {}).get('target_runtime') == runtime]
@@ -775,7 +792,7 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
                                 eligible_candidates=eligible, candidates=pool['candidates'],
                                 selection_router=DEFAULT_ROUTER)
                 # Deterministic recovery: apply the configured profile before asking the host.
-                overrides = profiles[fallback][0].get(agent, {})
+                overrides = profile_entry(profiles[fallback][0], agent, job, job_pool)
                 metadata.update(config_profile=fallback, profile_source=profiles[fallback][1],
                                 profile_overrides=overrides, selection_error=str(error))
                 metadata['decision_warnings'] = metadata['decision_warnings'] + [{

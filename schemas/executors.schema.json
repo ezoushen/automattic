@@ -20,6 +20,7 @@
       "additionalProperties": { "$ref": "#/$defs/runtime" }
     },
     "agents": { "$ref": "#/$defs/agents" },
+    "jobs": { "$ref": "#/$defs/jobs" },
     "router": { "$ref": "#/$defs/router" },
     "decisions": { "$ref": "#/$defs/decisions" },
     "capacity": {
@@ -45,7 +46,7 @@
       "propertyNames": { "type": "string", "minLength": 1, "not": { "pattern": "[\\s\\u0000-\\u001f]" } },
       "additionalProperties": {
         "type": "object",
-        "propertyNames": { "$ref": "#/$defs/agentName" },
+        "propertyNames": { "$ref": "#/$defs/agentOrJob" },
         "additionalProperties": {
           "type": "object",
           "propertyNames": { "$ref": "#/$defs/runtimeName" },
@@ -96,6 +97,8 @@
       "required": ["backend", "enabled"], "additionalProperties": false
     },
     "agentName": { "enum": ["builder", "reviewer", "verifier"] },
+    "jobName": { "enum": ["audit", "diff-review", "e2e-gate", "merge-conflict", "repair", "reproduce", "ticket"] },
+    "agentOrJob": { "anyOf": [{ "$ref": "#/$defs/agentName" }, { "$ref": "#/$defs/jobName" }] },
     "router": {
       "oneOf": [
         {
@@ -154,6 +157,11 @@
     "agents": {
       "type": "object",
       "propertyNames": { "$ref": "#/$defs/agentName" },
+      "additionalProperties": { "$ref": "#/$defs/agent" }
+    },
+    "jobs": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/jobName" },
       "additionalProperties": { "$ref": "#/$defs/agent" }
     },
     "agent": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/instance" }, { "$ref": "#/$defs/pool" }, { "$ref": "#/$defs/modelReference" }] },
