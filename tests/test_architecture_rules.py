@@ -6,6 +6,7 @@ import subprocess
 import sys
 import unittest
 
+import support
 from test_doc_checker import CHECKER, GUIDE, Fixture, SKILL
 
 ARCHITECTURE = {
@@ -52,6 +53,28 @@ class ArchitectureRules(Fixture):
         [(_, _, message)] = self.messages('direction')
         self.assertIn('skills/other/SKILL.md', message)
         self.assertIn('skills/tool/SKILL.md', message)
+
+    def test_modules_in_the_same_level_are_siblings_and_may_not_link_each_other(self):
+        self.architecture['levels'] = [['skills'], ['flows', 'peer'], ['runtime']]
+        self.architecture['modules']['peer'] = {'docs': ['peer/**/*.md']}
+        self.config['docs'] += ['peer/**/*.md']
+        self.config['linking'] += ['peer/**/*.md']
+        self.write('peer/p.md', '# Peer\n')
+        self.write('flows/a/one.md', '# One\n\nSee [peer](../../peer/p.md).\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + '[one](../../flows/a/one.md) [peer](../../peer/p.md)\n')
+        self.assertEqual(self.check(), {('flows/a/one.md', 3, 'direction', 'error')})
+        [(_, _, message)] = self.messages('direction')
+        self.assertIn('sibling', message)
+
+    def test_a_module_injected_by_path_may_not_be_linked(self):
+        self.first_read_tree()
+        self.write('flows/a/one.md', '# One\n\nSee [host](../../hosts/small/session.md).\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + '[one](../../flows/a/one.md)\n')
+        self.assertIn(('flows/a/one.md', 3, 'direction', 'error'), self.check())
+        [(_, _, message)] = self.messages('direction')
+        self.assertIn('never linked', message)
 
     def test_two_modules_linking_each_other_form_a_cycle_naming_both(self):
         self.write('flows/a/one.md', '# One\n\nDown: [guide](../../shared/guide.md).\n')
@@ -188,6 +211,30 @@ class TargetFolders(Fixture):
         self.write('scripts/run.py', "BOOT = 'bootstrap.md'\n")
         self.doc = 'bootstrap.md'
         self.assertEqual(self.run_repository_config(), {'code-path'})
+
+
+# The harness-to-skill links measured on 2026-10-19 that break the layers (grep of `](../skills/` from
+# harnesses/); the other links from harnesses/ to skills/ go from the bootstrap down to flows or standards.
+RUNTIME_TO_SKILL_DEBT = [
+    'harnesses/README.md -> skills/mandate/SKILL.md',
+    'harnesses/checks/run.md -> skills/housekeeping/SKILL.md',
+    'harnesses/claude/adapter.md -> skills/review/workflow.md',
+    'harnesses/decisions/journal.md -> skills/decision/SKILL.md',
+    'harnesses/decisions/phases.md -> skills/decision/SKILL.md',
+    'harnesses/decisions/test-shape.md -> skills/remediate/kinds/tautological-tests.md',
+    'harnesses/routing/decision-model.md -> skills/decision/SKILL.md',
+    'harnesses/setup/apply.md -> skills/decision/SKILL.md',
+    'harnesses/setup/executors.md -> skills/setup-automattic/SKILL.md',
+    'harnesses/setup/routers.md -> skills/model-routing/SKILL.md',
+]
+
+
+class RepositoryDebt(unittest.TestCase):
+    def test_the_upward_links_from_harnesses_to_skills_are_recorded_as_debt(self):
+        debt = json.loads((support.ROOT / '.agents/skills/writing-agent-docs/architecture.json').read_text())['debt']
+        self.assertEqual(set(RUNTIME_TO_SKILL_DEBT) - set(debt['links']), set())
+        self.assertEqual({link for link in debt['links'] if link.startswith('harnesses/') and ' -> skills/' in link},
+                         set(RUNTIME_TO_SKILL_DEBT))
 
 
 if __name__ == "__main__":

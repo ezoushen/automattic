@@ -39,7 +39,8 @@ class HookRepo(unittest.TestCase):
         self.addCleanup(self.stop_stragglers)
         skill = self.root / '.agents/skills/writing-agent-docs'
         skill.mkdir(parents=True)
-        (skill / 'check_docs.py').write_text(CHECKER.read_text())
+        for module in ('check_docs.py', 'architecture.py'):
+            (skill / module).write_text((CHECKER.parent / module).read_text())
         (skill / 'config.json').write_text(json.dumps(CONFIG))
         for hook in ('pre-commit', 'pre-push'):
             path = self.root / '.githooks' / hook
