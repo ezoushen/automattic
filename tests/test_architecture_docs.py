@@ -29,10 +29,25 @@ class ArchitectureDocs(unittest.TestCase):
     def test_the_readme_has_no_retired_layout(self):
         self.assertNotIn('harnesses', README)
 
-    def test_the_readme_layout_names_every_top_level_folder_and_the_layer_order(self):
-        for name in ('flows/delivery', 'flows/review', 'flows/remediation', 'standards/', 'runtime/', 'hosts/', 'bootstrap.md'):
-            self.assertIn(f'`{name}', README, name)
+    def test_the_readme_layout_has_a_row_for_every_top_level_folder(self):
+        rows = [line.split('|')[1] for line in README.split('## Layout', 1)[1].split('\n## ', 1)[0].splitlines()
+                if line.startswith('| `')]
+        for name in ('flows/delivery', 'flows/review', 'flows/remediation', 'standards/', 'runtime/workers/', 'hosts/claude/',
+                     'bootstrap.md'):
+            self.assertTrue(any(f'`{name}' in row for row in rows), name)
         self.assertIn('writing-agent-docs/SKILL.md', README)
+
+    def test_the_readme_architecture_lists_the_layers_in_the_order_architecture_json_records(self):
+        levels = json.loads((ROOT / '.agents/skills/writing-agent-docs/architecture.json').read_text())['levels']
+        rank = {name: number for number, names in enumerate(levels) for name in names}
+        section = README.split('## Architecture', 1)[1].split('\n## ', 1)[0]
+        layers = {'bootstrap.md': 'bootstrap', 'flows': 'delivery', 'agents/': 'agents', 'standards/': 'standards',
+                  'hosts/': 'hosts', 'runtime/': 'workers'}
+        self.assertEqual(sorted(layers, key=section.index), sorted(layers, key=lambda token: rank[layers[token]]))
+        runtime = ('workers', 'checks', 'routing', 'resources', 'decisions', 'config')
+        listed = section.split('(workers', 1)[1].split(')', 1)[0]
+        self.assertEqual(sorted(runtime, key=lambda name: (f'workers{listed}').index(name)),
+                         sorted(runtime, key=rank.get))
 
     def test_the_readme_links_the_skill_instead_of_repeating_the_rules(self):
         self.assertIn('](.agents/skills/writing-agent-docs/SKILL.md#extend-the-architecture)', README)
