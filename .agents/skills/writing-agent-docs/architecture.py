@@ -146,10 +146,14 @@ def check_imports(root, architecture):
     """Findings for Python imports between the scripts and hooks that modules own.
 
     An import counts wherever it sits, including inside a function, and so does a string
-    naming another script's path (scripts loaded by file location).
+    naming another script's path (scripts loaded by file location). A file matching
+    `owned_code` that no module's `code` lists is an `unmapped` error, as for docs.
     """
     files = {str(path.relative_to(root)) for spec in architecture.modules.values()
              for glob in spec.get('code', []) for path in root.glob(glob) if path.is_file()}
+    findings = [(str(path.relative_to(root)), 1, 'error', 'unmapped', 'no module in the architecture file owns this code')
+                for glob in architecture.data.get('owned_code', []) for path in sorted(root.glob(glob))
+                if path.is_file() and str(path.relative_to(root)) not in files]
     stems = {Path(name).stem: name for name in sorted(files)}
     edges = []
     for name in sorted(files):
@@ -168,4 +172,4 @@ def check_imports(root, architecture):
                 if target and target != name:
                     edges.append((name, node.lineno, target))
     debt = architecture.debt
-    return architecture.assess(edges, 'code', 'import-direction', debt.get('imports', []), debt.get('import_cycles', []))
+    return findings + architecture.assess(edges, 'code', 'import-direction', debt.get('imports', []), debt.get('import_cycles', []))

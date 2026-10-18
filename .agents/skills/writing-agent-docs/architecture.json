@@ -1,4 +1,8 @@
 {
+ "owned_code": [
+  "scripts/*.py",
+  "hooks/*.py"
+ ],
  "levels": [
   [
    "skills",

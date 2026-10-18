@@ -68,6 +68,16 @@ class ImportDirection(unittest.TestCase):
         codes = {finding[3] for finding in check_imports(self.root, self.arch)}
         self.assertEqual(codes, {'import-direction', 'cycle'})
 
+    def test_a_script_no_module_owns_is_an_error(self):
+        self.arch.data['owned_code'] = ['scripts/*.py', 'hooks/*.py']
+        self.write('scripts/high.py', 'X = 1\n')
+        self.write('scripts/helper.py', 'import high\n')
+        self.write('hooks/run.py', 'X = 1\n')
+        self.write('scripts/notes.txt', 'not code\n')
+        found = [(src, line, code) for src, line, severity, code, _ in check_imports(self.root, self.arch)
+                 if severity == 'error']
+        self.assertEqual(sorted(found), [('scripts/helper.py', 1, 'unmapped')])
+
     def test_recorded_import_debt_is_tolerated_and_only_shrinks(self):
         self.write('scripts/high.py', 'X = 1\n')
         self.write('scripts/low.py', 'import high\n')
