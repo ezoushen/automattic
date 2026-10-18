@@ -134,18 +134,29 @@ class FoldCheck(unittest.TestCase):
         self.assertEqual(self.differences(), {('command', 'removed run option:--effort'),
                                               ('command', 'removed run choice:action=retire')})
 
-    def test_choices_taken_from_a_module_level_constant_are_recorded_and_unresolvable_ones_are_skipped(self):
-        script = ("import argparse\nimport other\n\nMODES = ('fast', 'slow')\nKINDS = {'a': 1, 'b': 2}\n"
-                  "parser = argparse.ArgumentParser()\nparser.add_argument('--mode', choices=MODES)\n"
+    def test_choices_taken_from_constants_are_recorded_wherever_the_constant_moves_and_computed_ones_are_skipped(self):
+        script = ("import argparse\nimport consts\nfrom consts import LEVELS\n\nMODES = ('fast', 'slow')\n"
+                  "KINDS = {'a': 1, 'b': 2}\nparser = argparse.ArgumentParser()\n"
+                  "parser.add_argument('--mode', choices=MODES)\n"
                   "parser.add_argument('--kind', choices=sorted(KINDS))\n"
-                  "parser.add_argument('--other', choices=other.VALUES)\n")
+                  "parser.add_argument('--level', choices=LEVELS)\n"
+                  "parser.add_argument('--tone', choices=consts.TONES)\n"
+                  "parser.add_argument('--made', choices=consts.COMPUTED)\n")
+        shared = "LEVELS = ('low', 'high')\nTONES = ['calm']\nCOMPUTED = tuple(x for x in LEVELS)\n"
+        self.write('scripts/consts.py', shared)
         self.write('scripts/run.py', script)
         self.git('add', '-A')
         self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'constants')
         self.assertEqual(self.differences(), set())
         self.write('scripts/run.py', script.replace("('fast', 'slow')", "('fast',)").replace("'b': 2", ''))
+        self.write('scripts/consts.py', shared.replace("('low', 'high')", "('high',)"))
         self.assertEqual(self.differences(), {('command', 'removed run choice:--mode=slow'),
-                                              ('command', 'removed run choice:--kind=b')})
+                                              ('command', 'removed run choice:--kind=b'),
+                                              ('command', 'removed run choice:--level=low')})
+        self.write('scripts/run.py', script.replace('LEVELS)\n', 'consts.LEVELS)\n', 1)
+                   .replace("from consts import LEVELS\n", ''))
+        self.write('scripts/consts.py', shared)
+        self.assertEqual(self.differences(), set())
 
     def test_surface_differences_listed_as_deliberate_are_accepted_and_moved_files_keep_their_surface(self):
         (self.root / 'skills/kinds/comments.md').rename(self.root / 'skills/kinds/comments2.md')

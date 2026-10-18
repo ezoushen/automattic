@@ -38,33 +38,44 @@ def body_lines(root, config):
     return lines
 
 
-def module_constants(tree):
-    """Module-level names bound to a literal tuple, list, set or dict of constants, as their values (dict keys)."""
-    constants = {}
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            values = literal_choices(node.value, {})
-            if values:
-                constants[node.targets[0].id] = values
-    return constants
+class Constants:
+    """Module-level names that hold literal values, across the command files, for `choices` resolution."""
 
+    def __init__(self, trees):
+        self.defs, self.imports = {}, {}
+        for stem, tree in trees.items():
+            self.defs[stem], self.imports[stem] = {}, {}
+            for node in tree.body:
+                if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+                    self.defs[stem][node.targets[0].id] = node.value
+                elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+                    for alias in node.names:
+                        self.imports[stem][alias.asname or alias.name] = (node.module, alias.name)
 
-def literal_choices(node, constants):
-    """Constant values a `choices` expression names, or [] when it is not a literal or a module constant.
+    def named(self, stem, name, depth=0):
+        if depth > 8 or stem not in self.defs:
+            return []
+        if name in self.defs[stem]:
+            return self.values(stem, self.defs[stem][name], depth + 1)
+        if name in self.imports[stem]:
+            module, original = self.imports[stem][name]
+            return self.named(module, original, depth + 1)
+        return []
 
-    A name resolves through the module's own constants, also inside sorted/tuple/list/set; attributes
-    of other modules and computed values are not recorded.
-    """
-    if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
-        return [item.value for item in node.elts if isinstance(item, ast.Constant)]
-    if isinstance(node, ast.Dict):
-        return [key.value for key in node.keys if isinstance(key, ast.Constant)]
-    if isinstance(node, ast.Name):
-        return constants.get(node.id, [])
-    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in ('sorted', 'tuple', 'list', 'set')
-            and len(node.args) == 1):
-        return literal_choices(node.args[0], constants)
-    return []
+    def values(self, stem, node, depth=0):
+        """Constant values a `choices` expression names; [] when it is computed or lives outside these files."""
+        if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+            return [item.value for item in node.elts if isinstance(item, ast.Constant)]
+        if isinstance(node, ast.Dict):
+            return [key.value for key in node.keys if isinstance(key, ast.Constant)]
+        if isinstance(node, ast.Name):
+            return self.named(stem, node.id, depth)
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+            return self.named(node.value.id, node.attr, depth)
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and len(node.args) == 1
+                and node.func.id in ('sorted', 'tuple', 'list', 'set')):
+            return self.values(stem, node.args[0], depth)
+        return []
 
 
 def surface(root, fold):
@@ -84,10 +95,10 @@ def surface(root, fold):
     for path in files('hooks'):
         for event in json.loads(path.read_text()).get('hooks', {}):
             found.add(('hook-event', f'{path.parent.name}/{event}'))
+    trees = {path.stem: ast.parse(path.read_text(), str(path)) for path in files('commands')}
+    constants = Constants(trees)
     for path in files('commands'):
-        tree = ast.parse(path.read_text(), str(path))
-        constants = module_constants(tree)
-        for node in ast.walk(tree):
+        for node in ast.walk(trees[path.stem]):
             if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.args
                     and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
                 continue
@@ -100,7 +111,7 @@ def surface(root, fold):
                         found.add(('command', f'{path.stem} option:{name}'))
                 for keyword in node.keywords:
                     if keyword.arg == 'choices':
-                        for choice in literal_choices(keyword.value, constants):
+                        for choice in constants.values(path.stem, keyword.value):
                             found.add(('command', f'{path.stem} choice:{names[0]}={choice}'))
     schema = fold.get('decision_families')
     if schema and (root / schema).is_file():
