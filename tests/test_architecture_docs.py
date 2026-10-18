@@ -9,6 +9,7 @@ ROOT = support.ROOT
 README = (ROOT / 'README.md').read_text()
 SKILL = (ROOT / '.agents/skills/writing-agent-docs/SKILL.md').read_text()
 PIPELINE = (ROOT / 'skills/pipeline/SKILL.md').read_text()
+BOOTSTRAP = (ROOT / 'bootstrap.md').read_text()
 TOP = ('skills', 'flows', 'runtime', 'hosts', 'standards', 'agents', 'hooks', 'scripts', 'schemas', 'addons',
        'benchmarks', 'docs', 'bootstrap.md')
 # Codex runtime method names, not repository paths.
@@ -49,6 +50,12 @@ class ArchitectureDocs(unittest.TestCase):
     def test_the_pipeline_map_links_every_flow(self):
         for flow in sorted(path.name for path in (ROOT / 'flows').iterdir() if path.is_dir()):
             self.assertRegex(PIPELINE, r'\]\(\.\./\.\./flows/%s/' % flow, flow)
+
+    def test_the_bootstrap_keeps_the_rules_every_session_needs_before_any_skill_or_launch(self):
+        flat = ' '.join(BOOTSTRAP.split())
+        self.assertIn("the dependency's exhaustive interview requires an explicit request for that depth", flat)
+        self.assertRegex(flat, r'Resolve dependency identity from the active catalog once per session: .*'
+                               r'never a bare colliding name such as `tdd`.*\]\(runtime/workers/before-launch\.md\)')
 
     def test_no_recorded_debt_remains(self):
         import json

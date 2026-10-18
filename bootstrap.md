@@ -27,6 +27,9 @@ a `#anchor` names a section inside it.
 Notation such as `/automattic:refine` and `/mattpocock-skills:tdd` identifies a
 skill, not a shell command. Use the active adapter's invocation mechanism. Shared
 agents and jobs own behavior; host adapters and selected executors own runtime operations.
+Resolve dependency identity from the active catalog once per session: for Matt use
+the exact `mattpocock-skills:<name>` entry, never a bare colliding name such as `tdd`
+([before a launch](runtime/workers/before-launch.md) has the rest).
 
 Orchestrators and workers follow shared [assignment focus](runtime/workers/focus.md)
 for priority, scope and concise updates.
@@ -43,7 +46,7 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 | When | Read |
 |---|---|
 | Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the required-check watch in `flows/delivery/pr.md` |
-| Before mandate/alignment questions, including a request to "grill" the plan | [question filter](flows/planning/question-filter.md): it owns question depth and continuation |
+| Before mandate/alignment questions, including a request to "grill" the plan | [question filter](flows/planning/question-filter.md): it owns question depth and continuation; the dependency's exhaustive interview requires an explicit request for that depth |
 | Explicit phase composition, such as refinement after research | [refinement procedure](flows/planning/refinement.md#explicit-phase-composition) |
 | Before each worker launch, including workers that dependency skills launch | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
 | Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](runtime/workers/recovery.md#escalation-checkpoints); ordinary resumes reuse the saved choice |
