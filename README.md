@@ -402,10 +402,10 @@ hard review/delivery gate, including existing docs invalidated by the change.
 Missing, incomplete or failed documentation review blocks delivery even when
 executable tests pass; unrelated documentation cleanup remains a follow-up.
 
-[code-comments](skills/code-comments/SKILL.md) contains the shared, language-independent
+[code-comments](standards/code-comments.md) holds the shared, language-independent
 writing rules. Builder workers load it at entry; any agent can select
 it automatically while writing comments or invoke `/automattic:code-comments`.
-Its [research basis](skills/code-comments/references/sources.md) separates common
+Its [research basis](standards/code-comments-sources.md) separates common
 principles from language-specific style choices. Review owns the hard gate.
 
 [housekeeping](skills/housekeeping/SKILL.md) removes task-created disposable
@@ -428,7 +428,7 @@ It runs only when explicitly requested. Scope defaults to the established diff;
 named paths repair after proof, while whole-project scans report first and wait
 for confirmation before repairs. It changes tests/comments only and reports a
 suspected runtime bug when a corrected test fails on the real implementation.
-A test is [tautological](skills/remediate/kinds/tautological-tests.md) when a defect in
+A test is [tautological](standards/kinds/tautological-tests.md) when a defect in
 the behavior it claims leaves it passing; review applies the same check to every
 added or modified test by reading: an assertion checklist, routing by the decision
 model, and a code trace for expected failures checked only by code.

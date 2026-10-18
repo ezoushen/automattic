@@ -112,3 +112,5 @@ current goal contract; do not depend on a particular evaluator, idle cadence or
 turn limit. Follow shared [blocked continuation](../../harnesses/workers/focus.md#blocked-continuation)
 for unresolved user decisions and resource grants. Without a goal, keep waiting
 for live workers in the current run.
+
+The [executor guides](../executors/README.md) cover each executor type a route can select.

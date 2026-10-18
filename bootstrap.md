@@ -42,7 +42,7 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 
 | When | Read |
 |---|---|
-| Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](skills/pr/writing.md); each such push or edit is a `delivery` boundary followed by the required-check watch in `skills/pr/SKILL.md` |
+| Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the required-check watch in `skills/pr/SKILL.md` |
 | Before mandate/alignment questions, including a request to "grill" the plan | `skills/mandate/SKILL.md#filter-questions`: it owns question depth and continuation |
 | Explicit phase composition, such as refinement after research | [refinement procedure](skills/refine/workflow.md#explicit-phase-composition) |
 | Before each worker launch, including workers that dependency skills launch | [launch](harnesses/workers/launch.md), [before launch](harnesses/workers/before-launch.md), then the host's worker part, which its session part names |

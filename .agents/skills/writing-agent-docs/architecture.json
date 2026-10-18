@@ -94,9 +94,6 @@
   },
   "standards": {
    "docs": [
-    "skills/remediate/kinds/*.md",
-    "skills/code-comments/references/*.md",
-    "skills/pr/writing.md",
     "standards/**/*.md"
    ],
    "code": [
@@ -254,9 +251,6 @@
  },
  "debt": {
   "links": [
-   "agents/builder.md -> skills/code-comments/SKILL.md",
-   "agents/builder.md -> skills/housekeeping/SKILL.md",
-   "agents/reviewer.md -> skills/code-comments/SKILL.md",
    "harnesses/checks/run.md -> skills/housekeeping/SKILL.md",
    "harnesses/decisions/annotate.md -> harnesses/workers/prepare.md",
    "harnesses/decisions/journal.md -> skills/decision/SKILL.md",
@@ -266,7 +260,7 @@
    "harnesses/decisions/shadow-pilots.md -> harnesses/checks/run.md",
    "harnesses/decisions/shadow-pilots.md -> harnesses/workers/collect.md",
    "harnesses/decisions/shadow-pilots.md -> harnesses/workers/wait.md",
-   "harnesses/decisions/test-shape.md -> skills/remediate/kinds/tautological-tests.md",
+   "harnesses/decisions/test-shape.md -> standards/kinds/tautological-tests.md",
    "harnesses/routing/README.md -> harnesses/routing/recovery.md",
    "harnesses/routing/choose.md -> harnesses/routing/recovery.md",
    "harnesses/routing/choose.md -> harnesses/workers/collect.md",
@@ -288,7 +282,6 @@
    "harnesses/workers/resources.md -> harnesses/workers/design-hold.md",
    "skills/align/SKILL.md -> skills/mandate/SKILL.md",
    "skills/align/SKILL.md -> skills/pr/SKILL.md",
-   "skills/brief/SKILL.md -> skills/housekeeping/SKILL.md",
    "skills/decision/SKILL.md -> skills/model-routing/SKILL.md",
    "skills/dispatch/SKILL.md -> skills/housekeeping/SKILL.md",
    "skills/dispatch/SKILL.md -> skills/mandate/SKILL.md",
@@ -296,7 +289,6 @@
    "skills/dispatch/board.md -> skills/refine/workflow.md",
    "skills/dispatch/board.md -> skills/review/workflow.md",
    "skills/dispatch/reference.md -> skills/pipeline/SKILL.md",
-   "skills/housekeeping/SKILL.md -> skills/code-comments/SKILL.md",
    "skills/model-routing/SKILL.md -> skills/decision/SKILL.md",
    "skills/models/SKILL.md -> skills/setup-automattic/SKILL.md",
    "skills/pipeline/SKILL.md -> skills/mandate/SKILL.md",
@@ -306,14 +298,8 @@
    "skills/pr/SKILL.md -> skills/housekeeping/SKILL.md",
    "skills/refine/workflow.md -> skills/dispatch/jobs/ticket.md",
    "skills/refine/workflow.md -> skills/dispatch/project-loop.md",
-   "skills/remediate/SKILL.md -> skills/code-comments/SKILL.md",
    "skills/remediate/jobs/audit.md -> skills/remediate/SKILL.md",
-   "skills/remediate/kinds/misleading-comments.md -> skills/code-comments/SKILL.md",
-   "skills/remediate/kinds/tautological-tests.md -> skills/review/jobs/reproduce.md",
    "skills/review/SKILL.md -> skills/walkthrough/SKILL.md",
-   "skills/review/jobs/diff-review.md -> skills/code-comments/SKILL.md",
-   "skills/review/jobs/diff-review.md -> skills/housekeeping/SKILL.md",
-   "skills/review/method.md -> skills/code-comments/SKILL.md",
    "skills/review/workflow.md -> skills/walkthrough/SKILL.md",
    "skills/setup-automattic/SKILL.md -> skills/mandate/SKILL.md",
    "skills/setup-automattic/SKILL.md -> skills/pipeline/SKILL.md",
@@ -341,12 +327,12 @@
    ]
   ],
   "first_read": {
-   "skills/align/SKILL.md": 20868,
-   "skills/decision/SKILL.md": 66417,
-   "skills/dispatch/SKILL.md": 38173,
-   "skills/model-routing/SKILL.md": 43157,
-   "skills/pipeline/SKILL.md": 48156,
-   "skills/review/SKILL.md": 39409
+   "skills/align/SKILL.md": 20863,
+   "skills/decision/SKILL.md": 66412,
+   "skills/dispatch/SKILL.md": 38168,
+   "skills/model-routing/SKILL.md": 43152,
+   "skills/pipeline/SKILL.md": 48148,
+   "skills/review/SKILL.md": 39404
   },
   "imports": [
    "scripts/decision_journal.py -> scripts/decisions.py",

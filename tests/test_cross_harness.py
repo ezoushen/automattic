@@ -246,9 +246,9 @@ class CrossHarness(unittest.TestCase):
             assert (PLUGIN / 'hosts' / host / 'workers.md').is_file()
         assert json.loads((PLUGIN / '.codex-plugin/plugin.json').read_text())['skills'] == './skills/'
         for kind in ('tautological-tests', 'misleading-comments'):
-            definition = path.parent / 'kinds' / f'{kind}.md'
+            definition = PLUGIN / 'standards/kinds' / f'{kind}.md'
             assert definition.is_file()
-            assert f'kinds/{kind}.md' in source
+            assert f'standards/kinds/{kind}.md' in source
         assert 'mattpocock' not in source.lower()
 
     def test_remediate_proof_experiments_follow_the_kind(self):
@@ -260,21 +260,27 @@ class CrossHarness(unittest.TestCase):
         assert "Send disputed or UNVERIFIED findings to a reviewer's [reproduce]" in prove, prove
         assert 'never to the worker that raised them' in prove, prove
         assert 'needs no further run' in prove, prove
-        kind = (PLUGIN / 'skills/remediate/kinds/tautological-tests.md').read_text()
+        kind = (PLUGIN / 'standards/kinds/tautological-tests.md').read_text()
         proof = ' '.join(re.search(r'^## Proof$(.+?)^## Repair$', kind, re.M | re.S).group(1).split())
         assert 'Confirming a finding changes no code and runs no test' in proof, proof
         job = ' '.join((PLUGIN / 'skills/review/jobs/reproduce.md').read_text().split())
         assert 'When the assigned proof steps are reading-only, edit and run nothing' in job, job
 
+    def test_both_callers_of_the_tautological_kind_still_require_a_reproduce_job(self):
+        review = ' '.join((PLUGIN / 'skills/review/jobs/diff-review.md').read_text().split())
+        assert 'A flag you would dismiss is disputed: send it to a [reproduce](reproduce.md) job' in review, review
+        remediate = ' '.join((PLUGIN / 'skills/remediate/SKILL.md').read_text().split())
+        assert "Send disputed or UNVERIFIED findings to a reviewer's [reproduce](../review/jobs/reproduce.md)" in remediate
+
     def test_remediate_detection_covers_every_test(self):
         import re
-        kind = (PLUGIN / 'skills/remediate/kinds/tautological-tests.md').read_text()
+        kind = (PLUGIN / 'standards/kinds/tautological-tests.md').read_text()
         proof = ' '.join(re.search(r'^## Proof$(.+?)^## Repair$', kind, re.M | re.S).group(1).split())
         assert 'every test in scope, not only the ones you suspect' in proof, proof
         assert '`protected` clears a test only when its checklist raised no doubt' in proof, proof
         assert 'a generated or default value is not an observation' in proof, proof
         assert '`unknown` only when the code does not settle it' in proof, proof
-        assert 'A flag you would dismiss is disputed: a [reproduce](../../review/jobs/reproduce.md) job decides it' in proof, proof
+        assert 'A flag you would dismiss is disputed and needs independent verification' in proof, proof
         routing = ' '.join((PLUGIN / 'harnesses/decisions/test-shape.md').read_text().split())
         assert 'A flagged test is not resubmitted' in routing, routing
         skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()

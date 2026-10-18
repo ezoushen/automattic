@@ -74,7 +74,7 @@ executor's access boundaries; unavailable monitoring stays an explicit limitatio
 
 Present the briefing in the conversation. Do not append it to README, project
 instructions, skills or a recurring status document. Save/export only when asked,
-following [housekeeping's history policy](../housekeeping/SKILL.md#keep-affected-documentation-current).
+following the [documentation standard's history policy](../../standards/documentation.md).
 Existing authorized work retains its scope and ownership: after an in-flight
 briefing, resume it unless the user pauses or redirects it. A standalone briefing
 does not resurrect an inactive task.

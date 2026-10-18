@@ -80,3 +80,5 @@ or empty candidate list is not completion. Persist before interruption and resum
 from disk. Goals require explicit user requests and follow runtime status rules;
 a blocked board alone cannot justify changing goal status. Scheduled work requires
 an explicit user request; an automation does not replace waiting for live children.
+
+The [executor guides](../executors/README.md) cover each executor type a route can select.

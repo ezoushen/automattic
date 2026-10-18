@@ -894,8 +894,6 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
             'thinking_baseline': thinking['default'] if bounded else thinking,
             **({'thinking_allowed': thinking['allowed']} if bounded else {}),
             'route_source': source, **metadata,
-            # The guide is named by executor type: hosts/executors/subagent.md, hosts/executors/skill.md
-            # or hosts/executors/bash.md.
             'executor_guide': str(ROOT / 'hosts/executors' / f'{kind}.md')}
 
 

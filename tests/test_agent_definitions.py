@@ -110,6 +110,11 @@ class Definitions(unittest.TestCase):
         self.edit('agents/checker.md', 'Apply [craft]', 'Follow [layers](../skills/review/layers.md). Apply [craft]')
         self.assertProblem('links outside core skills')
 
+    def test_agent_may_link_a_standard(self):
+        self.write('standards/craft.md', '# Craft\n')
+        self.edit('agents/checker.md', 'Apply [craft]', 'Follow [craft standard](../standards/craft.md). Apply [craft]')
+        self.assertEqual(self.problems(), [])
+
     def test_agent_size_is_capped(self):
         self.edit('agents/checker.md', '## Core skills', 'Filler. ' * 1000 + '\n\n## Core skills')
         self.assertProblem('bytes, over')
@@ -201,6 +206,9 @@ class Definitions(unittest.TestCase):
         self.assertEqual(agent_defs.problems(support.ROOT), [])
         loaded = agent_defs.load(support.ROOT)
         self.assertEqual(set(loaded['agents']), {'builder', 'reviewer', 'verifier'})
+        for name, agent in loaded['agents'].items():
+            for item in agent['core_skills']:
+                self.assertTrue(':' in item or item.startswith(('standards/', 'harnesses/')), (name, item))
         self.assertEqual(set(loaded['jobs']), {'ticket', 'merge-conflict', 'diff-review', 'repair', 'reproduce',
                                                'e2e-gate', 'audit'})
         # Configuration is validated against this enum, so an agent missing there cannot be configured.

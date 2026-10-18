@@ -30,11 +30,11 @@ Equivalent plain-language scope in the request is accepted.
 
 ## Establish goal and scope
 
-Resolve the goal as [tautological-tests](kinds/tautological-tests.md),
-[misleading-comments](kinds/misleading-comments.md), or the user's free-form goal.
+Resolve the goal as [tautological-tests](../../standards/kinds/tautological-tests.md),
+[misleading-comments](../../standards/kinds/misleading-comments.md), or the user's free-form goal.
 Read only the selected kind. If no goal is given, run all built-in kinds
-([tautological-tests](kinds/tautological-tests.md) and
-[misleading-comments](kinds/misleading-comments.md)) in one pass instead of
+([tautological-tests](../../standards/kinds/tautological-tests.md) and
+[misleading-comments](../../standards/kinds/misleading-comments.md)) in one pass instead of
 asking. For a free-form goal, write its signal, independent source of intended behavior,
 deciding proof, allowed repair and exclusions before scanning. Apply the same
 proof bar as the built-in kinds; an unclear contract stays unresolved.
@@ -101,7 +101,7 @@ report that boundary for a separate implementation task.
    If it fails there, stop repairs and report a suspected runtime bug with the
    failing command/output; preserve the corrected test and evidence for handoff.
    Runtime behavior stays unchanged. For comments: use the kind's contract proof
-   and the shared [writing guidance](../code-comments/SKILL.md), without inventing
+   and the shared [writing guidance](../../standards/code-comments.md), without inventing
    runtime tests for prose. Keep repairs surgical and preserve accurate docs.
 4. **Recheck.** Verify every repaired finding against its original proof, rerun
    affected checks and the project's required gates, and read the final diff for

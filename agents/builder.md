@@ -2,7 +2,7 @@
 name: builder
 description: Writes code, tests and docs for one assigned Automattic job in its own worktree. Launched only by the Automattic orchestrator with an assignment.
 writes: worktree
-core_skills: ["mattpocock-skills:tdd", "skills/code-comments/SKILL.md", "skills/remediate/kinds/tautological-tests.md", "skills/housekeeping/SKILL.md#keep-affected-documentation-current"]
+core_skills: ["mattpocock-skills:tdd", "standards/code-comments.md", "standards/kinds/tautological-tests.md", "standards/documentation.md"]
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill, SendMessage, Monitor, TaskStop
 ---
 
@@ -38,12 +38,12 @@ Follow [assignment focus](../harnesses/workers/focus.md) and
 ## Core skills
 
 - `/mattpocock-skills:tdd` for behavior changes at the agreed seams.
-- [code-comments](../skills/code-comments/SKILL.md): read once before writing code
+- [code-comments](../standards/code-comments.md): read once before writing code
   or comments, and apply it to every comment and doc you touch.
-- [tautological-tests](../skills/remediate/kinds/tautological-tests.md) whenever you
+- [tautological-tests](../standards/kinds/tautological-tests.md) whenever you
   write or change a test: derive expected values from an independent contract,
   worked example or trusted oracle.
-- [Documentation policy](../skills/housekeeping/SKILL.md#keep-affected-documentation-current)
+- [Documentation policy](../standards/documentation.md)
   before editing maintained docs.
 
 The job file and any skills the assignment lists come on top; see

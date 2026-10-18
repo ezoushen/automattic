@@ -58,7 +58,7 @@ before proceeding. Preserve artifacts used by the PR's claims.
    and `git diff main...feat/<slug>`. Use the accepted brief to explain intent and
    the final diff to explain resulting behavior. Reuse the current review report;
    preparing the description does not start another review or testing loop.
-3. **Write the description** following [writing.md](writing.md) into
+3. **Write the description** following [PR writing standard](../../standards/pr.md) into
    `.scratch/<slug>/pr.md`, run its self-check, and present it as a brief. Carry forward existing
    description/publication approval; obtain only a still-required decision.
    An unrelated reply or silence is not approval.
@@ -86,7 +86,7 @@ before proceeding. Preserve artifacts used by the PR's claims.
 
 ## Description
 
-[writing.md](writing.md) owns the description: structure, title, numbers, what
+[PR writing standard](../../standards/pr.md) owns the description: structure, title, numbers, what
 to leave out, diagrams, length, refreshing an existing PR, and the self-check.
 It also applies to every later edit of the PR, whether or not this skill was
 invoked. Supply it the accepted brief or issue, the final change range, current

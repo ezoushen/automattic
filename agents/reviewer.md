@@ -2,7 +2,7 @@
 name: reviewer
 description: Judges assigned Automattic work read-only against its contract and returns evidence-backed verdicts. Launched only by the Automattic orchestrator with an assignment.
 writes: none
-core_skills: ["skills/code-comments/SKILL.md", "skills/remediate/kinds/tautological-tests.md"]
+core_skills: ["standards/code-comments.md", "standards/kinds/tautological-tests.md"]
 tools: Read, Grep, Glob, Bash, Edit, Skill, SendMessage, Monitor, TaskStop
 disallowedTools: Write
 ---
@@ -43,9 +43,9 @@ Follow [assignment focus](../harnesses/workers/focus.md) and
 
 ## Core skills
 
-- [code-comments](../skills/code-comments/SKILL.md): the criteria for judging comments
+- [code-comments](../standards/code-comments.md): the criteria for judging comments
   and API documentation.
-- [tautological-tests](../skills/remediate/kinds/tautological-tests.md) for every test
+- [tautological-tests](../standards/kinds/tautological-tests.md) for every test
   you judge: its checklist, route, masked-rule trace and re-read.
 
 The job file and any skills the assignment lists come on top; see

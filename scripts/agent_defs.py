@@ -112,8 +112,9 @@ def agent_problems(root, path):
         if re.match(r'[a-z]+:', target) or target.startswith('#'):
             continue
         resolved = (path.parent / target.split('#')[0]).resolve()
-        if resolved not in linkable and (root / 'harnesses').resolve() not in resolved.parents:
-            problems.append(f'{name}: links outside core skills and harnesses: {target}')
+        if resolved not in linkable and not any((root / folder).resolve() in resolved.parents
+                                                for folder in ('standards', 'harnesses')):
+            problems.append(f'{name}: links outside core skills, standards and harnesses: {target}')
     return problems
 
 

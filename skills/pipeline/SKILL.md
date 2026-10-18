@@ -99,7 +99,7 @@ priority and allowed mutation
 context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
 Honor each dependency's actual invocation
 policy in the active catalog; never bypass a denied invocation by copying its body.
-For PR descriptions, the [PR writing guide](../pr/writing.md) owns structure,
+For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,
 evidence, refresh and self-check. The [PR phase](../pr/SKILL.md) owns delivery
 evidence and publication.
 Planning and execution skills keep shared methods by reference (`/automattic:refine`

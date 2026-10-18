@@ -66,16 +66,13 @@
     "skills/dispatch/board.md": {
       "contents": true
     },
-    "skills/housekeeping/SKILL.md": {
-      "contents": true
-    },
     "skills/mandate/SKILL.md": {
       "contents": true
     },
     "skills/pipeline/SKILL.md": {
       "contents": true
     },
-    "skills/pr/writing.md": {
+    "standards/pr.md": {
       "contents": true
     },
     "skills/refine/workflow.md": {

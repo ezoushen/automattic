@@ -47,7 +47,7 @@ callers and entry points to understand impact; do not turn context-reading into
 an audit of unrelated code. Findings that expose another affected path reopen that
 coverage item. Finish all applicable coverage, not a quota of findings or rounds.
 
-Use [code-comments](../../code-comments/SKILL.md) for writing-quality criteria;
+Use [code-comments](../../../standards/code-comments.md) for writing-quality criteria;
 this job owns the gate and verdict, not a separate writing standard.
 Code comments and API documentation (JSDoc, KDoc, docstrings and equivalents) are
 part of the source contract and a mandatory review gate. Cover added/edited/deleted
@@ -57,9 +57,11 @@ implementation and callers using code-comments, including missing documentation
 needed for the changed contract or required by project conventions.
 
 Check every added or modified test with
-[tautological-tests](../../remediate/kinds/tautological-tests.md): write its
+[tautological-tests](../../../standards/kinds/tautological-tests.md): write its
 checklist, route it, trace masked rules and re-read flags, dismissing false alarms
 with cited evidence. Report a finding only with that kind's cited proof.
+A flag you would dismiss is disputed: send it to a [reproduce](reproduce.md) job, given
+your contrary evidence and the flagged shape.
 
 For added comments, run `python3 <plugin_root>/scripts/comment_audit.py --repo
 <worktree> --base <diff_base> --head <head>` on the pinned reviewed diff and retain
@@ -87,7 +89,7 @@ unresolved contract decision and keep the gate incomplete.
 Unrelated pre-existing documentation problems retain the normal follow-up boundary.
 Stylistic preferences alone are not correctness defects.
 For maintained README, project instructions, skills and references, also check
-[housekeeping's documentation policy](../../housekeeping/SKILL.md#keep-affected-documentation-current):
+the [documentation standard](../../../standards/documentation.md):
 the changed guidance gives the current contract, with retained history in its
 designated record. An added journal or changelog inside maintained guidance is a
 policy violation; stale/conflicting instructions keep the documentation gate blocked.

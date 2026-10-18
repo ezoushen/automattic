@@ -243,7 +243,6 @@ RUNTIME_TO_SKILL_DEBT = [
     'harnesses/checks/run.md -> skills/housekeeping/SKILL.md',
     'harnesses/decisions/journal.md -> skills/decision/SKILL.md',
     'harnesses/decisions/phases.md -> skills/decision/SKILL.md',
-    'harnesses/decisions/test-shape.md -> skills/remediate/kinds/tautological-tests.md',
     'harnesses/routing/decision-model.md -> skills/decision/SKILL.md',
     'harnesses/setup/apply.md -> skills/decision/SKILL.md',
     'harnesses/setup/executors.md -> skills/setup-automattic/SKILL.md',

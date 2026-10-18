@@ -37,7 +37,7 @@ class PrBodyHook(unittest.TestCase):
         decision = self.run_hook(command)
         self.assertIsNotNone(decision, command)
         self.assertEqual(decision['permissionDecision'], 'deny')
-        for word in ('writing.md',) + words:
+        for word in ('standards/pr.md',) + words:
             self.assertIn(word, decision['permissionDecisionReason'])
 
     def test_inline_body_is_denied(self):

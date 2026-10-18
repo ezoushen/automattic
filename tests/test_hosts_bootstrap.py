@@ -20,7 +20,7 @@ from architecture import Architecture  # noqa: E402
 HOSTS = ('claude', 'codex', 'pi', 'opencode')
 # trigger wording in the bootstrap table -> the owner document its row must name
 TRIGGERS = {
-    r'creat\w+ a PR': 'skills/pr/writing.md',
+    r'creat\w+ a PR': 'standards/pr.md',
     r'mandate/alignment questions': 'skills/mandate/SKILL.md#filter-questions',
     r'explicit phase composition': 'skills/refine/workflow.md',
     r'before .*worker launch': 'harnesses/workers/launch.md',

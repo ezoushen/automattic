@@ -26,7 +26,7 @@ evidence leaves the candidate UNVERIFIED and outside repairs.
 ## Repair
 
 Correct the smallest false claim using the established contract, or remove proven
-redundant narration. Apply [code-comments](../../code-comments/SKILL.md) and the
+redundant narration. Apply [code-comments](../code-comments.md) and the
 project's documentation format. Preserve useful function/interface docs and technical
 constraints. Update examples and symbol references within scope; run existing doc
 checks when applicable and re-read every changed claim against its proof. No

@@ -69,3 +69,5 @@ The orchestrator retains board updates, integration and authorized publication.
 Automattic adds no Git blocklist. Native permissions and agent permissions
 remain binding. Scheduling a recurring run or enabling a persistent goal requires
 an explicit user request; ordinary async dispatch uses completion notifications.
+
+The [executor guides](../executors/README.md) cover each executor type a route can select.

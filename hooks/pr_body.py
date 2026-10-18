@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse hook: `gh pr create` and `gh pr edit` publish only a linted description.
 
-The PR rules live in skills/pr/writing.md, which an agent working outside `/automattic:pr`
+The PR rules live in standards/pr.md, which an agent working outside `/automattic:pr`
 never reads. This hook brings them to the moment of publication. Set
 AUTOMATTIC_PR_HOOK=off to disable the check.
 """
@@ -14,7 +14,7 @@ import shlex
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
-GUIDE = ROOT / 'skills/pr/writing.md'
+GUIDE = ROOT / 'standards/pr.md'
 SEPARATORS = {';', '&&', '||', '|', '&', '(', ')'}
 INLINE = ('--body', '-b', '--fill', '--fill-first', '--fill-verbose')
 FILE = ('--body-file', '-F')
