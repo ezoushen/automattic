@@ -365,7 +365,8 @@ def check(root, config, changed=None, architecture=None):
         limit = architecture.data.get('shared_section_links', 3)
         for (target, anchor), sources in sorted(anchored.items()):
             owner = architecture.module(target)
-            outside = {src for src in sources if architecture.module(src) not in (None, owner)}
+            isolated = architecture.modules[owner].get('isolated')
+            outside = {src for src in sources if (m := architecture.module(src)) is not None and (m != owner or isolated)}
             if len(outside) >= limit:
                 findings.append(Finding(target, 1, 'warning', 'shared-section',
                                         f'#{anchor} is linked from {len(outside)} files in other modules; make it its own file'))

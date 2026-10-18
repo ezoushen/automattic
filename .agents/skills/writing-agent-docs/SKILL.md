@@ -31,6 +31,17 @@ whole-repository check on each pushed commit, as does `tests/test_cross_harness.
 
 [config.json](config.json) says which files are agent docs, which files' links
 count, where code names doc paths, the byte budget and the recorded debt.
+[architecture.json](architecture.json) holds the module architecture: ordered levels
+(top may depend on lower ones and on itself, never on a sibling or a higher level),
+which files each module owns, the first-read budget and the debt for that contract.
+Debt entries only shrink: a new violation is an error and a fixed one is `stale-debt`.
+A doc that no module owns is `unmapped`, so a new folder needs a module before its docs pass.
+
+`tests/test_import_direction.py` applies the same levels to the imports of `scripts/`
+and `hooks/`, including imports inside functions. To prove a restructuring lost nothing
+run `check_fold.py --base <commit>`: it reports every body line (link targets ignored)
+and every skill, agent, job, kind, decision family, hook event and script command that
+differs from the base; list deliberate edits in a JSON file passed with `--allow`.
 
 ## Fix what it reports
 
@@ -45,6 +56,11 @@ count, where code names doc paths, the byte budget and the recorded debt.
 | `link`, `anchor` | Target file or heading missing | Retarget to the file and section that hold the text |
 | `orphan` | No doc or code links it | Link it where a reader needs it, or delete it |
 | `code-path` | Code names a doc that does not exist | Update the path in the code |
+| `direction` | A link goes to a higher level, a sibling module or another skill | Move the shared text below its users, or invert the link |
+| `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
+| `first-read` | Bootstrap, host session, skill and opening links over the budget | Move detail out of the opening or the bootstrap |
+| `shared-section` | A section linked from 3+ files in other modules | Make it its own file |
+| `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |
 | `positional` | `above` or `below` that may point at moved text | Link or name the target instead |
 | `stale-name` | Text names a `.md` file that exists nowhere | Link the doc that now holds it, or add a generic project name to `known_names` |
 | `dated`, `backslash`, `person` | Time-bound wording, Windows path, first/second-person description | Reword |

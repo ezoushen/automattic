@@ -233,6 +233,33 @@
   ]
  },
  "shared_section_links": 3,
+ "fold": {
+  "skills": [
+   "skills/*/SKILL.md",
+   ".agents/skills/*/SKILL.md"
+  ],
+  "agents": [
+   "agents/*.md"
+  ],
+  "jobs": [
+   "skills/*/jobs/*.md",
+   "flows/*/jobs/*.md"
+  ],
+  "kinds": [
+   "skills/remediate/kinds/*.md",
+   "standards/**/kinds/*.md"
+  ],
+  "hooks": [
+   "hooks/hooks.json",
+   "harnesses/*/hooks.json",
+   "hosts/*/hooks.json"
+  ],
+  "commands": [
+   "scripts/*.py",
+   "hooks/*.py"
+  ],
+  "decision_families": "schemas/decision.schema.json"
+ },
  "debt": {
   "links": [
    "agents/builder.md -> skills/code-comments/SKILL.md",

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """check_docs.py enforces the module architecture: each rule on a small fixture tree."""
 import json
+import shutil
+import subprocess
+import sys
 import unittest
 
-from test_doc_checker import GUIDE, Fixture, SKILL
+from test_doc_checker import CHECKER, GUIDE, Fixture, SKILL
 
 ARCHITECTURE = {
     'levels': [['skills'], ['flows'], ['runtime']],
@@ -135,6 +138,56 @@ class ArchitectureRules(Fixture):
         self.write('shared/other.md', '# Other\n\nSee [steps](guide.md#steps).\n')
         self.write('flows/c/f.md', '# F\n\nSee [guide](../../shared/guide.md) and [other](../../shared/other.md).\n')
         self.assertEqual(self.check(), set())
+
+    def test_skills_count_as_other_modules_to_each_other_for_shared_sections(self):
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.') + '\n## Filter\n\nAsk less.\n')
+        for name in ('a', 'b', 'c'):
+            self.write(f'skills/{name}/SKILL.md', SKILL.format(name=name, description='Runs a tool.')
+                       + 'See [filter](../tool/SKILL.md#filter).\n')
+        self.architecture['debt'] = {'links': [f'skills/{n}/SKILL.md -> skills/tool/SKILL.md' for n in 'abc']}
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'shared-section', 'warning')})
+
+
+TARGET_DOCS = {  # doc under a target folder: is it an entry point (exempt from the orphan rule)?
+    'bootstrap.md': True,
+    'flows/delivery/procedure.md': False,
+    'flows/delivery/jobs/job.md': True,
+    'standards/style.md': False,
+    'runtime/workers/launch.md': False,
+    'hosts/claude/session.md': True,
+    'hosts/claude/workers.md': False,
+    'hosts/herdr.md': False,
+    'hosts/executors/bash.md': False,
+}
+
+
+class TargetFolders(Fixture):
+    """The repository's own config applies size, link, orphan and code-path rules to every target folder."""
+
+    def run_repository_config(self):
+        result = subprocess.run([sys.executable, str(CHECKER), '--root', str(self.root), '--json'],
+                                capture_output=True, text=True)
+        assert result.returncode in (0, 1), result.stderr
+        return {f['code'] for f in json.loads(result.stdout) if f['path'] == self.doc or f['path'] == 'scripts/run.py'}
+
+    def test_each_target_folder_gets_the_size_link_orphan_and_code_path_rules(self):
+        for doc, entry in TARGET_DOCS.items():
+            with self.subTest(doc=doc):
+                self.doc = doc
+                (self.root / 'scripts').mkdir(exist_ok=True)
+                for name in self.root.iterdir():
+                    if name.name != 'scripts':
+                        shutil.rmtree(name) if name.is_dir() else name.unlink()
+                self.write(doc, '# Doc\n\nSee [gone](gone.md).\n\n' + 'x' * 13000 + '\n')
+                sibling = doc.rsplit('/', 1)[0] + '/missing.md' if '/' in doc else None
+                self.write('scripts/run.py', f"MISSING = '{sibling}'\n" if sibling else "OK = 1\n")
+                expected = {'size', 'link'} | (set() if entry else {'orphan'}) | ({'code-path'} if sibling else set())
+                self.assertEqual(self.run_repository_config() & {'size', 'link', 'orphan', 'code-path', 'unmapped'}, expected)
+
+    def test_a_missing_bootstrap_named_in_code_is_a_code_path_error(self):
+        self.write('scripts/run.py', "BOOT = 'bootstrap.md'\n")
+        self.doc = 'bootstrap.md'
+        self.assertEqual(self.run_repository_config(), {'code-path'})
 
 
 if __name__ == "__main__":
