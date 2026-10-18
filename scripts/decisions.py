@@ -225,7 +225,7 @@ def digest(value):
 
 def fingerprint(policy, context):
     code = {name: hashlib.sha256(ast.dump(ast.parse((ROOT / 'scripts' / name).read_text())).encode()).hexdigest()
-            for name in ('decisions.py', 'decision_images.py')}
+            for name in ('decisions.py', 'decision_images.py', 'journal_store.py')}
     return digest({'backend': policy['backend'], 'enabled': policy['enabled'],
                    'context': context or {}, 'implementation': code})
 

@@ -192,7 +192,7 @@ class Decisions(unittest.TestCase):
         """A disposable copy of the decision scripts, so fingerprint probes never touch the checkout."""
         root = self.root / 'plugin'
         (root / 'scripts').mkdir(parents=True, exist_ok=True)
-        for name in ('decisions.py', 'agent_models.py', 'decision_images.py'):
+        for name in ('decisions.py', 'agent_models.py', 'decision_images.py', 'journal_store.py'):
             shutil.copy(decisions.ROOT / 'scripts' / name, root / 'scripts' / name)
         return root
 
@@ -206,7 +206,7 @@ class Decisions(unittest.TestCase):
                              [w['code'] for w in decisions.calibration_status(self.policy)])
 
     def test_comment_only_edits_leave_calibration_current(self):
-        for name in ('decisions.py', 'decision_images.py'):
+        for name in ('decisions.py', 'decision_images.py', 'journal_store.py'):
             with self.subTest(script=name):
                 root = self.plugin_root()
                 with patch.object(decisions, 'ROOT', root):
@@ -217,7 +217,7 @@ class Decisions(unittest.TestCase):
                                      [w['code'] for w in decisions.calibration_status(self.policy)])
 
     def test_decision_request_and_scoring_edits_stale_calibration(self):
-        for name in ('decisions.py', 'decision_images.py'):
+        for name in ('decisions.py', 'decision_images.py', 'journal_store.py'):
             with self.subTest(script=name):
                 root = self.plugin_root()
                 with patch.object(decisions, 'ROOT', root):

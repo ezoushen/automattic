@@ -15,7 +15,7 @@ import capacity
 import decisions
 import journal_store
 import outcomes
-from executor_config import (EFFORTS, read_executors, read_session, reset_session, save_session, session_path,  # noqa: F401
+from executor_config import (read_executors, read_session, reset_session, save_session, session_path,
                              validate_execution_config, validate_schema, validate_settings)
 
 from decisions import systemone_request
