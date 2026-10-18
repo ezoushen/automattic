@@ -40,7 +40,7 @@ one of the following. Executor selection and model policy are separate choices.
 {"type":"subagent","config":{"agent":"codex:codex-rescue"}}
 ```
 
-**Skill**, with the instruction supplied after selecting the installed skill:
+**Skill** ([contract](skill-executor.md)), with the instruction supplied after selecting the installed skill:
 
 ```json
 {

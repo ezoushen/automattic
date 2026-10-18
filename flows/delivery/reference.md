@@ -45,6 +45,3 @@ Repo-specific ones belong in the project loop file. Universal ones:
 - `git worktree remove` leaves the branch; a re-spawned ticket resumes it.
 - `UP-TO-DATE` or `FROM-CACHE` is not a fresh execution. Reuse needs evidence for
   the relevant code, inputs and environment, as defined by the assigned job.
-
-For the workflow-wide failure modes and their owners, see the
-pipeline skill's map of failure modes and where the loop catches them.

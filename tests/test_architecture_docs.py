@@ -94,6 +94,18 @@ class ArchitectureDocs(unittest.TestCase):
         self.assertFalse((ROOT / 'hosts/executors' / 'bash.md').exists())
         self.assertIn('](../../runtime/config/bash-executor.md)', (ROOT / 'hosts/executors/README.md').read_text())
 
+    def test_the_skill_executor_contract_lives_in_runtime_config_and_config_docs_link_it(self):
+        contract = (ROOT / 'runtime/config/skill-executor.md').read_text()
+        self.assertIn('Resolve `executor_config.skill`', contract)
+        self.assertIn('treat it as non-composable', ' '.join(contract.split()))
+        self.assertNotIn('Resolve `executor_config.skill`', (ROOT / 'hosts/executors/skill.md').read_text())
+        self.assertIn('](../../runtime/config/skill-executor.md)', (ROOT / 'hosts/executors/skill.md').read_text())
+        for name in ('catalog.md', 'executors.md'):
+            self.assertIn('](skill-executor.md)', (ROOT / 'runtime/config' / name).read_text(), name)
+
+    def test_the_delivery_reference_sends_no_reader_up_to_a_skill(self):
+        self.assertNotIn('pipeline skill', (ROOT / 'flows/delivery/reference.md').read_text())
+
     def test_no_recorded_debt_remains(self):
         base = ROOT / '.agents/skills/writing-agent-docs'
         self.assertEqual(json.loads((base / 'config.json').read_text())['debt'], {})
