@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Before a push: the whole-repo doc check and the full test suite, run on each pushed
+# commit in a temporary worktree, so uncommitted edits cannot change the result.
+# Enable once per clone: git config core.hooksPath .githooks
+set -uo pipefail
+zero=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
+tested=' '
+base=''
+cleanup() {
+  if [ -n "$base" ]; then
+    git worktree remove --force "$base/tree" 2>/dev/null
+    rm -rf "$base"
+    base=''
+  fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue          # a deletion pushes no commits
+  [ "$local_sha" = "$remote_sha" ] && continue    # the remote already has it
+  commit=$(git rev-parse -q --verify "$local_sha^{commit}" </dev/null) || continue  # not a commit
+  case "$tested" in *" $commit "*) continue ;; esac
+  base=$(mktemp -d) || exit 1
+  git worktree add -q --detach "$base/tree" "$commit" </dev/null || exit 1
+  echo "pre-push: checking $local_ref at ${commit:0:12}" >&2
+  (
+    cd "$base/tree" || exit 1
+    unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
+    checker=.agents/skills/writing-agent-docs/check_docs.py
+    if [ -f "$checker" ]; then
+      python3 "$checker" || exit 1
+    else
+      echo "pre-push: no doc checker at ${commit:0:12}; skipped" >&2
+    fi
+    if [ -x scripts/test-all.sh ]; then
+      scripts/test-all.sh
+    else
+      echo "pre-push: no test suite at ${commit:0:12}; skipped" >&2
+    fi
+  ) </dev/null  # the ref list is on stdin; nothing in the loop may read it
+  status=$?
+  cleanup
+  if [ "$status" != 0 ]; then
+    echo "pre-push: checks failed for $local_ref at ${commit:0:12}; push stopped" >&2
+    exit 1
+  fi
+  tested="$tested$commit "
+done
+exit 0

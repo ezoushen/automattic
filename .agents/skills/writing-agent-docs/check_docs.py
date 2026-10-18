@@ -149,7 +149,8 @@ def exists_exactly(path):
 
 
 def git(root, *args):
-    result = subprocess.run(['git', '-c', 'core.quotepath=off', '-C', str(root), *args], capture_output=True, text=True)
+    result = subprocess.run(['git', '-c', 'core.quotepath=off', '-C', str(root), *args], capture_output=True,
+                            text=True, errors='replace')  # diffs carry file content in any encoding
     if result.returncode:
         raise InputError(f'git {" ".join(args)}: {result.stderr.strip()}')
     return result.stdout
@@ -308,7 +309,7 @@ def check(root, config, changed=None):
     # Doc paths named in code.
     pattern = re.compile(config['code_doc_pattern'])
     for path in expand(root, config.get('code', []), config.get('exclude', [])):
-        for number, line in enumerate(path.read_text().splitlines(), 1):
+        for number, line in enumerate(path.read_text(errors='replace').splitlines(), 1):  # any source encoding
             for doc in pattern.findall(line):
                 if exists_exactly(root / doc) and (root / doc).is_file():
                     reached.add((root / doc).resolve())

@@ -1,14 +1,34 @@
 #!/usr/bin/env bash
+# Fast checks on each commit; the full suite runs before push (.githooks/pre-push).
 # Enable once per clone: git config core.hooksPath .githooks
 set -uo pipefail
 root=$(git rev-parse --show-toplevel)
-# Agent-facing docs first: fast, and it names each problem in the changed files.
-# It reads the working tree, so unstaged edits count too. Warnings do not block.
+command -v python3 >/dev/null || { echo "pre-commit: python3 not found; the checks need it" >&2; exit 1; }
+
+# Agent-facing docs: names each problem in the changed files. It reads the working
+# tree, so unstaged edits count too. Warnings do not block.
 checker="$root/.agents/skills/writing-agent-docs/check_docs.py"
-command -v python3 >/dev/null || { echo "pre-commit: python3 not found; the doc check needs it" >&2; exit 1; }
 if git rev-parse -q --verify HEAD >/dev/null; then
   python3 "$checker" --changed HEAD || exit 1
 else
   python3 "$checker" || exit 1
 fi
-exec "$root/scripts/test-all.sh"
+
+# Syntax of the staged Python and shell files, read from the index (what is being
+# committed), without writing bytecode. Symlinks and submodules are skipped.
+failed=0
+while IFS= read -r -d '' name; do
+  mode=$(git ls-files -s -- "$name" | cut -d' ' -f1)
+  [ "$mode" = 100644 ] || [ "$mode" = 100755 ] || continue
+  check=''
+  case "$name" in
+    *.py) check=python ;;
+    *.sh) check=shell ;;
+    *) git show ":$name" | head -n 1 | grep -qE '^#!.*\bbash\b' && check=shell ;;
+  esac
+  case "$check" in
+    python) git show ":$name" | python3 -c 'import ast, sys; ast.parse(sys.stdin.buffer.read(), sys.argv[1])' "$name" || failed=1 ;;
+    shell) git show ":$name" | bash -n || { echo "pre-commit: $name: shell syntax error" >&2; failed=1; } ;;
+  esac
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+[ "$failed" = 0 ] || { echo "pre-commit: syntax errors above" >&2; exit 1; }

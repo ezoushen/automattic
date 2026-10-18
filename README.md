@@ -472,11 +472,18 @@ development symlink.
 ## Verification
 
 `scripts/test-all.sh` runs every `tests/test_*.py` file in parallel (about 15 s)
-with the plugin environment's `.venv` and exits 1 on any failure. The pre-commit hook
-runs the [doc checker](.agents/skills/writing-agent-docs/SKILL.md) on changed files,
-then this suite; enable it once per clone with `git config core.hooksPath .githooks`
-(`git commit --no-verify` skips it). Both read files as they are on disk, so unstaged
-edits and untracked docs count, not only what is staged. Tests are `unittest` cases, so
+with the plugin environment's `.venv` and exits 1 on any failure. Enable the hooks once
+per clone with `git config core.hooksPath .githooks`:
+- `pre-commit` (about a second) runs the
+  [doc checker](.agents/skills/writing-agent-docs/SKILL.md) on changed files and
+  checks the syntax of staged Python and shell files. The doc check reads files as they
+  are on disk, so unstaged edits and untracked docs count, not only what is staged.
+- `pre-push` checks out each pushed commit into a temporary worktree and runs the
+  whole-repo doc check and this suite there, so the result is the pushed code's.
+  Commits the remote already has are not rerun; an older commit without the checker
+  or suite is pushed with a warning.
+
+`--no-verify` skips either hook. Tests are `unittest` cases, so
 one file, class or test runs on its own. The default suite needs an installed `claude`
 for `test_claude_effort.py`, which runs it against a local fake API; the package and
 profile readers of the installed CLIs are opt-in:
