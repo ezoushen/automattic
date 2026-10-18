@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """The README, the pipeline map and the agent-docs skill describe the layers and how to extend them."""
+import json
 import re
 import unittest
 
@@ -61,8 +62,15 @@ class ArchitectureDocs(unittest.TestCase):
         self.assertNotIn('skills/<owner>/jobs', SKILL)
         self.assertNotIn('this bootstrap', (ROOT / 'runtime/workers/long-sessions.md').read_text())
 
+    def test_the_code_path_pattern_skips_a_hidden_folder_prefix_and_the_scanned_tests_are_not_excluded(self):
+        config = json.loads((ROOT / '.agents/skills/writing-agent-docs/config.json').read_text())
+        pattern = re.compile(config['code_doc_pattern'])
+        self.assertEqual(pattern.findall('.agents/skills/writing-agent-docs/SKILL.md'), [])
+        self.assertEqual(pattern.findall("'skills/pipeline/SKILL.md' and bootstrap.md"),
+                         ['skills/pipeline/SKILL.md', 'bootstrap.md'])
+        self.assertFalse({'tests/test_architecture_docs.py', 'tests/test_import_direction.py'} & set(config['exclude']))
+
     def test_no_recorded_debt_remains(self):
-        import json
         base = ROOT / '.agents/skills/writing-agent-docs'
         self.assertEqual(json.loads((base / 'config.json').read_text())['debt'], {})
         self.assertTrue(all(not value for value in json.loads((base / 'architecture.json').read_text())['debt'].values()))

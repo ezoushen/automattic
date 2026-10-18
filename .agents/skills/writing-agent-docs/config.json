@@ -32,12 +32,10 @@
     "tests/test_pre_push_signals.py",
     "tests/hook_case.py",
     "tests/test_agent_definitions.py",
-    "tests/test_architecture_docs.py",
     "tests/test_architecture_rules.py",
-    "tests/test_import_direction.py",
     "tests/test_fold_check.py"
   ],
-  "code_doc_pattern": "(?:(?:harnesses|skills|agents|flows|standards|runtime|hosts)/[\\w/-]+|(?<![\\w/.-])bootstrap)\\.md",
+  "code_doc_pattern": "(?<![\\w/.-])(?:(?:harnesses|skills|agents|flows|standards|runtime|hosts)/[\\w/-]+|bootstrap)\\.md",
   "entry_points": [
     "skills/*/SKILL.md",
     "agents/*.md",
