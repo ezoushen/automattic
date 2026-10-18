@@ -8,8 +8,8 @@ argument-hint: "<branch|PR-number|PR-URL> [--autofix] [--comments draft|confirm|
 # review
 
 First read [runtime bootstrap](../../bootstrap.md) and the host session part.
-Run the [shared review procedure](workflow.md) with the user's target and flags.
+Run the [shared review procedure](../../flows/review/review.md) with the user's target and flags.
 This public command remains user-invoked; dispatch and an authorized walkthrough
 handoff use the same procedure without calling this command through Skill.
 For guided explanation and discussion before assessment, use
-[walkthrough](../walkthrough/SKILL.md).
+[walkthrough](../../flows/review/guided.md).

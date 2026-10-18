@@ -217,11 +217,11 @@ For each selected effort with integrated changes, finish or reconcile its writer
 then apply [housekeeping](../housekeeping/SKILL.md) to the effort worktree. Commit
 intended tracked cleanup/documentation changes there before pinning the review
 head; preserve unrelated local edits. Run the
-[shared review procedure](../review/workflow.md) on the verified effort branch,
+[shared review procedure](../../flows/review/review.md) on the verified effort branch,
 one target at a time. Pass the selected ticket scope, accepted alignment/ledger,
 priority sources, project instructions and report path. Include `--autofix` only
 when repairs are authorized. If the user explicitly requested a walkthrough before
-review, follow [walkthrough](../walkthrough/SKILL.md) first and honor its transition
+review, follow [walkthrough](../../flows/review/guided.md) first and honor its transition
 policy. With no integrated changes, report that there is no review target.
 
 Review the integrated result even if other selected tickets are blocked; record
@@ -242,7 +242,7 @@ and record the gap. There is one review loop, maintained in the shared procedure
 Record its report, scope/coverage, findings and follow-ups alongside implementation
 status. With `--autofix`, the shared procedure includes repair integration and
 applicable E2E before returning; do not run a duplicate verification phase in
-dispatch. Read and execute [Verify autofix through E2E](../review/workflow.md#verify-autofix-through-e2e)
+dispatch. Read and execute [Verify autofix through E2E](../../flows/review/e2e.md)
 before returning from an autofix handoff, including when all code findings are closed.
 `pr` still requires current review/E2E evidence as well as done tickets.
 Once the remaining gates are complete or explicitly excluded, retire an unused

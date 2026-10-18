@@ -86,7 +86,6 @@
   },
   "remediation": {
    "docs": [
-    "skills/remediate/jobs/*.md",
     "flows/remediation/**/*.md"
    ]
   },
@@ -101,7 +100,6 @@
   },
   "review": {
    "docs": [
-    "skills/review/**/*.md",
     "flows/review/**/*.md"
    ],
    "code": [
@@ -238,30 +236,21 @@
  "debt": {
   "links": [
    "skills/dispatch/SKILL.md -> skills/housekeeping/SKILL.md",
-   "skills/dispatch/SKILL.md -> skills/walkthrough/SKILL.md",
    "skills/dispatch/reference.md -> skills/pipeline/SKILL.md",
    "skills/pipeline/SKILL.md -> skills/pr/SKILL.md",
    "skills/pipeline/SKILL.md -> skills/setup-automattic/SKILL.md",
-   "skills/pipeline/SKILL.md -> skills/walkthrough/SKILL.md",
    "skills/pr/SKILL.md -> skills/housekeeping/SKILL.md",
-   "skills/remediate/jobs/audit.md -> skills/remediate/SKILL.md",
-   "skills/review/SKILL.md -> skills/walkthrough/SKILL.md",
-   "skills/review/workflow.md -> skills/walkthrough/SKILL.md",
-   "skills/setup-automattic/SKILL.md -> skills/pipeline/SKILL.md",
-   "skills/walkthrough/SKILL.md -> skills/brief/SKILL.md"
+   "skills/setup-automattic/SKILL.md -> skills/pipeline/SKILL.md"
   ],
   "cycles": [
    [
     "delivery",
-    "remediation",
-    "review",
     "skills"
    ]
   ],
   "first_read": {
-   "skills/dispatch/SKILL.md": 35147,
-   "skills/pipeline/SKILL.md": 45978,
-   "skills/review/SKILL.md": 39328
+   "skills/dispatch/SKILL.md": 35145,
+   "skills/pipeline/SKILL.md": 45661
   },
   "imports": [],
   "import_cycles": []

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load and check the plugin's agents (agents/*.md) and jobs (skills/*/jobs/*.md).
+"""Load and check the plugin's agents (agents/*.md) and jobs (skills/*/jobs/*.md and flows/*/jobs/*.md).
 
 An agent holds permissions, principles and core skills; a job holds what one assignment
 needs and returns. Code reads both from here, so no script needs an agent's name.
@@ -48,13 +48,18 @@ def tool_set(value):
     return {item.strip() for item in (value or '').split(',') if item.strip()}
 
 
+def job_files(root):
+    """Job files of a plugin root, named by file stem across skills and flows."""
+    return sorted([*Path(root).glob('skills/*/jobs/*.md'), *Path(root).glob('flows/*/jobs/*.md')])
+
+
 def load(root=ROOT):
     root = Path(root)
     agents, jobs = {}, {}
     for path in sorted((root / 'agents').glob('*.md')):
         fields, _ = frontmatter(path)
         agents[path.stem] = dict(fields or {}, path=str(path))
-    for path in sorted(root.glob('skills/*/jobs/*.md')):
+    for path in job_files(root):
         fields, _ = frontmatter(path)
         fields = fields or {}
         jobs.setdefault(path.stem, {key: fields.get(key) for key in
@@ -159,7 +164,7 @@ def branches_on(path, names):
 def problems(root=ROOT):
     root = Path(root)
     agent_paths = sorted((root / 'agents').glob('*.md'))
-    job_paths = sorted(root.glob('skills/*/jobs/*.md'))
+    job_paths = job_files(root)
     agents = {path.stem for path in agent_paths}
     found = [problem for path in agent_paths for problem in agent_problems(root, path)]
     seen = {}

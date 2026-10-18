@@ -178,6 +178,14 @@ class Definitions(unittest.TestCase):
         self.write('skills/other/jobs/inspect.md', JOB)
         self.assertProblem('job inspect is defined twice')
 
+    def test_a_job_under_a_flow_loads_and_shares_the_unique_name_space(self):
+        self.write('flows/craft/jobs/survey.md', JOB.replace('name: inspect', 'name: survey'))
+        self.assertEqual(self.problems(), [])
+        self.assertEqual(agent_defs.load(self.root)['jobs']['survey']['path'],
+                         str(self.root / 'flows/craft/jobs/survey.md'))
+        self.write('flows/craft/jobs/inspect.md', JOB)
+        self.assertProblem('job inspect is defined twice')
+
     def test_job_name_matches_its_file(self):
         self.edit('skills/craft/jobs/inspect.md', 'name: inspect', 'name: survey')
         self.assertProblem('name survey does not match file inspect')
