@@ -152,7 +152,7 @@ thinking stay in the model's Pi binding. Apply the same pattern under
 `runtimes.opencode` for skills that launch OpenCode.
 
 A caller-specific route takes precedence over the shared Herdr route even inside
-Herdr. Configure one only when its [skill contract](../executors/skill.md) can honor the
+Herdr. Configure one only when its skill contract (`hosts/executors/skill.md`) can honor the
 assignment and model policy. Neither an explicit caller key nor the shared `herdr`
 key proves that the skill and its tools work in the current host.
 To reuse the same skill usage across routes, define a

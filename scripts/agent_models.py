@@ -838,7 +838,7 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
         result.update(host_harness=host, job=job, executor='native', executor_type='subagent',
                       executor_config={}, native_dispatch=True, model_mode='existing',
                       route_source=source, allow_thinking_override=False, **metadata,
-                      executor_guide=str(ROOT / 'harnesses/executors/subagent.md'))
+                      executor_guide=str(ROOT / 'hosts/executors/subagent.md'))
         return result
     executor = instance['executor']
     kind, config = executor['type'], executor.get('config', {})
@@ -894,7 +894,9 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
             'thinking_baseline': thinking['default'] if bounded else thinking,
             **({'thinking_allowed': thinking['allowed']} if bounded else {}),
             'route_source': source, **metadata,
-            'executor_guide': str(ROOT / 'harnesses/executors' / f'{kind}.md')}
+            # The guide is named by executor type: hosts/executors/subagent.md, hosts/executors/skill.md
+            # or hosts/executors/bash.md.
+            'executor_guide': str(ROOT / 'hosts/executors' / f'{kind}.md')}
 
 
 def validate_settings(settings, location, *, runtime_labels=False):

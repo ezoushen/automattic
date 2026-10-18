@@ -7,7 +7,7 @@ argument-hint: "<effort-slug> — an existing alignment brief"
 
 # refine
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 Run the [shared refinement procedure](workflow.md) with the user's brief and scope.
 The same procedure supports explicitly requested research-to-refinement composition
 where the runtime permits it; it does not enable implicit skill invocation.

@@ -7,7 +7,7 @@ argument-hint: "<idea, plan, or decision to clarify> [--interactive]"
 
 # mandate
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 
 A mandate is the user's goal, principles, constraints and reserved decisions.
 Inside it the agent decides; a material choice outside it needs the user.

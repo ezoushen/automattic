@@ -17,7 +17,7 @@ Prefer configured native children for same-runtime assignments, including Pi-to-
 Use Herdr for configured cross-runtime assignments or an explicit Herdr route.
 Preserve an explicit user-selected executor and model policy;
 do not infer the destination from a model name or silently replace a saved route.
-Use [runtime definitions](setup/catalog.md#configure-an-agent) to share launch routes
+Use [runtime definitions](../harnesses/setup/catalog.md#configure-an-agent) to share launch routes
 across models; model bindings declare each runtime's registered ID and thinking
 policy. Agent pools stay shared; routing profiles override candidate/thinking by
 worker runtime only when selected explicitly. If a saved route sends same-runtime
@@ -25,7 +25,7 @@ work through Herdr, show the mismatch and
 use the models skill for an authorized correction. Environment detection alone
 does not rewrite configuration. Native capacity or permission limits do not
 authorize a Herdr fallback; queue work or report the boundary.
-Quota/provider failures instead follow [pool recovery](routing/recovery.md#feedback-and-recovery):
+Quota/provider failures instead follow [pool recovery](../harnesses/routing/recovery.md#feedback-and-recovery):
 exclude the failed account/capability, choose a suitable allowed alternative and
 state the switch. Do not try another model on the same exhausted account.
 
@@ -44,7 +44,7 @@ Session-local settings isolation must preserve required installed dependencies
 and Herdr's native identity hook; verify both before accepting the launch.
 Launch an OpenCode 2 worker as the full TUI (`opencode`); Herdr's integration
 reports only its activity and session, not `mini`'s. Set its settings through
-the [OpenCode adapter](opencode/adapter.md#top-level-workers) after the startup probe. For guarded retirement, use an isolated configuration that
+the [OpenCode adapter](opencode/workers.md#top-level-workers) after the startup probe. For guarded retirement, use an isolated configuration that
 preserves the installed server plugin and, for the full TUI, its native TUI session
 reporter. Reproduce the installer's current TUI configuration in the isolated
 config directory, including its referenced module; a server-plugin entry alone
@@ -66,7 +66,7 @@ to a file and validate that artifact; exit zero alone does not establish integri
 ## Wait and recover
 
 Bind each prompt, independent wait and collected result to its registered attempt
-under [worker attempts](workers/prepare.md) and [waits](workers/wait.md). Resume from its pending
+under [worker attempts](../harnesses/workers/prepare.md) and [waits](../harnesses/workers/wait.md). Resume from its pending
 receipts and native worker state; rearm consumed waits after reconciliation.
 
 Read the installed skill's completion section and current command-group help
@@ -97,7 +97,7 @@ assignment settles and its result is verified.
 Record created pane/worker IDs with the assignment. After accepting its final
 result and verifying durable reports/evidence, close its owned pane automatically
 through the installed skill, then confirm closure and clear the live handle. Use
-the [collection](workers/collect.md) and [retirement](workers/retire.md) integration
+the [collection](../harnesses/workers/collect.md) and [retirement](../harnesses/workers/retire.md) integration
 so native closure also retires its registered handle.
 An idle reviewer needed for a repair recheck stays available until that phase ends;
 retiring it early requires the explicit handoff in the [skill executor](executors/skill.md).

@@ -7,7 +7,7 @@ argument-hint: "<effort-slug> [--interactive] — use the agreed goal"
 
 # align
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 
 Turn the accepted mandate into a plan sufficient to split and verify. Reuse the
 conversation and existing alignment; a separate mandate invocation is optional.

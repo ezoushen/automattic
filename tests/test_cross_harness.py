@@ -151,8 +151,8 @@ class CrossHarness(unittest.TestCase):
         codex = json.loads((PLUGIN / '.codex-plugin/plugin.json').read_text())
         assert portable['version'] == claude['version'] == codex['version']
         assert codex['skills'] == './skills/'
-        assert codex['hooks'] == './harnesses/codex/hooks.json'
-        assert portable['extensions']['com.openai']['hooks'] == './harnesses/codex/hooks.json'
+        assert codex['hooks'] == './hosts/codex/hooks.json'
+        assert portable['extensions']['com.openai']['hooks'] == './hosts/codex/hooks.json'
         # Codex 0.162 reads a root manifest declaring the Agent Plugins $schema as that format and drops
         # .codex-plugin hooks, so a copied install would register none.
         assert '$schema' not in portable, 'root plugin.json must not declare $schema'
@@ -171,7 +171,7 @@ class CrossHarness(unittest.TestCase):
                 for link in re.findall(r'\]\(([^)]+)\)', path.read_text()):
                     if '://' not in link and '<' not in link:
                         assert (path.parent / link.split('#')[0]).exists(), (path, link)
-        for harness, relative in (('claude', 'hooks/hooks.json'), ('codex', 'harnesses/codex/hooks.json')):
+        for harness, relative in (('claude', 'hooks/hooks.json'), ('codex', 'hosts/codex/hooks.json')):
             config = json.loads((PLUGIN / relative).read_text())['hooks']
             expected = {'SessionStart', 'PreToolUse', 'Stop'} if harness == 'claude' else {'SessionStart', 'Stop'}
             assert set(config) == expected, (harness, config)
@@ -187,17 +187,20 @@ class CrossHarness(unittest.TestCase):
             result = run(*shlex.split(command), input='{}')
             context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
             assert f'harness: {harness}' in context
-            assert str(PLUGIN / 'harnesses' / harness / 'adapter.md') in context
+            assert str(PLUGIN / 'bootstrap.md') in context
+            assert str(PLUGIN / 'hosts' / harness / 'session.md') in context
+            assert (PLUGIN / 'bootstrap.md').is_file() and (PLUGIN / 'hosts' / harness / 'session.md').is_file()
             other = 'codex' if harness == 'claude' else 'claude'
-            assert f'/harnesses/{other}/' not in context
+            assert f'/hosts/{other}/' not in context
             for herdr in ('', '0', '1'):
                 result = subprocess.run(shlex.split(command), input='{}', text=True,
                                         capture_output=True, check=True,
                                         env=dict(os.environ, HERDR_ENV=herdr))
                 context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
-                assert (str(PLUGIN / 'harnesses/herdr.md') in context) == (herdr == '1')
-                assert str(PLUGIN / 'harnesses' / harness / 'adapter.md') in context
-                assert f'/harnesses/{other}/' not in context
+                assert (str(PLUGIN / 'hosts/herdr.md') in context) == (herdr == '1')
+                assert str(PLUGIN / 'bootstrap.md') in context
+                assert str(PLUGIN / 'hosts' / harness / 'session.md') in context
+                assert f'/hosts/{other}/' not in context
 
     def test_python_scripts_import_by_name_and_named_scripts_exist(self):
         import re
@@ -239,7 +242,8 @@ class CrossHarness(unittest.TestCase):
         assert 'allow_implicit_invocation: false' in ui
         assert '$automattic:remediate' in ui
         for host in ('claude', 'codex', 'pi', 'opencode'):
-            assert (PLUGIN / 'harnesses' / host / 'adapter.md').is_file()
+            assert (PLUGIN / 'hosts' / host / 'session.md').is_file()
+            assert (PLUGIN / 'hosts' / host / 'workers.md').is_file()
         assert json.loads((PLUGIN / '.codex-plugin/plugin.json').read_text())['skills'] == './skills/'
         for kind in ('tautological-tests', 'misleading-comments'):
             definition = path.parent / 'kinds' / f'{kind}.md'

@@ -7,7 +7,7 @@ argument-hint: "[effort|project|milestone|issue-ID|issue-URL] [--autofix]"
 
 # dispatch
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 One orchestrator owns scheduling, worktree integration and board updates.
 Workers receive an agent file, a job file and only that job's inputs. An effort
 has a local slug for its branch, alignment and reports; tickets live in the

@@ -15,7 +15,7 @@
   ],
   "extensions": {
     "com.openai": {
-      "hooks": "./harnesses/codex/hooks.json"
+      "hooks": "./hosts/codex/hooks.json"
     }
   }
 }

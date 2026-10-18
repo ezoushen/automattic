@@ -7,7 +7,7 @@ argument-hint: "[request|show|set|reset] [agent|router|decisions|profile|model-d
 
 # models
 
-Read [runtime bootstrap](../../harnesses/README.md) and the active host adapter.
+Read [runtime bootstrap](../../bootstrap.md) and the host session part.
 Handle the user's direct inspection, change or reset with the
 [shared configuration procedure](../../harnesses/setup/procedure.md). It owns the
 current shape, legacy command compatibility, scope precedence and validation.

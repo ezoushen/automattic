@@ -7,7 +7,7 @@ argument-hint: "<branch|PR-number|PR-URL> [--base <ref>]"
 
 # walkthrough
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 Help the user understand the change and form a judgment. The outcome is shared
 understanding and review criteria; an exhaustive review is an optional next step.
 Keep the walkthrough read-only, with explanations in the conversation. It does not

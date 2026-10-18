@@ -67,13 +67,13 @@
   },
   "bootstrap": {
    "docs": [
-    "harnesses/README.md",
     "bootstrap.md"
    ]
   },
   "board": {
    "docs": [
     "skills/dispatch/board.md",
+    "skills/dispatch/conventions.md",
     "flows/board/**/*.md"
    ],
    "code": [
@@ -126,12 +126,6 @@
   },
   "hosts": {
    "docs": [
-    "harnesses/claude/**/*.md",
-    "harnesses/codex/**/*.md",
-    "harnesses/opencode/**/*.md",
-    "harnesses/pi/**/*.md",
-    "harnesses/herdr.md",
-    "harnesses/executors/*.md",
     "hosts/**/*.md"
    ],
    "code": [
@@ -221,11 +215,9 @@
  "first_read": {
   "budget": 20480,
   "bootstrap": [
-   "harnesses/README.md",
    "bootstrap.md"
   ],
   "host_session": [
-   "harnesses/*/adapter.md",
    "hosts/*/session.md"
   ],
   "skills": [
@@ -265,10 +257,7 @@
    "agents/builder.md -> skills/code-comments/SKILL.md",
    "agents/builder.md -> skills/housekeeping/SKILL.md",
    "agents/reviewer.md -> skills/code-comments/SKILL.md",
-   "harnesses/README.md -> harnesses/herdr.md",
-   "harnesses/README.md -> skills/mandate/SKILL.md",
    "harnesses/checks/run.md -> skills/housekeeping/SKILL.md",
-   "harnesses/claude/adapter.md -> skills/review/workflow.md",
    "harnesses/decisions/annotate.md -> harnesses/workers/prepare.md",
    "harnesses/decisions/journal.md -> skills/decision/SKILL.md",
    "harnesses/decisions/phases.md -> harnesses/routing/recovery.md",
@@ -286,22 +275,15 @@
    "harnesses/routing/report.md -> harnesses/workers/prepare.md",
    "harnesses/routing/report.md -> harnesses/workers/skills.md",
    "harnesses/setup/apply.md -> skills/decision/SKILL.md",
-   "harnesses/setup/catalog.md -> harnesses/executors/skill.md",
-   "harnesses/setup/executors.md -> harnesses/executors/bash.md",
-   "harnesses/setup/executors.md -> harnesses/executors/skill.md",
-   "harnesses/setup/executors.md -> harnesses/executors/subagent.md",
    "harnesses/setup/executors.md -> harnesses/routing/choose.md",
    "harnesses/setup/executors.md -> harnesses/setup/procedure.md",
    "harnesses/setup/executors.md -> skills/setup-automattic/SKILL.md",
    "harnesses/setup/legacy-preferences.md -> harnesses/routing/recovery.md",
    "harnesses/setup/legacy-preferences.md -> harnesses/workers/launch.md",
-   "harnesses/setup/procedure.md -> harnesses/README.md",
    "harnesses/setup/routers.md -> harnesses/routing/decision-model.md",
    "harnesses/setup/routers.md -> skills/model-routing/SKILL.md",
-   "harnesses/workers/launch.md -> harnesses/README.md",
    "harnesses/workers/resources.md -> harnesses/checks/plan.md",
    "harnesses/workers/resources.md -> harnesses/checks/run.md",
-   "harnesses/workers/resources.md -> harnesses/herdr.md",
    "harnesses/workers/resources.md -> harnesses/routing/recovery.md",
    "harnesses/workers/resources.md -> harnesses/workers/design-hold.md",
    "skills/align/SKILL.md -> skills/mandate/SKILL.md",
@@ -347,7 +329,6 @@
     "config",
     "decisions",
     "delivery",
-    "hosts",
     "planning",
     "remediation",
     "resources",
@@ -360,22 +341,12 @@
    ]
   ],
   "first_read": {
-   "skills/align/SKILL.md": 34681,
-   "skills/brief/SKILL.md": 24821,
-   "skills/code-comments/SKILL.md": 23524,
-   "skills/decision/SKILL.md": 79247,
-   "skills/dispatch/SKILL.md": 51980,
-   "skills/housekeeping/SKILL.md": 27570,
-   "skills/mandate/SKILL.md": 28664,
-   "skills/model-routing/SKILL.md": 56968,
-   "skills/models/SKILL.md": 31816,
-   "skills/pipeline/SKILL.md": 61966,
-   "skills/pr/SKILL.md": 26459,
-   "skills/refine/SKILL.md": 32200,
-   "skills/remediate/SKILL.md": 29847,
-   "skills/review/SKILL.md": 54558,
-   "skills/setup-automattic/SKILL.md": 30681,
-   "skills/walkthrough/SKILL.md": 29866
+   "skills/align/SKILL.md": 20868,
+   "skills/decision/SKILL.md": 66417,
+   "skills/dispatch/SKILL.md": 38173,
+   "skills/model-routing/SKILL.md": 43157,
+   "skills/pipeline/SKILL.md": 48156,
+   "skills/review/SKILL.md": 39409
   },
   "imports": [
    "scripts/decision_journal.py -> scripts/decisions.py",
@@ -387,6 +358,16 @@
     "decisions",
     "routing"
    ]
+  ]
+ },
+ "host_shape": {
+  "root": "hosts",
+  "files": [
+   "session.md",
+   "workers.md"
+  ],
+  "exempt": [
+   "executors"
   ]
  }
 }

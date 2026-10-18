@@ -225,6 +225,20 @@ def first_read(root, architecture, rel):
     return findings
 
 
+def host_shape(root, architecture):
+    """Findings for each host folder that does not hold exactly its session and worker parts."""
+    settings = architecture.data.get('host_shape')
+    findings = []
+    base = root / settings['root'] if settings else None
+    for folder in sorted(base.iterdir()) if base and base.is_dir() else []:
+        if folder.is_dir() and folder.name not in settings.get('exempt', []):
+            names = sorted(path.name for path in folder.rglob('*.md'))
+            if names != sorted(settings['files']):
+                findings.append(Finding(f'{settings["root"]}/{folder.name}', 1, 'error', 'host-shape',
+                                        f'holds {", ".join(names) or "no docs"}; a host holds exactly {", ".join(settings["files"])}'))
+    return findings
+
+
 def check(root, config, changed=None, architecture=None):
     findings = []
     rel = lambda path: str(path.relative_to(root))
@@ -372,6 +386,7 @@ def check(root, config, changed=None, architecture=None):
                 findings.append(Finding(target, 1, 'warning', 'shared-section',
                                         f'#{anchor} is linked from {len(outside)} files in other modules; make it its own file'))
         findings.extend(first_read(root, architecture, rel))
+        findings.extend(host_shape(root, architecture))
     return sorted(findings, key=lambda f: (f['path'], f['line'], f['code'], f['message']))
 
 

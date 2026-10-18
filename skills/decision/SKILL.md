@@ -6,7 +6,7 @@ argument-hint: "[checkpoint and evidence | retro <journal> | replay <journal> <c
 
 # Workflow decision
 
-Read the [runtime bootstrap](../../harnesses/README.md) and active host adapter.
+Read the [runtime bootstrap](../../bootstrap.md) and the host session part.
 Use the decision contract: [configuration](../../harnesses/setup/routers.md#decision-backend),
 [phase boundaries and recovery actions](../../harnesses/decisions/phases.md), the
 [checkpoint command](../../harnesses/decisions/checkpoint.md) and [calibration](../../harnesses/decisions/calibration.md). The host owns the outcome;

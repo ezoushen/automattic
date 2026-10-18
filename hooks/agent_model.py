@@ -70,7 +70,7 @@ def stale_profile(name, cwd):
     missing, extra = sorted(tools(agent) - tools(profile)), sorted(tools(profile) - tools(agent))
     return (f'{profile} was rendered from an older `agents/{match.group(1)}.md`: its tools differ '
             f'(missing: {", ".join(missing) or "none"}; extra: {", ".join(extra) or "none"}). Re-render it with '
-            f'`agent_models.py --route ... --profile` as {ROOT}/harnesses/claude/adapter.md describes, and launch '
+            f'`agent_models.py --route ... --profile` as {ROOT}/hosts/claude/workers.md describes, and launch '
             f'the name it returns.')
 
 

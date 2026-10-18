@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # pipeline
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 
 The automattic plugin: six phase skills, one artefact directory `.scratch/<slug>/`, one principle: the
 principal answers **steering** questions (goal, principles, constraints) and

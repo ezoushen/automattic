@@ -20,8 +20,6 @@
     "scripts/*.sh",
     "hooks/*.py",
     "hooks/*.json",
-    "harnesses/**/*.ts",
-    "harnesses/**/*.json",
     "tests/*.py",
     "tests/*.mjs",
     "hosts/**/*.ts",
@@ -41,7 +39,6 @@
   "code_doc_pattern": "(?:(?:harnesses|skills|agents|flows|standards|runtime|hosts)/[\\w/-]+|(?<![\\w/.-])bootstrap)\\.md",
   "entry_points": [
     "skills/*/SKILL.md",
-    "harnesses/*/adapter.md",
     "agents/*.md",
     ".agents/skills/*/SKILL.md",
     "skills/*/jobs/*.md",
@@ -64,7 +61,7 @@
   "debt": {
     "skills/dispatch/SKILL.md": {
       "contents": true,
-      "bytes": 18130
+      "bytes": 18124
     },
     "skills/dispatch/board.md": {
       "contents": true
@@ -89,7 +86,7 @@
     },
     "skills/review/workflow.md": {
       "contents": true,
-      "bytes": 28504
+      "bytes": 27168
     }
   },
   "architecture": "architecture.json"

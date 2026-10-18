@@ -14,26 +14,27 @@ separate copies of skills or scripts.
 |---|---|
 | `skills/` | Explicit workflow, briefing and settings skills; automatically selectable decision, routing, writing and housekeeping skills |
 | `scripts/` | Scheduler, optional build mutex, worker/decision resolution, calibration and runnable checks |
-| `harnesses/claude/` | Claude lifecycle and native settings controls |
-| `harnesses/codex/` | Codex lifecycle, capacity and hook registration |
-| `harnesses/pi/` | Pi lifecycle, shared-agent delegation and bootstrap extension |
-| `harnesses/opencode/` | Model settings/profile selection; not a full workflow adapter |
+| `bootstrap.md` | Session rules every host reads first, with the triggers table for rules that fire outside their owner |
+| `hosts/claude/` | Claude session part and worker part (lifecycle and native settings controls) |
+| `hosts/codex/` | Codex session part, worker part (lifecycle and capacity) and hook registration |
+| `hosts/pi/` | Pi session part, worker part (shared-agent delegation) and bootstrap extension |
+| `hosts/opencode/` | Model settings/profile selection; not a full workflow adapter |
 | `schemas/` | Configuration, worker selection and decision request contracts |
 | `benchmarks/` | Synthetic decision calibration examples |
 | `addons/show-me/` | Shared presentation reference and thin manual show-me entry |
-| `harnesses/executors/` | Bash, Sub-agent and Skill execution adapters |
+| `hosts/herdr.md`, `hosts/executors/` | Herdr environment guidance; Bash, Sub-agent and Skill execution adapters |
 | `harnesses/workers/`, `routing/`, `decisions/`, `checks/` | Shared runtime rules by reader, each file small enough for one read |
 | `harnesses/setup/` | Configuration procedure for the setup-automattic and models skills |
 | `agents/` | Three worker agents (builder, reviewer, verifier): permissions, principles and core skills; Claude loads them natively |
-| `hooks/` | Shared adapter bootstrap; Claude hook registration |
+| `hooks/` | Shared session-start hook; Claude hook registration |
 | `plugin.json`, `.claude-plugin/`, `.codex-plugin/` | Portable metadata and compatibility registration |
 
-The harness bootstrap injects only the active adapter's path. Phase skills load that
-adapter before acting; code-comments and housekeeping also work independently. Codex workers use their native child-agent tools with an
+The harness bootstrap injects the paths of `bootstrap.md` and the active host's session
+part. Phase skills load them before acting; code-comments and housekeeping also work independently. Codex workers use their native child-agent tools with an
 explicit agent and job paths; no imported agent copies or orchestration server is
 needed. All three workflow harnesses load the same shared skill files.
 
-Codex planning loads a short adapter; worker lifecycle and peer messaging are
+Codex planning loads a short session part; worker lifecycle and peer messaging are
 loaded only for dispatch or worker assignments. Children can exchange concrete
 findings through native messaging while the orchestrator retains ownership of
 scheduling and integration.
@@ -113,7 +114,8 @@ codex plugin add automattic@automattic-dev
 The installer copies a snapshot. For development on this machine,
 `~/.codex/plugins/cache/automattic-dev/automattic/0.3.0` is a real directory whose
 workflow directories are symlinks into this checkout, including `skills`, `agents`,
-`harnesses`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`.
+`harnesses`, `hosts`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`, and
+the top-level `bootstrap.md` file is a symlink too.
 Its `.codex-plugin/` directory and
 small `plugin.json` registration are regular files/directories, copied from this
 tree's Codex manifest; the portable root `plugin.json` is omitted from that local
@@ -127,7 +129,8 @@ session to refresh loaded instructions and hooks; existing conversations
 may retain earlier instructions. Review any native hook-trust prompt. A reinstall
 or version change may replace the links; verify them afterward. Refresh the small
 registration when the Codex manifest changes and add a link when introducing a new
-top-level package entry. Check installation with
+top-level package entry; `hosts/` and `bootstrap.md` are such entries, so link both in an
+existing cache directory before starting a session. Check installation with
 `codex plugin list --marketplace automattic-dev --json` and the native readers below.
 Also check runtime `skills/list` and `hooks/list`: a listed installation alone does
 not prove that its skills or hook were loaded.
@@ -138,19 +141,20 @@ Pi development installation uses two symlinks to this source tree:
 ```sh
 mkdir -p ~/.pi/agent/skills ~/.pi/agent/extensions
 ln -s /absolute/path/to/automattic/skills ~/.pi/agent/skills/automattic
-ln -s /absolute/path/to/automattic/harnesses/pi/bootstrap.ts ~/.pi/agent/extensions/automattic.ts
+ln -s /absolute/path/to/automattic/hosts/pi/bootstrap.ts ~/.pi/agent/extensions/automattic.ts
 ```
 
 Keep an existing matching symlink; do not overwrite a different installation.
 For the earlier link to this repository's root, retarget only that verified
 development symlink to `skills/`. Pi discovers skills recursively; restricting the
 link prevents optional add-on skills elsewhere in the repository from loading.
+Re-point an extension symlink that still targets the earlier `harnesses/pi/bootstrap.ts`.
 Run `/reload` in Pi, then `/skill:dispatch <scope> --autofix` or
-`/skill:walkthrough <target>`. The extension selects Pi's adapter before
+`/skill:walkthrough <target>`. The extension supplies the bootstrap and Pi's session part before
 each turn; it registers no tools or commands. With explicit extension loading
 disabled, supply `harness=pi` when invoking a phase instead. Planning/review can
 run without delegation where the shared procedure allows it; dispatch requires
-the installed `subagent` tool. See the [Pi adapter](harnesses/pi/adapter.md).
+the installed `subagent` tool. See the [Pi session part](hosts/pi/session.md).
 
 ## Guided setup
 
@@ -230,7 +234,7 @@ configuration and reports where it was saved. It does not start a worker.
 
 Inside Herdr, [caller-specific routes](harnesses/setup/catalog.md#caller-specific-skill-routes) let
 Claude/Codex use native workers for same-runtime work and Herdr for other destinations.
-The [Herdr guidance](harnesses/herdr.md) covers waits and automatic cleanup of owned workers.
+The [Herdr guidance](hosts/herdr.md) covers waits and automatic cleanup of owned workers.
 
 You can also describe the change after the command:
 
@@ -455,7 +459,7 @@ explicit base works offline. The target helper never fetches or checks out code.
 
 ## Permission boundary
 
-Automattic registers SessionStart to load the active adapter. In Claude it also
+Automattic registers SessionStart to load the bootstrap and the active host's session part. In Claude it also
 registers two PreToolUse checks: Agent calls name a model, use a current worker
 profile and carry the `job_file` and inputs of a job of that agent (`hooks/agent_model.py`), and `gh pr create|edit` publishes only a linted
 `--body-file` (`hooks/pr_body.py`), plus a Stop check that keeps the session working

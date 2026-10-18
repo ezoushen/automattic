@@ -7,7 +7,7 @@ argument-hint: "[effort|branch|PR-number|PR-URL] [focus or question] — default
 
 # brief
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 This is a manually requested, read-only briefing, not another workflow phase.
 Use the active task and its accepted scope unless the user names a different
 target. No Automattic board or report is required. If target identity is ambiguous,

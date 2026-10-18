@@ -59,6 +59,7 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `direction` | A link goes to a higher level, a sibling module or another skill | Move the shared text below its users, or invert the link |
 | `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
 | `first-read` | Bootstrap, host session, skill and opening links over the budget | Move detail out of the opening or the bootstrap |
+| `host-shape` | A folder under `hosts/` that does not hold exactly `session.md` and `workers.md` | Move other text to the runtime doc that owns it |
 | `shared-section` | A section linked from 3+ files in other modules | Make it its own file |
 | `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |
 | `positional` | `above` or `below` that may point at moved text | Link or name the target instead |
@@ -81,7 +82,7 @@ docs fit one Codex read.
 **Split by reader, then by linked section.** Separate run-time rules from setup,
 migration, troubleshooting and experiments. A section that many files link becomes
 its own file, so a link names the whole read. Keep entry points to one hop where
-possible: skill → bootstrap and adapter → leaf.
+possible: skill → bootstrap and host session part → leaf.
 
 **Link the file you mean.** Retarget a link when you move its text, and re-read the
 sentence around it: a link that used to name a whole file must now name the leaf
@@ -101,7 +102,8 @@ phrasing such as "you are" or "act as an expert". `tests/test_agent_definitions.
 checks the structure.
 
 **Keep host differences in adapters.** Shared docs state host-neutral rules; how a
-host reads files, waits or launches workers belongs in `harnesses/<host>/`.
+host reads files, waits or launches workers belongs in `hosts/<host>/`: `session.md`
+(read at session start) and `workers.md` (read when launching).
 
 **Write skill frontmatter to the format.**
 - `name`: at most 64 lowercase letters, digits and hyphens, without "anthropic" or "claude".

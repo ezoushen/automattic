@@ -176,3 +176,13 @@ worker:
 `/automattic:dispatch` schedules the tickets on `blocked_by` and `touches`; its builders
 follow the [ticket](../dispatch/jobs/ticket.md) job, using `alignment.md`
 as the spec.
+
+## Explicit phase composition
+
+When the user explicitly requests refinement after another task, such as research,
+use the shared refinement procedure once its input
+is ready, where the active runtime permits direct procedure loading. Do not call
+an explicit-only skill through a forbidden tool or infer refinement from research
+alone. Preserve native invocation policy: if a separate user invocation is required
+or the operation is denied, retain the input and explain that restriction; do not
+route around it. Dispatch's automatic review remains its own documented handoff.

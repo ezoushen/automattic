@@ -127,7 +127,7 @@ through the executor's supported close operation. If capacity requires earlier
 retirement, preserve evidence, clear the handle and resolve a replacement normally.
 With no close operation, record the completed handle; release scheduler capacity
 only after actual work has ended. Leave the parent session and unrelated user agents
-alone. Herdr-specific operations live in [Herdr guidance](../herdr.md).
+alone. Herdr-specific operations live in Herdr guidance (`hosts/herdr.md`).
 
 ## Runner contract checks
 

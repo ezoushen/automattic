@@ -6,7 +6,7 @@ argument-hint: "[assignment and eligible worker choices]"
 
 # Model routing
 
-Read the [runtime bootstrap](../../harnesses/README.md) and active host adapter.
+Read the [runtime bootstrap](../../bootstrap.md) and the host session part.
 Choose in the host's existing context. This skill returns a decision; the existing
 executor handles dispatch. Use [selection](../../harnesses/routing/choose.md)
 for resolver arguments, profile overrides and recovery.

@@ -1,5 +1,23 @@
 # Checkpoint command and decision requests
 
+Contents:
+- [Phase checkpoints](#phase-checkpoints)
+- [Configured checkpoint command](#configured-checkpoint-command)
+- [Low-level decision request](#low-level-decision-request)
+
+## Phase checkpoints
+
+Before the first phase checkpoint, inspect effective `decisions.enabled` using
+offline status for this repo/session and retain it until configuration changes.
+When any family is enabled, run the [configured checkpoint command](#configured-checkpoint-command)
+at each reached phase's named boundary and check its expected phase record before
+handoff. Include an evidence-backed skip when no consultation is needed. With no
+enabled families, retain the ordinary host flow without a journal or phase checks.
+Worker selection already calls the shared helper; it does not cover alignment,
+review triage or recovery. Recovery chooses an action before any worker reselection.
+Surface new calibration warnings
+with their cause and recalibration action, deduplicating unchanged warnings.
+
 ## Configured checkpoint command
 
 Use this entry point for phase decisions:

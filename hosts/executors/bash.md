@@ -9,7 +9,7 @@ shell template expansion is performed. To run a Bash script, configure
 paths in argv are relative to the assigned worker worktree.
 
 Save the resolver JSON and assignment JSON in the existing effort state, then use
-the Python environment described in [executor configuration](../setup/executors.md#manual-setup-and-inspection):
+the Python environment described in [executor configuration](../../harnesses/setup/executors.md#manual-setup-and-inspection):
 
 ```sh
 "<python>" "<plugin_root>/scripts/bash_executor.py" --execution "<resolved.json>" --assignment "<assignment.json>"

@@ -15,33 +15,10 @@ No separate request to continue testing is needed. Reject conflicting or
 unknown flags; never infer autofix from a request to
 review. Dispatch supplies `--autofix` only when the user authorized review repairs.
 Neither review nor autofix authorizes publication. Comment publication is
-controlled separately below; pushing, merging into the base branch and opening
+controlled separately by the [comment policy](comments.md); pushing, merging into the base branch and opening
 follow-up issues require their own authorization. A native permission denial stops
 that action across command forms and tools; report the boundary and continue only
 independent permitted work.
-
-## Comment policy
-
-`--comments draft|confirm|post` is independent of a prior walkthrough:
-
-- **draft** (default): keep comments local. No remote pending review or submission.
-- **confirm**: finish the review, show the exact proposed summary and inline batch
-  with anchors, then wait for the user's approval before posting that batch.
-- **post**: the invocation authorizes posting confirmed in-scope findings after
-  validation, without another confirmation. It does not authorize a merge verdict.
-
-Honor equivalent natural language: "show me before posting" selects confirm;
-"post directly" or "post them if verified" selects post. Record the source and
-pass the effective policy to the resolver. A later "post these three" approves
-only that previewed batch; it is not standing permission to publish new findings
-on later rounds. Carry an explicitly ongoing post policy through continuations
-of the same target until the user changes it. A fresh review request defaults to
-draft unless its request carries publication authorization. If directions actually
-conflict, keep the drafts local and clarify before publishing.
-
-When delegating an entire review, pass the initiating request and effective comment
-policy to its orchestrator. Analytical workers return evidence and never publish.
-Dispatch's internal review defaults to draft; do not infer posting from delivery work.
 
 ## Resolve and understand
 
@@ -364,7 +341,7 @@ pinned diff. Broad design questions or unavailable anchors belong in the summary
 Retain raw Standards/Spec reports; consolidate duplicate comment drafts with both
 source axes attached. Exclude fixed/dismissed findings and unrelated follow-ups.
 Use native inline previews where supported; otherwise leave comment-ready text in
-the report. Apply the comment policy below. End with scope, coverage/gaps, prioritized findings, repair results
+the report. Apply the [comment policy](comments.md). End with scope, coverage/gaps, prioritized findings, repair results
 and E2E/verification status when autofix ran, review report location, and the separate
 follow-up list. Distinguish a clean review from incomplete verification.
 Summaries must preserve the report's finding dispositions and decision sources;

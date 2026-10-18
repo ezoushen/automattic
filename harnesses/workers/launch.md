@@ -19,7 +19,7 @@ configuration data; resolution never loads user-supplied code or schemas.
 
 Claude and Codex startup hooks, and Pi's bootstrap extension, identify the current
 host for its adapter. Without that hint, select the harness explicitly under the
-[runtime bootstrap](../README.md). OpenCode currently requires explicit selection.
+runtime bootstrap. OpenCode currently requires explicit selection.
 
 Top-level `agents` defines shared pools for `builder`, `reviewer` and `verifier`, or intentional fixed instances.
 `router` selects a routing skill, a System One decision model or a sparse named profile. See

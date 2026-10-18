@@ -7,7 +7,7 @@ argument-hint: "[tautological-tests|misleading-comments|<goal>] [--base <ref> [-
 
 # remediate
 
-First read [runtime bootstrap](../../harnesses/README.md) and the selected adapter.
+First read [runtime bootstrap](../../bootstrap.md) and the host session part.
 Run only on the user's explicit invocation. This procedure supplies its own
 detection, proof and test-first repair loop; no external skill is required.
 Remediation changes tests and documentation only. A suspected runtime bug is a

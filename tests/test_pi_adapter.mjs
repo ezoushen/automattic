@@ -14,7 +14,7 @@ try {
   const skills = join(agentDir, "skills");
   mkdirSync(extensions, { recursive: true });
   mkdirSync(skills);
-  symlinkSync(join(root, "harnesses/pi/bootstrap.ts"), join(extensions, "automattic.ts"));
+  symlinkSync(join(root, "hosts/pi/bootstrap.ts"), join(extensions, "automattic.ts"));
   const packageDir = join(temp, "package");
   const unselectedAddon = join(packageDir, "addons/unselected/skills/probe");
   mkdirSync(unselectedAddon, { recursive: true });
@@ -70,16 +70,18 @@ try {
     assert.equal(handlers.length, 1);
     const result = await handlers[0]({ systemPrompt: "existing instructions" }, {});
     assert.ok(result.systemPrompt.startsWith("existing instructions\n"));
-    assert.ok(result.systemPrompt.includes(`${root}/harnesses/pi/adapter.md`));
-    assert.ok(!result.systemPrompt.includes("/harnesses/claude/"));
-    assert.ok(!result.systemPrompt.includes("/harnesses/codex/"));
+    assert.ok(result.systemPrompt.includes(`${root}/bootstrap.md`));
+    assert.ok(result.systemPrompt.includes(`${root}/hosts/pi/session.md`));
+    assert.ok(!result.systemPrompt.includes("/hosts/claude/"));
+    assert.ok(!result.systemPrompt.includes("/hosts/codex/"));
     const previousHerdr = process.env.HERDR_ENV;
     try {
       for (const value of ["", "0", "1"]) {
         process.env.HERDR_ENV = value;
         const context = (await handlers[0]({ systemPrompt: "existing instructions" }, {})).systemPrompt;
-        assert.equal(context.includes(`${root}/harnesses/herdr.md`), value === "1");
-        assert.ok(context.includes(`${root}/harnesses/pi/adapter.md`));
+        assert.equal(context.includes(`${root}/hosts/herdr.md`), value === "1");
+        assert.ok(context.includes(`${root}/bootstrap.md`));
+        assert.ok(context.includes(`${root}/hosts/pi/session.md`));
         assert.ok(context.startsWith("existing instructions\n"));
       }
     } finally {
@@ -93,7 +95,8 @@ try {
       { systemPrompt: "existing instructions", systemPromptOptions: { sections } }, {});
     assert.equal(structured, undefined);
     const section = Object.values(sections).join("");
-    assert.ok(section.includes(`${root}/harnesses/pi/adapter.md`));
+    assert.ok(section.includes(`${root}/bootstrap.md`));
+    assert.ok(section.includes(`${root}/hosts/pi/session.md`));
     assert.ok(!section.includes("existing instructions"));
     assert.ok(!loader.getSkills().skills.some((skill) => skill.name === "unselected-addon-probe"));
     const discovered = loader.getSkills().skills.filter(

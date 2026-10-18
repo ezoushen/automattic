@@ -106,7 +106,7 @@ class YieldGateHook(unittest.TestCase):
     @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
     def test_pi_continues_once_when_a_completed_run_would_settle_with_a_gap(self):
         script = f"""
-const bootstrap = await import({json.dumps((ROOT / 'harnesses/pi/bootstrap.ts').as_uri())});
+const bootstrap = await import({json.dumps((ROOT / 'hosts/pi/bootstrap.ts').as_uri())});
 const handlers = {{}};
 bootstrap.default({{ on: (event, handler) => {{ handlers[event] = handler; }} }});
 const settle = (outcome) => handlers.agent_before_settle(

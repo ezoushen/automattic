@@ -9,9 +9,9 @@ export default function (pi) {
   const root = resolve(dirname(realpathSync(fileURLToPath(import.meta.url))), "../..");
   pi.on("before_agent_start", (event) => {
     const herdr = process.env.HERDR_ENV === "1"
-      ? ` Herdr environment detected: before delegation also read ${root}/harnesses/herdr.md for routing, waits and cleanup.`
+      ? ` Herdr environment detected: before delegation also read ${root}/hosts/herdr.md for routing, waits and cleanup.`
       : "";
-    const hint = `Automattic harness: pi. When using an Automattic skill, first read ${root}/harnesses/pi/adapter.md. Plugin root: ${root}. Load only this host adapter; pass its absolute path and the agent and job files to workers.${herdr}`;
+    const hint = `Automattic harness: pi. When using an Automattic skill, first read ${root}/bootstrap.md and ${root}/hosts/pi/session.md. Plugin root: ${root}. Load only this host session part; pass its absolute path and the agent and job files to workers.${herdr}`;
     // Returning systemPrompt forces the prompt for this run only, so runs that
     // start without a typed prompt revert to the structured one and every switch
     // invalidates the server's prefix cache. A section is diffed by Pi instead.

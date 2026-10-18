@@ -1,15 +1,6 @@
-# Claude Code adapter
+# Claude Code workers
 
-Registration: `.claude-plugin/plugin.json`, native `agents/*.md` profiles, and
-`hooks/hooks.json`. SessionStart selects this adapter explicitly. Invoke phase
-skills with `/automattic:<phase>`; use the Skill tool for available dependencies.
-Confirm required dependency skills are installed before dispatch.
-
-Read shared docs with the Read tool, not `cat`, `sed` or `head`: Bash output over
-about 30 KB is saved to a file instead of shown, and a guessed line range can cut
-a section short. Each shared doc under `harnesses/` fits one read.
-
-Before launching a worker, resolve [executors](../workers/launch.md) with the plugin's
+Before launching a worker, resolve [executors](../../harnesses/workers/launch.md) with the plugin's
 validator Python and `agent_models.py --route --repo <canonical-repo> --harness claude
 --job <job>`; include any explicit configuration profile. Record the full result,
 without piping through head/tail or masking its exit status. Inspect the pool with
@@ -43,7 +34,7 @@ needed controls and supply the parent's actual recipient/handle in the assignmen
 Workers send checkpoints to that parent; lifecycle actions cover only their assigned
 jobs. A native task stop does not cancel a remote job: use the runner's own cancel
 and confirm teardown. If messaging is unavailable, use the shared
-[bounded return](../workers/focus.md#worker-return-and-checkpoints) fallback.
+[bounded return](../../harnesses/workers/focus.md#worker-return-and-checkpoints) fallback.
 Regenerate a configured profile after a shipped profile changes; its content-derived
 name changes with the tool list. An older registered snapshot retains its old tools,
 and the Agent-model hook denies launching one whose tools differ from its shipped agent.
@@ -80,7 +71,7 @@ An unavailable effort does not establish that another profile is registered.
 Only a successful new resolution supplies launch settings. If none is adequate,
 report the missing registration/control; a resolver error cannot be bypassed with
 a model-only launch. Preserve explicit pins and the main session's settings.
-At launch, follow the shared [decision record](../routing/report.md):
+At launch, follow the shared [decision record](../../harnesses/routing/report.md):
 record the host action (the worker lifecycle does this for workers it registers) and inspect the first child assistant entry's `message.model`,
 `effort` and `perTurnEffort` (or equivalent native metadata). Read only those fields,
 not the whole transcript. An absent field remains unverified; conflicting fields
@@ -118,22 +109,6 @@ If the user explicitly requests a persistent goal and this runtime supports it,
 install it through the actual native goal operation using dispatch's scoped
 completion condition. Do not assume that printing `/goal` executes it. Read the
 current goal contract; do not depend on a particular evaluator, idle cadence or
-turn limit. Follow shared [blocked continuation](../workers/focus.md#blocked-continuation)
+turn limit. Follow shared [blocked continuation](../../harnesses/workers/focus.md#blocked-continuation)
 for unresolved user decisions and resource grants. Without a goal, keep waiting
 for live workers in the current run.
-
-Automattic does not block Git commands. The orchestrator can perform authorized
-publication and cleanup directly; workers retain their agent's permissions.
-Follow native permissions. On permission denial, report the actual boundary and
-stop that action; do not route around it.
-Carry the denied operation/resource into worker and resume assignments so another
-path spelling, copy command or tool does not repeat it. Keep startup update/auth/
-permission prompts pending for the user; a review assignment does not authorize
-upgrades or disabling approvals/sandboxing to make a delegate run.
-
-Walkthrough discussion and review-comment publication have separate authorization.
-Carry the [comment policy](../../skills/review/workflow.md#comment-policy) and its
-authorization source into delegated review orchestrators. For confirm mode, show
-the full batch in the conversation/report before using a native question tool;
-do not squeeze comment bodies into choice labels or require one approval per item.
-For post mode, honor existing authorization without an extra confirmation.

@@ -149,6 +149,30 @@ class ArchitectureRules(Fixture):
         self.architecture['first_read']['budget'] = total + 1
         self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'stale-debt', 'warning')})
 
+    def host_tree(self, **extra):
+        self.first_read_tree()
+        self.architecture['host_shape'] = {'root': 'hosts', 'files': ['session.md', 'workers.md'], 'exempt': ['tools']}
+        for name in ('session.md', 'workers.md'):
+            self.write(f'hosts/pair/{name}', '# Part\n')
+        self.write('hosts/tools/bash.md', '# Tool\n')
+        self.write('hosts/small/workers.md', '# Workers\n')
+        for path, text in extra.items():
+            self.write(path, text)
+        self.write('README.md', '# Project\n\nSee [tool](skills/tool/SKILL.md).\n')
+
+    def host_findings(self):
+        return {(f['path'], f['code'], f['severity']) for f in self.check_full() if f['code'] == 'host-shape'}
+
+    def test_a_host_folder_holds_exactly_a_session_part_and_a_worker_part(self):
+        self.host_tree()
+        self.write('hosts/large/workers.md', '# Workers\n')
+        self.assertEqual(self.host_findings(), set())
+        self.write('hosts/pair/extra.md', '# Extra\n')
+        self.assertEqual(self.host_findings(), {('hosts/pair', 'host-shape', 'error')})
+        (self.root / 'hosts/pair/extra.md').unlink()
+        (self.root / 'hosts/pair/workers.md').unlink()
+        self.assertEqual(self.host_findings(), {('hosts/pair', 'host-shape', 'error')})
+
     def test_a_section_linked_from_three_files_in_other_modules_should_be_its_own_file(self):
         self.write('shared/guide.md', '# Guide\n\n## Steps\n\nRun.\n')
         for name in ('a', 'b', 'c'):
@@ -216,9 +240,7 @@ class TargetFolders(Fixture):
 # The harness-to-skill links measured on 2026-10-19 that break the layers (grep of `](../skills/` from
 # harnesses/); the other links from harnesses/ to skills/ go from the bootstrap down to flows or standards.
 RUNTIME_TO_SKILL_DEBT = [
-    'harnesses/README.md -> skills/mandate/SKILL.md',
     'harnesses/checks/run.md -> skills/housekeeping/SKILL.md',
-    'harnesses/claude/adapter.md -> skills/review/workflow.md',
     'harnesses/decisions/journal.md -> skills/decision/SKILL.md',
     'harnesses/decisions/phases.md -> skills/decision/SKILL.md',
     'harnesses/decisions/test-shape.md -> skills/remediate/kinds/tautological-tests.md',
