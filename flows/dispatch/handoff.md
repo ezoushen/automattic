@@ -29,7 +29,7 @@ An active writer that cannot be reconciled safely or unavailable review capabili
 leaves the handoff blocked with its reason, never silently skipped or marked clean.
 
 Do not call `Skill(automattic:review)` or ask the user to run `/review` to continue
-an ordinary dispatch. The public review skill remains user-invoked; its shared
+an ordinary dispatch. The public review command remains user-invoked; its shared
 procedure is already part of this dispatch. Native tool refusals
 remain binding, including those from reviewer dependencies; stop the denied action
 and record the gap. There is one review loop, maintained in the shared procedure.

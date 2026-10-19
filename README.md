@@ -20,8 +20,9 @@ Codex and `/skill:<name>` in Pi. Each one's procedure is `flows/<name>/<name>.md
 | `setup` | Explain or change worker, routing and decision settings |
 | `brief` | Report progress; `brief map` shows which command fits |
 
-The agent loads four more skills itself, so they stay out of the command menu:
-code-comments, housekeeping, decision and model-routing.
+The agent loads four more skills itself: code-comments, housekeeping, decision and
+model-routing. Claude Code keeps them out of its command menu (`user-invocable: false`);
+Codex and Pi still list them.
 
 This is the maintained source tree. Package-manager cache copies are deployments;
 make changes here. Development symlinks expose those changes without maintaining
@@ -249,7 +250,7 @@ Start by inspecting the current setup, then configure one agent. These examples 
 Claude's command spelling; use the corresponding command above in Codex or Pi:
 
 ```text
-/automattic:setup show
+/automattic:setup
 /automattic:setup set reviewer --route executor=subagent mode=inherit
 /automattic:setup show reviewer --route
 ```
@@ -388,7 +389,7 @@ HOW using the shared show-me guidance, deepens through your questions, and guide
 the next step. It can finish with shared understanding and review criteria.
 When you ask to proceed, it continues into the shared review procedure in the same
 conversation, carrying the target, decisions and authorization forward. You do not
-need another command or task. `/brief` remains a progress snapshot.
+need another command or task. `/automattic:brief` remains a progress snapshot.
 
 ## Scoped review
 
@@ -435,7 +436,7 @@ executable tests pass; unrelated documentation cleanup remains a follow-up.
 
 [code-comments](standards/code-comments.md) holds the shared, language-independent
 writing rules. Builder workers load it at entry; any agent can select
-it automatically while writing comments; it is not in the command menu.
+it automatically while writing comments; it is not in Claude Code's command menu.
 Its [research basis](standards/code-comments-sources.md) separates common
 principles from language-specific style choices. Review owns the hard gate.
 

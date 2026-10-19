@@ -112,6 +112,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       fi
       if [ -f tests/run_all.py ]; then
         exec python3 tests/run_all.py
+      elif [ -x scripts/test-all.sh ]; then  # a commit from before the runner moved to Python
+        exec scripts/test-all.sh
       else
         echo "pre-push: no test suite at $0; skipped" >&2
       fi' "${commit:0:12}"

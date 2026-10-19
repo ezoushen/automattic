@@ -10,6 +10,7 @@ exits 1 when any script fails. Native checks (AUTOMATTIC_NATIVE=1) stay opt-in; 
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -22,9 +23,9 @@ GIT_VARIABLES = ('GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE', 'GIT_PREFIX', 'GI
 def interpreter(env):
     if os.environ.get('PYTHON'):
         return os.environ['PYTHON']
-    common = subprocess.run(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'], cwd=ROOT, env=env,
+    common = subprocess.run(['git', 'rev-parse', '--git-common-dir'], cwd=ROOT, env=env,
                             capture_output=True, text=True).stdout.strip()
-    main = Path(common).parent if common else ROOT
+    main = (ROOT / common).resolve().parent if common else ROOT
     for candidate in (ROOT / '.venv/bin/python', main / '.venv/bin/python'):
         if candidate.is_file() and os.access(candidate, os.X_OK):
             return str(candidate)
@@ -32,12 +33,15 @@ def interpreter(env):
 
 
 def main():
+    # Exit through the context manager on a hook's teardown, so the log directory is removed.
+    for number in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(number, lambda number, frame: sys.exit(128 + number))
     env = {key: value for key, value in os.environ.items() if key not in GIT_VARIABLES}
     python = interpreter(env)
     with tempfile.TemporaryDirectory() as logs:
         jobs = []
         for test in sorted((ROOT / 'tests').glob('test_*.py')):
-            log = open(Path(logs) / f'{test.stem}.log', 'w+')
+            log = open(Path(logs) / f'{test.stem}.log', 'w+', errors='replace')
             jobs.append((test.stem, log, subprocess.Popen([python, '-B', str(test)], stdin=subprocess.DEVNULL,
                                                           stdout=log, stderr=subprocess.STDOUT, env=env)))
         failed = False

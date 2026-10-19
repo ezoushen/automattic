@@ -208,6 +208,14 @@ class ArchitectureRules(Fixture):
         [(_, _, message)] = self.messages('entry-doc')
         self.assertIn('flows/tool/tool.md', message)
 
+    def test_a_command_entry_doc_outside_its_flow_is_an_error(self):
+        self.entry_tree('shared/tool.md')
+        path = self.root / 'skills/tool/SKILL.md'
+        path.write_text(path.read_text().replace('---\n\n', 'disable-model-invocation: true\n---\n\n', 1))
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
+        [(_, _, message)] = self.messages('entry-doc')
+        self.assertIn('flows/tool/tool.md', message)
+
     def test_a_skill_entry_doc_in_its_own_flow_or_outside_flows_passes(self):
         self.entry_tree('flows/tool/tool.md')
         self.assertEqual(self.check(), set())

@@ -226,6 +226,8 @@ class CrossHarness(unittest.TestCase):
     def test_every_named_command_is_a_skill_that_exists(self):
         import re
         skills = {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')}
+        commands = {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')
+                    if 'disable-model-invocation: true' in path.read_text()}
         tracked = run('git', '-C', str(PLUGIN), 'ls-files', '-z').stdout.split('\0')
         for name in filter(None, tracked):
             path = PLUGIN / name
@@ -233,8 +235,12 @@ class CrossHarness(unittest.TestCase):
                 continue
             if path.suffix not in {'.md', '.py', '.json', '.yaml', '.mjs', '.ts'}:
                 continue
-            for command in re.findall(r'(?:[/$]automattic:|/skill:)([a-z][a-z0-9-]*)', path.read_text()):
+            text = path.read_text()
+            # Codex lists every skill; the typed Claude and Pi forms name only the commands.
+            for command in re.findall(r'\$automattic:([a-z][a-z0-9-]*)', text):
                 assert command in skills, (name, command)
+            for command in re.findall(r'(?:/automattic:|/skill:)([a-z][a-z0-9-]*)', text):
+                assert command in commands, (name, command)
 
     def test_agent_docs_pass_the_doc_checker(self):
         # Agents read a linked doc whole, with no way to jump to an anchor; the checker
@@ -335,6 +341,12 @@ class CrossHarness(unittest.TestCase):
                 assert done.returncode == 0, done.stderr
                 failed = subprocess.run([sys.executable, wrapper, 'sh', '-c', 'exit 7'], env=env, capture_output=True)
                 assert failed.returncode == 7
+                pipe = subprocess.run([sys.executable, wrapper, 'bash', '-c', 'yes | head -n 1 >/dev/null; echo "${PIPESTATUS[0]}"'],
+                                      env=env, capture_output=True, text=True)
+                assert pipe.stdout.strip() == '141', pipe  # the command gets default SIGPIPE, as from a shell
+                blank = subprocess.run([sys.executable, wrapper, 'true'], capture_output=True, text=True,
+                                       env=dict(env, RESOURCE_LOCK=str(Path(tmp) / 'other.lock'), RESOURCE_LOCK_TIMEOUT=''))
+                assert blank.returncode == 0, blank.stderr  # an empty timeout means the default
                 missing = subprocess.run([sys.executable, wrapper, 'automattic-no-such-command'], env=env,
                                          capture_output=True, text=True)
                 assert missing.returncode != 0 and 'not found' in missing.stderr, missing.stderr

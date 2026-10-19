@@ -94,7 +94,7 @@ been removed or reassigned as requested; preserve unrelated types and routes.
 
 ## Inspect effective settings
 
-For **show** or an inspection without arguments, show the host, router and selected profile/source, then each
+For a full inspection (**show** with `--route`, or a request to see every setting), show the host, router and selected profile/source, then each
 agent's pool or fixed instance, settings and source.
 Include shared decision backend, enabled families and offline calibration status;
 `decisions.py status` reports saved warnings without inference or state writes.

@@ -16,6 +16,7 @@ releasing the resource; terminating a launcher alone does not prove the lock is 
 """
 import fcntl
 import os
+import signal
 import sys
 import time
 
@@ -24,8 +25,8 @@ def main(argv):
     if not argv:
         print(f'usage: {sys.argv[0]} <command> [args...]', file=sys.stderr)
         return 2
-    lock = os.environ.get('RESOURCE_LOCK', '/tmp/resource.lock')
-    timeout = float(os.environ.get('RESOURCE_LOCK_TIMEOUT', '3600'))
+    lock = os.environ.get('RESOURCE_LOCK') or '/tmp/resource.lock'
+    timeout = float(os.environ.get('RESOURCE_LOCK_TIMEOUT') or '3600')
     fd = os.open(lock, os.O_CREAT | os.O_RDWR, 0o666)
     start = time.time()
     last = -60
@@ -45,6 +46,9 @@ def main(argv):
     os.write(fd, f'{os.getpid()} {" ".join(argv)}\n'.encode())
     # Hand the locked descriptor to the command: the lock now dies with the command, not before.
     os.set_inheritable(fd, True)
+    # Python ignores these; the command gets the defaults a shell would give it.
+    for number in (signal.SIGPIPE, signal.SIGXFSZ):
+        signal.signal(number, signal.SIG_DFL)
     try:
         os.execvp(argv[0], argv)
     except FileNotFoundError:

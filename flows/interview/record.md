@@ -12,7 +12,7 @@ Record the source of user decisions separately from agent decisions. Keep a
 agents work (routing, reporting, retention, permissions), quoted with their date. Persist
 standing principles only where this project already keeps them, using Matt's
 `domain-modeling` when terminology or durable domain decisions actually change.
-Follow the host's rules for writing memory; this skill supplies no extra permission.
+Follow the host's rules for writing memory; this procedure supplies no extra permission.
 
 When mandate completes, not after each question round, close the phase record.
 End that reply with a short exit block:
@@ -31,6 +31,6 @@ show the concise proposal and wait for the requested human check before dependen
 execution; reuse approvals already given. Actual publication/resource permission
 gates retain their existing authorization requirements.
 
-Design choices belong to `/automattic:align`; ticket slicing to `/automattic:refine`.
+Design choices belong to the design half of `/automattic:align`; ticket slicing to `/automattic:refine`.
 They reuse this filter and ledger. Matt's explicitly human-in-the-loop activities
 still need their live exchange; an agent decision cannot stand in for that human.

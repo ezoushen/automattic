@@ -96,6 +96,21 @@ class PrePush(HookRepo):
         self.assertIn('no doc checker', result.stderr)
         self.assertIn('no test suite', result.stderr)
 
+    def test_a_commit_from_before_the_python_runner_runs_its_shell_suite(self):
+        self.assertEqual(self.commit().returncode, 0)
+        git(self.root, 'rm', '-q', 'tests/run_all.py')
+        marker = self.base / 'old-suite-ran'
+        suite = self.root / 'scripts/test-all.sh'
+        suite.write_text(f'#!/usr/bin/env bash\ntouch "{marker}"\nexit 3\n')
+        suite.chmod(0o755)
+        git(self.root, 'add', '-A')
+        old = subprocess.run(['git', '-C', str(self.root), *IDENTITY, 'commit', '-qm', 'old', '--no-verify'],
+                             capture_output=True, text=True)
+        self.assertEqual(old.returncode, 0, old.stderr)
+        result = self.push('main')
+        self.assertTrue(marker.exists(), result.stderr)
+        self.assertNotEqual(result.returncode, 0, 'its failing suite stops the push')
+
     def test_a_deletion_runs_nothing_in_a_sha256_repository(self):
         repo = self.base / 'sha256'
         git(self.base, 'init', '-q', '--object-format=sha256', '-b', 'main', str(repo))

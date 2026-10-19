@@ -237,18 +237,21 @@ def first_read(root, architecture, rel):
 
 
 def entry_doc(root, architecture, rel, skill, declared):
-    """A finding when a skill's first reads name no doc after the skill, or name one under the
-    flows root outside the flow named after it (`flows/<skill>/<skill>.md`)."""
+    """A finding when a skill's first reads name no doc after the skill, or name one outside the flow
+    named after it (`flows/<skill>/<skill>.md`) when it is under the flows root or the skill is a typed
+    command (`disable-model-invocation: true`)."""
     settings = architecture.data.get('entry_doc')
     if not settings:
         return []
-    name = (frontmatter(skill.read_text())[0] or {}).get('name') or skill.parent.name
+    fields = frontmatter(skill.read_text())[0] or {}
+    name = fields.get('name') or skill.parent.name
+    command = fields.get('disable-model-invocation') in (True, 'true')
     flows = (root / settings['flows']).resolve()
     named = [path for path in declared if path.name == f'{name}.md']
     if not named:
         return [Finding(rel(skill), 1, 'error', 'entry-doc',
                         f'its `First read:` paragraph links no {name}.md, the doc that holds this skill\'s procedure')]
-    if any(flows not in path.parents or path.parent == flows / name for path in named):
+    if any(path.parent == flows / name or (flows not in path.parents and not command) for path in named):
         return []
     return [Finding(rel(skill), 1, 'error', 'entry-doc',
                     f'its procedure doc is in another flow; move it to {settings["flows"]}/{name}/{name}.md')]
