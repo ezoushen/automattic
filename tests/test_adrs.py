@@ -18,7 +18,7 @@ class Adrs(unittest.TestCase):
         text = prose(ADR)
         for rule in ('`docs/adr/NNNN-slug.md`', 'the highest existing number plus one',
                      'Create `docs/adr/` lazily', 'a title and one to three sentences',
-                     'Status, Considered Options and Consequences only when they add something',
+                     'Add Considered Options and Consequences sections only when they add something',
                      '**Hard to reverse:**', '**Surprising without context:**', '**A real trade-off:**',
                      'Offer one when a decision qualifies by either rule', '**It affects others:**',
                      'sets a rule every later change must follow', '**It passes the three tests**, all of them',
@@ -32,8 +32,9 @@ class Adrs(unittest.TestCase):
 
     def test_each_phase_offers_reads_or_holds_on_adrs(self):
         grilling = prose('runtime/interview/grilling.md')
-        self.assertIn('When a decision settles that qualifies for an ADR, offer an [ADR](../domain/adr.md)', grilling)
+        self.assertIn('Offer an [ADR](../domain/adr.md) for a settled decision that qualifies', grilling)
         self.assertNotIn('passes the three tests', grilling)
+        self.assertIn("a settled rule with no real trade-off is proposed as a line for the project's rules file", grilling)
         self.assertIn('ADR [index](../../runtime/domain/adr-index.md) and the ADRs in the area', prose('skills/align/SKILL.md'))
         ticket = prose('skills/dispatch/jobs/ticket.md')
         self.assertIn('accepted [ADRs](../../../runtime/domain/adr.md) in the area', ticket)

@@ -19,14 +19,14 @@ class AdrSupersession(unittest.TestCase):
                      'names the ADR it replaces in `supersedes: ADR-NNNN`',
                      "the old ADR's only edit is its status line",
                      'A partial overrule supersedes the whole ADR and restates what still holds',
-                     '--require-index', 'Before offering, check the [index](adr-index.md)'):
+                     '--index [--dir', 'Before offering, check the [index](adr-index.md)'):
             self.assertIn(rule, text)
         index = prose('runtime/domain/adr-index.md')
         for rule in ('`docs/adr/README.md` is the current-state index',
                      'one line per accepted ADR: its number, title and rule in one line',
                      'updated in the same commit as the ADRs it lists',
                      'Read the index first, then only the ADRs that bear on the work',
-                     '`--require-index` makes a missing index a failure'):
+                     'when run with `--index`, which also makes a missing index a failure'):
             self.assertIn(rule, index)
         self.assertNotIn('`proposed`, `accepted`', text)
 

@@ -29,8 +29,8 @@ and numbering; neither the folder nor any ADR is required.
 {One to three sentences: the context, what was decided and why.}
 ```
 
-An ADR is a title and one to three sentences. Add Status, Considered Options and
-Consequences only when they add something: Considered Options when a rejected
+An ADR is a title and one to three sentences. Add Considered Options and Consequences
+sections only when they add something: Considered Options when a rejected
 alternative is worth remembering, Consequences when a downstream effect is not obvious.
 Status and supersession are front matter (`status:`, `supersedes:`); without them an ADR
 is `accepted`. A status is `accepted` (the default), `superseded by ADR-NNNN` or
@@ -91,11 +91,14 @@ gate repeats the check without merging, against each `main` the effort lands on:
 local one and, once fetched, the remote's when the effort is published:
 
 ```sh
-python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip> --require-index [--dir <ADR folder>]
+python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip> --index [--dir <ADR folder>]
 ```
 
-It prints the duplicated numbers and the next free one, and exits 1 on a duplicate.
-Run it once for each ADR folder: the root one and each context's. It checks only
-`NNNN-slug.md` names; a project whose own convention numbers differently uses its own
-check or records an evidenced skip. A merge or renumbering after the review head is
-pinned returns to review and E2E, and a duplicate number fails the delivery gate.
+It prints the duplicated numbers, the next free one and any index problems, and exits
+1 on either. Fix an index problem in the same commit as its ADR: list the ADR under its
+status, or correct the status or supersede link. Run it once for each ADR folder: the
+root one and each context's. `--index` applies this convention's index; a project with
+its own decision-record convention drops it, and one that also numbers differently
+uses its own check or records an evidenced skip. A merge, renumbering or index fix
+after the review head is pinned returns to review and E2E, and a duplicate number or
+an index problem fails the delivery gate.

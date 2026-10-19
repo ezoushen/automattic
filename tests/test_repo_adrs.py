@@ -12,7 +12,7 @@ ROOT = support.ROOT
 class RepoAdrs(unittest.TestCase):
     def test_the_repositorys_adrs_pass_the_check_with_an_index(self):
         result = subprocess.run(['python3', str(support.script('adr_numbers.py')), '--repo', str(ROOT),
-                                 '--require-index'], capture_output=True, text=True)
+                                 '--index'], capture_output=True, text=True)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         out = json.loads(result.stdout)
         self.assertEqual('0003', out['next'])

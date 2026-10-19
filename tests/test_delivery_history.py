@@ -22,12 +22,12 @@ class DeliveryHistory(unittest.TestCase):
                      'an approved candidate written later returns that change to review and E2E',
                      'merge the verified `main` tip into the effort branch and run the ADR number check',
                      'renumber the effort\'s ADR to the next free number and update every reference to it',
-                     'scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip>',
+                     'scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip> --index',
                      'Fetch first', "each `main` the effort lands on: the local one and, once fetched, the remote's",
                      'Commit the approved ADRs before the check',
-                     'Run it once for each ADR folder', 'checks only `NNNN-slug.md` names',
-                     'records an evidenced skip', 'A merge or renumbering after the review head is pinned returns to review and E2E',
-                     'a duplicate number fails the delivery gate'):
+                     'Run it once for each ADR folder', 'one that also numbers differently uses its own check',
+                     'records an evidenced skip', 'A merge, renumbering or index fix after the review head is pinned returns to review and E2E',
+                     'a duplicate number or an index problem fails the delivery gate', 'Fix an index problem in the same commit as its ADR'):
             self.assertIn(rule, text)
 
     def test_each_delivery_step_applies_it(self):

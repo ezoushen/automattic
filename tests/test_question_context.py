@@ -28,9 +28,13 @@ class QuestionContext(unittest.TestCase):
         for path, link in (('runtime/interview/question-filter.md', '../explain/ask.md'),
                            ('runtime/interview/record.md', '../explain/ask.md'),
                            ('runtime/workers/design-hold.md', '../explain/ask.md'),
-                           ('skills/dispatch/iteration.md', '../../runtime/explain/ask.md')):
+                           ('skills/dispatch/iteration.md', '../../runtime/explain/ask.md'),
+                           ('skills/dispatch/handoff.md', '../../runtime/explain/ask.md'),
+                           ('skills/review/coverage.md', '../../runtime/explain/ask.md')):
             with self.subTest(path=path):
                 self.assertIn(f']({link})', prose(path))
+        iteration = prose('skills/dispatch/iteration.md')
+        self.assertIn('send the user one request covering all of them, [with context](../../runtime/explain/ask.md)', iteration)
 
 
 if __name__ == '__main__':

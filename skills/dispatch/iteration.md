@@ -113,7 +113,8 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    until these checks finish. Keep the ticket worktree through the remaining
    review/repair and applicable E2E; integration alone does not retire it.
    Once an integrated build allows checks that only the user can observe
-   (`Verify (user)`), send the user one request covering all of them.
+   (`Verify (user)`), send the user one request covering all of them,
+   [with context](../../runtime/explain/ask.md).
    On conflict, assign a builder the `merge-conflict` job and its inputs in the spec
    worktree, except on `main` ([directly on main](modes.md#directly-on-main)).
    No other worker may use that worktree then; the orchestrator completes the merge.

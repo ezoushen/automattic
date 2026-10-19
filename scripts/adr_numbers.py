@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Report duplicated ADR numbers and the next free one, in the working tree or at a Git ref.
 
-usage: adr_numbers.py --repo <checkout> [--dir docs/adr] [--ref <commit> [--against <commit>]] [--require-index]
+usage: adr_numbers.py --repo <checkout> [--dir docs/adr] [--ref <commit> [--against <commit>]] [--index]
 
 Checks one folder of `NNNN-slug.md` files. With --against, the folder is checked as merging
 the two commits would leave it, using `git merge-tree` (Git 2.38 or later) without touching
-any branch or working tree. When the folder has a `README.md` index, or --require-index is
-given, each ADR's status (front matter `status:`, default accepted) must match the index
-section that lists it, every listed file must exist, and every `superseded by ADR-NNNN` must
-be answered by that ADR's `supersedes:` and the reverse. Prints JSON {"dir", "duplicates":
+any branch or working tree. With --index, the folder must also follow Automattic's index
+convention: a `README.md` index whose Accepted, Superseded and Deprecated sections list each
+ADR under its status (front matter `status:`, default accepted), only existing files, and
+supersede links answered at both ends. Without it, a project's own convention is not judged. Prints JSON {"dir", "duplicates":
 {number: [files]}, "next", "index_problems": [...]}. Exits 1 on a duplicate number or an
 index problem, 2 on invalid input. An absent folder has no problems and next "0001".
 """
@@ -20,7 +20,7 @@ import subprocess
 import sys
 
 NAME = re.compile(r'(\d{4})-.+\.md')
-LINK = re.compile(r'\]\((\d{4}-[^)\s]+\.md)\)')
+LINK = re.compile(r'\]\((?:\./)?(\d{4}-[^)\s#]+\.md)(?:#[^)\s]*)?\)')
 SECTIONS = {'accepted': 'Accepted', 'superseded': 'Superseded', 'deprecated': 'Deprecated'}
 
 
@@ -66,11 +66,11 @@ def front_matter(text):
     if text.startswith('---\n') and '\n---\n' in text[4:]:
         for line in text[4:text.index('\n---\n', 4)].splitlines():
             key, _, value = line.partition(':')
-            fields[key.strip()] = value.strip()
+            fields[key.strip()] = value.strip().strip('"\'')
     return fields
 
 
-def index_problems(texts, folder, require):
+def index_problems(texts, folder):
     """Problems between the ADRs, their supersede links and the index; texts maps file name to content."""
     adrs = {name: front_matter(text) for name, text in texts.items() if NAME.fullmatch(name)}
     status_of = {name: fields.get('status', 'accepted') for name, fields in adrs.items()}
@@ -83,16 +83,22 @@ def index_problems(texts, folder, require):
         superseded = re.fullmatch(r'superseded by ADR-(\d{4})', status)
         if status not in ('accepted', 'deprecated') and not superseded:
             problems.append(f'{name}: unknown status {status}')
-        if superseded and not any(name[:4] in re.findall(r'ADR-(\d{4})', adrs[newer].get('supersedes', ''))
+        if superseded and superseded[1] not in by_number:
+            problems.append(f'{name}: {status}, which does not exist')
+        elif superseded and not any(name[:4] in re.findall(r'ADR-(\d{4})', adrs[newer].get('supersedes', ''))
                                   for newer in by_number.get(superseded[1], [])):
             problems.append(f'{name}: {status}, which does not name it in supersedes')
         for older in re.findall(r'ADR-(\d{4})', fields.get('supersedes', '')):
             if not any(status_of[o] == f'superseded by ADR-{name[:4]}' for o in by_number.get(older, [])):
                 problems.append(f'{name}: supersedes ADR-{older}, which is not superseded by ADR-{name[:4]}')
     if 'README.md' not in texts:
-        return problems + ([f'{folder.rstrip("/")}/README.md: no index'] if require and adrs else [])
-    listed, section = {}, None
+        return problems + ([f'{folder.rstrip("/")}/README.md: no index'] if adrs else [])
+    listed, section, fenced = {}, 'outside a status section', False
     for line in texts['README.md'].splitlines():
+        if line.lstrip().startswith(('```', '~~~')):
+            fenced = not fenced
+        if fenced:
+            continue
         if line.startswith('## '):
             section = line[3:].strip()
         for target in LINK.findall(line):
@@ -107,8 +113,9 @@ def index_problems(texts, folder, require):
         sections = listed.get(name, [])
         if want not in sections:
             problems.append(f'{name}: {status} but not listed under {want}')
-        for other in sorted(set(sections) - {want}):
-            problems.append(f'{name}: {status} but also listed under {other}')
+        for other in sorted(set(sections) - {want}, key=lambda s: (s != 'outside a status section', s)):
+            where = other if other == 'outside a status section' else f'under {other}'
+            problems.append(f'{name}: {status} but also listed {where}')
     return problems
 
 
@@ -129,7 +136,7 @@ def main(argv):
     parser.add_argument('--dir', default='docs/adr', help="the project's ADR folder")
     parser.add_argument('--ref', help='read the folder at this commit instead of the working tree')
     parser.add_argument('--against', help='check the folder as merging this commit would leave it')
-    parser.add_argument('--require-index', action='store_true', help='a folder with ADRs must have README.md')
+    parser.add_argument('--index', action='store_true', help="also check Automattic's index and supersede links")
     args = parser.parse_args(argv)
     repo = args.repo.resolve()
     try:
@@ -142,9 +149,11 @@ def main(argv):
             ref = merged_tree(repo, args.ref, args.against)
         files = names(repo, args.dir, ref)
         duplicates, following = report(files)
-        texts = {name: read(repo, args.dir, ref, name) for name in files
-                 if NAME.fullmatch(name) or name == 'README.md'}
-        problems = index_problems(texts, args.dir, args.require_index)
+        problems = []
+        if args.index:
+            texts = {name: read(repo, args.dir, ref, name) for name in files
+                     if NAME.fullmatch(name) or name == 'README.md'}
+            problems = index_problems(texts, args.dir)
     except (ValueError, OSError) as error:
         print(error, file=sys.stderr)
         return 2

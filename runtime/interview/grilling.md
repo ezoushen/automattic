@@ -21,13 +21,13 @@ Each round asks the highest unsettled branches, composed as the question filter 
 one or two questions per round, in the user's terms, each with a recommendation that
 "yes" accepts. After each answer, recompute which branches are now askable.
 
-Call out a term the user uses against its definition, and add the term to the
-[glossary](../domain/glossary.md) the moment it settles. When a
-decision settles that qualifies for an ADR, offer an [ADR](../domain/adr.md); write it only
-after the user's yes.
+Call out a term used against its definition; add the term to the
+[glossary](../domain/glossary.md) the moment it settles. Offer an [ADR](../domain/adr.md) for
+a settled decision that qualifies, written only after the user's yes; a settled rule with
+no real trade-off is proposed as a line for the project's rules file instead.
 
-Finding facts is the agent's job, never the user's. Look facts up in the background,
-without blocking the questions that do not depend on them.
+Finding facts is the agent's job: look them up in the background, without blocking the
+questions that do not depend on them.
 
 Exhaustive depth, on an explicit request, only raises the number of questions per
 round; implementation detail still stays with the agent.
@@ -35,7 +35,7 @@ round; implementation detail still stays with the agent.
 ## Finish
 
 Grilling stops asking when the question filter's stop rule holds and nothing is
-silently assumed, and it is done only when the user confirms a shared understanding. A plan the user calls ready, or an accepted mandate that already settles
-the next step, is that confirmation; otherwise ask once, with the summary. Then close
-with the [record](record.md) exit block: the user's decisions, the agent's decisions the user
-may veto, and pending user actions.
+silently assumed, and it is done only when the user confirms a shared understanding.
+A plan the user calls ready, or an accepted mandate that already settles the next step,
+is that confirmation; otherwise ask once, with the summary. Then close with the
+[record](record.md) exit block.
