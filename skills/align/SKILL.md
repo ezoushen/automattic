@@ -16,9 +16,8 @@ First read: the runtime bootstrap (`../../bootstrap.md`), the host session part,
 
 Settle the mandate, then turn it into a plan sufficient to split and verify. Reuse
 the conversation and existing alignment; a mandate the user already stated need not
-be settled again. Interview through [grilling](../../runtime/interview/grilling.md) and apply the
-[question filter](../../runtime/interview/question-filter.md) before each question round,
-including requests to grill the design. Record consequential
+be settled again. Interview through [grilling](../../runtime/interview/grilling.md), including
+requests to grill the design. Record consequential
 decisions in the same ledger. Preserve the distinction between accepted user
 decisions and reversible agent choices.
 If a governing mandate constraint is unresolved, ask that first and wait for its
@@ -58,7 +57,8 @@ Prepare one concise WHAT / WHY / HOW brief:
 Choose depth by uncertainty: context for system boundaries; modules for changing
 responsibilities; behavior for flows, state and ordering. Include only the views
 that resolve a live risk. These are lenses on one brief, not three approval turns.
-Reuse existing mechanisms; compare an alternative only when it is viable and
+Read the accepted [ADRs](../../runtime/domain/adr.md) in the area first; a plan that
+contradicts one proposes a superseding ADR. Reuse existing mechanisms; compare an alternative only when it is viable and
 material. Use the project's [glossary](../../runtime/domain/glossary.md) and keep it current as terms settle.
 Use `prototype` only for a question that evidence on paper cannot settle.
 Leave ordinary types, helper files and library plumbing to implementation. A

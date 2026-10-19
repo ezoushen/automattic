@@ -2,7 +2,7 @@
 
 Escalate when the worker is unsure how to proceed inside the agreement, or when
 findings might break it. Possible public API/ABI or observable behavior changes,
-platform exceptions, ADR conflicts and impossible/stale criteria are agreement
+platform exceptions, a conflict with an accepted [ADR](../domain/adr.md) and impossible/stale criteria are agreement
 risks even before they are confirmed. Stop dependent edits immediately; continue
 independent authorized work. Do not wait for a finished implementation or let a
 reviewer infer the intended decision from an unfinished diff.

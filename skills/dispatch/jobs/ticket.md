@@ -25,8 +25,11 @@ need no local ticket file. Read the supplied criteria, dependencies, priority,
 areas and workload; report missing or changed requirements to the orchestrator
 rather than creating a mirror or changing the tracker yourself.
 
-Read the ticket and accepted brief; use the project's [glossary](../../../runtime/domain/glossary.md) for domain vocabulary, relevant
-ADRs for design constraints, and the applicable project build/test instructions.
+Read the ticket and accepted brief; use the project's [glossary](../../../runtime/domain/glossary.md) for domain vocabulary, the
+accepted [ADRs](../../../runtime/domain/adr.md) in the area for design constraints, and the applicable
+project build/test instructions. Work that would contradict an accepted ADR enters the
+design hold. An accepted ADR that looks outdated is flagged to the orchestrator, not
+silently followed.
 
 ## Finish line
 

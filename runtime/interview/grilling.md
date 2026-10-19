@@ -1,8 +1,7 @@
 # Grilling
 
-Read by every command that interviews the user, including a request to "grill" a
-plan, before its first question. Grilling settles what the user must decide; the
-agent decides the rest within those decisions.
+Read before the first question of any interview, including a request to "grill" a
+plan. The user decides principles; the agent decides the rest within them.
 
 ## Map the design tree
 
@@ -25,7 +24,9 @@ depends on another one still open belongs to a later round. Each answer reshapes
 tree: recompute which branches are now askable before the next round.
 
 When a term settles, or the user uses one against its definition, add the term to the
-[glossary](../domain/glossary.md) the moment it settles, or call out the conflict.
+[glossary](../domain/glossary.md) the moment it settles, or call out the conflict. When a
+decision settles that passes the three tests, offer an [ADR](../domain/adr.md); write it only
+after the user's yes.
 
 Finding facts is the agent's job, never the user's. Look facts up in the background
 (a worker or a search) without blocking the questions that do not depend on them;

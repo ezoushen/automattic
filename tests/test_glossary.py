@@ -43,9 +43,9 @@ class Glossary(unittest.TestCase):
         for skill in ('skills/align/SKILL.md', 'skills/refine/SKILL.md'):
             self.assertIn('](../../runtime/domain/glossary.md)', prose(skill))
 
-    def test_no_doc_names_the_old_glossary_file_or_matts_skill_for_terms(self):
+    def test_no_doc_names_the_old_glossary_file(self):
         found = subprocess.run(
-            ['git', 'grep', '-n', '-I', '-E', r'CONTEXT\.md|domain-modeling` when (needed|terminology)',
+            ['git', 'grep', '-n', '-I', '-E', r'CONTEXT\.md',
              '--', '.', ':!journals', ':!tests/test_glossary.py'],
             cwd=ROOT, capture_output=True, text=True).stdout
         self.assertEqual('', found)

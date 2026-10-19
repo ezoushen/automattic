@@ -118,7 +118,7 @@ folder; commands read the shared interview and board procedures and the other ru
 ## Matt Pocock's skills underneath
 
 Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
-`diagnosing-bugs`, `domain-modeling` and `prototype` for their respective
+`diagnosing-bugs` and `prototype` for their respective
 work. The review command supplies scope,
 priority and allowed mutation
 context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
