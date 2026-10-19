@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Every builder works test-first from our own TDD standard, whose tests protect business rules, not coverage."""
+import re
 import subprocess
 import unittest
 
@@ -48,9 +49,9 @@ class TddStandard(unittest.TestCase):
         self.assertIn('[module design](design.md)', text)
 
     def test_a_seam_with_a_test_adapter_is_not_forbidden(self):
-        # module design calls a seam with a production and a test adapter real; the TDD standard must not forbid it
         text = prose(TDD)
-        self.assertNotIn('Do not add a seam only for a test', text)
+        self.assertIsNone(re.search(r"(?i)\b(?:never|do not|don't)\s+(?:add|introduce|create)\s+a\s+seam\s+"
+                                    r"(?:only\s+|just\s+|solely\s+)?(?:for|because of)\s+(?:a\s+)?tests?\b", text))
         self.assertIn('Do not expose an internal seam through the interface only because a test uses it', text)
 
     def test_each_test_protects_a_stated_business_rule(self):
@@ -89,16 +90,13 @@ class TddStandard(unittest.TestCase):
     def test_the_standard_agrees_with_the_tautological_tests_kind(self):
         tdd, kind = prose(TDD), prose(KIND)
         self.assertIn('[tautological-tests](kinds/tautological-tests.md)', tdd)
-        # The same independent sources, in the rule each document gives
         self.assertIn('Expected values come from an independent source:** a specified literal, a worked example from '
                       'the ticket or spec, or a separate trusted oracle; never from the code under test, a copy of its '
                       'logic or a value the test configured on a mock', tdd)
         self.assertIn('Rewrite the test so it checks the claim with an expected result from an independent source: a '
                       'specified literal, a worked example, or a separate trusted oracle', kind)
-        # The forbidden sources are the kind's signals
         self.assertIn('- an expected value computed by the code under test or a copy of its logic;', kind)
         self.assertIn('- assertions on values the test configured on a mock;', kind)
-        # The same defect check
         self.assertIn('A test is tautological for the behavior it claims when a plausible defect in that behavior leaves '
                       'it passing', kind)
         self.assertIn('**Tautological:** a plausible defect in the claimed rule leaves it passing', tdd)

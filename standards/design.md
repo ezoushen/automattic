@@ -50,7 +50,7 @@ project uses; say seam or interface, not boundary, and module, not component or 
   one, write tests at its interface and delete the old tests of the parts.
 - **Design it twice** when an interface is in question: three or more independent
   designers, launched in parallel through the orchestrator, each produce a materially
-  different interface under one constraint (the smallest interface, the most
+  different interface under a different constraint (the smallest interface, the most
   flexibility, the simplest common call, or ports and adapters across the seam), with
   its operations, a usage sketch, what it hides and its dependency strategy; compare
   them on depth, locality and seam placement and recommend one.

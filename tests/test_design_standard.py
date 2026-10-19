@@ -75,6 +75,8 @@ class DesignStandard(unittest.TestCase):
         text = prose(DESIGN)
         self.assertIn('**Design it twice** when an interface is in question', text)
         self.assertIn('three or more independent designers, launched in parallel through the orchestrator', text)
+        self.assertIn('each produce a materially different interface under a different constraint', text)
+        self.assertIn('with its operations, a usage sketch, what it hides and its dependency strategy', text)
         for constraint in ('the smallest interface', 'the most flexibility', 'the simplest common call',
                            'ports and adapters across the seam'):
             with self.subTest(constraint=constraint):
@@ -86,10 +88,16 @@ class DesignStandard(unittest.TestCase):
 
     def test_the_code_detector_finds_each_kind_of_sample(self):
         for sample in ('Use `mock()` here.', '~~~\nprint(1)\n~~~', '```\nx\n```', 'Text\n\n    print(1)\n',
-                       'Patch jest.mock first.', 'Use unittest.mock for it.'):
+                       '> ~~~python\n> print(1)\n> ~~~\n', 'Patch jest.mock first.', 'Use unittest.mock for it.'):
             with self.subTest(sample=sample):
                 self.assertNotEqual([], support.code_samples(sample))
-        self.assertEqual([], support.code_samples('See [module design](design.md).\n- a list\n  continued\n'))
+        for legitimate in ('See [module design](design.md).\n- a list\n  continued\n',
+                           'A stand-in, e.g. an embedded database, i.e. one that runs locally.',
+                           'The tautological-tests.md kind lists them.',
+                           '- a list\n    - a nested item\n      continued\n',
+                           '- an item\n  wrapped\n\n    its second paragraph\n'):
+            with self.subTest(legitimate=legitimate):
+                self.assertEqual([], support.code_samples(legitimate))
 
     def test_align_designs_with_our_standard(self):
         align = prose(ROOT / 'skills/align/SKILL.md')

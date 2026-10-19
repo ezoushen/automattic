@@ -46,7 +46,20 @@ def assignment_file(root, job, text=''):
 
 def code_samples(text):
     """Code a prose-only doc must not contain: code spans, fenced or indented blocks, dotted identifiers."""
-    prose = re.sub(r'\]\([^)]*\)', ']', text)
-    return (re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^ {0,3}(?:```|~~~).*$', prose)
-            + re.findall(r'(?m)^(?: {4}|\t)(?![-*] |\d+\. ).*\S.*$', prose)
-            + re.findall(r'\b[A-Za-z_]\w*\.[A-Za-z_]\w*', prose))
+    unquoted = '\n'.join(re.sub(r'^ {0,3}(?:> ?)+', '', line) for line in text.splitlines())
+    prose = re.sub(r'\]\([^)]*\)', ']', unquoted)
+    found = re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^ {0,3}(?:```|~~~).*$', prose)
+    in_list, after_blank = False, True
+    for line in prose.splitlines():
+        if not line.strip():
+            after_blank = True
+            continue
+        if re.match(r' {0,3}(?:[-*+]|\d+\.) ', line):
+            in_list = True
+        elif line[0] not in ' \t':
+            in_list = False
+        elif line.startswith(('    ', '\t')) and after_blank and not in_list:
+            found.append(line)
+        after_blank = False
+    return found + [name for name in re.findall(r'\b[A-Za-z_]\w+(?:\.[A-Za-z_]\w+)+', prose)
+                    if not name.endswith('.md')]
