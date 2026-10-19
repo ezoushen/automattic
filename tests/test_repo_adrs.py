@@ -15,10 +15,12 @@ class RepoAdrs(unittest.TestCase):
                                  '--index'], capture_output=True, text=True)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         out = json.loads(result.stdout)
-        self.assertEqual('0003', out['next'])
+        self.assertEqual('0007', out['next'])
         index = (ROOT / 'docs/adr/README.md').read_text()
         accepted = index[index.index('## Accepted'):index.index('## Superseded')]
-        for name in ('0001-adr-numbers-are-checked-on-main.md', '0002-grilling-asks-principles-only.md'):
+        for name in ('0001-adr-numbers-are-checked-on-main.md', '0002-grilling-asks-principles-only.md',
+                     '0003-adrs-record-what-others-follow.md', '0004-adrs-are-superseded-never-rewritten.md',
+                     '0005-the-adr-index-is-the-current-state.md', '0006-adr-statuses-have-no-proposed.md'):
             self.assertIn(f']({name})', accepted)
 
     def test_contributors_are_told_to_read_the_index_first(self):
