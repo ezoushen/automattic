@@ -1,7 +1,6 @@
 # Grilling
 
-Read before the first question of any interview, including a request to "grill" a
-plan. The user decides principles; the agent decides the rest within them.
+Read before any interview's first question, including a request to "grill" a plan. The user decides principles; the agent decides the rest within them.
 
 ## Map the design tree
 
@@ -22,8 +21,8 @@ Each round asks the highest unsettled branches, composed as the question filter 
 one or two questions per round, in the user's terms, each with a recommendation that
 "yes" accepts. After each answer, recompute which branches are now askable.
 
-When a term settles, or the user uses one against its definition, add the term to the
-[glossary](../domain/glossary.md) the moment it settles, or call out the conflict. When a
+Call out a term the user uses against its definition, and add the term to the
+[glossary](../domain/glossary.md) the moment it settles. When a
 decision settles that qualifies for an ADR, offer an [ADR](../domain/adr.md); write it only
 after the user's yes.
 

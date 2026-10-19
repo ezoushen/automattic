@@ -4,6 +4,13 @@ The repository's shared decision history: each ADR records that a decision was m
 and why, for members and agents who were not there. Grilling offers them, delivery
 carries an effort's lasting decisions into them, and later work follows them.
 
+Contents:
+- [Where they live](#where-they-live)
+- [Format](#format)
+- [When to offer one](#when-to-offer-one)
+- [Change and follow them](#change-and-follow-them)
+- [Deliver an effort's decisions](#deliver-an-efforts-decisions)
+
 ## Where they live
 
 ADRs live in `docs/adr/NNNN-slug.md`: the number is the highest existing number plus
@@ -23,10 +30,12 @@ and numbering; neither the folder nor any ADR is required.
 ```
 
 An ADR is a title and one to three sentences. Add Status, Considered Options and
-Consequences only when they add something: Status (`proposed`, `accepted`,
-`deprecated` or `superseded by ADR-NNNN`) once a decision is revisited, Considered
-Options when a rejected alternative is worth remembering, Consequences when a
-downstream effect is not obvious.
+Consequences only when they add something: Considered Options when a rejected
+alternative is worth remembering, Consequences when a downstream effect is not obvious.
+Status and supersession are front matter (`status:`, `supersedes:`); without them an ADR
+is `accepted`. A status is `accepted` (the default), `superseded by ADR-NNNN` or
+`deprecated`. There is no `proposed` status: a draft lives in its PR until the user's
+yes accepts it.
 
 ## When to offer one
 
@@ -49,14 +58,17 @@ from the obvious path, constraints invisible in the code, and a rejected alterna
 someone would otherwise propose again.
 
 Offer the ADR to the user and write it only after their yes; an agent never writes one
-on its own judgment. Before offering, search the existing ADRs: a decision that changes
-an earlier one is offered as a replacement, never a duplicate.
+on its own judgment. Before offering, check the [index](adr-index.md): a decision that
+changes an earlier one is offered as a replacement, never a duplicate.
 
 ## Change and follow them
 
-Never rewrite an accepted ADR. A changed decision is a new ADR that supersedes it, and
-the old one's Status becomes `superseded by ADR-NNNN`. Accepted ADRs bind later work:
-read those in the area before planning or changing it. Work that would contradict one
+Never rewrite an accepted ADR. A changed decision is a new ADR that names the ADR it
+replaces in `supersedes: ADR-NNNN`; the old ADR's only edit is its status line, which
+becomes `superseded by ADR-NNNN`. A partial overrule supersedes the whole ADR and
+restates what still holds, so one ADR states each current decision. A decision dropped
+without a replacement becomes `deprecated`. Accepted ADRs bind later work: read the
+[index](adr-index.md) and the ADRs in the area before planning or changing it. Work that would contradict one
 stops for a design decision; one that looks outdated is flagged to the user, not
 silently followed.
 
@@ -79,7 +91,7 @@ gate repeats the check without merging, against each `main` the effort lands on:
 local one and, once fetched, the remote's when the effort is published:
 
 ```sh
-python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip> [--dir <ADR folder>]
+python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip> --require-index [--dir <ADR folder>]
 ```
 
 It prints the duplicated numbers and the next free one, and exits 1 on a duplicate.

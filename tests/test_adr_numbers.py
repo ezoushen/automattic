@@ -38,7 +38,7 @@ class AdrNumbers(unittest.TestCase):
             path.write_text('# decision\n')
 
     def test_distinct_numbers_pass_and_name_the_next_free_number(self):
-        self.write('0001-event-sourced-orders.md', '0002-postgres-write-model.md', 'README.md')
+        self.write('0001-event-sourced-orders.md', '0002-postgres-write-model.md', 'template.md')
         code, out, _ = check(self.repo)
         self.assertEqual(0, code)
         self.assertEqual({}, out['duplicates'])

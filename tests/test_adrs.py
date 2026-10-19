@@ -26,7 +26,7 @@ class Adrs(unittest.TestCase):
                      'goes where the project keeps its rules',
                      'plus a one-line rule there that points to it',
                      'Offer the ADR to the user and write it only after their yes',
-                     'a new ADR that supersedes it', '`superseded by ADR-NNNN`',
+                     'a new ADR that names the ADR it replaces', '`superseded by ADR-NNNN`',
                      'Never rewrite an accepted ADR', "A project's existing decision-record convention wins"):
             self.assertIn(rule, text)
 
@@ -34,7 +34,7 @@ class Adrs(unittest.TestCase):
         grilling = prose('runtime/interview/grilling.md')
         self.assertIn('When a decision settles that qualifies for an ADR, offer an [ADR](../domain/adr.md)', grilling)
         self.assertNotIn('passes the three tests', grilling)
-        self.assertIn('accepted [ADRs](../../runtime/domain/adr.md) in the area', prose('skills/align/SKILL.md'))
+        self.assertIn('ADR [index](../../runtime/domain/adr-index.md) and the ADRs in the area', prose('skills/align/SKILL.md'))
         ticket = prose('skills/dispatch/jobs/ticket.md')
         self.assertIn('accepted [ADRs](../../../runtime/domain/adr.md) in the area', ticket)
         self.assertIn('An accepted ADR that looks outdated is flagged to the orchestrator, not silently followed',

@@ -57,7 +57,7 @@ Prepare one concise WHAT / WHY / HOW brief:
 Choose depth by uncertainty: context for system boundaries; modules for changing
 responsibilities; behavior for flows, state and ordering. Include only the views
 that resolve a live risk. These are lenses on one brief, not three approval turns.
-Read the accepted [ADRs](../../runtime/domain/adr.md) in the area first; a plan that
+Read the ADR [index](../../runtime/domain/adr-index.md) and the ADRs in the area first; a plan that
 contradicts one proposes a superseding ADR. Reuse existing mechanisms; compare an alternative only when it is viable and
 material. Use the project's [glossary](../../runtime/domain/glossary.md) and keep it current as terms settle.
 Use `prototype` only for a question that evidence on paper cannot settle.
