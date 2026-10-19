@@ -99,7 +99,7 @@ human-authorized merge by the orchestrator.
 ## Flows
 
 Each command's procedure is its `SKILL.md`, with its other docs and jobs in the same
-folder; the shared interview and board procedures and the other runtime rules sit below them.
+folder; commands read the shared interview and board procedures and the other rules in `runtime/`.
 
 - [Align](../align/SKILL.md): the mandate, then the WHAT / WHY / HOW brief.
 - [Refine](../refine/SKILL.md): ticket slicing and the ticket template.
