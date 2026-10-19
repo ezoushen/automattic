@@ -49,16 +49,18 @@ def code_samples(text):
     unquoted = '\n'.join(re.sub(r'^ {0,3}(?:> ?)+', '', line) for line in text.splitlines())
     prose = re.sub(r'\]\([^)]*\)', ']', unquoted)
     found = re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^[ \t]*(?:```|~~~).*$', prose)
-    in_list, after_blank = False, True
-    for line in prose.splitlines():
+    content, after_blank = 0, True
+    for line in prose.expandtabs(4).splitlines():
         if not line.strip():
             after_blank = True
             continue
-        if re.match(r' {0,3}(?:[-*+]|\d+\.) ', line):
-            in_list = True
-        elif line[0] not in ' \t':
-            in_list = False
-        elif after_blank and line.startswith(('      ', '\t\t') if in_list else ('    ', '\t')):
+        indent = len(line) - len(line.lstrip(' '))
+        item = re.match(r' *(?:[-*+]|\d+\.) ', line)
+        if item:
+            content = len(item.group(0))
+        elif not indent:
+            content = 0
+        elif after_blank and indent >= content + 4:
             found.append(line)
         after_blank = False
     return found + [name for name in re.findall(r'\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+', prose)

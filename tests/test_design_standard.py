@@ -89,7 +89,8 @@ class DesignStandard(unittest.TestCase):
     def test_the_code_detector_finds_each_kind_of_sample(self):
         for sample in ('Use `mock()` here.', '~~~\nprint(1)\n~~~', '```\nx\n```', 'Text\n\n    print(1)\n',
                        '> ~~~python\n> print(1)\n> ~~~\n', '- Example:\n\n        print(1)\n',
-                       '- An item\n\n    ~~~\n    print(1)\n    ~~~\n', 'Patch jest.mock first.',
+                       '- An item\n\n    ~~~\n    print(1)\n    ~~~\n', '- An item\n\nA paragraph.\n\n    print(1)\n',
+                       'Patch jest.mock first.',
                        'Use unittest.mock for it.', 'Use re.I to ignore case.', 'Call x.append(1).'):
             with self.subTest(sample=sample):
                 self.assertNotEqual([], support.code_samples(sample))
@@ -97,7 +98,9 @@ class DesignStandard(unittest.TestCase):
                            'A stand-in, e.g. an embedded database, i.e. one that runs locally.',
                            'The tautological-tests.md kind lists them.',
                            '- a list\n    - a nested item\n      continued\n',
-                           '- an item\n  wrapped\n\n    its second paragraph\n'):
+                           '- an item\n  wrapped\n\n    its second paragraph\n',
+                           '- Parent\n  - Nested rule\n\n      A second paragraph explaining that rule.\n',
+                           '1. a\n   1. b\n\n      second paragraph of b\n'):
             with self.subTest(legitimate=legitimate):
                 self.assertEqual([], support.code_samples(legitimate))
 
