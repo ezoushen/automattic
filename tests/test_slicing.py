@@ -76,6 +76,9 @@ class Slicing(unittest.TestCase):
     def test_a_split_child_meets_the_bar_a_refined_ticket_meets(self):
         text = re.sub(r'<!--.*?-->', '', prose(ROOT / 'skills/dispatch/split-work.md'))
         for rule in (
+                "Selected work too large for one worker is split by the board's [slicing rules]"
+                "(../../runtime/board/slicing.md), within native permissions and existing tracker-write "
+                "authorization, in the project's ticket convention.",
                 'Each child meets the bar a refined ticket meets: a one-sentence story; observable Given/When/Then '
                 'criteria, each with a `Verify` line naming the command or test and who observes it (`code`, `agent` '
                 'or `user`), and a check that cannot pass while the criterion is broken and that normal variation '
