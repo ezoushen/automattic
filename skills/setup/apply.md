@@ -76,10 +76,10 @@ Removing `decisions` reveals the lower object or legacy inline worker router; it
 does not necessarily disable the service. To disable backend decisions at this
 scope, preserve the required backend and set `enabled: []`. Disable only a requested
 family by removing it from the effective enabled list. Resetting `router` reveals
-the lower router, or the built-in skill when none remains. To select host judgment
-over a lower router, save an explicit built-in skill router. Keep unrelated decision
+the lower router, or host judgment when none remains. To select host judgment
+over a lower router, save `{"type": "host"}`. Keep unrelated decision
 families and calibration settings when changing only worker selection.
-When no layer defines a router, use `automattic:model-routing` in the host's current context.
+When no layer defines a router, choose by [model routing](../../runtime/routing/model-routing.md) in the host's current context.
 External routing skills return selections; they do not execute assignments. Keep
 other API protocols and credentials in that skill's integration. Decision-model
 settings belong in `decisions.backend`, not the worker catalog. Preserve the existing router

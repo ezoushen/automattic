@@ -9,8 +9,6 @@ ROOT = support.ROOT
 STANDARDS = ROOT / 'standards'
 KIND_SECTIONS = ['Signal', 'Proof', 'Repair', 'Not a finding']
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
-CODE_COMMENTS_DESCRIPTION = ('description: "Write code comments and API docs when adding or changing source '
-                             'documentation, or when behavior changes its contract. Not PR review comments."')
 
 
 class Standards(unittest.TestCase):
@@ -38,12 +36,12 @@ class Standards(unittest.TestCase):
         for name in ('code-comments.md', 'code-comments-sources.md', 'documentation.md', 'pr.md'):
             self.assertTrue((STANDARDS / name).is_file(), name)
 
-    def test_the_code_comments_skill_is_a_thin_entry_with_its_description_unchanged(self):
-        skill = (ROOT / 'skills/code-comments/SKILL.md').read_text()
-        self.assertIn(CODE_COMMENTS_DESCRIPTION, skill)
-        self.assertIn('](../../standards/code-comments.md)', skill)
-        self.assertLess(len(skill), 1200)
-        self.assertFalse((ROOT / 'skills/code-comments/references').exists())
+    def test_the_comment_rules_reach_writers_and_reviewers_as_a_core_skill_not_a_skill_folder(self):
+        import agent_defs
+        agents = agent_defs.load(ROOT)['agents']
+        for name in ('builder', 'reviewer'):
+            self.assertIn('standards/code-comments.md', agents[name]['core_skills'], name)
+        self.assertFalse((ROOT / 'skills/code-comments').exists())
 
     def test_housekeeping_points_at_the_documentation_standard(self):
         skill = (ROOT / 'skills/housekeeping/SKILL.md').read_text()

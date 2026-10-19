@@ -26,7 +26,7 @@ HARNESSES = ('claude', 'codex', 'pi', 'opencode')
 DEFINITIONS = agent_defs.load()
 AGENTS = tuple(sorted(DEFINITIONS['agents']))
 JOBS = DEFINITIONS['jobs']
-DEFAULT_ROUTER = {'type': 'skill', 'skill': 'automattic:model-routing'}
+DEFAULT_ROUTER = {'type': 'host'}
 
 
 def check_thinking(policy, value, *, automatic=False):

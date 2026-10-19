@@ -113,6 +113,15 @@
         {
           "type": "object",
           "properties": {
+            "type": { "const": "host" },
+            "instruction": { "type": "string", "pattern": "\\S" }
+          },
+          "required": ["type"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
             "type": { "const": "skill" },
             "skill": { "type": "string", "pattern": "\\S" },
             "instruction": { "type": "string", "pattern": "\\S" }

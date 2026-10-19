@@ -58,12 +58,10 @@ class RuntimeModules(unittest.TestCase):
         docs = {f'runtime/checks/{path.name}' for path in (RUNTIME / 'checks').glob('*.md') if path.name != 'README.md'}
         self.assertEqual(set(core), docs)
 
-    def test_the_decision_and_routing_skills_are_thin_entries_over_runtime(self):
+    def test_decision_and_routing_are_runtime_docs_not_skills(self):
         for skill, target in (('decision', 'runtime/decisions/decision.md'),
                               ('model-routing', 'runtime/routing/model-routing.md')):
-            text = (ROOT / 'skills' / skill / 'SKILL.md').read_text()
-            self.assertIn(f'](../../{target})', text)
-            self.assertLess(len(text), 900, skill)
+            self.assertFalse((ROOT / 'skills' / skill).exists(), skill)
             self.assertTrue((ROOT / target).is_file(), target)
 
     def test_housekeeping_keeps_a_pointer_to_worktree_retirement(self):

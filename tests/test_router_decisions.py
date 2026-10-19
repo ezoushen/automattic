@@ -266,7 +266,7 @@ class DecisionRouting(RouterCase):
         self.save()
         result = self.resolve(assignment='Fix the constant.')
         self.assertEqual(result['status'], 'selection_required')
-        self.assertEqual(result['selection_router'], {'type': 'skill', 'skill': 'automattic:model-routing'})
+        self.assertEqual(result['selection_router'], {'type': 'host'})
         self.assertEqual(len(self.requests), 2)  # one decision, scored in both option orders
 
     def test_decision_config_rejects_bad_calibration_and_unknown_family(self):
@@ -395,7 +395,7 @@ class DecisionRouting(RouterCase):
                     'model': self.data['router']['model'], 'answers': {'worker': answer}}):
                 result = self.resolve(assignment='Route this assignment.', eligible_candidates=['sol'])
                 self.assertEqual(result['status'], 'selection_required')
-                self.assertEqual(result['selection_router'], {'type': 'skill', 'skill': 'automattic:model-routing'})
+                self.assertEqual(result['selection_router'], {'type': 'host'})
                 self.assertIn('selection_error', result)
                 self.assertNotIn('settings', result)
         def abstain(result):
@@ -405,7 +405,7 @@ class DecisionRouting(RouterCase):
         self.decision_router(abstain)
         result = self.resolve(assignment='Task is underspecified.')
         self.assertEqual(result['status'], 'selection_required')
-        self.assertEqual(result['selection_router'], {'type': 'skill', 'skill': 'automattic:model-routing'})
+        self.assertEqual(result['selection_router'], {'type': 'host'})
         self.assertEqual(result['decision_model']['choice'], 'abstain')
         self.assertNotIn('settings', result)
         final = self.resolve(selection=self.choose('sol'), assignment='Task is underspecified.')
@@ -418,7 +418,7 @@ class DecisionRouting(RouterCase):
             result = self.resolve(assignment='Implement the fix.')
         self.assertEqual(request.call_count, 1)
         self.assertEqual(result['status'], 'selection_required')
-        self.assertEqual(result['selection_router'], {'type': 'skill', 'skill': 'automattic:model-routing'})
+        self.assertEqual(result['selection_router'], {'type': 'host'})
         self.assertNotIn('settings', result)
 
     def test_decision_model_rejects_empty_pool_without_network(self):

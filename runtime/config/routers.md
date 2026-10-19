@@ -5,21 +5,20 @@ The backend that decision-model routers and checkpoints call is in [decision bac
 ## Routers and sparse profiles
 
 `agents.<agent>.candidates` is the allowed pool, without a model default. The optional
-`router` chooses the selection strategy. Omission uses the built-in skill:
+`router` chooses the selection strategy. Omission uses host judgment:
 
 ```json
 {
   "router": {
-    "type": "skill",
-    "skill": "automattic:model-routing"
+    "type": "host"
   }
 }
 ```
 
-The model-routing skill guides the host's judgment
+The host chooses by the routing module's model-routing procedure
 within its existing context. Add `instruction` only for user-specific preferences.
-An installed routing skill can call Jev or another decision model and return the
-same selection contract. That is a selection interface, not a worker executor;
+An installed routing skill, `{"type": "skill", "skill": "<name>"}`, can call Jev or
+another decision model and return the same selection contract. That is a selection interface, not a worker executor;
 inspection never loads the skill, calls an API or installs a dependency.
 For a service exposing System One directly, use the built-in
 decision-model router.

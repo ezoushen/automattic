@@ -71,9 +71,6 @@
  "modules": {
   "skills": {
    "docs": [
-    "skills/code-comments/SKILL.md",
-    "skills/decision/SKILL.md",
-    "skills/model-routing/SKILL.md",
     ".agents/skills/*/SKILL.md"
    ],
    "isolated": true
@@ -299,7 +296,5 @@
    "executors"
   ]
  },
- "entry_doc": {
-  "wrappers": "skills"
- }
+ "entry_doc": true
 }

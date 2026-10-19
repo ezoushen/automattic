@@ -104,7 +104,7 @@ try {
     );
     assert.deepEqual(discovered.map((skill) => skill.name).sort(), readdirSync(join(root, "skills")).sort());
     for (const skill of discovered) {
-      assert.equal(skill.disableModelInvocation, !["code-comments", "housekeeping", "model-routing", "decision"].includes(skill.name));
+      assert.equal(skill.disableModelInvocation, skill.name !== "housekeeping");
     }
   }
   console.log("Pi native reader: shared skills and invocation policy, symlinked bootstrap, startup/reload: ok");

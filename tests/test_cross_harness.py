@@ -157,15 +157,13 @@ class CrossHarness(unittest.TestCase):
         # .codex-plugin hooks, so a copied install would register none.
         assert '$schema' not in portable, 'root plugin.json must not declare $schema'
         commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief'}
-        implicit_skills = {'code-comments', 'housekeeping', 'model-routing', 'decision'}
+        implicit_skills = {'housekeeping'}
         assert {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')} == commands | implicit_skills
         for path in (PLUGIN / 'skills').glob('*/SKILL.md'):
             implicit = path.parent.name in implicit_skills
             text = path.read_text()
-            # A command holds its procedure in SKILL.md; the agent-selected skills other than housekeeping
-            # are thin entries over a lower doc (the doc checker's entry-doc rule).
-            thin = implicit and path.parent.name != 'housekeeping'
-            assert (len(text.encode()) < 2500) == thin, f'{path}: thin entry only for the agent-selected wrappers'
+            # Every skill holds its procedure in SKILL.md; none is a thin entry over a lower doc.
+            assert len(text.encode()) >= 2500, f'{path}: a skill holds its procedure'
             if not implicit:
                 assert 'runtime bootstrap' in text, path
                 assert 'disable-model-invocation: true' in text, path

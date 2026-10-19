@@ -28,7 +28,7 @@ class ArchitectureDocs(unittest.TestCase):
     def test_the_readme_layout_has_a_row_for_every_top_level_folder(self):
         rows = [line.split('|')[1] for line in README.split('## Layout', 1)[1].split('\n## ', 1)[0].splitlines()
                 if line.startswith('| `')]
-        for name in ('skills/<command>/', 'runtime/interview/', 'standards/', 'hosts/claude/',
+        for name in ('skills/<skill>/', 'runtime/interview/', 'standards/', 'hosts/claude/',
                      'bootstrap.md'):
             self.assertTrue(any(f'`{name}' in row for row in rows), name)
         self.assertIn('writing-agent-docs/SKILL.md', README)

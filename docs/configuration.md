@@ -79,8 +79,8 @@ skill, a built-in decision-model client, or a named profile. Profiles use
 selection unchanged ([routers and sparse profiles](../runtime/config/routers.md#routers-and-sparse-profiles)).
 Select one with `router: {"type":"profile","profile":"balanced"}`,
 `--config-profile <name>` or `AUTOMATTIC_PROFILE`. With no router configured, the
-host uses the [model-routing skill](../runtime/routing/model-routing.md) in its
-existing context, without a separate model call.
+host chooses by [model routing](../runtime/routing/model-routing.md) in its
+existing context (`router: {"type":"host"}`), without a separate model call.
 
 For a local Jev/OpenJev service, configure its endpoint and model ID under
 `decisions.backend`, enable `worker-selection`, and select

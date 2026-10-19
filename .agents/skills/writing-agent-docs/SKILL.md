@@ -64,12 +64,12 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `link`, `anchor` | Target file or heading missing | Retarget to the file and section that hold the text |
 | `orphan` | No doc or code links it | Link it where a reader needs it, or delete it |
 | `code-path` | Code names a doc that does not exist | Update the path in the code |
-| `direction` | A link, or a doc path named in text or code, goes to a higher level, a sibling module or another thin skill | Move the shared text into a lower module its users can link, or invert the link |
+| `direction` | A link, or a doc path named in text or code, goes to a higher level, a sibling module or another project skill | Move the shared text into a lower module its users can link, or invert the link |
 | `import-direction` | A script or hook imports, or names the path of, one in a higher or sibling module | Move the shared code into a lower module |
 | `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
 | `first-read` | Bootstrap, host session, skill and the docs its `First read:` paragraph links, over the budget | Move detail out of those docs or the bootstrap |
 | `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add a paragraph starting `First read:` that links the docs the skill reads before acting |
-| `entry-doc` | A command's folder is not its own module, a skill in its own module first-reads a `<skill>.md` instead of holding its procedure, or a thin skill links no doc named after it | Put a command's procedure in its `SKILL.md` and map `skills/<command>/` as a module; name a thin skill's doc `<skill>.md` |
+| `entry-doc` | A skill's folder is not its own module, or its `First read:` paragraph links a `<skill>.md` instead of the skill holding its procedure | Put the procedure in its `SKILL.md` and map `skills/<skill>/` as a module; a doc agents need without a trigger belongs in `runtime/` or `standards/`, not in a wrapper skill |
 | `host-shape` | A folder under `hosts/` that does not hold exactly `session.md` and `workers.md` | Move other text to the runtime doc that owns it |
 | `shared-section` | A section, other than a file's title or only section, linked from 3+ files in other modules | Make it its own file, or link the whole file |
 | `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |
@@ -80,11 +80,12 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 
 ## Extend the architecture
 
-Layers, top first: thin skills, hooks and `bootstrap.md` (injected by path, so skills
-name it rather than link it); commands (`skills/<command>/`, in their own order);
+Layers, top first: this repository's project skills (`.agents/skills/`), hooks and
+`bootstrap.md` (injected by path, so skills name it rather than link it); skills
+(`skills/<skill>/`, in their own order);
 `agents/`; `standards/`; `hosts/`; `runtime/` modules; add-ons. A doc or script depends on its own module or a
 lower level, never on a sibling or a higher level: a command may read a lower command's
-procedure, and a thin skill links no other skill. No two modules depend on each other,
+procedure, and a project skill links no other skill. No two modules depend on each other,
 directly or through others (`cycle`). **Strict:** these direction rules, the first-read budget, the host
 shape, shared sections and unmapped docs are errors with no recorded debt. **Room:** a new module
 joins `architecture.json` in a level of its own or beside siblings that need not link
@@ -114,6 +115,7 @@ each other, so the order grows without loosening a rule. Run the checker and
   `First read:` paragraph naming the bootstrap and host session part, with its other
   docs and `jobs/` beside it. Map `skills/<command>/**/*.md` as a module at its level
   (`entry-doc`), name it in the pipeline map and add it to the README's command table.
-  A skill the agent loads itself either does the same or, when its procedure is a
-  lower doc others share, is a thin entry in the `skills` module that first-reads that
-  doc named after it; set `user-invocable: false`.
+  A skill the agent loads itself by its trigger does the same and sets
+  `user-invocable: false`; add one only when its trigger must fire outside the commands
+  (as `housekeeping` does). Text that agents or commands read by link is a `runtime/`
+  module or a standard, named in an agent's `core_skills` when every job needs it.

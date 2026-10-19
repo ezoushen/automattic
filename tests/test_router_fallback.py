@@ -86,7 +86,7 @@ class Fallbacks(RouterCase):
         self.save()
         result = self.resolve(assignment='Underspecified task.', target_runtime='codex')
         self.assertEqual(result['status'], 'selection_required')
-        self.assertEqual(result['selection_router'], {'type': 'skill', 'skill': 'automattic:model-routing'})
+        self.assertEqual(result['selection_router'], {'type': 'host'})
         self.assertNotIn('settings', result)
 
     def test_fallback_profile_is_not_backend_configuration(self):

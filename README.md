@@ -20,8 +20,8 @@ Typed as `/automattic:<name>` in Claude Code, `$automattic:<name>` in Codex and
 | `setup` | Explain or change worker, routing and decision settings |
 | `brief` | Report progress; `brief map` shows which command fits |
 
-The agent loads four more skills itself: code-comments, housekeeping, decision and
-model-routing. Claude Code keeps them out of its command menu; Codex and Pi list them.
+The agent loads one more skill itself, housekeeping, to keep the repository clean at any
+time. Claude Code keeps it out of its command menu; Codex and Pi list it.
 
 ## Concepts
 
@@ -59,7 +59,7 @@ model-routing. Claude Code keeps them out of its command menu; Codex and Pi list
 
 | Path | Owns |
 |---|---|
-| `skills/<command>/` | One folder per skill: a command's procedure in `SKILL.md`, its other docs and its job files (`jobs/`). The decision, routing and writing skills are thin entries over a `runtime/` or `standards/` doc |
+| `skills/<skill>/` | One folder per skill: its procedure in `SKILL.md`, its other docs and its job files (`jobs/`) |
 | `bootstrap.md` | Session rules every host reads first, with the triggers table for rules that fire outside their owner |
 | `agents/` | The builder, reviewer and verifier agents; Claude loads them natively |
 | `standards/` | What good looks like: PR descriptions, code comments, documentation and the remediation kinds |

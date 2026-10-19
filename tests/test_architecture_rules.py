@@ -245,9 +245,9 @@ class ArchitectureRules(Fixture):
         """The first-read fixture with the entry-doc rule on and the skill's declaration naming target.
 
         own_module maps skills/tool/ as the skill's own module, so its SKILL.md holds a procedure;
-        otherwise the skill is a wrapper in the `skills` module."""
+        otherwise the skill is a thin wrapper mapped into the shared `skills` module."""
         self.first_read_tree()
-        self.architecture['entry_doc'] = {'wrappers': 'skills'}
+        self.architecture['entry_doc'] = True
         self.architecture['modules']['skills']['docs'] = ['skills/other/SKILL.md']
         if own_module:
             self.architecture['levels'].insert(1, ['tool'])
@@ -264,21 +264,13 @@ class ArchitectureRules(Fixture):
                                 f'[the guide](../../shared/guide.md), [procedure](../../{target}).')
         path.write_text(text)
 
-    def test_a_wrapper_skill_whose_first_reads_name_no_doc_after_it_is_an_error(self):
-        self.entry_tree('shared/procedure.md')
-        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
-        [(_, _, message)] = self.messages('entry-doc')
-        self.assertIn('tool.md', message)
-
-    def test_a_wrapper_skill_naming_a_doc_after_it_in_a_lower_module_passes(self):
-        self.entry_tree('shared/tool.md')
-        self.assertEqual(self.check(), set())
-
-    def test_a_typed_command_that_wraps_a_doc_is_an_error_naming_its_own_folder(self):
-        self.entry_tree('shared/tool.md', command=True)
-        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
-        [(_, _, message)] = self.messages('entry-doc')
-        self.assertIn('skills/tool/', message)
+    def test_a_skill_wrapping_a_lower_doc_named_after_it_is_an_error_naming_its_own_folder(self):
+        for command in (False, True):
+            with self.subTest(command=command):
+                self.entry_tree('shared/tool.md', command=command)
+                self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
+                [(_, _, message)] = self.messages('entry-doc')
+                self.assertIn('skills/tool/', message)
 
     def test_a_command_holding_its_procedure_in_its_own_module_passes(self):
         self.entry_tree(None, own_module=True, command=True)

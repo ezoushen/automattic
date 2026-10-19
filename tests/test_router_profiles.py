@@ -13,7 +13,7 @@ class Profiles(RouterCase):
     def test_missing_selection_returns_options_without_launch_settings(self):
         result = self.resolve()
         self.assertEqual(result['status'], 'selection_required')
-        self.assertEqual(result['router'], {'type': 'skill', 'skill': 'automattic:model-routing'})
+        self.assertEqual(result['router'], {'type': 'host'})
         self.assertEqual(set(result['candidates']), {'luna', 'sol', 'opus'})
         self.assertNotIn('settings', result)
         self.assertNotIn('executor', result)
@@ -121,7 +121,7 @@ class Profiles(RouterCase):
     def test_profile_selection_is_explicit_not_host_or_herdr_name(self):
         self.data['profiles'] = {'herdr': {'builder': {'codex': {'candidate': 'sol'}}}}
         self.save()
-        self.assertEqual(self.resolve()['router']['type'], 'skill')
+        self.assertEqual(self.resolve()['router']['type'], 'host')
         self.assertEqual(self.resolve(config_profile='herdr', target_runtime='codex')['candidate'], 'sol')
         with patch.dict(os.environ, {'AUTOMATTIC_PROFILE': 'herdr'}):
             self.assertEqual(self.resolve(target_runtime='codex')['candidate'], 'sol')
@@ -145,11 +145,16 @@ class Profiles(RouterCase):
 
     def test_schema_rejects_unknown_router_fields_and_profile_wrappers(self):
         for router in ({'type': 'fixed'}, {'type': 'skill'}, {'type': 'profile'},
-                       {'type': 'skill', 'skill': 'route', 'profile': 'balanced'}):
+                       {'type': 'skill', 'skill': 'route', 'profile': 'balanced'}, {'type': 'host', 'skill': 'route'}):
             with self.subTest(router=router), self.assertRaises(ValueError):
                 models.validate_execution_config({'router': router}, 'fixture')
         with self.assertRaises(ValueError):
             models.validate_execution_config({'profiles': {'balanced': {'choices': {}}}}, 'fixture')
+
+    def test_schema_accepts_the_host_router_with_an_optional_instruction(self):
+        for router in ({'type': 'host'}, {'type': 'host', 'instruction': 'Prefer native work.'}):
+            with self.subTest(router=router):
+                models.validate_execution_config({'router': router}, 'fixture')
 
     def test_malformed_config_sections_report_validation_errors(self):
         for key in ('profiles', 'agents'):
