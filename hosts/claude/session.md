@@ -2,8 +2,7 @@
 
 Registration: `.claude-plugin/plugin.json`, native `agents/*.md` profiles, and
 `hooks/hooks.json`. SessionStart selects this adapter explicitly. Invoke phase
-skills with `/automattic:<phase>`; use the Skill tool for available dependencies.
-Confirm required dependency skills are installed before dispatch.
+skills with `/automattic:<phase>`.
 
 Read shared docs with the Read tool, not `cat`, `sed` or `head`: Bash output over
 about 30 KB is saved to a file instead of shown, and a guessed line range can cut

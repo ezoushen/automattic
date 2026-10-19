@@ -57,7 +57,7 @@ class Slicing(unittest.TestCase):
                 self.assertIn(rule, text)
         self.assertIn('[Slicing tickets](slicing.md)', prose(ROOT / 'runtime/board/board.md'))
 
-    def test_refine_split_work_and_the_map_read_the_doc_not_matts(self):
+    def test_refine_split_work_and_the_map_read_the_slicing_doc(self):
         readers = {'skills/refine/SKILL.md': '](../../runtime/board/slicing.md)',
                    'skills/dispatch/split-work.md': '](../../runtime/board/slicing.md)',
                    'skills/brief/pipeline.md': '](../../runtime/board/slicing.md)'}
@@ -65,8 +65,7 @@ class Slicing(unittest.TestCase):
             text = prose(ROOT / name)
             with self.subTest(doc=name):
                 self.assertIn(link, text)
-                for gone in ('mattpocock-skills:to-tickets', 'mattpocock-skills:to-spec', 'spec.md'):
-                    self.assertNotIn(gone, text)
+                self.assertNotIn('spec.md', text)
         self.assertNotIn('](../refine/', prose(ROOT / 'skills/dispatch/split-work.md'))
         refine = prose(ROOT / 'skills/refine/SKILL.md')
         self.assertIn("Dispatch's split step cuts already-selected work by the same slicing rules", refine)

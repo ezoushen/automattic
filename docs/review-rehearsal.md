@@ -315,7 +315,7 @@ independent evaluator. Simulate evidence; no real repository or external actions
    the same writer/worktree and final suite cover the repairs. A repair changes
    an unchanged caller's documented contract. State repair/review/verification order
    and which prior conclusions can be reused. Classify the new documentation issue.
-3. The host catalog exposes `code-review` and `mattpocock-skills:code-review`.
+3. The host catalog exposes `code-review` and another plugin's `other:code-review`.
    An implementation reviewer has the accepted direction and scope, plus twelve
    confirmed findings and a short return-summary limit. State which review method
    applies, partition ownership and what the report/summary contain.

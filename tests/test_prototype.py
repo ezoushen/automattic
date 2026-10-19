@@ -57,8 +57,6 @@ class Prototype(unittest.TestCase):
             with self.subTest(path=path):
                 text = prose(path)
                 self.assertIn(f']({link})', text)
-                self.assertNotIn('mattpocock-skills:prototype', text)
-                self.assertNotRegex(text, r"Matt(?: Pocock)?'s `prototype`")
 
 
 if __name__ == '__main__':

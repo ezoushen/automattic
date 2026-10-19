@@ -8,7 +8,7 @@ Follow [review layers and invalidation](layers.md): direction, scope/blast radiu
 then implementation. Complete each layer's findings batch; pause dependent lower
 coverage when an upstream decision blocks it. Carry accepted alignment forward.
 The coordinator owns direction/scope; one reviewer owns the implementation batch
-and its Matt axes. Share the layer decisions and permitted coverage before launch.
+and its Standards and Spec axes. Share the layer decisions and permitted coverage before launch.
 At each completed layer, run the configured
 [`review-triage` checkpoint](../../runtime/decisions/checkpoint-command.md)
 before choosing an investigation or finding grouping. Identify the layer and head

@@ -1,15 +1,10 @@
 # Before a worker launch
 
-Read with the [launch doc](launch.md) before each worker launch, including workers that
-dependency skills launch.
+Read with the [launch doc](launch.md) before each worker launch, including helper
+workers.
 
-## Dependencies and deployment
+## Deployment
 
-Resolve dependency identity from the active catalog once per session: for Matt use
-the exact `mattpocock-skills:<name>` entry (or its verified host alias/path), never
-a bare colliding name such as `tdd`. Carry that resolved identity into
-workers; an unavailable dependency is a gap, not permission to substitute a
-similarly named bundled skill. Refresh discovery after installation changes.
 Memory and copied alignment are discovery hints for runner capabilities; verify
 their claims against the current installed runner contract before distributing
 assignments. If deployment is uncertain or changed, record the resolved plugin
@@ -31,11 +26,11 @@ Announce the [routing decision and attribution](../routing/report.md).
 Worker blockers and review/check failures invoke [escalation checkpoints](escalation.md)
 before the next attempt; ordinary resumes reuse the saved choice.
 
-## Dependency-launched workers
+## Helper workers
 
-Include workers launched by dependency skills during planning/research in the same
-capacity and assignment log. Where a configured agent applies, resolve it before
-launch; otherwise record the dependency's native selection and its provenance.
+Include helper workers, such as a research helper, in the same capacity and
+assignment log. Where a configured agent applies, resolve it before launch;
+otherwise record the helper's native selection and its provenance.
 Retain the assignment's stopping condition and observed model/effort; label missing
 execution evidence instead of treating a hard-coded model as a routed choice.
 

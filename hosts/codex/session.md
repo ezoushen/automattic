@@ -1,7 +1,6 @@
 # Codex adapter
 
-Use the shared skills, agents and jobs. Resolve a dependency from the active skill catalog
-and read it when its step applies; slash notation identifies a skill, not a shell
+Use the shared skills, agents and jobs; slash notation identifies a skill, not a shell
 command. Preserve the existing explicit invocation policy in `agents/openai.yaml`.
 
 Codex shows a command's output only up to its tool-output limit and cuts the

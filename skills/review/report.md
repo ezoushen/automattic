@@ -65,9 +65,9 @@ otherwise use `findings` or `incomplete`. Confirmed in-scope defects are hard bl
 ### Direction and scope
 Consolidated findings/decisions and the lower coverage they unblock or block.
 ### Standards
-Complete findings from Matt's Standards axis.
+Complete findings from the Standards axis.
 ### Spec
-Complete findings from Matt's Spec axis, or the missing-spec limitation.
+Complete findings from the Spec axis, or the missing-spec limitation.
 ### Findings
 | ID | Axis/type | Scope evidence | Priority/source | Verdict | Repro/trace | Disposition |
 |---|---|---|---|---|---|---|

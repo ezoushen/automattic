@@ -2,6 +2,5 @@
   "name": "automattic-dev",
   "description": "Automattic local development source",
   "owner": { "name": "ezou" },
-  "plugins": [{ "name": "automattic", "source": "./", "version": "0.3.0" }],
-  "allowCrossMarketplaceDependenciesOn": ["mattpocock"]
+  "plugins": [{ "name": "automattic", "source": "./", "version": "0.3.0" }]
 }

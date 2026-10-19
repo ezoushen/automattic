@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agents share one language-neutral module-design vocabulary from our own standard, not Matt's codebase-design."""
+"""Agents share one language-neutral module-design vocabulary from our own standard."""
 import subprocess
 import unittest
 

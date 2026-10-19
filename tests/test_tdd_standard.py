@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Every builder works test-first from our own TDD standard, whose tests protect business rules, not coverage."""
-import subprocess
 import unittest
 
 import support
@@ -121,12 +120,7 @@ class TddStandard(unittest.TestCase):
         self.assertIn('for each slice, its failing run, its passing run and the run that breaks its rule on purpose', job)
         self.assertIn('Read the [TDD standard](../../../standards/tdd.md) in full before the first test', job)
 
-    def test_no_doc_names_matts_tdd_skill(self):
-        found = subprocess.run(
-            ['git', 'grep', '-n', '-I', 'mattpocock-skills:tdd', '--', '.', ':!journals', ':!bootstrap.md',
-             ':!tests/test_tdd_standard.py'], cwd=ROOT, capture_output=True, text=True)
-        self.assertIn(found.returncode, (0, 1), found.stderr)
-        self.assertEqual('', found.stdout)
+    def test_the_pipeline_map_names_no_tdd_skill(self):
         self.assertNotIn('`tdd`', prose(ROOT / 'skills/brief/pipeline.md'))
 
 

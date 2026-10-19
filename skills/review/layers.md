@@ -7,7 +7,7 @@ Record their coverage in the existing review report; no separate state store.
 |---|---|
 | Direction: WHY / WHAT / HOW | The concrete problem, intended outcome and mechanism have been challenged against requirements, existing mechanisms and viable simpler alternatives. All discoverable concerns at this layer have a disposition. |
 | Scope and blast radius | Changed behaviors, contracts, consumers, dependencies and configuration paths are mapped, including unchanged code affected by the change. Scope limits and verification obligations are explicit. |
-| Implementation | Matt's Standards and Spec analysis covers that boundary, including code, tests and the mandatory documentation gate. Every candidate has deciding evidence or a concrete gap. |
+| Implementation | The [implementation review method](method.md)'s Standards and Spec analysis covers that boundary, including code, tests and the mandatory documentation gate. Every candidate has deciding evidence or a concrete gap. |
 
 For a foreign PR, establish direction from the issue, author discussion, code and
 project standards; PR prose describes intent, not human approval. For our own

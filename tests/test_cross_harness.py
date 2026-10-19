@@ -287,7 +287,6 @@ class CrossHarness(unittest.TestCase):
             definition = PLUGIN / 'standards/kinds' / f'{kind}.md'
             assert definition.is_file()
             assert f'standards/kinds/{kind}.md' in source
-        assert 'mattpocock' not in (entry + source).lower()
 
     def test_remediate_proof_experiments_follow_the_kind(self):
         import re

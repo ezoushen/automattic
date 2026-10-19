@@ -1,7 +1,7 @@
 {
   "name": "automattic",
   "version": "0.3.0",
-  "description": "Loop engineering on top of Matt Pocock's skills: the principal steers, agents decide within a vetoable ledger, and a graph-scheduled outer loop drives tickets to done.",
+  "description": "Loop engineering: the principal steers, agents decide within a vetoable ledger, and a graph-scheduled outer loop drives tickets to done.",
   "author": {
     "name": "ezou"
   },
@@ -12,11 +12,5 @@
     "tdd",
     "tickets",
     "scrum"
-  ],
-  "dependencies": [
-    {
-      "name": "mattpocock-skills",
-      "marketplace": "mattpocock"
-    }
   ]
 }

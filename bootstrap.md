@@ -24,12 +24,9 @@ Shared docs are grouped by reader, each folder with a README that lists its file
 A link names the file to read; read it whole. Each doc in these folders fits one read, and
 a `#anchor` names a section inside it.
 
-Notation such as `/automattic:refine` and `/mattpocock-skills:tdd` identifies a
-skill, not a shell command. Use the active adapter's invocation mechanism. Shared
-agents and jobs own behavior; host adapters and selected executors own runtime operations.
-Resolve dependency identity from the active catalog once per session: for Matt use
-the exact `mattpocock-skills:<name>` entry, never a bare colliding name such as `tdd`
-([before a launch](runtime/workers/before-launch.md) has the rest).
+Notation such as `/automattic:refine` identifies a skill, not a shell command. Use the
+active adapter's invocation mechanism. Shared agents and jobs own behavior; host
+adapters and selected executors own runtime operations.
 
 Orchestrators and workers follow shared [assignment focus](runtime/workers/focus.md)
 for priority, scope and concise updates.
@@ -46,7 +43,7 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 | Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary: run the `delivery` checkpoint or record an evidenced skip, then the [required-check watch](standards/pr.md#watch-the-required-checks) |
 | Before mandate/alignment questions, including a request to "grill" the plan | [grilling](runtime/interview/grilling.md) and its [question filter](runtime/interview/question-filter.md): they own question depth and continuation; even exhaustive depth asks only principles and material forks |
 | Explicit phase composition, such as refinement after research | [refinement procedure](skills/refine/SKILL.md#explicit-phase-composition) |
-| Before each worker launch, including workers that dependency skills launch | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
+| Before each worker launch, including helper workers | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
 | Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](runtime/workers/escalation.md); ordinary resumes reuse the saved choice |
 | Before the first phase checkpoint, when `decisions.enabled` has a family | [phase checkpoints](runtime/decisions/checkpoint.md#phase-checkpoints) |
 | `HERDR_ENV=1`, before cross-runtime dispatch, even when no hook supplied it | `hosts/herdr.md` |

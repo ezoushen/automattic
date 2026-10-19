@@ -6,10 +6,10 @@ Read before choosing a tracker, board or destination, and before updating one.
 
 Follow current user direction, then the project's established workflow. Read its
 `AGENTS.md`/`CLAUDE.md`, relevant project docs and any existing
-`docs/agents/issue-tracker.md`; that filename and Matt's setup are not prerequisites.
+`docs/agents/issue-tracker.md`; that filename is not a prerequisite.
 Use the configured tracker and destination (for example Linear team/project or
 GitHub repository/project), issue templates, labels, priority rules and status
-transitions. Matt's offered integrations are not an allowlist. A Git remote or
+transitions. No fixed list of trackers limits the choice. A Git remote or
 an available connector alone does not establish a project-management convention.
 Ask only when a material destination or convention remains ambiguous; with no
 configured tracker, use local Markdown without requiring setup or migration.

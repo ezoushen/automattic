@@ -6,7 +6,7 @@ Contents:
 - [Failure modes and where the loop catches them](#failure-modes-and-where-the-loop-catches-them)
 - [Re-entry](#re-entry)
 - [Flows](#flows)
-- [Matt Pocock's skills underneath](#matt-pococks-skills-underneath)
+- [Our methods underneath](#our-methods-underneath)
 - [Left to the human](#left-to-the-human)
 - [Delivery composition](#delivery-composition)
 
@@ -115,15 +115,17 @@ folder; commands read the shared interview and board procedures and the other ru
 - [Board](../../runtime/board/board.md): tracker conventions, scope, ticket slicing and the project loop.
 - [Explain](../../runtime/explain/explain.md): the re-pitch and the views, shared by briefings, the walkthrough, the setup tour and `/automattic:huh`, a sibling command this map names without a link.
 
-## Matt Pocock's skills underneath
+## Our methods underneath
 
-Dependency: `mattpocock-skills`. Reuse `research`,
-`diagnosing-bugs` and `prototype` for their respective
-work. The review command supplies scope,
-priority and allowed mutation
-context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
-Honor each dependency's actual invocation
-policy in the active catalog; never bypass a denied invocation by copying its body.
+Every method the phases use ships in this plugin: test-first work from the
+[TDD standard](../../standards/tdd.md), module design from the
+[design standard](../../standards/design.md), ticket slicing from
+[slicing](../../runtime/board/slicing.md), missing facts from
+[research](../../runtime/research/research.md), defects from
+[diagnosis](../../runtime/diagnose/diagnose.md), and a question paper cannot settle
+from align's [prototype](../align/jobs/prototype.md) job. The review command supplies
+scope, priority and allowed mutation context and its own
+[Standards/Spec method](../review/method.md). Simplicity is part of that review.
 For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,
 evidence, refresh and self-check. The PR phase (`/automattic:pr`) owns delivery
 evidence and publication.

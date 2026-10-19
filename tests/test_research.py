@@ -33,8 +33,7 @@ class Research(unittest.TestCase):
             with self.subTest(path=path):
                 text = prose(path)
                 self.assertIn(f']({link})', text)
-                self.assertNotIn('mattpocock-skills:research', text)
-                self.assertNotRegex(text, r"Matt(?: Pocock)?'s `research`|Use `research`")
+                self.assertNotIn('Use `research`', text)
 
     def test_research_runs_as_a_host_helper_not_a_worker_job(self):
         text = prose(DOC)
@@ -45,7 +44,6 @@ class Research(unittest.TestCase):
     def test_the_pipeline_map_sends_a_defect_to_diagnosis(self):
         text = prose('skills/brief/pipeline.md')
         self.assertIn('](../../runtime/diagnose/diagnose.md)', text)
-        self.assertNotIn('mattpocock-skills:diagnosing-bugs', text)
 
 
 if __name__ == '__main__':

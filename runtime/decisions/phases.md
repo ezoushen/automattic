@@ -7,8 +7,8 @@ Contents:
 
 Automattic owns the workflow, allowed actions and evidence requirements. An optional
 decision backend recommends one of the supplied choices or abstains. The host
-accepts or overrides that recommendation and records the source. Matt's methods
-continue to own planning, investigation and review; this interface adds no second
+accepts or overrides that recommendation and records the source. The phase
+procedures continue to own planning, investigation and review; this interface adds no second
 planning/review loop. No backend or decision family is enabled by default.
 
 ## Phase checkpoints
@@ -25,7 +25,7 @@ families need no checkpoint or check call: configuration is their record.
 | Family | Checkpoint and bounded question | Existing owner retained |
 | --- | --- | --- |
 | `mandate` | Before grouping unresolved questions: investigate, make a reversible decision, or request material human direction? | User intent, reserved decisions and the question filter |
-| `alignment` | After concrete alternatives exist: which alternative or uncertainty deserves investigation? | Matt's design methods, open-ended reasoning and accepted scope |
+| `alignment` | After concrete alternatives exist: which alternative or uncertainty deserves investigation? | The design standard, open-ended reasoning and accepted scope |
 | `refinement` | After task boundaries exist: which supplied split/group addresses an evidenced gap? | Task identity, dependency validity and acceptance criteria |
 | `worker-selection` | After preflight: which permitted model/thinking pair fits this assignment? | Existing router, pins, candidate eligibility and executor |
 | `review-triage` | After a review layer: which proposed grouping or next investigation fits the evidence? | Finding proof, all required coverage, priorities and comment policy |

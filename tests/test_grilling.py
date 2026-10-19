@@ -44,10 +44,10 @@ class Grilling(unittest.TestCase):
         self.assertIn('[grilling](runtime/interview/grilling.md)', prose(ROOT / 'bootstrap.md'))
         self.assertIn('[grilling](../../runtime/interview/grilling.md)', prose(ROOT / 'skills/brief/pipeline.md'))
 
-    def test_no_doc_names_matts_grilling(self):
+    def test_no_doc_keeps_the_retired_grilling_wording(self):
         found = subprocess.run(
-            ['git', 'grep', '-n', '-I', '-E', r'mattpocock-skills:grilling|exhaustive interview|exhaustive frontier|'
-             r"grilling's internal|Matt's .*grilling|relax the round|detail limit", '--', '.', ':!journals',
+            ['git', 'grep', '-n', '-I', '-E', r'exhaustive interview|exhaustive frontier|'
+             r"grilling's internal|relax the round|detail limit", '--', '.', ':!journals',
              ':!tests/test_grilling.py'], cwd=ROOT, capture_output=True, text=True)
         self.assertIn(found.returncode, (0, 1), found.stderr)
         self.assertEqual('', found.stdout)

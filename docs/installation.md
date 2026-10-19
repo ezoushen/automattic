@@ -1,10 +1,7 @@
 # Installation
 
 Requirements: Python **3.9+**, Git, Bash, and a Unix platform with `fcntl` (macOS/Linux).
-The workflow composes the installed Matt Pocock skills. Resolve Matt by its exact
-namespaced catalog entry so a bundled skill with the same short name cannot replace
-it. Claude declares Matt as a plugin dependency; other hosts use their installed
-skill catalog.
+The plugin needs no other skill package: its methods ship in this tree.
 
 This is the maintained source tree. Package-manager cache copies are deployments;
 make changes here. Development symlinks expose those changes without maintaining
@@ -25,7 +22,7 @@ workspace. Edit here, then run `/reload-plugins` in an existing Claude session t
 refresh the hook inventory and skill instructions; new sessions read the current
 files. No reinstall is needed. A marketplace update to another version can select a
 new cache directory; relink that entry when changing the installed version. After
-changing Claude dependencies, check `claude plugin list` for loading errors before
+changing the Claude manifest, check `claude plugin list` for loading errors before
 reloading Automattic.
 
 ## Codex
@@ -58,8 +55,7 @@ package entry before starting a session. Check installation with
 `codex plugin list --marketplace automattic-dev --json` and the
 [native readers](development.md#native-checks). Also check runtime `skills/list` and
 `hooks/list`: a listed installation alone does not prove that its skills or hook were
-loaded. Codex has no Claude-style skill dependency declaration; its required
-presentation reference is packaged with the plugin.
+loaded. Its required presentation reference is packaged with the plugin.
 
 ## Pi
 
