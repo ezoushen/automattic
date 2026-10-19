@@ -92,8 +92,8 @@ human-authorized merge by the orchestrator.
   priorities and record the deciding source; unresolved conflicts return for human
   alignment while independent work continues, not a retrospective rewrite of criteria; a **wrong
   design** → `/automattic:align` at the affected level, then `/automattic:refine` re-cuts.
-- A question no level can settle on paper → `/mattpocock-skills:prototype`; its answer returns as a
-  row.
+- A question no level can settle on paper → align's [prototype](../align/jobs/prototype.md) job; its
+  verdict returns as a ledger row.
 - A veto or a steering answer is recorded where `/automattic:align` settles the mandate, so the
   same question is decided, not asked, next time.
 
@@ -102,7 +102,7 @@ human-authorized merge by the orchestrator.
 Each command's procedure is its `SKILL.md`, with its other docs and jobs in the same
 folder; commands read the shared interview and board procedures and the other rules in `runtime/`.
 
-- [Align](../align/SKILL.md): the mandate, then the WHAT / WHY / HOW brief.
+- [Align](../align/SKILL.md): the mandate, then the WHAT / WHY / HOW brief, and the prototype job.
 - [Refine](../refine/SKILL.md): ticket slicing and the ticket template.
 - [Dispatch](../dispatch/SKILL.md): scheduling, the iteration, the review handoff and the ticket and merge-conflict jobs.
 - [Review](../review/SKILL.md): the shared review procedure, its walkthrough and its jobs.
