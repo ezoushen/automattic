@@ -169,6 +169,21 @@ class AdrIndex(unittest.TestCase):
         self.assertEqual(1, code)
         self.assertEqual(['9999-missing.md: listed in the index but no such file'], out['index_problems'])
 
+    def test_an_inline_code_span_does_not_open_a_fence(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text()
+        (self.folder / 'README.md').write_text('```example``` is inline code, not a fence.\n\n' + text)
+        self.assertEqual(0, check(self.repo)[0])
+
+    def test_a_line_naming_an_adr_it_cannot_parse_is_reported(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text()
+        (self.folder / 'README.md').write_text(text + '- [9999](9999-ghost.md "say \\"hello\\"")\n')
+        code, out = check(self.repo)
+        self.assertEqual(1, code)
+        self.assertEqual(['README.md: cannot read an index entry in: - [9999](9999-ghost.md "say \\"hello\\"")'],
+                         out['index_problems'])
+
     def test_a_link_outside_any_section_is_reported_not_a_crash(self):
         self.consistent()
         text = (self.folder / 'README.md').read_text()

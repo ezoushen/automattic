@@ -26,7 +26,8 @@ class AdrSupersession(unittest.TestCase):
                      'one line per accepted ADR: its number, title and rule in one line',
                      'updated in the same commit as the ADRs it lists',
                      'Read the index first, then only the ADRs that bear on the work',
-                     'when run with `--index`, which also makes a missing index a failure'):
+                     'when run with `--index`, which also makes a missing index a failure',
+                     'a line the check cannot read as an entry is reported, never skipped'):
             self.assertIn(rule, index)
         self.assertNotIn('`proposed`, `accepted`', text)
 

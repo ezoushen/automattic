@@ -33,8 +33,9 @@ class Adrs(unittest.TestCase):
     def test_each_phase_offers_reads_or_holds_on_adrs(self):
         grilling = prose('runtime/interview/grilling.md')
         self.assertIn('Offer an [ADR](../domain/adr.md) for a settled decision that qualifies', grilling)
+        self.assertIn("write either only after the user's yes", grilling)
         self.assertNotIn('passes the three tests', grilling)
-        self.assertIn("a settled rule with no real trade-off is proposed as a line for the project's rules file", grilling)
+        self.assertIn("or a line in the project's rules file for a settled rule with no real trade-off", grilling)
         self.assertIn('ADR [index](../../runtime/domain/adr-index.md) and the ADRs in the area', prose('skills/align/SKILL.md'))
         ticket = prose('skills/dispatch/jobs/ticket.md')
         self.assertIn('accepted [ADRs](../../../runtime/domain/adr.md) in the area', ticket)

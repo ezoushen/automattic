@@ -21,7 +21,9 @@ import sys
 
 NAME = re.compile(r'(\d{4})-.+\.md')
 LINK = re.compile(r'\]\((?:\./)?(\d{4}-[^)\s#]+\.md)(?:#[^)\s]*)?(?:\s+"[^"]*"|\s+\'[^\']*\')?\s*\)')
-FENCE = re.compile(r' {0,3}(`{3,}|~{3,})')
+# A backtick fence's info string may not contain a backtick, so an inline code span opens nothing.
+FENCE = re.compile(r' {0,3}(`{3,}(?=[^`]*$)|~{3,})')
+MENTION = re.compile(r'\d{4}-[^)\s#"\']+\.md')
 SECTIONS = {'accepted': 'Accepted', 'superseded': 'Superseded', 'deprecated': 'Deprecated'}
 
 
@@ -107,7 +109,10 @@ def index_problems(texts, folder):
             continue
         if line.startswith('## '):
             section = line[3:].strip()
-        for target in LINK.findall(line):
+        targets = LINK.findall(line)
+        if not targets and MENTION.search(line):
+            problems.append(f'README.md: cannot read an index entry in: {line.strip()}')
+        for target in targets:
             listed.setdefault(target, []).append(section)
     for target in sorted(listed):
         if target not in adrs:

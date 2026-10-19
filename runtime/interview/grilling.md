@@ -23,8 +23,8 @@ one or two questions per round, in the user's terms, each with a recommendation 
 
 Call out a term used against its definition; add the term to the
 [glossary](../domain/glossary.md) the moment it settles. Offer an [ADR](../domain/adr.md) for
-a settled decision that qualifies, written only after the user's yes; a settled rule with
-no real trade-off is proposed as a line for the project's rules file instead.
+a settled decision that qualifies, or a line in the project's rules file for a settled rule
+with no real trade-off; write either only after the user's yes.
 
 Finding facts is the agent's job: look them up in the background, without blocking the
 questions that do not depend on them.
