@@ -37,6 +37,14 @@ class RuntimeModules(unittest.TestCase):
         for name in ('SKILL.md', 'tour.md', 'apply.md', 'reset-and-validate.md'):
             self.assertTrue((ROOT / 'skills/setup' / name).is_file(), name)
 
+    def test_each_runtime_readme_lists_every_doc_in_its_folder(self):
+        for readme in sorted(RUNTIME.glob('*/README.md')):
+            text = readme.read_text()
+            for doc in sorted(readme.parent.glob('*.md')):
+                if doc.name != 'README.md':
+                    with self.subTest(doc=str(doc.relative_to(RUNTIME))):
+                        self.assertIn(f']({doc.name})', text)
+
     def test_the_decision_and_routing_skills_are_thin_entries_over_runtime(self):
         for skill, target in (('decision', 'runtime/decisions/decision.md'),
                               ('model-routing', 'runtime/routing/model-routing.md')):

@@ -3,7 +3,8 @@
 rules the edited tree now breaks (direction, cycles, imports, skill shape, first reads, host
 shape, unmapped files), so the agent fixes them before going on. Other findings wait for the
 commit. The edited tree is the Git checkout holding the file, so an edit in a worktree inside
-the repository checks that worktree with its own checker configuration.
+the repository runs that worktree's own checker and configuration; a checker that fails to
+run reports nothing rather than blocking the edit.
 
 usage: edit_check.py [--root DIR] [--config FILE]   (hook event JSON on stdin)
 
@@ -16,13 +17,9 @@ from pathlib import Path
 import subprocess
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import check_docs  # noqa: E402
-from architecture import Architecture  # noqa: E402
-
 RULES = {'direction', 'cycle', 'import-direction', 'unmapped', 'entry-doc', 'first-read', 'first-read-line',
          'host-shape'}
-CONFIG = Path('.agents/skills/writing-agent-docs/config.json')
+CHECKER = Path('.agents/skills/writing-agent-docs')
 
 
 def checkout(path):
@@ -49,13 +46,19 @@ def main():
     tree = checkout(edited.resolve()) or root
     if tree != root and root not in tree.parents:
         tree = root
-    config_path = args.config or tree / CONFIG
-    if not config_path.is_file():
+    checker = tree / CHECKER / 'check_docs.py'
+    if not checker.is_file():
+        checker = Path(__file__).resolve().with_name('check_docs.py')
+    config = args.config or tree / CHECKER / 'config.json'
+    if not config.is_file():
         return 0
-    config = json.loads(config_path.read_text())
-    architecture = Architecture.load(config_path.parent / config['architecture'])
-    broken = [f for f in check_docs.check(tree, config, None, architecture)
-              if f['severity'] == 'error' and f['code'] in RULES]
+    run = subprocess.run([sys.executable, str(checker), '--root', str(tree), '--config', str(config), '--json'],
+                         capture_output=True, text=True)
+    try:
+        findings = json.loads(run.stdout) if run.returncode in (0, 1) else []
+    except ValueError:
+        findings = []
+    broken = [f for f in findings if f['severity'] == 'error' and f['code'] in RULES]
     if not broken:
         return 0
     where = '' if tree == root else f' in {tree}'
