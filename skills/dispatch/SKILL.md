@@ -2,7 +2,7 @@
 name: dispatch
 description: "Implement scoped tickets and review the integrated changes; --autofix adds repairs and applicable E2E verification."
 disable-model-invocation: true
-argument-hint: "[effort|project|milestone|issue-ID|issue-URL] [--autofix]"
+argument-hint: "[effort|project|milestone|issue-ID|issue-URL|the plan agreed in this conversation] [--autofix]"
 ---
 
 # dispatch
@@ -51,6 +51,9 @@ review. Publication requires its own request.
 4. Resolve and validate the selected board and invocation scope using board
    operations. Remote projects use native issue queries and dependencies directly;
    do not create local ticket files or call the local scheduler for them.
+   With [a plan agreed in chat](../refine/chat-plan.md) and no tickets yet, cut them
+   first; the iteration starts once the user has checked them. Tickets the user
+   selected for dispatch are already checked.
 
 A supplied scope is never widened, even to unblock it. Use the board's
 [overall scope](../../runtime/board/scope.md) rules to preserve

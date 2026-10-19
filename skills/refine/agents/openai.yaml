@@ -1,5 +1,5 @@
 interface:
-  short_description: "Turn an accepted brief into scoped tickets"
-  default_prompt: "Use $automattic:refine <effort-slug> to turn its accepted alignment brief into tickets using this project's tracker convention."
+  short_description: "Turn an accepted brief, or a plan agreed in chat, into scoped tickets"
+  default_prompt: "Use $automattic:refine <effort-slug> to turn its accepted alignment brief, or a plan agreed in chat, into tickets using this project's tracker convention."
 policy:
   allow_implicit_invocation: false

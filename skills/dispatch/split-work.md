@@ -7,4 +7,4 @@ Selected work too large for one worker is split using the shared
 [refinement procedure](../refine/SKILL.md),
 within native permissions and existing tracker-write authorization.
 Reuse existing child issues and dependencies; dispatch ready children rather than
-refining an already executable breakdown again.
+refining an already executable breakdown again. New children wait for the user's check like any new cut.

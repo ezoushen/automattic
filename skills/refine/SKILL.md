@@ -1,8 +1,8 @@
 ---
 name: refine
-description: "Split an accepted alignment brief into scoped tickets in the project's tracker, or local Markdown."
+description: "Split an accepted alignment brief, or a plan agreed in chat, into scoped tickets in the project's tracker, or local Markdown."
 disable-model-invocation: true
-argument-hint: "<effort-slug> — an existing alignment brief"
+argument-hint: "<effort-slug> | the plan agreed in this conversation"
 ---
 
 # Shared refinement procedure
@@ -37,7 +37,7 @@ refactors as expand → migrate → contract) apply here unchanged and are not
 restated. `/automattic:refine` adds what a scrum backlog needs — a **user story** and
 **acceptance criteria** per ticket, a size that fits one fresh context window — and
 uses the project's ticket convention. For local Markdown only, it writes the
-front matter the local scheduler reads. Input: `.scratch/<slug>/alignment.md`,
+front matter the local scheduler reads. Input: `.scratch/<slug>/alignment.md`, [a plan agreed in chat](chat-plan.md),
 or `spec.md` and prose tickets from Matt's `/mattpocock-skills:to-spec` and `/mattpocock-skills:to-tickets`, which it
 adapts to the project's ticket convention. Create or update canonical work items
 in the configured tracker under the shared bootstrap's project-conventions rules.
@@ -142,7 +142,8 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    verification, plus material slicing tradeoffs and consequential ledger rows.
    Explain a rejected cut only when it was a viable alternative with a different
    outcome, risk or verification cost. Apply the [question filter](../../runtime/interview/question-filter.md); routine
-   cuts within accepted scope need no additional interview.
+   cuts within accepted scope need no additional interview. Newly cut tickets wait for
+   the user's check before any implementation.
    Carry forward existing authorization; obtain any still-required scope or
    publication decision for the concrete breakdown. An unrelated reply or silence
    is not approval. Apply authorized changes to the selected board; do not claim
