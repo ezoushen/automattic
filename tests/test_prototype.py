@@ -38,7 +38,7 @@ class Prototype(unittest.TestCase):
                 self.assertIn(rule, text)
 
     def test_the_job_keeps_the_builders_core_gates(self):
-        self.assertNotRegex(prose(JOB).lower(), r'(test-first|mutation)[^.]*(do|does) not apply')
+        self.assertNotRegex(prose(JOB).lower(), r'test-first|mutation|failing test|waive|exempt|gates? (do|does) not')
 
     def test_the_job_is_language_neutral(self):
         body = (ROOT / JOB).read_text().split('---', 2)[2]
