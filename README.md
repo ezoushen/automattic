@@ -72,10 +72,11 @@ model-routing. Claude Code keeps them out of its command menu; Codex and Pi list
 
 ## Architecture
 
-The Markdown is layered so a reader follows links in one direction. Hooks and the commands
-(`skills/<command>/`: brief; dispatch and remediate; pr; review; housekeeping; align, refine
-and setup) sit on top; below them come `bootstrap.md`, the shared `flows/` (interview; board),
-`agents/`, `standards/`, `hosts/` and the `runtime/` modules
+The Markdown is layered so a reader follows links in one direction. Hooks and
+`bootstrap.md` sit on top: the session-start hook injects the bootstrap's path, so docs name
+it instead of linking it. Below them come the commands (`skills/<command>/`: brief; dispatch
+and remediate; pr; review; housekeeping; align, refine and setup), the shared `flows/`
+(interview; board), `agents/`, `standards/`, `hosts/` and the `runtime/` modules
 (workers, checks, routing, resources, decisions, config). A doc links only its own module
 or a lower one, so a command may read a lower command's procedure but never a sibling's
 or a higher one's, and no two modules depend on each other. A doc path named in prose or

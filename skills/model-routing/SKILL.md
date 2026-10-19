@@ -7,5 +7,5 @@ user-invocable: false
 
 # Model routing
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part, [model routing](../../runtime/routing/model-routing.md).
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [model routing](../../runtime/routing/model-routing.md).
 Follow [model routing](../../runtime/routing/model-routing.md).

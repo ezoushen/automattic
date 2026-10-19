@@ -12,7 +12,7 @@ Contents:
 - [Select the configuration flow](#select-the-configuration-flow)
 - [Inspect effective settings](#inspect-effective-settings)
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 The configuration procedure for the user-invoked setup command. The entry point first
 reads runtime bootstrap and the active host adapter. No arguments means read-only
@@ -71,7 +71,7 @@ Read [configuration examples](../../runtime/config/executors.md) and only the se
 executor's schema/adapter. Preserve structured legacy commands without
 --route, --config-profile, --scope session or pool options, and explicit models.json
 requests, using
-[legacy preferences](legacy-preferences.md).
+[legacy preferences](../../runtime/workers/legacy-preferences.md).
 The optional harness argument means the host for per-agent setup and the target
 preference harness for legacy settings. If omitted, use the current host; never
 infer it from a model name. It does not change the main session or supply tools.

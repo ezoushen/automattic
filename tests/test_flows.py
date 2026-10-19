@@ -15,10 +15,10 @@ COMMANDS = ('align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup',
 # a procedure each merged or moved command must still carry, by the doc that now holds it
 HOLDS = {
     'skills/align/SKILL.md': ('## Settle the mandate', '## Establish the design', '## Save the current alignment'),
-    'flows/interview/authority.md': ('A decision the user reserved is always theirs.', '## Explicit phase composition'),
+    'flows/interview/authority.md': ('A decision the user reserved is always theirs.',),
     'flows/interview/question-filter.md': ('**Material fork:** ask only if plausible answers change the goal',),
     'flows/interview/record.md': ('`## Standing directives` section in the ledger',),
-    'skills/refine/SKILL.md': ("Matt Pocock's `/mattpocock-skills:to-tickets` breaks a spec",),
+    'skills/refine/SKILL.md': ("Matt Pocock's `/mattpocock-skills:to-tickets` breaks a spec", '## Explicit phase composition'),
     'skills/refine/ticket-template.md': ('# NN: <title, a behaviour not a component>',),
     'skills/dispatch/SKILL.md': ('# dispatch',),
     'skills/dispatch/iteration.md': ('## One iteration',),

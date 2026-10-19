@@ -158,7 +158,11 @@ def check_imports(root, architecture):
     stems = {Path(name).stem: name for name in sorted(files)}
     edges = set()
     for name in sorted(files):
-        tree = ast.parse((root / name).read_text(), name)
+        try:
+            tree = ast.parse((root / name).read_text(), name)
+        except SyntaxError as error:
+            findings.append((name, error.lineno or 1, 'error', 'syntax', f'does not parse: {error.msg}'))
+            continue
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 found = [alias.name for alias in node.names]

@@ -33,7 +33,8 @@ class RuntimeModules(unittest.TestCase):
                      'config/executors.md', 'resources/resources.md', 'resources/retire-worktree.md'):
             self.assertTrue((RUNTIME / name).is_file(), name)
         self.assertTrue((RUNTIME / 'config/troubleshooting.md').is_file())
-        for name in ('SKILL.md', 'tour.md', 'apply.md', 'reset-and-validate.md', 'legacy-preferences.md'):
+        self.assertTrue((RUNTIME / 'workers/legacy-preferences.md').is_file())
+        for name in ('SKILL.md', 'tour.md', 'apply.md', 'reset-and-validate.md'):
             self.assertTrue((ROOT / 'skills/setup' / name).is_file(), name)
 
     def test_the_decision_and_routing_skills_are_thin_entries_over_runtime(self):

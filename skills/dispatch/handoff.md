@@ -12,7 +12,8 @@ For each selected effort with integrated changes, finish or reconcile its writer
 then apply [housekeeping](../housekeeping/SKILL.md) to the effort worktree. Commit
 intended tracked cleanup/documentation changes there before pinning the review
 head; preserve unrelated local edits. Run the
-[shared review procedure](../review/SKILL.md) on the verified effort branch,
+[shared review procedure](../review/SKILL.md), read as a file (its typed-only setting governs
+invocation, not reading), on the verified effort branch,
 one target at a time. Pass the selected ticket scope, accepted alignment/ledger,
 priority sources, project instructions and report path. Include `--autofix` only
 when repairs are authorized. If the user explicitly requested a walkthrough before

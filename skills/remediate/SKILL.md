@@ -13,7 +13,7 @@ Contents:
 - [Detect, prove, repair, recheck](#detect-prove-repair-recheck)
 - [Comment audit](#comment-audit)
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 Run only on the user's explicit invocation. This procedure supplies its own
 detection, proof and test-first repair loop; no external skill is required.

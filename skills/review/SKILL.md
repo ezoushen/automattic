@@ -7,7 +7,7 @@ argument-hint: "[walkthrough] <branch|PR-number|PR-URL> [--autofix] [--comments 
 
 # Shared review procedure
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 A first argument `walkthrough` selects the [walkthrough procedure](walkthrough.md)
 and is not forwarded: explain and discuss the remaining target first, then continue into

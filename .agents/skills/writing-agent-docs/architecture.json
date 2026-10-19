@@ -6,7 +6,8 @@
  "levels": [
   [
    "skills",
-   "hooks"
+   "hooks",
+   "bootstrap"
   ],
   [
    "brief"
@@ -28,9 +29,6 @@
    "align",
    "refine",
    "setup"
-  ],
-  [
-   "bootstrap"
   ],
   [
    "interview"
@@ -88,7 +86,8 @@
   "bootstrap": {
    "docs": [
     "bootstrap.md"
-   ]
+   ],
+   "unlinked": true
   },
   "board": {
    "docs": [

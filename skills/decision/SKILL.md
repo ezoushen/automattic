@@ -7,5 +7,5 @@ user-invocable: false
 
 # Workflow decision
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part, [decision](../../runtime/decisions/decision.md).
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [decision](../../runtime/decisions/decision.md).
 Follow the [decision workflow](../../runtime/decisions/decision.md).

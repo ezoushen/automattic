@@ -11,13 +11,13 @@ Contents:
 - [Process](#process)
 - [Definition of Ready](#definition-of-ready)
 - [Then](#then)
+- [Explicit phase composition](#explicit-phase-composition)
 - [Local Markdown ticket template](ticket-template.md)
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 The same procedure supports explicitly requested research-to-refinement composition
-where the runtime permits it ([explicit phase composition](../../flows/interview/authority.md#explicit-phase-composition));
-it does not enable implicit skill invocation.
+where the runtime permits it; it does not enable implicit skill invocation.
 
 Used by the explicit refinement skill or an explicitly requested refinement phase
 inside a composed task (for example, research followed by refinement). Dispatch
@@ -167,3 +167,13 @@ material question answered is not spec-ready; apply the same question filter.
 `/automattic:dispatch` schedules the tickets on `blocked_by` and `touches`; its builders
 follow the ticket job, using `alignment.md`
 as the spec.
+
+## Explicit phase composition
+
+When the user explicitly requests refinement after another task, such as research,
+use the shared refinement procedure once its input
+is ready, where the active runtime permits direct procedure loading. Do not call
+an explicit-only skill through a forbidden tool or infer refinement from research
+alone. Preserve native invocation policy: if a separate user invocation is required
+or the operation is denied, retain the input and explain that restriction; do not
+route around it. Dispatch's automatic review remains its own documented handoff.

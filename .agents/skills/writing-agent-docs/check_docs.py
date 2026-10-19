@@ -26,6 +26,7 @@ INLINE_LINK = re.compile(r'!?\[((?:[^\[\]]|\[[^\]]*\])*)\]\(\s*(<[^>]*>|(?:[^()\
                          r'(?:\s+(?:"[^"]*"|\'[^\']*\'|\([^)]*\)))?\s*\)')
 REFERENCE = re.compile(r'^\s{0,3}\[(?!\^)([^\]]+)\]:\s*(<[^>]*>|[^\s<>]*[./#:][^\s<>]*)'
                        r'(?:\s+(?:"[^"]*"|\'[^\']*\'|\([^)]*\)))?\s*$')
+RELATIVE_DOC = re.compile(r'(?<![\w/.-])((?:\.\./)+[\w./-]*?\.md)\b')  # ../x.md named in text
 FENCE = re.compile(r'\s*(?:>\s*)*(`{3,}|~{3,})(.*)$')
 ATX = re.compile(r'\s{0,3}(#{1,6})\s+(.*?)(?:\s+#+)?\s*$')
 SETEXT = re.compile(r'\s{0,3}(=+|-+)\s*$')
@@ -248,7 +249,11 @@ def entry_doc(root, architecture, rel, skill, declared):
     command = fields.get('disable-model-invocation') in (True, 'true')
     named = [path for path in declared if path.name == f'{name}.md']
     folder = rel(skill).rsplit('/', 1)[0] + '/'
-    if architecture.module(rel(skill)) != settings['wrappers']:
+    module = architecture.module(rel(skill))
+    if module != settings['wrappers']:
+        if module != name:
+            return [Finding(rel(skill), 1, 'error', 'entry-doc',
+                            f'map {folder} as its own module named {name}; it is in {module}')]
         if named:
             return [Finding(rel(skill), 1, 'error', 'entry-doc',
                             f'its `First read:` paragraph links {name}.md; move that procedure into this SKILL.md')]
@@ -398,12 +403,20 @@ def check(root, config, changed=None, architecture=None):
     pattern = re.compile(config['code_doc_pattern'])
     for path in linking:
         for number, line in enumerate(path.read_text().splitlines(), 1):
-            for doc in pattern.findall(line):
+            named = [root / doc for doc in pattern.findall(line)]
+            named += [(path.parent / doc).resolve() for doc in RELATIVE_DOC.findall(line)]
+            for target in named:
+                if not (exists_exactly(target) and target.is_file()) or target.resolve() == path.resolve():
+                    continue
+                try:
+                    doc = target.resolve().relative_to(root).as_posix()
+                except ValueError:
+                    continue
+                reached.add(target.resolve())
                 owner = architecture.module(doc) if architecture else None
                 if owner and architecture.modules[owner].get('unlinked'):
                     continue  # injected by path, so naming it is how a doc reaches it
-                if doc != rel(path) and exists_exactly(root / doc) and (root / doc).is_file():
-                    edges.append((rel(path), number, doc))
+                edges.append((rel(path), number, doc))
 
     # Doc paths named in code.
     named = []

@@ -45,7 +45,7 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 |---|---|
 | Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the [required-check watch](standards/pr.md#watch-the-required-checks) |
 | Before mandate/alignment questions, including a request to "grill" the plan | [question filter](flows/interview/question-filter.md): it owns question depth and continuation; the dependency's exhaustive interview requires an explicit request for that depth |
-| Explicit phase composition, such as refinement after research | [explicit phase composition](flows/interview/authority.md#explicit-phase-composition) |
+| Explicit phase composition, such as refinement after research | [refinement procedure](skills/refine/SKILL.md#explicit-phase-composition) |
 | Before each worker launch, including workers that dependency skills launch | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
 | Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](runtime/workers/recovery.md#escalation-checkpoints); ordinary resumes reuse the saved choice |
 | Before the first phase checkpoint, when `decisions.enabled` has a family | [phase checkpoints](runtime/decisions/checkpoint.md#phase-checkpoints) |

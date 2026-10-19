@@ -80,8 +80,9 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 
 ## Extend the architecture
 
-Layers, top first: thin skills and hooks; commands (`skills/<command>/`, in their own
-order); `bootstrap.md`; shared flows (`flows/<flow>/`); `agents/`; `standards/`;
+Layers, top first: thin skills, hooks and `bootstrap.md` (injected by path, so skills
+name it rather than link it); commands (`skills/<command>/`, in their own order); shared
+flows (`flows/<flow>/`); `agents/`; `standards/`;
 `hosts/`; `runtime/` modules; add-ons. A doc or script depends on its own module or a
 lower level, never on a sibling or a higher level: a command may read a lower command's
 procedure, and a thin skill links no other skill. No two modules depend on each other,

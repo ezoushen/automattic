@@ -14,7 +14,7 @@ Contents:
 - [Review handoff](handoff.md)
 - [Reference](reference.md)
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 One orchestrator owns scheduling, worktree integration and board updates.
 Workers receive an agent file, a job file and only that job's inputs. An effort

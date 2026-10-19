@@ -88,6 +88,11 @@ class ImportDirection(unittest.TestCase):
                  if severity == 'error']
         self.assertEqual(sorted(found), [('scripts/helper.py', 1, 'unmapped')])
 
+    def test_a_script_that_does_not_parse_is_a_finding_not_a_crash(self):
+        self.write('scripts/high.py', 'X = 1\n')
+        self.write('scripts/low.py', 'def broken(:\n')
+        self.assertEqual(self.errors(), [('scripts/low.py', 1, 'syntax')])
+
     def test_recorded_import_debt_is_tolerated_and_only_shrinks(self):
         self.write('scripts/high.py', 'X = 1\n')
         self.write('scripts/low.py', 'import high\n')

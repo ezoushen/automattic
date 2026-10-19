@@ -14,7 +14,7 @@ Contents:
 - [Preserve the workflow](#preserve-the-workflow)
 - [Show the pipeline map](#show-the-pipeline-map)
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 This is a manually requested, read-only briefing, not another workflow phase.
 Use the active task and its accepted scope unless the user names a different

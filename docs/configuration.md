@@ -102,6 +102,6 @@ for visual choices.
 Existing `models.json` preferences still apply to unconfigured native workers. Older
 structured `show`/`set`/`reset` commands without `--route`, `--config-profile`,
 session scope or pool options keep that behavior; see
-[legacy model preferences](../skills/setup/legacy-preferences.md). Old
+[legacy model preferences](../runtime/workers/legacy-preferences.md). Old
 executor-package/`routes` files need the explicit
 [migration](../runtime/config/troubleshooting.md#migration).

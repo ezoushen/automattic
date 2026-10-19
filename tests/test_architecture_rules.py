@@ -79,6 +79,21 @@ class ArchitectureRules(Fixture):
         self.write('flows/a/one.md', '# One\n\nSee `shared/guide.md`, in a lower module.\n')
         self.assertEqual(self.check(), set())
 
+    def test_a_relative_doc_path_named_in_text_is_a_dependency_too(self):
+        self.config['code_doc_pattern'] = r'(?<![\w/.-])(?:shared|skills|flows)/[\w/-]+\.md'  # as the repository's
+        self.write('flows/a/one.md', '# One\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + '[one](../../flows/a/one.md)\n')
+        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nSee `../flows/a/one.md`.\n')
+        self.assertEqual(self.check(), {('shared/guide.md', 5, 'direction', 'error')})
+
+    def test_a_doc_named_only_in_text_is_reached_not_an_orphan(self):
+        self.write('flows/a/one.md', '# One\n\nSee `shared/extra.md`.\n')
+        self.write('shared/extra.md', '# Extra\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + '[one](../../flows/a/one.md)\n')
+        self.assertEqual(self.check(), set())
+
     def test_a_doc_may_name_a_module_injected_by_path_in_text(self):
         self.architecture['levels'].append(['hosts'])
         self.architecture['modules']['hosts'] = {'docs': ['hosts/**/*.md'], 'unlinked': True}
@@ -268,6 +283,14 @@ class ArchitectureRules(Fixture):
     def test_a_command_holding_its_procedure_in_its_own_module_passes(self):
         self.entry_tree(None, own_module=True, command=True)
         self.assertEqual(self.check(), set())
+
+    def test_a_command_mapped_into_another_commands_module_is_an_error(self):
+        self.entry_tree(None, own_module=True, command=True)
+        self.architecture['modules']['other'] = self.architecture['modules'].pop('tool')
+        self.architecture['levels'][1] = ['other']
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
+        [(_, _, message)] = self.messages('entry-doc')
+        self.assertIn('module named tool', message)
 
     def test_a_skill_in_its_own_module_that_first_reads_a_doc_named_after_it_is_an_error(self):
         self.entry_tree('skills/tool/tool.md', own_module=True, command=True)

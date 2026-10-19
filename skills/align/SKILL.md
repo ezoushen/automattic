@@ -12,7 +12,7 @@ Contents:
 - [Establish the design](#establish-the-design)
 - [Save the current alignment](#save-the-current-alignment)
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part, [question filter](../../flows/interview/question-filter.md).
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [question filter](../../flows/interview/question-filter.md).
 
 Settle the mandate, then turn it into a plan sufficient to split and verify. Reuse
 the conversation and existing alignment; a mandate the user already stated need not

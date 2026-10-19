@@ -7,7 +7,7 @@ argument-hint: "<effort-slug> — review and applicable verification must alread
 
 # pr
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 The optional last phase of the pipeline. Everything the description needs already
 exists in the effort's artifacts and configured board: the mandate and design in

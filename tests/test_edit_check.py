@@ -53,12 +53,38 @@ class EditCheck(Fixture):
         result = self.run_hook(Path('/elsewhere/notes.md'))
         self.assertEqual((result.returncode, result.stderr), (0, ''))
 
+    def test_an_edit_in_a_worktree_inside_the_repository_checks_that_worktree(self):
+        subprocess.run(['git', 'init', '-q', str(self.root)], check=True)
+        tree = self.root / '.worktrees/w'
+        for name in ('README.md', 'skills/tool/SKILL.md', 'shared/guide.md', 'scripts/run.py'):
+            (tree / name).parent.mkdir(parents=True, exist_ok=True)
+            (tree / name).write_text((self.root / name).read_text())
+        subprocess.run(['git', 'init', '-q', str(tree)], check=True)
+        (tree / 'flows/a').mkdir(parents=True)
+        (tree / 'flows/a/one.md').write_text('# One\n')
+        (tree / 'skills/tool/SKILL.md').write_text(SKILL.format(name='tool', description='Runs the tool.')
+                                                  + '[one](../../flows/a/one.md)\n')
+        (tree / 'shared/guide.md').write_text('# Guide\n\n## Steps\n\nUp: [one](../flows/a/one.md).\n')
+        result = self.run_hook(tree / 'shared/guide.md')
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('shared/guide.md:5 direction', result.stderr)
+
+    def test_an_event_without_json_is_ignored(self):
+        self.check_full()
+        config = Path(self.config_dir.name) / 'checker.json'
+        result = subprocess.run([sys.executable, str(HOOK), '--root', str(self.root), '--config', str(config)],
+                                input='', capture_output=True, text=True)
+        self.assertEqual((result.returncode, result.stderr), (0, ''))
+
     def test_the_repository_registers_the_hook_for_claude_edits(self):
         settings = json.loads((support.ROOT / '.claude/settings.json').read_text())
         [entry] = settings['hooks']['PostToolUse']
         self.assertEqual(set(entry['matcher'].split('|')), {'Edit', 'Write', 'MultiEdit'})
         [hook] = entry['hooks']
-        self.assertIn('.agents/skills/writing-agent-docs/edit_check.py', hook['command'])
+        import shlex
+        self.assertEqual(shlex.split(hook['command']),
+                         ['python3', '$CLAUDE_PROJECT_DIR/.agents/skills/writing-agent-docs/edit_check.py',
+                          '--root', '$CLAUDE_PROJECT_DIR'])
 
 
 if __name__ == '__main__':
