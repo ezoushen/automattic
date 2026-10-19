@@ -36,8 +36,8 @@ silently followed.
 On initial implementation, write `base: <git rev-parse HEAD>` as the first line of
 `report` before any change. On resume, preserve the existing base and evidence.
 
-Implement the accepted behavior; use `/mattpocock-skills:tdd` for behavioral changes
-at the agreed seams. Documentation-only work uses code-comments' checks.
+Read the [TDD standard](../../../standards/tdd.md) in full before the first test, then
+implement the accepted behavior test-first under it, at the ticket's seams. Documentation-only work uses code-comments' checks.
 Choose the smallest sufficient verification: the focused and affected checks the
 assignment tiers for you, and the full gate only when the assignment names you for
 it. Use the assignment's explicit E2E owner under
@@ -49,7 +49,8 @@ failures caused by this ticket without another request. Keep unavailable require
 checks explicit.
 For important failure paths, check that the test actually reaches the failing
 operation and that its assertion can fail; a dry-run bypass is not refusal evidence.
-Use a focused negative control when necessary, not blanket mutation testing.
+The standard's deliberate break of each test's rule is the negative control; it is
+not blanket mutation testing.
 For changed parsers, accessors or lifecycles, account for affected entry points
 and input classes; use a table when it clarifies coverage or the project requires it.
 
@@ -78,8 +79,9 @@ without those conditions; it cannot claim acceptance.
 ## Return
 
 Append to `report` under `## Implemented`: one `Commit: <sha>` line per commit; check commands, outcomes
-and meaningful evidence or reuse provenance; affected entry-point coverage when
-applicable; every ticket checkbox as `[x]` or the reason it stays `[ ]`.
+and meaningful evidence or reuse provenance; for each slice, its failing run, its
+passing run and the run that breaks its rule on purpose; affected entry-point coverage
+when applicable; every ticket checkbox as `[x]` or the reason it stays `[ ]`.
 For a later-phase criterion, name its assigned owner and phase; pending verification
 is not a failed implementation check or proof of ticket completion.
 Use the supplied evidence directory and the shared

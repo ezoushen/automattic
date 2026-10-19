@@ -20,7 +20,7 @@ HOLDS = {
     'runtime/interview/authority.md': ('A decision the user reserved is always theirs.',),
     'runtime/interview/question-filter.md': ('**Material fork:** ask only if plausible answers change the goal',),
     'runtime/interview/record.md': ('`## Standing directives` section in the ledger',),
-    'skills/refine/SKILL.md': ("Matt Pocock's `/mattpocock-skills:to-tickets` breaks a spec", '## Explicit phase composition'),
+    'skills/refine/SKILL.md': ("`/automattic:refine` cuts work into tickets by the board's [slicing rules](../../runtime/board/slicing.md)", '## Explicit phase composition'),
     'skills/refine/ticket-template.md': ('# NN: <title, a behaviour not a component>',),
     'skills/dispatch/SKILL.md': ('# dispatch',),
     'skills/dispatch/iteration.md': ('## One iteration',),

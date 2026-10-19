@@ -22,7 +22,7 @@ alternatives — the principal can veto. Align and refine append to one
 | Phase | Command | Owns | Writes | Hands on |
 |---|---|---|---|---|
 | Mandate and alignment | `/automattic:align` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape; WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `ledger.md` (first rows), settled terms in `GLOSSARY.md`, standing principles in ADRs/memory, `alignment.md` | slug, ledger, the brief |
-| Refinement | `/automattic:refine` | ticket slicing from the brief or a plan agreed in chat, edges, sizing and their rejected alternatives | configured tracker issues, or local Markdown tickets | dispatch-ready tickets |
+| Refinement | `/automattic:refine` | ticket slicing by the board's [slicing rules](../../runtime/board/slicing.md) from the brief or a plan agreed in chat, edges, sizing and their rejected alternatives | configured tracker issues, or local Markdown tickets | dispatch-ready tickets |
 | Execution | `/automattic:dispatch` | scheduling on `blocked_by`, capacity and area locks; how each ticket runs (inline or a builder worktree) and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` (or `main` when the user says so) | implementation status and review report |
 | Review | `/automattic:review` | direction → blast radius → implementation, complete layer batches, scoped invalidation, reproduction, optional autofix with applicable E2E, local comment drafts and follow-ups | review and verification report | reviewed commit, gate outcomes and unresolved findings |
 | Delivery | `/automattic:pr` (optional) | the description assembled from the artefacts above | `pr.md`, the PR | a URL |
@@ -57,7 +57,7 @@ Run history stays in reports/journals. Workers call shared plugin scripts direct
 ## The outer loop
 
 Loop engineering is the design of the loop that drives agents, so a human does not.
-The inner loop is the agent's own (perceive, reason, act, observe — `/mattpocock-skills:tdd`); the
+The inner loop is the agent's own (perceive, reason, act, observe — the [TDD standard](../../standards/tdd.md)); the
 outer loop is this pipeline's, and each command is one of its nodes:
 
 | Node | What it does here | Command |
@@ -112,12 +112,12 @@ folder; commands read the shared interview and board procedures and the other ru
 - [Brief](SKILL.md): progress briefings and this map.
 - [Housekeeping](../housekeeping/SKILL.md): residue and documentation currency, run by dispatch and PR.
 - [Interview](../../runtime/interview/question-filter.md): authority, [grilling](../../runtime/interview/grilling.md), the question filter and the ledger record, shared by the commands that ask questions.
-- [Board](../../runtime/board/board.md): tracker conventions, scope and the project loop.
+- [Board](../../runtime/board/board.md): tracker conventions, scope, ticket slicing and the project loop.
 - [Explain](../../runtime/explain/explain.md): the re-pitch and the views, shared by briefings, the walkthrough, the setup tour and `/automattic:huh`, a sibling command this map names without a link.
 
 ## Matt Pocock's skills underneath
 
-Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
+Dependency: `mattpocock-skills`. Reuse `research`,
 `diagnosing-bugs` and `prototype` for their respective
 work. The review command supplies scope,
 priority and allowed mutation
@@ -127,10 +127,6 @@ policy in the active catalog; never bypass a denied invocation by copying its bo
 For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,
 evidence, refresh and self-check. The PR phase (`/automattic:pr`) owns delivery
 evidence and publication.
-Planning and execution commands keep shared methods by reference (`/automattic:refine`
-applies `/mattpocock-skills:to-tickets`' slicing rules unchanged). `/automattic:refine` also
-accepts Matt's `spec.md` and prose `/mattpocock-skills:to-tickets` tickets, adapting them to the
-project's ticket convention.
 
 ## Left to the human
 

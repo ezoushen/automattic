@@ -110,8 +110,8 @@ challenges an agreement, explain the conflict and reopen the affected decision
 and coverage. Opening a design choice authorizes scrutiny, not a replacement
 requirement. `--comments confirm` still pauses at publication. Evaluate
 the approach against existing decisions: root cause, ownership, existing mechanisms
-and the smallest adequate change. Use [research](../../runtime/research/research.md) or `codebase-design` only when needed;
-do not copy their methods. With no human-approved priority standard, label the
+and the smallest adequate change. Use [research](../../runtime/research/research.md) or [module design](../../standards/design.md)
+only when needed; do not copy their methods. With no human-approved priority standard, label the
 ordering provisional and complete fact-finding; draft design questions rather than
 inventing product decisions. Such findings are ineligible for automatic redesign.
 Conflicting human direction or a missing decision that determines correctness stays

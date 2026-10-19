@@ -256,7 +256,7 @@ class CrossHarness(unittest.TestCase):
 
     def test_oversized_selected_work_is_split_by_delivery_and_children_inherit_the_selection(self):
         split = (PLUGIN / 'skills/dispatch/split-work.md').read_text()
-        assert '](../refine/SKILL.md' in split and 'too large for one worker' in split
+        assert '](../../runtime/board/slicing.md' in split and 'too large for one worker' in split
         assert '](split-work.md' in (PLUGIN / 'skills/dispatch/SKILL.md').read_text()
         scope = (PLUGIN / 'runtime/board/scope.md').read_text()
         assert "inherit the parent's selection" in scope and 'Keep the parent outstanding' in scope

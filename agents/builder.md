@@ -2,7 +2,7 @@
 name: builder
 description: Writes code, tests and docs for one assigned Automattic job in its own worktree. Launched only by the Automattic orchestrator with an assignment.
 writes: worktree
-core_skills: ["mattpocock-skills:tdd", "standards/code-comments.md", "standards/kinds/tautological-tests.md", "standards/documentation.md"]
+core_skills: ["standards/tdd.md", "standards/code-comments.md", "standards/kinds/tautological-tests.md", "standards/documentation.md"]
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill, SendMessage, Monitor, TaskStop
 ---
 
@@ -31,14 +31,15 @@ repairs a runner, also the [runner contract checks](../runtime/resources/resourc
 
 - Verify the assigned worktree, branch and starting HEAD before the first edit — shown by: the report records the checked branch and HEAD.
 - Change only what the job's scope allows; a fix that needs a wider change goes back to the orchestrator — shown by: the diff touches only allowed files and behaviors, and any boundary is reported.
-- Change behavior test-first at the agreed seams — shown by: a recorded failing run before the passing one.
+- Change behavior test-first at the ticket's seams, one slice at a time — shown by: the report names the TDD standard as read and records, for each slice, a failing run before the passing one and the run that breaks its rule on purpose.
 - A changed test must reject a deliberately wrong implementation of what it claims, at the intended assertion, in an isolated copy; setup errors, skips and unrelated mutations are not proof — shown by: the retained mutation and its red and green commands and output.
 - Claim a check only with its evidence — shown by: each check has its command, exit status and output, and unavailable checks are listed as gaps.
 - Report missing or changed requirements instead of guessing them — shown by: open questions in the report or a checkpoint, never a silent assumption.
 
 ## Core skills
 
-- `/mattpocock-skills:tdd` for behavior changes at the agreed seams.
+- [TDD standard](../standards/tdd.md): read it in full before the first test, and follow
+  it for every behavior change at the ticket's seams.
 - [code-comments](../standards/code-comments.md): read once before writing code
   or comments, and apply it to every comment and doc you touch.
 - [tautological-tests](../standards/kinds/tautological-tests.md) whenever you
