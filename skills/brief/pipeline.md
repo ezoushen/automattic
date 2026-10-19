@@ -81,7 +81,7 @@ human-authorized merge by the orchestrator.
 |---|---|---|
 | Thrashing | an agent edits without converging | one `Verify` command per criterion; dispatch handles non-converging tickets; review keeps per-finding repair limits across E2E failures |
 | Overfitting tests | suite green, behaviour wrong | verify the accepted behavior and affected entry points; satisfy the project's applicable compile, suite and E2E gates |
-| Context drift | work on stale assumptions | fresh context per ticket; canonical board refreshed each iteration; reviewer verifies its range first; a resumed agent is told what survived |
+| Context drift | work on stale assumptions | fresh context per delegated ticket, inline only where the session already holds it; canonical board refreshed each iteration; reviewer verifies its range first; a resumed agent is told what survived |
 | Unsafe autonomy | over-reach or destruction | subagents never push, merge or touch `main`; native permissions; runtime capacity; human-authorized merge by the orchestrator |
 | Comprehension debt | the human stops reading | consequential ledger rows and a concise alignment brief; only material questions; on-demand briefings and walkthroughs; a proportional PR description |
 
