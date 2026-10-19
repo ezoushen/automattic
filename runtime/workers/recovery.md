@@ -65,7 +65,7 @@ A focused correction can stay with the same worker. Repeated failure of the same
 understood contract, an invalid approach or newly discovered complexity can justify
 more permitted thinking, another allowed model, or a narrower assignment. Choose
 the action that addresses the cause; no compulsory model ladder or extra failed
-round is required. Elapsed time, a normal build-lock wait or an incomplete live
+round is required. Elapsed time, a normal resource-lock wait or an incomplete live
 report alone does not establish inadequacy.
 
 At a recovery boundary, run the [configured checkpoint command](../decisions/checkpoint.md#configured-checkpoint-command)

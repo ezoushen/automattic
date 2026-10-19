@@ -17,7 +17,7 @@ Run checks without an Automattic lock by default. Use the project's existing
 coordination when commands share mutable outputs, a device or another exclusive
 resource. Only an evidenced conflict calls for a resource-specific lock; a build
 command or high CPU usage alone does not. Machine load belongs in the concurrency
-budget. `build-lock.sh` remains an optional helper for projects that require it.
+budget. `scripts/resource_lock.py` remains an optional helper for projects that require it.
 Retain the same verified resource identity across sessions and retries.
 
 Load the selected runner's current skill/contract before its first use and after

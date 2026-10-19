@@ -47,15 +47,19 @@ class HookRepo(unittest.TestCase):
             path.parent.mkdir(exist_ok=True)
             path.write_text((support.ROOT / '.githooks' / hook).read_text())
             path.chmod(0o755)
-        suite = self.root / 'scripts/test-all.sh'
+        suite = self.root / 'tests/run_all.py'
         suite.parent.mkdir()
-        # Records the commit and directory it ran in; exits with the status file's value.
-        suite.write_text('#!/usr/bin/env bash\ncat >/dev/null\n'
-                         f'echo "$(git rev-parse HEAD) $(pwd -P) $(git status --porcelain | wc -l)" >> "{self.runs}"\n'
-                         + self.slow_suite() +
-                         f'[ "$(git rev-parse HEAD)" = "$(cat "{self.fail_at}" 2>/dev/null)" ] && exit 1\n'
-                         f'exit "$(cat "{self.status}" 2>/dev/null || echo 0)"\n')
-        suite.chmod(0o755)
+        # Records the commit and directory it ran in; exits with the status file's value. The shell body
+        # replaces the Python process, so its pid is the suite's own; the signals Python ignores are restored
+        # first, as the real runner's subprocesses restore them for each test.
+        body = ('cat >/dev/null\n'
+                f'echo "$(git rev-parse HEAD) $(pwd -P) $(git status --porcelain | wc -l)" >> "{self.runs}"\n'
+                + self.slow_suite() +
+                f'[ "$(git rev-parse HEAD)" = "$(cat "{self.fail_at}" 2>/dev/null)" ] && exit 1\n'
+                f'exit "$(cat "{self.status}" 2>/dev/null || echo 0)"\n')
+        suite.write_text('import os, signal\nfor name in ("SIGPIPE", "SIGXFSZ"):\n'
+                         '    signal.signal(getattr(signal, name), signal.SIG_DFL)\n'
+                         f'os.execvp("bash", ["bash", "-c", {body!r}])\n')
         for name, text in {'README.md': '# Project\n\nSee [tool](skills/tool/SKILL.md).\n',
                            'skills/tool/SKILL.md': SKILL.format(name='tool', description='Runs the tool.'),
                            'shared/guide.md': GUIDE, 'scripts/run.py': "GUIDE = 'shared/guide.md'\n"}.items():

@@ -87,7 +87,7 @@ class PrePush(HookRepo):
 
     def test_a_pushed_commit_without_the_checks_is_pushed_with_a_warning(self):
         self.assertEqual(self.commit().returncode, 0)
-        git(self.root, 'rm', '-rq', '.agents', 'scripts/test-all.sh')
+        git(self.root, 'rm', '-rq', '.agents', 'tests/run_all.py')
         old = subprocess.run(['git', '-C', str(self.root), *IDENTITY, 'commit', '-qm', 'old', '--no-verify'],
                              capture_output=True, text=True)
         self.assertEqual(old.returncode, 0, old.stderr)

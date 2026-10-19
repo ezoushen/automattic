@@ -16,7 +16,7 @@ import support
 
 
 RUNNER = support.script('run_check.py')
-LOCK = support.script('build-lock.sh')
+LOCK = support.script('resource_lock.py')
 
 
 class RunCheckTests(unittest.TestCase):
@@ -42,12 +42,12 @@ class RunCheckTests(unittest.TestCase):
         for command_code in (0, 7):
             with self.subTest(command_code=command_code), tempfile.TemporaryDirectory() as tmp:
                 log, ready = Path(tmp) / 'check.log', Path(tmp) / 'ready'
-                env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='0')
+                env = dict(os.environ, RESOURCE_LOCK=str(Path(tmp) / 'resource.lock'), RESOURCE_LOCK_TIMEOUT='0')
                 child = ('import os,signal,time; from pathlib import Path; '
                          'signal.signal(signal.SIGTERM, signal.SIG_IGN); '
                          f'Path({str(ready)!r}).write_text(str(os.getpgrp())); time.sleep(30)')
                 parent = ('import subprocess,time; from pathlib import Path; '
-                          f'subprocess.Popen({["bash", str(LOCK), sys.executable, "-c", child]!r}); '
+                          f'subprocess.Popen({[sys.executable, str(LOCK), sys.executable, "-c", child]!r}); '
                           f'ready = Path({str(ready)!r})\n'
                           'while not ready.exists(): time.sleep(.01)\n'
                           f'print("scenario finished", flush=True); exit({command_code})')
@@ -63,7 +63,7 @@ class RunCheckTests(unittest.TestCase):
                     self.assertTrue(report['cleanup_required'])
                     self.assertFalse(report['timed_out'])
                     self.assertIn('scenario finished', log.read_text())
-                    contender = subprocess.run(['bash', str(LOCK), 'true'], env=env, capture_output=True)
+                    contender = subprocess.run([sys.executable, str(LOCK), 'true'], env=env, capture_output=True)
                     self.assertEqual(contender.returncode, 0, contender.stderr)
                 finally:
                     if ready.exists():
@@ -126,20 +126,20 @@ class RunCheckTests(unittest.TestCase):
 
     def test_timing_out_a_queued_check_preserves_the_other_lock_owner(self):
         with tempfile.TemporaryDirectory() as tmp:
-            env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='60')
+            env = dict(os.environ, RESOURCE_LOCK=str(Path(tmp) / 'resource.lock'), RESOURCE_LOCK_TIMEOUT='60')
             holder = subprocess.Popen(
-                ['bash', str(LOCK), sys.executable, '-c',
+                [sys.executable, str(LOCK), sys.executable, '-c',
                  'import time; print("locked", flush=True); time.sleep(30)'],
                 env=env, stdout=subprocess.PIPE, text=True)
             try:
                 self.assertEqual(holder.stdout.readline().strip(), 'locked')
                 result = subprocess.run(
                     [sys.executable, str(RUNNER), '--timeout', '.2', '--log', str(Path(tmp) / 'queued.log'),
-                     '--', 'bash', str(LOCK), 'true'], env=env, capture_output=True, text=True, timeout=5)
+                     '--', sys.executable, str(LOCK), 'true'], env=env, capture_output=True, text=True, timeout=5)
                 self.assertEqual(result.returncode, 124, result.stderr)
                 self.assertIsNone(holder.poll(), 'unrelated owner was stopped')
-                contender = subprocess.run(['bash', str(LOCK), 'true'],
-                                           env=dict(env, BUILD_LOCK_TIMEOUT='0'), capture_output=True)
+                contender = subprocess.run([sys.executable, str(LOCK), 'true'],
+                                           env=dict(env, RESOURCE_LOCK_TIMEOUT='0'), capture_output=True)
                 self.assertNotEqual(contender.returncode, 0)
             finally:
                 holder.terminate()
@@ -226,10 +226,10 @@ class RunCheckTests(unittest.TestCase):
     def test_deadline_stops_term_ignoring_descendant_and_releases_lock(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / 'check.log'
-            env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='0')
+            env = dict(os.environ, RESOURCE_LOCK=str(Path(tmp) / 'resource.lock'), RESOURCE_LOCK_TIMEOUT='0')
             child = 'import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); print("child ready", flush=True); time.sleep(30)'
             parent = ('import subprocess,time; subprocess.Popen(' +
-                      repr(['bash', str(LOCK), sys.executable, '-c', child]) + '); time.sleep(30)')
+                      repr([sys.executable, str(LOCK), sys.executable, '-c', child]) + '); time.sleep(30)')
             runner = subprocess.Popen(
                 [sys.executable, str(RUNNER), '--timeout', '0.5', '--log', str(log), '--',
                  sys.executable, '-c', parent], env=env, start_new_session=True,
@@ -241,7 +241,7 @@ class RunCheckTests(unittest.TestCase):
                 self.assertTrue(summary['timed_out'])
                 self.assertEqual(summary['exit_source'], 'deadline')
                 self.assertIn('child ready', log.read_text())
-                contender = subprocess.run(['bash', str(LOCK), 'true'], env=env, capture_output=True)
+                contender = subprocess.run([sys.executable, str(LOCK), 'true'], env=env, capture_output=True)
                 self.assertEqual(contender.returncode, 0, contender.stderr)
             finally:
                 if runner.poll() is None:
@@ -252,13 +252,13 @@ class RunCheckTests(unittest.TestCase):
         for interruption in (signal.SIGTERM, signal.SIGINT):
             with self.subTest(signal=interruption), tempfile.TemporaryDirectory() as tmp:
                 log, ready = Path(tmp) / 'check.log', Path(tmp) / 'ready'
-                env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='0')
+                env = dict(os.environ, RESOURCE_LOCK=str(Path(tmp) / 'resource.lock'), RESOURCE_LOCK_TIMEOUT='0')
                 child = ('import os,signal,time; from pathlib import Path; '
                          'signal.signal(signal.SIGTERM, signal.SIG_IGN); '
                          f'Path({str(ready)!r}).write_text(str(os.getpid())); time.sleep(30)')
                 runner = subprocess.Popen(
                     [sys.executable, str(RUNNER), '--timeout', '10', '--log', str(log), '--',
-                     'bash', str(LOCK), sys.executable, '-c', child], env=env,
+                     sys.executable, str(LOCK), sys.executable, '-c', child], env=env,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                 try:
                     deadline = time.monotonic() + 3
@@ -272,7 +272,7 @@ class RunCheckTests(unittest.TestCase):
                     self.assertFalse(summary['timed_out'])
                     self.assertEqual(summary['exit_source'], 'signal')
                     self.assertEqual(summary['interrupted_signal'], interruption)
-                    contender = subprocess.run(['bash', str(LOCK), 'true'], env=env, capture_output=True)
+                    contender = subprocess.run([sys.executable, str(LOCK), 'true'], env=env, capture_output=True)
                     self.assertEqual(contender.returncode, 0, contender.stderr)
                 finally:
                     if ready.exists():

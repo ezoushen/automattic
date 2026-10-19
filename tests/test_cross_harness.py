@@ -298,23 +298,26 @@ class CrossHarness(unittest.TestCase):
         assert 'For a paths or whole-project scan, reconcile the file inventory' in detect, detect
         assert 'scan every file no worker accounted for' in detect, detect
 
-    def test_build_lock_excludes_releases_and_keeps_exit_status(self):
+    def test_resource_lock_excludes_releases_and_keeps_exit_status(self):
         with tempfile.TemporaryDirectory(prefix='automattic mutex ') as tmp:
-            env = dict(os.environ, BUILD_LOCK=str(Path(tmp) / 'build.lock'), BUILD_LOCK_TIMEOUT='0')
-            wrapper = str(PLUGIN / 'scripts/build-lock.sh')
+            env = dict(os.environ, RESOURCE_LOCK=str(Path(tmp) / 'resource.lock'), RESOURCE_LOCK_TIMEOUT='0')
+            wrapper = str(PLUGIN / 'scripts/resource_lock.py')
             # The exec'd build holds the descriptor: a contender must fail until it exits.
-            holder = subprocess.Popen(['bash', wrapper, sys.executable, '-c',
+            holder = subprocess.Popen([sys.executable, wrapper, sys.executable, '-c',
                                        'import time; print("locked", flush=True); time.sleep(0.5)'],
                                       env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             try:
                 assert holder.stdout.readline().strip() == 'locked'
-                contender = subprocess.run(['bash', wrapper, 'true'], env=env, capture_output=True, text=True)
+                contender = subprocess.run([sys.executable, wrapper, 'true'], env=env, capture_output=True, text=True)
                 assert contender.returncode != 0 and 'still held' in contender.stderr
                 assert holder.wait(timeout=5) == 0
-                done = subprocess.run(['bash', wrapper, 'true'], env=env, capture_output=True, text=True)
+                done = subprocess.run([sys.executable, wrapper, 'true'], env=env, capture_output=True, text=True)
                 assert done.returncode == 0, done.stderr
-                failed = subprocess.run(['bash', wrapper, 'sh', '-c', 'exit 7'], env=env, capture_output=True)
+                failed = subprocess.run([sys.executable, wrapper, 'sh', '-c', 'exit 7'], env=env, capture_output=True)
                 assert failed.returncode == 7
+                missing = subprocess.run([sys.executable, wrapper, 'automattic-no-such-command'], env=env,
+                                         capture_output=True, text=True)
+                assert missing.returncode != 0 and 'not found' in missing.stderr, missing.stderr
             finally:
                 if holder.poll() is None:
                     holder.kill()

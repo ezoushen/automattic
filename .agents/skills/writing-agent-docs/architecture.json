@@ -169,7 +169,8 @@
     "runtime/checks/**/*.md"
    ],
    "code": [
-    "scripts/run_check.py"
+    "scripts/run_check.py",
+    "scripts/resource_lock.py"
    ]
   },
   "routing": {

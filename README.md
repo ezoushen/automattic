@@ -490,7 +490,7 @@ development symlink.
 
 ## Verification
 
-`scripts/test-all.sh` runs every `tests/test_*.py` file in parallel (about 15 s)
+`python3 tests/run_all.py` runs every `tests/test_*.py` file in parallel (about 15 s)
 with the plugin environment's `.venv` and exits 1 on any failure. Enable the hooks once
 per clone with `git config core.hooksPath .githooks`:
 - `pre-commit` (about a second) runs the
@@ -529,7 +529,7 @@ that runs a script which writes machine state.
 The regression check uses temporary Git repositories, files and locks. It covers
 scoping, cross-effort locking/capacity, unknown arguments, mutation boundaries,
 cycles, prerequisite branch ancestry, evidence acceptance, malformed input, both
-hook registrations, shared file links, and build-lock exclusion/release/exit status.
+hook registrations, shared file links, and resource-lock exclusion/release/exit status.
 
 Use the [review behavior rehearsal](docs/review-rehearsal.md) to check walkthrough
 discussion, review handoff and finding adjudication separately from package registration.

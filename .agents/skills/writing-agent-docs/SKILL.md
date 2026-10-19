@@ -80,7 +80,7 @@ links no other skill. **Strict:** these direction rules, the first-read budget, 
 shape and unmapped docs are errors with no recorded debt. **Room:** a new module
 joins `architecture.json` in a level of its own or beside siblings that need not link
 each other, so the order grows without loosening a rule. Run the checker and
-`scripts/test-all.sh` after each addition.
+`tests/run_all.py` after each addition.
 
 - **Add a host:** create `hosts/<host>/` holding exactly `session.md` (read at session
   start) and `workers.md` (read when launching); add the name to `HARNESSES` in

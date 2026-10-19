@@ -15,8 +15,8 @@ conflicting commands and existing owner/coordination under
 [check execution](../../runtime/checks/plan.md#coordinate-the-actual-resource).
 Machine load uses the shared concurrency budget, not a blanket build mutex.
 
-For an optional local `build-lock.sh` convention, verify its `BUILD_LOCK` resource
-path, participating commands and bounded `BUILD_LOCK_TIMEOUT`; carry that same
+For an optional local `resource_lock.py` convention, verify its `RESOURCE_LOCK` resource
+path, participating commands and bounded `RESOURCE_LOCK_TIMEOUT`; carry that same
 identity across sessions/retries. Do not replace it with a private lock to bypass
 ownership. Resolve the installed plugin path; do not copy the wrapper.
 For remote execution, name and load the runner's current skill/contract. Point to

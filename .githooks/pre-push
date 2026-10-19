@@ -110,8 +110,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       else
         echo "pre-push: no doc checker at $0; skipped" >&2
       fi
-      if [ -x scripts/test-all.sh ]; then
-        exec scripts/test-all.sh
+      if [ -f tests/run_all.py ]; then
+        exec python3 tests/run_all.py
       else
         echo "pre-push: no test suite at $0; skipped" >&2
       fi' "${commit:0:12}"
