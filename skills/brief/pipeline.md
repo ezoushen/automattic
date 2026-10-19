@@ -57,7 +57,7 @@ Run history stays in reports/journals. Workers call shared plugin scripts direct
 ## The outer loop
 
 Loop engineering is the design of the loop that drives agents, so a human does not.
-The inner loop is the agent's own (perceive, reason, act, observe — `/mattpocock-skills:tdd`); the
+The inner loop is the agent's own (perceive, reason, act, observe — the [TDD standard](../../standards/tdd.md)); the
 outer loop is this pipeline's, and each command is one of its nodes:
 
 | Node | What it does here | Command |
@@ -117,7 +117,7 @@ folder; commands read the shared interview and board procedures and the other ru
 
 ## Matt Pocock's skills underneath
 
-Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
+Dependency: `mattpocock-skills`. Reuse `research`,
 `diagnosing-bugs` and `prototype` for their respective
 work. The review command supplies scope,
 priority and allowed mutation

@@ -51,8 +51,8 @@ Prepare one concise WHAT / WHY / HOW brief:
   as well as fixtures.
 - **WHY:** the concrete problem and why existing behavior/mechanisms are inadequate.
 - **HOW:** the smallest adequate approach, responsibilities, interfaces and material
-  tradeoffs. Reuse Matt's `codebase-design` when interface/ownership decisions need
-  scrutiny rather than duplicating its design method.
+  tradeoffs. Apply [module design](../../standards/design.md) when interface/ownership
+  decisions need scrutiny.
 
 Choose depth by uncertainty: context for system boundaries; modules for changing
 responsibilities; behavior for flows, state and ordering. Include only the views

@@ -18,6 +18,8 @@ worker:
 
 **Blocked by:** <NN: title>, or "None (can start immediately)".
 
+**Seams:** <the public interfaces its tests reach: existing and higher ones first, as few as will do>.
+
 ## Acceptance criteria
 - [ ] Given <state>, when <action>, then <observable outcome>.
       Verify (code|agent|user): <command, test name or user check>

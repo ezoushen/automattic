@@ -72,6 +72,8 @@ do not create local issue files or require local front matter for remote tickets
    actor's side. Each criterion is an observable outcome, Given/When/Then, with a
    `Verify` line naming the command or the test that proves it and who can observe
    it: `code`, `agent` or `user`. Name behaviours and commands, never files or code.
+   A **Seams** line names the public interfaces its tests reach, existing and higher
+   ones first, as few as will do; the ticket check approves them.
    Checks only the user can observe go to the user together, in one request, once an
    integrated build allows them. Replacing a `Verify` method with a weaker one is the
    user's decision, not an amendment an agent makes.
