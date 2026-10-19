@@ -5,40 +5,39 @@ plan. The user decides principles; the agent decides the rest within them.
 
 ## Map the design tree
 
-Map the plan as a design tree: every decision branches into the decisions that hang
-off it. A question waits until the decisions it depends on are settled. Order the
-tree by what the user decides from their priorities: goal and principles, then what
-may change or must keep working, then the behavior the user would notice.
+Map the plan as a design tree: each decision branches into those that hang off it. A
+question waits until the decisions it depends on are settled. Order the tree: goal and
+principles, then what may change or must keep working, then the behavior the user
+would notice.
 
 Never ask the user about implementation detail. When the tree reaches one, decide it
-within the principles, record it in the ledger ([record](record.md)) and list it among
-the agent's decisions the user may veto. Ask about a lower branch only when the
+within the principles; a material agent choice is recorded in the ledger
+([record](record.md)) and listed among the agent's decisions the user may veto, while a
+routine one needs neither. Ask about a lower branch only when the
 [question filter](question-filter.md) makes it a material fork.
 
 ## Work it in rounds
 
-Each round asks the highest unsettled branches, composed as the
-[question filter](question-filter.md) says: one or two questions per round, in the
-user's terms, each with a recommendation that "yes" accepts. A question whose answer
-depends on another one still open belongs to a later round. Each answer reshapes the
-tree: recompute which branches are now askable before the next round.
+Each round asks the highest unsettled branches, composed as the question filter says:
+one or two questions per round, in the user's terms, each with a recommendation that
+"yes" accepts. After each answer, recompute which branches are now askable.
 
 When a term settles, or the user uses one against its definition, add the term to the
 [glossary](../domain/glossary.md) the moment it settles, or call out the conflict. When a
 decision settles that passes the three tests, offer an [ADR](../domain/adr.md); write it only
 after the user's yes.
 
-Finding facts is the agent's job, never the user's. Look facts up in the background
-(a worker or a search) without blocking the questions that do not depend on them;
-only the dependent questions wait for the answer.
+Finding facts is the agent's job, never the user's. Look facts up in the background,
+without blocking the questions that do not depend on them.
 
 Exhaustive depth, on an explicit request, only raises the number of questions per
-round; every question still concerns principles or a material fork, and implementation
-detail stays with the agent.
+round; implementation detail still stays with the agent.
 
 ## Finish
 
-Grilling is done when no askable branch is left and nothing is silently assumed, and
-it continues until the user confirms a shared understanding. Then close with the
-[record](record.md) exit block: the user's decisions, the agent's decisions the user
+Grilling stops asking when the [question filter](question-filter.md)'s stop rule holds
+and nothing is silently assumed, and it is done only when the user confirms a shared
+understanding. A plan the user calls ready, or an accepted mandate that already settles
+the next step, is that confirmation; otherwise ask once, with the summary. Then close
+with the [record](record.md) exit block: the user's decisions, the agent's decisions the user
 may veto, and pending user actions.

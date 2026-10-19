@@ -38,8 +38,9 @@ class Adrs(unittest.TestCase):
     def test_no_doc_names_matts_domain_modeling(self):
         found = subprocess.run(
             ['git', 'grep', '-n', '-I', 'domain-modeling', '--', '.', ':!journals', ':!tests/test_adrs.py'],
-            cwd=ROOT, capture_output=True, text=True).stdout
-        self.assertEqual('', found)
+            cwd=ROOT, capture_output=True, text=True)
+        self.assertIn(found.returncode, (0, 1), found.stderr)
+        self.assertEqual('', found.stdout)
 
 
 if __name__ == '__main__':

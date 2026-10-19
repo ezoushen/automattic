@@ -17,16 +17,23 @@ class DeliveryHistory(unittest.TestCase):
         for rule in ('list each ledger row that passes the three tests as a candidate ADR',
                      'write only the candidates the user approves into the effort branch',
                      'before its review head is pinned',
-                     'Under `--autofix` with the user away, the candidates wait among the actions only the user can take',
-                     'an approved candidate written later returns that change to review',
-                     'merge the current `main` into the effort branch',
+                     'Do not wait for the answer',
+                     'candidates still unanswered wait among the actions only the user can take',
+                     'an approved candidate written later returns that change to review and E2E',
+                     'merge the current `main` into the effort branch and run the ADR number check',
                      'renumber the effort\'s ADR to the next free number and update every reference to it',
-                     'scripts/adr_numbers.py --repo <repo> --ref <effort branch>', 'a duplicate number fails the delivery gate'):
+                     'scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against main',
+                     'Run it once for each ADR folder', 'checks only `NNNN-slug.md` names',
+                     'records an evidenced skip', 'A merge or renumbering after the review head is pinned returns to review and E2E',
+                     'a duplicate number fails the delivery gate'):
             self.assertIn(rule, text)
 
     def test_each_delivery_step_applies_it(self):
         link = '../../runtime/domain/adr.md#deliver-an-efforts-decisions'
-        self.assertIn(f'candidate ADRs]({link})', prose('skills/dispatch/handoff.md'))
+        handoff = prose('skills/dispatch/handoff.md')
+        self.assertIn(f'candidate ADRs]({link})', handoff)
+        self.assertLess(handoff.index('candidate ADRs]'), handoff.index('before pinning the review head'))
+        self.assertIn('merge the current `main`', handoff[:handoff.index('before pinning the review head')])
         self.assertIn('the ADRs the effort adds', prose('skills/pr/SKILL.md'))
         board = prose('runtime/board/board.md')
         self.assertIn('[ADR number check](../domain/adr.md#deliver-an-efforts-decisions) passes on the effort branch',

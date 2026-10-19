@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Report duplicated ADR numbers and the next free one, in the working tree or at a Git ref.
 
-usage: adr_numbers.py --repo <checkout> [--dir docs/adr] [--ref <branch or commit>]
+usage: adr_numbers.py --repo <checkout> [--dir docs/adr] [--ref <commit> [--against <commit>]]
 
-Prints JSON {"dir", "duplicates": {number: [files]}, "next"}. Exits 1 when a number is
-used twice, 2 on invalid input. An absent folder has no duplicates and next "0001".
+Checks one folder of `NNNN-slug.md` files. With --against, the ref's files and the other
+commit's are checked together, as they would be after merging. Prints JSON {"dir",
+"duplicates": {number: [files]}, "next"}. Exits 1 when a number is used twice, 2 on invalid
+input. An absent folder has no duplicates and next "0001".
 """
 import argparse
 import json
@@ -16,22 +18,26 @@ import sys
 NAME = re.compile(r'(\d{4})-.+\.md')
 
 
+def git(repo, *args):
+    return subprocess.run(['git', '-C', str(repo), *args], capture_output=True, text=True)
+
+
 def names(repo, folder, ref):
     if ref is None:
         path = repo / folder
-        return sorted(p.name for p in path.iterdir() if p.is_file()) if path.is_dir() else []
-    resolved = subprocess.run(['git', '-C', str(repo), 'rev-parse', '--verify', '--quiet', f'{ref}^{{commit}}'],
-                              capture_output=True, text=True)
+        return {p.name for p in path.iterdir() if p.is_file()} if path.is_dir() else set()
+    resolved = git(repo, 'rev-parse', '--verify', '--quiet', f'{ref}^{{commit}}')
     if resolved.returncode:
         raise ValueError(f'{ref}: not a commit in {repo}')
-    listed = subprocess.run(['git', '-C', str(repo), 'ls-tree', '--name-only', resolved.stdout.strip(),
-                             f'{folder.rstrip("/")}/'], capture_output=True, text=True, check=True)
-    return sorted(Path(line).name for line in listed.stdout.splitlines())
+    listed = git(repo, 'ls-tree', '-z', '--name-only', resolved.stdout.strip(), f'{folder.rstrip("/")}/')
+    if listed.returncode:
+        raise ValueError(listed.stderr.strip())
+    return {Path(entry).name for entry in listed.stdout.split('\0') if entry}
 
 
 def report(files):
     numbered = {}
-    for name in files:
+    for name in sorted(files):
         match = NAME.fullmatch(name)
         if match:
             numbered.setdefault(match[1], []).append(name)
@@ -45,13 +51,22 @@ def main(argv):
     parser.add_argument('--repo', type=Path, required=True)
     parser.add_argument('--dir', default='docs/adr', help="the project's ADR folder")
     parser.add_argument('--ref', help='read the folder at this commit instead of the working tree')
+    parser.add_argument('--against', help='also read the folder at this commit, as after a merge')
     args = parser.parse_args(argv)
+    repo = args.repo.resolve()
     try:
-        duplicates, following = report(names(args.repo.resolve(), args.dir, args.ref))
-    except (ValueError, subprocess.CalledProcessError, OSError) as error:
+        if not repo.is_dir():
+            raise ValueError(f'{repo}: not a directory')
+        if args.against and not args.ref:
+            raise ValueError('--against needs --ref')
+        files = names(repo, args.dir, args.ref)
+        if args.against:
+            files |= names(repo, args.dir, args.against)
+        duplicates, following = report(files)
+    except (ValueError, OSError) as error:
         print(error, file=sys.stderr)
         return 2
-    print(json.dumps({'dir': args.dir, 'duplicates': duplicates, 'next': following}))
+    print(json.dumps({'dir': args.dir, 'duplicates': duplicates, 'next': following}, ensure_ascii=False))
     return 1 if duplicates else 0
 
 

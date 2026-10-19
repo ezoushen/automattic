@@ -42,7 +42,8 @@ new headline and no closing summary, only these steps.
 2. Restart there. Give the missing context first, in one or two sentences: the problem,
    the earlier decision or the fact the point depends on.
 3. Then give the point, in plain sentences, the way one person explains it to another.
-   One term per concept, with the user's own words and the project's own names.
+   One term per concept, with the user's own words and the project's own names, and
+   the glossary's term in place of an `_Avoid_` word.
 4. Define an internal name, such as a component, mode or file, where it first appears,
    or leave it out. Never use a ticket or decision ID in place of what it stands for.
 5. Add a view below only when the shape is what confuses them.

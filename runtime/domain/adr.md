@@ -58,19 +58,24 @@ silently followed.
 An effort's ledger stays in ignored `.scratch/`, so its lasting decisions reach other
 members only as ADRs. When the effort's implementation is complete, list each ledger
 row that passes the three tests as a candidate ADR in the run report, with the row it
-comes from. Ask the user once for the whole list, and write only the candidates the
-user approves into the effort branch, before its review head is pinned, so the review
-covers them. Under `--autofix` with the user away, the candidates wait among the
-actions only the user can take; an approved candidate written later returns that
-change to review.
+comes from, and ask the user once for the whole list. Do not wait for the answer:
+write only the candidates the user approves into the effort branch, those answered
+before its review head is pinned, so the review covers them; candidates still
+unanswered wait among the actions only the user can take, and an approved candidate
+written later returns that change to review and E2E.
 
-Numbers are claimed on `main`. Before the effort lands, merge the current `main` into
-the effort branch and run the ADR number check on it:
+Numbers are claimed on `main`. Before pinning the review head, merge the current
+`main` into the effort branch and run the ADR number check; on a duplicate, renumber
+the effort's ADR to the next free number and update every reference to it in the same
+commit. The delivery gate repeats the check without merging, against `main` as it is
+then:
 
 ```sh
-python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> [--dir <project ADR folder>]
+python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against main [--dir <ADR folder>]
 ```
 
 It prints the duplicated numbers and the next free one, and exits 1 on a duplicate.
-On a duplicate, renumber the effort's ADR to the next free number and update every
-reference to it in the same commit; a duplicate number fails the delivery gate.
+Run it once for each ADR folder: the root one and each context's. It checks only
+`NNNN-slug.md` names; a project whose own convention numbers differently uses its own
+check or records an evidenced skip. A merge or renumbering after the review head is
+pinned returns to review and E2E, and a duplicate number fails the delivery gate.

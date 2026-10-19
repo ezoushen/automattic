@@ -31,7 +31,11 @@ class Glossary(unittest.TestCase):
                       prose('runtime/interview/grilling.md'))
         self.assertIn('[glossary' + link, prose('runtime/interview/authority.md'))
         self.assertIn('[glossary' + link, prose('runtime/interview/record.md'))
-        self.assertIn("Use the glossary's terms and avoid its `_Avoid_` words", prose('runtime/explain/explain.md'))
+        explain = prose('runtime/explain/explain.md')
+        self.assertIn("Use the glossary's terms and avoid its `_Avoid_` words", explain)
+        repitch = explain[explain.index('## Re-pitch'):explain.index('## Choose the smallest view')]
+        self.assertIn("the glossary's term in place of an `_Avoid_` word", repitch)
+        self.assertIn('domain', prose('README.md')[prose('README.md').index('interview, board'):][:200])
         jobs = '](../../../runtime/domain/glossary.md)'
         for job in ('skills/dispatch/jobs/ticket.md', 'skills/review/jobs/repair.md'):
             with self.subTest(job=job):
@@ -47,8 +51,9 @@ class Glossary(unittest.TestCase):
         found = subprocess.run(
             ['git', 'grep', '-n', '-I', '-E', r'CONTEXT\.md',
              '--', '.', ':!journals', ':!tests/test_glossary.py'],
-            cwd=ROOT, capture_output=True, text=True).stdout
-        self.assertEqual('', found)
+            cwd=ROOT, capture_output=True, text=True)
+        self.assertIn(found.returncode, (0, 1), found.stderr)
+        self.assertEqual('', found.stdout)
 
 
 if __name__ == '__main__':

@@ -29,12 +29,14 @@ Compose the user-facing round in this order:
    user's scope intact.
 2. Ask the highest unresolved boundary in the user's terms: what may be removed
    or what must keep working. Usually ask one question; at most two independent
-   choices, including subquestions and trailing approval asks. Defer questions
+   choices, including subquestions and trailing approval asks; exhaustive
+   [grilling](grilling.md) raises this count. Defer questions
    that depend on an unanswered scope choice.
 3. Give one recommendation and its main evidenced consequence. The user should
    be able to answer from their priorities without learning implementation details.
-   Use only terms the user introduced or defined in the same sentence. Internal
-   names such as components, readers, modes or ticket IDs fail this check.
+   Use only terms the user introduced, the project's glossary defines, or that are
+   defined in the same sentence, and restate an `_Avoid_` word with its canonical term.
+   Internal names such as components, readers, modes or ticket IDs fail this check.
 
 End the question round after those three parts. Review the entire visible reply,
 including tables, headings and trailing notes; a concise question inside a full
