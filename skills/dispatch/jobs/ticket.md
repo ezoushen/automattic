@@ -73,7 +73,7 @@ without those conditions; it cannot claim acceptance.
 
 ## Return
 
-Append to `report` under `## Implemented`: commit SHAs; check commands, outcomes
+Append to `report` under `## Implemented`: one `Commit: <sha>` line per commit; check commands, outcomes
 and meaningful evidence or reuse provenance; affected entry-point coverage when
 applicable; every ticket checkbox as `[x]` or the reason it stays `[ ]`.
 For a later-phase criterion, name its assigned owner and phase; pending verification

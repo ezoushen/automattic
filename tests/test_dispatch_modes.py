@@ -34,6 +34,7 @@ class TicketModes(unittest.TestCase):
         job = prose(DISPATCH / 'jobs/ticket.md')
         self.assertIn('For an inline ticket the orchestrator follows this job itself', job)
         self.assertIn('the branch the report records', prose(ROOT / 'runtime/board/board.md'))
+        self.assertIn('one `Commit: <sha>` line per commit', job)
 
     def test_an_inline_ticket_skips_only_the_builder_setup(self):
         iteration = prose(DISPATCH / 'iteration.md')
@@ -59,6 +60,10 @@ class TicketModes(unittest.TestCase):
             self.assertIn(rule, text)
         self.assertIn('[directly on main](modes.md#directly-on-main)', prose(DISPATCH / 'iteration.md'))
         self.assertIn('ensure the effort branch', prose(DISPATCH / 'iteration.md'))
+        self.assertIn('Apart from working directly on main, never commit to the user', prose(DISPATCH / 'iteration.md'))
+        board = prose(ROOT / 'runtime/board/board.md')
+        self.assertIn('With `effort_branch: main` the reviewed head must instead be an ancestor of the current `main`', board)
+        self.assertIn('later commits on `main` are not covered by that evidence', board)
         for rule in ('A stale or diverged local `main` is reported and the user asked before the first commit',
                      'On `main` the orchestrator resolves an integration conflict itself',
                      'pass `--base <starting commit>`'):

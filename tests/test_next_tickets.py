@@ -182,6 +182,17 @@ class BoardCLI(unittest.TestCase):
         assert 'no listed commit' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
         self.write_report(base, 'feat/inline', [other])
         self.cli('inline', '--accept', 'inline/01')
+        self.write_report(base, 'feat/inline', body=f'- Evidence: reports/evidence/01/1/{other}/\n')
+        assert 'no listed commit' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        self.git('switch', '-q', 'main')
+        off_branch = self.commit('on main, not on the effort branch')
+        self.git('switch', '-q', '-c', 'side', 'feat/inline')
+        unmerged = self.commit('past base but never merged into the effort branch')
+        self.git('switch', '-q', 'feat/inline')
+        self.commit('later work on the effort branch')
+        for sha in (off_branch, base, unmerged):
+            self.write_report(other, 'feat/inline', [sha])
+            assert 'no listed commit' in self.cli('inline', '--accept', 'inline/01', code=1).stderr, sha
 
     def test_a_recorded_branch_must_name_an_existing_branch(self):
         self.write_ticket('inline/01', 'implementing')
@@ -191,6 +202,10 @@ class BoardCLI(unittest.TestCase):
         for value in ('HEAD', work, 'feat/inline~1', '-h', 'feat/missing'):
             self.write_report(base, value, [work])
             assert 'not an existing branch' in self.cli('inline', '--accept', 'inline/01', code=1).stderr, value
+        for name in ('feat/x+01', '_effort', 'feat/v1.2'):
+            self.git('branch', name)
+            self.write_report(base, name, [work])
+            self.cli('inline', '--accept', 'inline/01')
 
     def deliver(self, slug, branch, start, head):
         review = self.root / f'.scratch/{slug}/reports/spec-review.md'
@@ -223,6 +238,11 @@ class BoardCLI(unittest.TestCase):
         assert self.ready_names('later') == []
         review.write_text(evidence.replace('effort_branch: main', 'effort_branch: main~1'))
         self.cli('onmain', '--delivery', code=1)
+        review.write_text(evidence)
+        later_review, later_evidence = self.deliver('later', 'main', start, start)
+        later_review.write_text(later_evidence.replace('effort_branch: main', 'effort_branch: main~1'))
+        assert self.ready_names('later') == []
+        later_review.write_text(later_evidence)
         unreviewed = review.read_text().replace('effort_branch: main~1', 'effort_branch: main')
         review.write_text(unreviewed.replace(head, start))
         self.cli('onmain', '--delivery', code=1)

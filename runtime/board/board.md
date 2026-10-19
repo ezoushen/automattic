@@ -102,7 +102,9 @@ Verify all selected work is implemented and integrated, with no unresolved requi
 work or reservation. Require `review_status: clean`, `documentation_status: passed`,
 `e2e_status: passed`, and
 `review_head`/`e2e_head` equal to the current effort branch commit, and
-`review_by`/`e2e_by` naming the worker runs that produced them. Verify
+`review_by`/`e2e_by` naming the worker runs that produced them. With `effort_branch: main`
+the reviewed head must instead be an ancestor of the current `main`, which keeps moving;
+later commits on `main` are not covered by that evidence. Verify
 `review_base` resolves and its unique merge base with that head equals
 `review_diff_base`; inspect coverage, accepted decisions and actual check/artifact
 evidence. Missing or stale evidence fails the gate. Remote dispatch performs these

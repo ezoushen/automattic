@@ -112,7 +112,7 @@ def integrated(tickets, name, dependency):
     if not delivery_evidence(source):
         return False
     prerequisite = branch_ref(effort_branch(source))
-    if prerequisite is None:
+    if prerequisite is None or not valid_branch_name(effort_branch(spec_of(name))):
         return False
     target = branch_ref(effort_branch(spec_of(name)))
     bases = ["refs/heads/main"] + ([target] if target and target != "refs/heads/main" else [])
@@ -125,9 +125,14 @@ def review_front_matter(slug):
     return (parse_front_matter(report.read_text()) or {}) if report.is_file() else None
 
 
+def valid_branch_name(name):
+    return isinstance(name, str) and bool(name) and not name.startswith("-") and subprocess.run(
+        ["git", "check-ref-format", f"refs/heads/{name}"]).returncode == 0
+
+
 def branch_ref(name):
     """refs/heads/<name> when name is an existing local branch, else None."""
-    if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", name) or ".." in name:
+    if not valid_branch_name(name):
         return None
     ref = f"refs/heads/{name}"
     exists = subprocess.run(["git", "-C", str(ROOT), "show-ref", "--verify", "--quiet", ref])
@@ -260,9 +265,10 @@ def accept(tickets, name):
 
 
 def listed_commit_on(text, base, ref):
-    """A recorded branch can be shared, so the report's own commits must be on it past base."""
+    """A recorded branch can be shared, so a `Commit:` line of the report must name a commit on it past base."""
     implemented = text.split("## Implemented", 1)[-1].split("\n## ", 1)[0]
-    for sha in re.findall(r"\b[0-9a-f]{7,40}\b", implemented):
+    lines = re.findall(r"^\s*(?:- )?Commits?:(.*)$", implemented, re.M)
+    for sha in re.findall(r"\b[0-9a-f]{7,40}\b", " ".join(lines)):
         full = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}"],
                               capture_output=True, text=True).stdout.strip()
         if full and not full.startswith(base) and all(

@@ -43,8 +43,8 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    said to work [directly on main](modes.md#directly-on-main). A new effort branches
    from `main` after fetching and comparing it with its remote. A stale or diverged
    local `main`, or a stale consumer checkout used as a base, is reported, and the
-   effort branches from the verified remote tip; otherwise never commit to the user's
-   local `main`. Choose [how a ticket runs](modes.md). An inline ticket skips only the
+   effort branches from the verified remote tip (on `main`, the user is asked).
+   Apart from working directly on main, never commit to the user's local `main`. Choose [how a ticket runs](modes.md). An inline ticket skips only the
    ticket branch and worktree, their preparation, the builder launch with its launch
    decision record, and the merge; everything else in steps 4 and 5 applies to both
    modes. For a delegated ticket, create the ticket branch/worktree
