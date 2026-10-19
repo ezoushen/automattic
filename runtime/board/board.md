@@ -5,6 +5,7 @@ Contents:
 - [Remote board](#remote-board)
 - [Delivery gate for either board](#delivery-gate-for-either-board)
 - [Overall scope and batches](scope.md)
+- [Slicing tickets](slicing.md)
 
 Choose the project's configured tracker under the runtime bootstrap's conventions.
 Use one board for an effort. A remote board never requires `.scratch/*/issues`,

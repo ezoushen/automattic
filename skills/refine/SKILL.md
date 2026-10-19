@@ -20,9 +20,9 @@ The same procedure supports explicitly requested research-to-refinement composit
 where the runtime permits it; it does not enable implicit skill invocation.
 
 Used by the explicit refinement skill or an explicitly requested refinement phase
-inside a composed task (for example, research followed by refinement). Dispatch
-also uses it to split already-selected work into executable tickets, preserving
-the parent's scope and outstanding outcomes. Load the runtime bootstrap and selected
+inside a composed task (for example, research followed by refinement). Dispatch's
+split step cuts already-selected work by the same slicing rules, preserving the
+parent's scope and outstanding outcomes. Load the runtime bootstrap and selected
 adapter first. Record the initiating request; do not infer unrelated planning work
 from ordinary research or implementation requests.
 This is a workflow convention, not a native permission bypass. If the runtime
@@ -31,27 +31,17 @@ retain the prepared input and explain the native restriction. Never retry a
 refused operation through this reference. Tracker publication still follows the
 existing task authorization and project conventions.
 
-Matt Pocock's `/mattpocock-skills:to-tickets` breaks a spec into **tracer-bullet** tickets with
-**blocking edges**; its slicing rules (vertical slices, prefactors first, wide
-refactors as expand → migrate → contract) apply here unchanged and are not
-restated. `/automattic:refine` adds what a scrum backlog needs — a **user story** and
-**acceptance criteria** per ticket, a size that fits one fresh context window — and
-uses the project's ticket convention. For local Markdown only, it writes the
-front matter the local scheduler reads. Input: `.scratch/<slug>/alignment.md`, [a plan agreed in chat](chat-plan.md),
-or `spec.md` and prose tickets from Matt's `/mattpocock-skills:to-spec` and `/mattpocock-skills:to-tickets`, which it
-adapts to the project's ticket convention. Create or update canonical work items
+`/automattic:refine` cuts work into tickets by the board's [slicing rules](../../runtime/board/slicing.md):
+thin end-to-end slices with **blocking edges**, each sized for one fresh context window.
+It adds what a scrum backlog needs — a **user story** and **acceptance criteria** per
+ticket — and uses the project's ticket convention. For local Markdown only, it writes the
+front matter the local scheduler reads. Input: `.scratch/<slug>/alignment.md` or
+[a plan agreed in chat](chat-plan.md). Create or update canonical work items
 in the configured tracker under the shared bootstrap's project-conventions rules.
 Output: canonical issue IDs/URLs for a remote tracker; otherwise local tickets
 under `.scratch/<slug>/issues/NN-<title>.md`, numbered in dependency order.
 Remote dispatch consumes those issues directly under [board operations](../../runtime/board/board.md);
 do not create local issue files or require local front matter for remote tickets.
-
-Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
-
-- Its integration branch for batches that cannot stay green alone is the spec
-  branch `feat/<slug>`, and its integrate-and-verify ticket is the spec E2E; write
-  the batches as ordinary tickets in a chain.
-- Its step 4 quiz becomes a ledger brief (step 6 below).
 
 ## Process
 
@@ -59,32 +49,14 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    the goal, boundaries and observable outcomes the criteria assert. Resolve areas,
    hot files and verification from [project execution facts](../../runtime/board/project-loop.md).
    Reuse established areas; when missing, name them from modules/shared resources
-   and record them in the effort alignment for dispatch. Tickets using the same
-   exclusive GPU, serving lane or mutable fixture must share a reservation even
-   when their files differ; account for that
-   resource during implementation, not only E2E. The project's [glossary](../../runtime/domain/glossary.md) for the words. Read the
+   and record them in the effort alignment for dispatch. The project's [glossary](../../runtime/domain/glossary.md) for the words. Read the
    configured tracker and relevant existing issues; preserve their destination,
    identity, scope and priority.
    Record the effort's intended branch base and any unmerged prerequisites before
    committing the plan or claiming it is independently deliverable. Reuse the
    project's branch convention; preserve an existing branch's work.
-2. **Slice** as `/mattpocock-skills:to-tickets` prescribes; each slice sized for one context window.
-   Weigh handoff cost when adjacent outcomes share the same small implementation,
-   fixtures and verification. Keep them together when they form one coherent slice;
-   split where independent delivery, risk, dependencies or context size earns the
-   extra worker setup and integration. Individual settings or acceptance criteria
-   need not each become a ticket. Preserve existing issue identities and scope.
-   For optimization or operational experiments, distinguish research hypotheses
-   from measurements on the actual targets. When local applicability or benefit
-   decides the implementation, put a baseline using existing tools before the
-   dependent automation, then a representative trial before wider application.
-   Define the metric, comparable workload conditions and success criterion;
-   retain a supported no-change outcome when the proposed optimization adds no value.
-   Evidence from another environment suggests what to investigate, not what to build.
-   Separate the experiment that decides value from downstream operational automation.
-   When that result can make later work unnecessary, give the later work a blocking
-   edge and retain it as deferred scope until the result is accepted.
-   Before adopting the split/grouping, run the configured
+2. **Slice** by the [slicing rules](../../runtime/board/slicing.md). Preserve existing
+   issue identities and scope. Before adopting the split/grouping, run the configured
    [`refinement` checkpoint](../../runtime/decisions/checkpoint-command.md)
    with viable cuts and their evidence, or an evidenced skip for settled cuts.
    Check this phase record before declaring the breakdown ready.
@@ -135,9 +107,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    when the ticket edits an identified hot file. These are workload labels only; executor
    configuration owns model/thinking selection. `blocked_by: []` when nothing gates it — the key is
    always present on local tickets. Record blockers using the chosen board's
-   conventions when an external prerequisite cannot yet be verified. Cross-effort edges wait for the entire prerequisite effort
-   to finish and merge into main; put work that must integrate before that in
-   the same effort. Ticket cycles and cycles between efforts are invalid.
+   conventions when an external prerequisite cannot yet be verified.
 6. **Present a compact breakdown:** each ticket's outcome, dependency and decisive
    verification, plus material slicing tradeoffs and consequential ledger rows.
    Explain a rejected cut only when it was a viable alternative with a different
