@@ -175,19 +175,47 @@ class AdrIndex(unittest.TestCase):
         (self.folder / 'README.md').write_text('```example``` is inline code, not a fence.\n\n' + text)
         self.assertEqual(0, check(self.repo)[0])
 
-    def test_a_line_naming_an_adr_it_cannot_parse_is_reported(self):
+    def test_an_entry_with_an_escaped_title_is_read(self):
         self.consistent()
         text = (self.folder / 'README.md').read_text()
         (self.folder / 'README.md').write_text(text + '- [9999](9999-ghost.md "say \\"hello\\"")\n')
         code, out = check(self.repo)
         self.assertEqual(1, code)
-        self.assertEqual(['README.md: cannot read an index entry in: - [9999](9999-ghost.md "say \\"hello\\"")'],
+        self.assertEqual(['9999-ghost.md: listed in the index but no such file'], out['index_problems'])
+
+    def test_a_list_line_naming_an_adr_without_a_link_is_reported(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text()
+        (self.folder / 'README.md').write_text(text + '- 0005-unlinked.md is pending\n')
+        code, out = check(self.repo)
+        self.assertEqual(1, code)
+        self.assertEqual(['README.md: cannot read an index entry in: - 0005-unlinked.md is pending'],
                          out['index_problems'])
+
+    def test_prose_headings_and_annotations_are_not_entries(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text()
+        text = text.replace('# Decisions', '# Decisions about [0002](0002-cents.md)')
+        text = text.replace('- [0001](0001-sync-api.md) A decision: the rule in one line',
+                            '- [0001](0001-sync-api.md) A decision: superseded by [0003](0003-async-api.md)')
+        (self.folder / 'README.md').write_text(text + '\nSee `0002-cents.md` for the rationale. Superseded by 0003-async-api.md.\n')
+        code, out = check(self.repo)
+        self.assertEqual(0, code, out)
+
+    def test_an_annotation_naming_a_missing_adr_is_reported(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text().replace(
+            '- [0002](0002-cents.md) A decision: the rule in one line',
+            '- [0002](0002-cents.md) A decision: see [9999](<9999-ghost.md>)')
+        (self.folder / 'README.md').write_text(text)
+        code, out = check(self.repo)
+        self.assertEqual(1, code)
+        self.assertEqual(['9999-ghost.md: listed in the index but no such file'], out['index_problems'])
 
     def test_a_link_outside_any_section_is_reported_not_a_crash(self):
         self.consistent()
         text = (self.folder / 'README.md').read_text()
-        (self.folder / 'README.md').write_text('[0002](0002-cents.md) intro\n' + text + '\n## Other\n- [0002](0002-cents.md)\n')
+        (self.folder / 'README.md').write_text('- [0002](0002-cents.md) intro\n' + text + '\n## Other\n- [0002](0002-cents.md)\n')
         code, out = check(self.repo)
         self.assertEqual(1, code)
         self.assertEqual(['0002-cents.md: accepted but also listed outside a status section',

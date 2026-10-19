@@ -20,10 +20,12 @@ import subprocess
 import sys
 
 NAME = re.compile(r'(\d{4})-.+\.md')
-LINK = re.compile(r'\]\((?:\./)?(\d{4}-[^)\s#]+\.md)(?:#[^)\s]*)?(?:\s+"[^"]*"|\s+\'[^\']*\')?\s*\)')
+# An index entry is a list line whose first link names the ADR file; later links annotate it.
+ENTRY = re.compile(r' {0,3}[-*+] +\[[^\]]*\]\(\s*<?(?:\./)?(\d{4}-[^)\s#>]+\.md)')
+LIST_ITEM = re.compile(r' {0,3}[-*+] ')
 # A backtick fence's info string may not contain a backtick, so an inline code span opens nothing.
 FENCE = re.compile(r' {0,3}(`{3,}(?=[^`]*$)|~{3,})')
-MENTION = re.compile(r'\d{4}-[^)\s#"\']+\.md')
+MENTION = re.compile(r'\d{4}-[^)\s#"\'<>`]+\.md')
 SECTIONS = {'accepted': 'Accepted', 'superseded': 'Superseded', 'deprecated': 'Deprecated'}
 
 
@@ -109,11 +111,16 @@ def index_problems(texts, folder):
             continue
         if line.startswith('## '):
             section = line[3:].strip()
-        targets = LINK.findall(line)
-        if not targets and MENTION.search(line):
+        if not LIST_ITEM.match(line) or not MENTION.search(line):
+            continue
+        entry = ENTRY.match(line)
+        if not entry:
             problems.append(f'README.md: cannot read an index entry in: {line.strip()}')
-        for target in targets:
-            listed.setdefault(target, []).append(section)
+            continue
+        listed.setdefault(entry[1], []).append(section)
+        for named in MENTION.findall(line):
+            if named not in adrs and named != entry[1]:
+                listed.setdefault(named, [])
     for target in sorted(listed):
         if target not in adrs:
             problems.append(f'{target}: listed in the index but no such file')
