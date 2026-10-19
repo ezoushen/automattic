@@ -1,4 +1,4 @@
-# Checkpoint command and decision requests
+# Phase checkpoints and decision requests
 
 Run a checkpoint through the [configured checkpoint command](checkpoint-command.md).
 

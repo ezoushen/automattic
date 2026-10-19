@@ -1,6 +1,8 @@
 # Plan checks
 
-To plan a check's tier and owner and to accept or reuse its result, read [plan and accept checks](accept.md).
+Before running or accepting a check, also read [plan and accept checks](accept.md): tiers and
+owners, reuse, pipelines that keep the producer's failure, proof that tests ran, observable
+scenario activity, reproducing a regression on the base build and independent oracles.
 
 Contents:
 - [Coordinate the actual resource](#coordinate-the-actual-resource)

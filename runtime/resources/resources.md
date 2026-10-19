@@ -1,13 +1,8 @@
-# Capacity, resources and jobs
+# Runner contract checks
 
 Before admitting a batch, read [shared capacity](capacity.md); before reserving an exclusive
 resource or starting a job a worker owns, read [resource and job lifetime](lifetime.md).
 This file holds the runner contract checks.
-
-Contents:
-- [Runner contract checks](#runner-contract-checks)
-
-## Runner contract checks
 
 Before implementing a runner, identify who owns the launcher, descendants, mutex,
 temporary configuration and restoration. Verify promised startup/Ready, early-exit,

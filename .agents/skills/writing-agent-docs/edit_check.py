@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Claude Code PostToolUse hook: after an edit inside the repository, report the architecture
 rules the edited tree now breaks (direction, cycles, imports, skill shape, first reads, host
-shape, unmapped files), so the agent fixes them before going on. Other findings wait for the
+shape, shared sections, unmapped files), so the agent fixes them before going on. Other findings wait for the
 commit. The edited tree is the Git checkout holding the file, so an edit in a worktree inside
 the repository runs that worktree's own checker and configuration; a checker that fails to
 run reports nothing rather than blocking the edit.

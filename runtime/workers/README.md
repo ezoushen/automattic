@@ -9,7 +9,7 @@ Rules for the orchestrator and its workers, in the order a worker runs.
 | [skills.md](skills.md) | while building an assignment: which skills the worker gets |
 | [thinking.md](thinking.md) | when a resolved agent allows the orchestrator to adjust thinking |
 | [focus.md](focus.md) | throughout an assignment: priorities and blocked continuation |
-| [return.md](return.md) | how a worker returns and checkpoints |
+| [return.md](return.md) | before a worker returns or checkpoints |
 | [resources.md](../resources/resources.md) | the runner contract checks for owned resources |
 | [capacity.md](../resources/capacity.md) | before admitting a batch: the shared capacity budget |
 | [lifetime.md](../resources/lifetime.md) | reserving a resource or starting an owned job |

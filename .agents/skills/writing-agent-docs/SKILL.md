@@ -71,7 +71,7 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add a paragraph starting `First read:` that links the docs the skill reads before acting |
 | `entry-doc` | A command's folder is not its own module, a skill in its own module first-reads a `<skill>.md` instead of holding its procedure, or a thin skill links no doc named after it | Put a command's procedure in its `SKILL.md` and map `skills/<command>/` as a module; name a thin skill's doc `<skill>.md` |
 | `host-shape` | A folder under `hosts/` that does not hold exactly `session.md` and `workers.md` | Move other text to the runtime doc that owns it |
-| `shared-section` | A section linked from 3+ files in other modules | Make it its own file |
+| `shared-section` | A section, other than a file's title or only section, linked from 3+ files in other modules | Make it its own file, or link the whole file |
 | `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |
 | `positional` | `above` or `below` that may point at moved text | Link or name the target instead |
 | `stale-name` | Text names a `.md` file that exists nowhere | Link the doc that now holds it, or add a generic project name to `known_names` |

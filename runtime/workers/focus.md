@@ -23,7 +23,7 @@ Read each skill the assignment lists before the step it serves. Load another
 skill when a step needs it. Report each skill you loaded beyond your agent and job files
 and the listed ones, with its reason, and any listed skill you never used. See [assignment skills](skills.md).
 
-How a worker returns and checkpoints is in [worker return and checkpoints](return.md).
+Before returning or checkpointing, read [worker return and checkpoints](return.md).
 
 ## Blocked continuation
 

@@ -1,4 +1,4 @@
-# Run checks and retain evidence
+# Run checks
 
 Read with [plan checks](plan.md) when running a required check.
 

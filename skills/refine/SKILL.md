@@ -126,7 +126,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    or stop condition. Derive workload conversions from the actual inputs and runner.
    For runner deliverables, state whether the ticket delivers a scaffold or the
    complete downstream procedure. List the promised stages and use the shared
-   [runner contract checks](../../runtime/resources/resources.md#runner-contract-checks).
+   [runner contract checks](../../runtime/resources/resources.md).
 5. **Execution inputs.** Determine areas, devices and workload from the project
    conventions; pass them with the issue context to dispatch. Do not require new
    tracker fields or labels. For local Markdown, encode them as front matter:

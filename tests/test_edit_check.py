@@ -43,7 +43,7 @@ class EditCheck(Fixture):
         self.assertIn('writing-agent-docs', result.stderr)
 
     def test_a_section_many_modules_link_is_reported_back_to_the_agent(self):
-        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nRun.\n')
+        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nRun.\n\n## Later\n\nStop.\n')
         for name in ('a', 'b', 'c'):
             self.write(f'flows/{name}/f.md', '# F\n\nSee [steps](../../shared/guide.md#steps).\n')
         self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')

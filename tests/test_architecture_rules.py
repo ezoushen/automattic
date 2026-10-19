@@ -323,7 +323,7 @@ class ArchitectureRules(Fixture):
         self.assertEqual(self.host_findings(), {('hosts/pair', 'host-shape', 'error')})
 
     def test_a_section_linked_from_three_files_in_other_modules_should_be_its_own_file(self):
-        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nRun.\n')
+        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nRun.\n\n## Later\n\nStop.\n')
         for name in ('a', 'b', 'c'):
             self.write(f'flows/{name}/f.md', f'# F\n\nSee [steps](../../shared/guide.md#steps).\n')
         self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
@@ -335,8 +335,18 @@ class ArchitectureRules(Fixture):
         self.write('flows/c/f.md', '# F\n\nSee [guide](../../shared/guide.md) and [other](../../shared/other.md).\n')
         self.assertEqual(self.check(), set())
 
+    def test_links_to_a_files_title_or_its_only_section_are_not_shared_sections(self):
+        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nRun.\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + ''.join(f'[{n}](../../flows/{n}/f.md) ' for n in 'abc') + '\n')
+        for target in ('guide', 'steps'):
+            with self.subTest(anchor=target):
+                for name in ('a', 'b', 'c'):
+                    self.write(f'flows/{name}/f.md', f'# F\n\nSee [it](../../shared/guide.md#{target}).\n')
+                self.assertEqual(self.check(), set())
+
     def test_skills_count_as_other_modules_to_each_other_for_shared_sections(self):
-        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.') + '\n## Filter\n\nAsk less.\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.') + '\n## Filter\n\nAsk less.\n\n## Later\n\nStop.\n')
         for name in ('a', 'b', 'c'):
             self.write(f'skills/{name}/SKILL.md', SKILL.format(name=name, description='Runs a tool.')
                        + 'See [filter](../tool/SKILL.md#filter).\n')

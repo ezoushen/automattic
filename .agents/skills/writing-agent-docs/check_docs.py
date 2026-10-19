@@ -451,6 +451,10 @@ def check(root, config, changed=None, architecture=None):
             owner = architecture.module(target)
             if owner is None:
                 continue
+            sections = outline(root / target)[1]
+            title = next((slug(m.group(2)) for _, line in prose(root / target) if (m := ATX.match(line)) and m.group(1) == '#'), None)
+            if anchor == title or [a for _, a in sections] == [anchor]:
+                continue  # the link already names the whole file
             isolated = architecture.modules[owner].get('isolated')
             outside = {src for src in sources if (m := architecture.module(src)) is not None and (m != owner or isolated)}
             if len(outside) >= limit:

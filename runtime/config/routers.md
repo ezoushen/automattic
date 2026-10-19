@@ -1,4 +1,4 @@
-# Routers, profiles and decisions
+# Routers and profiles
 
 The backend that decision-model routers and checkpoints call is in [decision backend](decision-backend.md).
 

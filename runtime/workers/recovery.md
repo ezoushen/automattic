@@ -1,4 +1,4 @@
-# Recovery and escalation
+# Feedback and recovery
 
 Before retrying a blocked or failed worker, apply the [escalation checkpoints](escalation.md).
 
