@@ -215,10 +215,13 @@ def first_read(root, architecture, rel):
             findings.append(Finding(rel(skill), 1, 'error', 'first-read-line',
                                     'no `First read:` line declaring the docs this skill reads first'))
             continue
+        declared_docs = []
         for _, link in links(' '.join(declared)):
             target = (skill.parent / unquote(link.split('#')[0].split('?')[0])).resolve()
             if link.split('#')[0] and not re.match(r'[a-z][\w+.-]*:', link, re.I) and target.suffix == '.md' and target.is_file():
                 reads.add(target)
+                declared_docs.append(target)
+        findings.extend(entry_doc(root, architecture, rel, skill, declared_docs))
         total, limit = sum(path.stat().st_size for path in reads), settings['budget']
         recorded = architecture.debt.get('first_read', {}).get(rel(skill))
         if total <= limit and recorded is not None:
@@ -231,6 +234,24 @@ def first_read(root, architecture, rel):
             findings.append(Finding(rel(skill), 1, 'error', 'first-read',
                                     f'first reads total {total} bytes, over {limit}: bootstrap, host session, this skill and the docs its `First read:` paragraph links'))
     return findings
+
+
+def entry_doc(root, architecture, rel, skill, declared):
+    """A finding when a skill's first reads name no doc after the skill, or name one under the
+    flows root outside the flow named after it (`flows/<skill>/<skill>.md`)."""
+    settings = architecture.data.get('entry_doc')
+    if not settings:
+        return []
+    name = (frontmatter(skill.read_text())[0] or {}).get('name') or skill.parent.name
+    flows = (root / settings['flows']).resolve()
+    named = [path for path in declared if path.name == f'{name}.md']
+    if not named:
+        return [Finding(rel(skill), 1, 'error', 'entry-doc',
+                        f'its `First read:` paragraph links no {name}.md, the doc that holds this skill\'s procedure')]
+    if any(flows not in path.parents or path.parent == flows / name for path in named):
+        return []
+    return [Finding(rel(skill), 1, 'error', 'entry-doc',
+                    f'its procedure doc is in another flow; move it to {settings["flows"]}/{name}/{name}.md')]
 
 
 def host_shape(root, architecture):

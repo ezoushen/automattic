@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The README, the pipeline map and the agent-docs skill describe the layers and how to extend them."""
+"""The README and the agent-docs skill describe the layers and how to extend them."""
 import json
 import re
 import unittest
@@ -9,13 +9,12 @@ import support
 ROOT = support.ROOT
 README = (ROOT / 'README.md').read_text()
 SKILL = (ROOT / '.agents/skills/writing-agent-docs/SKILL.md').read_text()
-PIPELINE = (ROOT / 'skills/pipeline/SKILL.md').read_text()
 BOOTSTRAP = (ROOT / 'bootstrap.md').read_text()
 TOP = ('skills', 'flows', 'runtime', 'hosts', 'standards', 'agents', 'hooks', 'scripts', 'schemas', 'addons',
        'benchmarks', 'docs', 'bootstrap.md')
 # Codex runtime method names, not repository paths.
 CODEX_RPC = ('skills/list', 'hooks/list')
-EXTENSIONS = ('host', 'executor', 'agent', 'job', 'kind', 'standard', 'flow')
+EXTENSIONS = ('host', 'executor', 'agent', 'job', 'kind', 'standard', 'flow', 'command')
 
 
 class ArchitectureDocs(unittest.TestCase):
@@ -26,13 +25,10 @@ class ArchitectureDocs(unittest.TestCase):
             with self.subTest(path=name):
                 self.assertTrue((ROOT / name).exists(), name)
 
-    def test_the_readme_has_no_retired_layout(self):
-        self.assertNotIn('harnesses', README)
-
     def test_the_readme_layout_has_a_row_for_every_top_level_folder(self):
         rows = [line.split('|')[1] for line in README.split('## Layout', 1)[1].split('\n## ', 1)[0].splitlines()
                 if line.startswith('| `')]
-        for name in ('flows/delivery', 'flows/review', 'flows/remediation', 'standards/', 'runtime/workers/', 'hosts/claude/',
+        for name in ('flows/dispatch', 'flows/review', 'flows/remediate', 'flows/interview', 'standards/', 'runtime/workers/', 'hosts/claude/',
                      'bootstrap.md'):
             self.assertTrue(any(f'`{name}' in row for row in rows), name)
         self.assertIn('writing-agent-docs/SKILL.md', README)
@@ -41,7 +37,7 @@ class ArchitectureDocs(unittest.TestCase):
         levels = json.loads((ROOT / '.agents/skills/writing-agent-docs/architecture.json').read_text())['levels']
         rank = {name: number for number, names in enumerate(levels) for name in names}
         section = README.split('## Architecture', 1)[1].split('\n## ', 1)[0]
-        layers = {'bootstrap.md': 'bootstrap', 'flows': 'delivery', 'agents/': 'agents', 'standards/': 'standards',
+        layers = {'bootstrap.md': 'bootstrap', 'flows': 'brief', 'agents/': 'agents', 'standards/': 'standards',
                   'hosts/': 'hosts', 'runtime/': 'workers'}
         self.assertEqual(sorted(layers, key=section.index), sorted(layers, key=lambda token: rank[layers[token]]))
         runtime = ('workers', 'checks', 'routing', 'resources', 'decisions', 'config')
@@ -63,10 +59,6 @@ class ArchitectureDocs(unittest.TestCase):
     def test_the_skill_contents_list_the_new_section(self):
         self.assertIn('- [Extend the architecture](#extend-the-architecture)', SKILL)
 
-    def test_the_pipeline_map_links_every_flow(self):
-        for flow in sorted(path.name for path in (ROOT / 'flows').iterdir() if path.is_dir()):
-            self.assertRegex(PIPELINE, r'\]\(\.\./\.\./flows/%s/' % flow, flow)
-
     def test_the_bootstrap_keeps_the_rules_every_session_needs_before_any_skill_or_launch(self):
         flat = ' '.join(BOOTSTRAP.split())
         self.assertIn("the dependency's exhaustive interview requires an explicit request for that depth", flat)
@@ -82,8 +74,8 @@ class ArchitectureDocs(unittest.TestCase):
         config = json.loads((ROOT / '.agents/skills/writing-agent-docs/config.json').read_text())
         pattern = re.compile(config['code_doc_pattern'])
         self.assertEqual(pattern.findall('.agents/skills/writing-agent-docs/SKILL.md'), [])
-        self.assertEqual(pattern.findall("'skills/pipeline/SKILL.md' and bootstrap.md"),
-                         ['skills/pipeline/SKILL.md', 'bootstrap.md'])
+        self.assertEqual(pattern.findall("'skills/brief/SKILL.md' and bootstrap.md"),
+                         ['skills/brief/SKILL.md', 'bootstrap.md'])
         self.assertFalse({'tests/test_architecture_docs.py', 'tests/test_import_direction.py'} & set(config['exclude']))
 
     def test_a_runtime_doc_names_no_path_in_a_higher_layer_and_the_bash_contract_lives_in_runtime_config(self):
@@ -104,8 +96,8 @@ class ArchitectureDocs(unittest.TestCase):
         for name in ('catalog.md', 'executors.md'):
             self.assertIn('](skill-executor.md)', (ROOT / 'runtime/config' / name).read_text(), name)
 
-    def test_the_delivery_reference_sends_no_reader_up_to_a_skill(self):
-        self.assertNotIn('pipeline skill', (ROOT / 'flows/delivery/reference.md').read_text())
+    def test_the_dispatch_reference_sends_no_reader_up_to_a_skill(self):
+        self.assertNotIn('pipeline skill', (ROOT / 'flows/dispatch/reference.md').read_text())
 
     def test_no_recorded_debt_remains(self):
         base = ROOT / '.agents/skills/writing-agent-docs'

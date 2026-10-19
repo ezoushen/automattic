@@ -46,7 +46,7 @@ class Standards(unittest.TestCase):
         self.assertFalse((ROOT / 'skills/code-comments/references').exists())
 
     def test_housekeeping_points_at_the_documentation_standard(self):
-        skill = (ROOT / 'flows/delivery/housekeeping.md').read_text()
+        skill = (ROOT / 'flows/housekeeping/housekeeping.md').read_text()
         self.assertIn('](../../standards/documentation.md)', skill)
         self.assertNotIn('A dated correction appended below stale guidance', skill)
 

@@ -187,6 +187,34 @@ class ArchitectureRules(Fixture):
         self.architecture['first_read']['budget'] = total + 1
         self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'stale-debt', 'warning')})
 
+    def entry_tree(self, target):
+        """The first-read fixture with the entry-doc rule on and the skill's declaration naming target."""
+        self.first_read_tree()
+        self.architecture['entry_doc'] = {'flows': 'flows'}
+        path = self.root / 'skills/tool/SKILL.md'
+        self.write(target, '# Tool procedure\n')
+        path.write_text(path.read_text().replace('[the guide](../../shared/guide.md).',
+                                                 f'[the guide](../../shared/guide.md), [procedure](../../{target}).'))
+
+    def test_a_skill_whose_first_reads_name_no_doc_after_it_is_an_error(self):
+        self.entry_tree('flows/tool/procedure.md')
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
+        [(_, _, message)] = self.messages('entry-doc')
+        self.assertIn('tool.md', message)
+
+    def test_a_skill_entry_doc_in_flows_sits_in_the_flow_named_after_it(self):
+        self.entry_tree('flows/other/tool.md')
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
+        [(_, _, message)] = self.messages('entry-doc')
+        self.assertIn('flows/tool/tool.md', message)
+
+    def test_a_skill_entry_doc_in_its_own_flow_or_outside_flows_passes(self):
+        self.entry_tree('flows/tool/tool.md')
+        self.assertEqual(self.check(), set())
+        (self.root / 'flows/tool/tool.md').unlink()
+        self.entry_tree('shared/tool.md')
+        self.assertEqual(self.check(), set())
+
     def host_tree(self, **extra):
         self.first_read_tree()
         self.architecture['host_shape'] = {'root': 'hosts', 'files': ['session.md', 'workers.md'], 'exempt': ['tools']}
@@ -235,8 +263,8 @@ class ArchitectureRules(Fixture):
 
 TARGET_DOCS = {  # doc under a target folder: is it an entry point (exempt from the orphan rule)?
     'bootstrap.md': True,
-    'flows/delivery/procedure.md': False,
-    'flows/delivery/jobs/job.md': True,
+    'flows/dispatch/procedure.md': False,
+    'flows/dispatch/jobs/job.md': True,
     'standards/style.md': False,
     'runtime/workers/launch.md': False,
     'hosts/claude/session.md': True,

@@ -129,7 +129,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
 6. **Present a compact breakdown:** each ticket's outcome, dependency and decisive
    verification, plus material slicing tradeoffs and consequential ledger rows.
    Explain a rejected cut only when it was a viable alternative with a different
-   outcome, risk or verification cost. Apply mandate's [question filter](question-filter.md); routine
+   outcome, risk or verification cost. Apply the [question filter](../interview/question-filter.md); routine
    cuts within accepted scope need no additional interview.
    Carry forward existing authorization; obtain any still-required scope or
    publication decision for the concrete breakdown. An unrelated reply or silence
@@ -148,7 +148,7 @@ criteria with their discriminating signal, preconditions and known variation;
 surface the complete remaining gaps in one summary. State spec readiness separately
 from scheduling readiness: a complete spec can still wait on a dependency. Use
 the tracker's existing conventions for those states. A ticket that still needs a
-material question answered is not spec-ready; use `/automattic:mandate`'s filter.
+material question answered is not spec-ready; apply the same question filter.
 
 ## Then
 

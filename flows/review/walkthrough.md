@@ -1,10 +1,12 @@
 # Walkthrough procedure
 
+Run when the review command is invoked with `walkthrough` before its target, or when
+dispatch's handoff was asked for a walkthrough before review.
 Help the user understand the change and form a judgment. The outcome is shared
 understanding and review criteria; an exhaustive review is an optional next step.
 Keep the walkthrough read-only, with explanations in the conversation. It does not
 require a board, review report, worker launch or verification run. Export only when
-requested. Use the brief skill for a requested progress snapshot.
+requested. Use the brief command for a requested progress snapshot.
 
 ## Establish the change
 
@@ -43,7 +45,7 @@ report the gap and continue the factual explanation.
    the user. After a tangent, return to the remaining decision. Adapt depth to the
    user; a fixed question count or an answered scope question does not establish
    readiness to review.
-4. **Summarize understanding.** Apply [mandate's question filter](../planning/question-filter.md)
+4. **Summarize understanding.** Apply the [question filter](../interview/question-filter.md)
    to material unresolved choices. Summarize intended behavior, scope, constraints,
    accepted tradeoffs, open questions and recommended review priorities. When the
    user has enough context, recommend reviewing or exploring a remaining question.
@@ -54,11 +56,11 @@ report the gap and continue the factual explanation.
 
 When the user indicates readiness to review, run the
 [shared review procedure](review.md) in the same conversation. A new
-task or manual `/review` invocation is unnecessary. If they already authorized
+task or second `/review` invocation is unnecessary. If they already authorized
 review once a named question was settled, announce the transition and proceed
 without another approval. Silence or scope agreement alone does not authorize it.
 Preserve native invocation policy and tool refusals; this handoff loads the shared
-procedure directly, not the explicit-only review command through a Skill call.
+procedure directly, not the review command again through a Skill call.
 
 Carry the repository/target and comparison, explanation, consequential discussion,
 accepted decisions with sources, constraints, unresolved questions, priorities and

@@ -1,10 +1,4 @@
----
-name: pipeline
-description: "The map of the idea-to-PR pipeline: which skill to reach for, what each owns, what each hands on."
-disable-model-invocation: true
----
-
-# pipeline
+# Pipeline map
 
 Contents:
 - [Guides and configuration](#guides-and-configuration)
@@ -16,19 +10,18 @@ Contents:
 - [Left to the human](#left-to-the-human)
 - [Delivery composition](#delivery-composition)
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part.
-
-The automattic plugin: six phase skills, one artefact directory `.scratch/<slug>/`, one principle: the
+The automattic plugin: eight commands, five of them in loop order (align, refine,
+dispatch, review, pr) plus remediate, setup and brief; one artefact directory
+`.scratch/<slug>/`; one principle: the
 principal answers **steering** questions (goal, principles, constraints) and
 **context** questions (what the machine cannot know); the agent decides everything
 else and records consequential choices as a ledger row — number, decision, hinge, rejected
-alternatives — the principal can veto. All three planning skills append to one
+alternatives — the principal can veto. Align and refine append to one
 `ledger.md`.
 
-| Phase | Skill | Owns | Writes | Hands on |
+| Phase | Command | Owns | Writes | Hands on |
 |---|---|---|---|---|
-| Interview | `/automattic:mandate` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape | `ledger.md` (first rows), standing principles in `CONTEXT.md`/ADRs/memory | slug, ledger |
-| Alignment | `/automattic:align` | WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `alignment.md` | the brief |
+| Mandate and alignment | `/automattic:align` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape; WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `ledger.md` (first rows), standing principles in `CONTEXT.md`/ADRs/memory, `alignment.md` | slug, ledger, the brief |
 | Refinement | `/automattic:refine` | ticket slicing, edges, sizing and their rejected alternatives | configured tracker issues, or local Markdown tickets | dispatch-ready tickets |
 | Execution | `/automattic:dispatch` | scheduling on `blocked_by`, capacity and area locks; worktrees and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` | implementation status and review report |
 | Review | `/automattic:review` | direction → blast radius → implementation, complete layer batches, scoped invalidation, reproduction, optional autofix with applicable E2E, local comment drafts and follow-ups | review and verification report | reviewed commit, gate outcomes and unresolved findings |
@@ -37,13 +30,15 @@ alternatives — the principal can veto. All three planning skills append to one
 ## Guides and configuration
 
 For a change you want to understand before assessing it, use
-[/automattic:walkthrough](../../flows/review/guided.md). It teaches and discusses the PR,
+[/automattic:review walkthrough](../review/walkthrough.md). It teaches and discusses the PR,
 then can hand agreed criteria into the same review procedure when requested.
 It is optional; direct review starts assessment without this learning step.
+For a progress snapshot of the active task or a named effort, use
+[/automattic:brief](brief.md); `/automattic:brief map` shows this map.
 
 Configuration is optional and separate from the delivery phases. Use
-/automattic:setup-automattic to understand the current setup and update it
-at user, project or session scope. Use `/automattic:models` for direct settings requests;
+[/automattic:setup](../setup/setup.md) to understand the current setup and update it
+at user, project or session scope, or name the setting directly;
 see [configuration examples](../../runtime/config/executors.md). Existing native behavior
 continues without configuration. Setup does not start workers or change review gates.
 
@@ -53,7 +48,7 @@ recovery considers the cause before rerouting. The host accepts or overrides eac
 recommendation, reports its source and surfaces calibration warnings. Existing
 phase owners and gates remain in place; there is no second planning/review loop.
 
-Dispatch reuses [existing project execution facts](../../flows/board/project-loop.md):
+Dispatch reuses [existing project execution facts](../board/project-loop.md):
 commands, areas/resources, verification and environment constraints. Missing
 facts go in the effort's alignment/report; no new maintained setup file is required.
 Run history stays in reports/journals. Workers call shared plugin scripts directly.
@@ -62,11 +57,11 @@ Run history stays in reports/journals. Workers call shared plugin scripts direct
 
 Loop engineering is the design of the loop that drives agents, so a human does not.
 The inner loop is the agent's own (perceive, reason, act, observe — `/mattpocock-skills:tdd`); the
-outer loop is this pipeline's, and each skill is one of its nodes:
+outer loop is this pipeline's, and each command is one of its nodes:
 
-| Node | What it does here | Skill |
+| Node | What it does here | Command |
 |---|---|---|
-| Intent | success criteria and constraints: the mandate's limits, the brief, every criterion's `Verify` command | `/automattic:mandate`, `/automattic:align`, `/automattic:refine` |
+| Intent | success criteria and constraints: the mandate's limits, the brief, every criterion's `Verify` command | `/automattic:align`, `/automattic:refine` |
 | Context | a state payload, not a conversation: ticket, brief, project vocabulary/instructions, absolute paths | `/automattic:dispatch` prompts |
 | Action | one fresh builder per ticket in its own worktree | `/automattic:dispatch` |
 | Observation | the report's recorded evidence; board acceptance checks; scoped review with repros; applicable verification | `/automattic:dispatch`, shared review procedure |
@@ -98,34 +93,40 @@ human-authorized merge by the orchestrator.
   design** → `/automattic:align` at the affected level, then `/automattic:refine` re-cuts.
 - A question no level can settle on paper → `/mattpocock-skills:prototype`; its answer returns as a
   row.
-- A veto or a steering answer is recorded where `/automattic:mandate` establishes authority, so the
+- A veto or a steering answer is recorded where `/automattic:align` settles the mandate, so the
   same question is decided, not asked, next time.
 
 ## Flows
 
-Each phase skill is a thin entry over a flow folder; shared runtime rules sit below the flows.
+Each command is a thin entry over the flow folder named after it, whose main doc
+carries the same name; shared flows and runtime rules sit below them.
 
-- [Planning](../../flows/planning/authority.md): authority, the question filter, the ledger record and refinement.
-- [Board](../../flows/board/board.md): tracker conventions, scope and the project loop.
-- [Delivery](../../flows/delivery/dispatch.md): dispatch, housekeeping, PR and the ticket and merge-conflict jobs.
-- [Review](../../flows/review/review.md): the shared review procedure and its jobs.
-- [Remediation](../../flows/remediation/procedure.md): the audit procedure and job.
-- [Setup](../../flows/setup/procedure.md): the configuration procedure.
+- [Align](../align/align.md): the mandate, then the WHAT / WHY / HOW brief.
+- [Refine](../refine/refine.md): ticket slicing and the ticket template.
+- [Dispatch](../dispatch/dispatch.md): scheduling, the iteration, the review handoff and the ticket and merge-conflict jobs.
+- [Review](../review/review.md): the shared review procedure, its walkthrough and its jobs.
+- [PR](../pr/pr.md): the description and publication.
+- [Remediate](../remediate/remediate.md): the audit procedure and job.
+- [Setup](../setup/setup.md): the configuration procedure and its tour.
+- [Brief](brief.md): progress briefings and this map.
+- [Housekeeping](../housekeeping/housekeeping.md): residue and documentation currency, run by dispatch and PR.
+- [Interview](../interview/question-filter.md): authority, the question filter and the ledger record, shared by the commands that ask questions.
+- [Board](../board/board.md): tracker conventions, scope and the project loop.
 
 ## Matt Pocock's skills underneath
 
 Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
 `diagnosing-bugs`, `domain-modeling`, `prototype` and `grilling` for their respective
-work. Planning uses [mandate's question policy](../../flows/planning/question-filter.md)
-with grilling's internal design-tree reasoning. The review skill supplies scope,
+work. Planning uses the [question filter](../interview/question-filter.md)
+with grilling's internal design-tree reasoning. The review command supplies scope,
 priority and allowed mutation
-context and its own [Standards/Spec method](../../flows/review/method.md). Simplicity is part of that review.
+context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
 Honor each dependency's actual invocation
 policy in the active catalog; never bypass a denied invocation by copying its body.
 For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,
 evidence, refresh and self-check. The PR phase (`/automattic:pr`) owns delivery
 evidence and publication.
-Planning and execution skills keep shared methods by reference (`/automattic:refine`
+Planning and execution commands keep shared methods by reference (`/automattic:refine`
 applies `/mattpocock-skills:to-tickets`' slicing rules unchanged). `/automattic:refine` also
 accepts Matt's `spec.md` and prose `/mattpocock-skills:to-tickets` tickets, adapting them to the
 project's ticket convention.
@@ -139,11 +140,11 @@ authorized. Retrospective evidence stays in the existing reports or journals.
 ## Delivery composition
 
 Dispatch's handoff applies housekeeping and runs the [shared review
-procedure](../../flows/review/review.md); only an explicit implementation-only request
+procedure](../review/review.md); only an explicit implementation-only request
 omits review. Existing accepted alignment supplies scope, non-goals, priorities
 and test seams. Without those decisions, review records provisional priorities or
 asks for material human choices. Follow-ups never expand the current review batch;
-dispatch's [overall selection](../../flows/board/scope.md)
+dispatch's [overall selection](../board/scope.md)
 determines whether they enter the next batch under existing authorization.
 
 `review --autofix` owns scoped repairs, local effort integration and applicable E2E

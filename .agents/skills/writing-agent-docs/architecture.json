@@ -12,18 +12,31 @@
    "bootstrap"
   ],
   [
-   "delivery",
-   "remediation"
+   "brief"
+  ],
+  [
+   "dispatch",
+   "remediate"
+  ],
+  [
+   "pr"
   ],
   [
    "review"
   ],
   [
-   "planning"
+   "housekeeping"
   ],
   [
-   "board",
+   "align",
+   "refine",
    "setup"
+  ],
+  [
+   "interview"
+  ],
+  [
+   "board"
   ],
   [
    "agents"
@@ -82,14 +95,29 @@
     "scripts/next_tickets.py"
    ]
   },
-  "delivery": {
+  "brief": {
    "docs": [
-    "flows/delivery/**/*.md"
+    "flows/brief/**/*.md"
    ]
   },
-  "remediation": {
+  "dispatch": {
    "docs": [
-    "flows/remediation/**/*.md"
+    "flows/dispatch/**/*.md"
+   ]
+  },
+  "pr": {
+   "docs": [
+    "flows/pr/**/*.md"
+   ]
+  },
+  "housekeeping": {
+   "docs": [
+    "flows/housekeeping/**/*.md"
+   ]
+  },
+  "remediate": {
+   "docs": [
+    "flows/remediate/**/*.md"
    ]
   },
   "standards": {
@@ -109,9 +137,19 @@
     "scripts/review_target.py"
    ]
   },
-  "planning": {
+  "align": {
    "docs": [
-    "flows/planning/**/*.md"
+    "flows/align/**/*.md"
+   ]
+  },
+  "refine": {
+   "docs": [
+    "flows/refine/**/*.md"
+   ]
+  },
+  "interview": {
+   "docs": [
+    "flows/interview/**/*.md"
    ]
   },
   "agents": {
@@ -219,16 +257,13 @@
    "agents/*.md"
   ],
   "jobs": [
-   "skills/*/jobs/*.md",
    "flows/*/jobs/*.md"
   ],
   "kinds": [
-   "skills/remediate/kinds/*.md",
    "standards/**/kinds/*.md"
   ],
   "hooks": [
    "hooks/hooks.json",
-   "harnesses/*/hooks.json",
    "hosts/*/hooks.json"
   ],
   "commands": [
@@ -256,5 +291,8 @@
   "exempt": [
    "executors"
   ]
+ },
+ "entry_doc": {
+  "flows": "flows"
  }
 }

@@ -7,5 +7,5 @@ argument-hint: "[tautological-tests|misleading-comments|<goal>] [--base <ref> [-
 
 # remediate
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part, [procedure](../../flows/remediation/procedure.md).
-Run the [remediation procedure](../../flows/remediation/procedure.md) with the user's arguments.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [remediate](../../flows/remediate/remediate.md).
+Run the [remediation procedure](../../flows/remediate/remediate.md) with the user's arguments.

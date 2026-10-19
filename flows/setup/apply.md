@@ -69,7 +69,7 @@ or `{"type":"decision-model"}` with the backend configured under
 the effective object, then edit backend, enabled families or calibration as requested.
 Enable only explicitly requested families. Record the registered endpoint/model and
 known revision; absolute suite/baseline paths belong to the chosen config scope.
-Calibration commands belong to the [decision workflow](../../runtime/decisions/workflow.md);
+Calibration commands belong to the [decision workflow](../../runtime/decisions/decision.md);
 configuration edits and inspection remain offline. An old inline decision router
 still applies to worker selection when shared decisions are absent.
 Removing `decisions` reveals the lower object or legacy inline worker router; it

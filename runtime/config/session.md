@@ -14,7 +14,7 @@ not create it. New sessions use durable defaults; resume with the same ID restor
 the session layer. Store policy only; keep transcripts and credentials in their
 owning systems.
 
-Use the models skill with `--scope session` to edit it. Its helper operations are:
+Use the setup command with `--scope session` to edit it. Its helper operations are:
 
 ```text
 --session <id> --save-session <configuration.json>

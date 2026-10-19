@@ -2,6 +2,7 @@
 name: code-comments
 description: "Write code comments and API docs when adding or changing source documentation, or when behavior changes its contract. Not PR review comments."
 argument-hint: "[files, symbols, or comment-writing task]"
+user-invocable: false
 ---
 
 # Code comments

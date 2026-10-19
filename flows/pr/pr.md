@@ -13,7 +13,7 @@ Follow the [approval path](../board/approval-path.md).
 
 ## Steps
 
-Before checking delivery evidence, apply [housekeeping](housekeeping.md)
+Before checking delivery evidence, apply [housekeeping](../housekeeping/housekeeping.md)
 to the effort worktree if it has not covered the current task state. If it changes
 tracked content, return that delta to review and refresh required delivery evidence
 before proceeding. Preserve artifacts used by the PR's claims.

@@ -1,20 +1,63 @@
-# Configuration procedure
+# setup
 
-Shared by the user-invoked setup-automattic and models skills. The entry point first reads
-runtime bootstrap and the active host adapter. The setup-automattic skill owns guided
-explanation; models handles direct requests. Both use this procedure for inspection,
-edits, resets and validation without invoking one another's explicit-only skill.
+Contents:
+- [Direct changes](#direct-changes)
+- [Select the configuration flow](#select-the-configuration-flow)
+- [Inspect effective settings](#inspect-effective-settings)
+
+The configuration procedure for the user-invoked setup command. The entry point first
+reads runtime bootstrap and the active host adapter. No arguments means read-only
+inspection, presented as the [setup tour](tour.md); so does a question or a request to
+understand the setup. A direct request handles inspection, edits, resets and
+validation with the flows below, and a one-run choice is not a saved default.
 Respect native invocation restrictions; a refused operation stays refused.
 This file selects the flow and inspects settings. For edits read
 [apply requested changes](apply.md); for resets and the final check read
-[reset and validate](reset-and-validate.md).
+[reset and validate](reset-and-validate.md). Decision calibration, retrospectives and
+replays (`calibrate`, `calibration status`, `retro`, `replay`, `check`) follow the
+[decision workflow](../../runtime/decisions/decision.md).
+A direct, fully specified change needs no tour or repeated approval. Apply existing
+authorization and report its effective result.
+
+## Direct changes
+
+Use `/automattic:setup` in Claude Code, `$automattic:setup` in Codex, or
+`/skill:setup` in Pi. These are chat invocations, not shell commands. A request that
+names `show`, `set` or `reset` goes straight to the flows below without the tour.
+For example, using Claude's spelling:
+
+```text
+/automattic:setup set reviewer --route executor=subagent mode=inherit
+/automattic:setup set reviewer --route thinking=high
+/automattic:setup show reviewer --route
+/automattic:setup reset reviewer --route thinking
+```
+
+The second command explicitly overrides thinking; the worker's model remains at
+its native default. The last removes only that thinking override. Use an actual
+supported `model=<id>` when you want to select a model too. Labels are validated
+against the destination before launch, not assumed portable across runtimes.
+
+You can describe the same changes in natural language after the command. Name the
+agent, desired executor and any model/thinking choices. Available agents are
+`builder`, `reviewer` and `verifier`. The skill
+uses the current host and project by default and asks only for missing choices
+that cannot be established from the request or current setup.
+
+Add `--scope user` for personal defaults or `--scope session` for a temporary
+override; otherwise changes are project-local.
+Explicit configuration requests authorize preparation of the plugin's isolated
+validator environment if needed. Showing settings never installs dependencies or
+starts a worker. After a change, the skill reports the saved path, effective
+executor/model policy and any runtime checks still pending. Use the next ordinary
+`dispatch` or `review` invocation to execute work; saving config does not run it.
 
 ## Select the configuration flow
 
 For new setup and natural-language configuration requests, use model definitions and agent entries
 in `executors.json`; **--route** is the explicit command spelling for that flow.
 Read [configuration examples](../../runtime/config/executors.md) and only the selected
-executor's schema/adapter. Preserve structured `/models` legacy commands without
+executor's schema/adapter. Preserve structured legacy commands without
 --route, --config-profile, --scope session or pool options, and explicit models.json
 requests, using
 [legacy preferences](legacy-preferences.md).

@@ -88,7 +88,7 @@ Record fixed-target versus requested follow-up closure using
 Each review batch keeps its boundary; outstanding work selected by the user's
 broader mandate continues in later bounded batches or remains explicitly incomplete.
 
-Reuse any accepted [walkthrough](guided.md) discussion and decisions;
+Reuse any accepted [walkthrough](walkthrough.md) discussion and decisions;
 direct review starts assessment without a teaching or readiness checkpoint.
 Complete the exhaustive review without per-finding approval rounds. If evidence
 challenges an agreement, explain the conflict and reopen the affected decision

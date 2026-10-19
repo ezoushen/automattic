@@ -22,7 +22,7 @@ across models; model bindings declare each runtime's registered ID and thinking
 policy. Agent pools stay shared; routing profiles override candidate/thinking by
 worker runtime only when selected explicitly. If a saved route sends same-runtime
 work through Herdr, show the mismatch and
-use the models skill for an authorized correction. Environment detection alone
+use the setup command for an authorized correction. Environment detection alone
 does not rewrite configuration. Native capacity or permission limits do not
 authorize a Herdr fallback; queue work or report the boundary.
 Quota/provider failures instead follow [pool recovery](../runtime/workers/recovery.md#feedback-and-recovery):

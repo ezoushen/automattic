@@ -14,7 +14,7 @@ planning/review loop. No backend or decision family is enabled by default.
 ## Phase checkpoints
 
 Read effective configuration once per root session, refreshing after changes.
-Only enabled families consult the [decision workflow](workflow.md).
+Only enabled families consult the [decision workflow](decision.md).
 The following defines each extension point; worker selection and recovery are the
 initial opt-ins. Other families consult the same helper only after explicit
 enablement. When no family is enabled, keep the ordinary host flow without creating

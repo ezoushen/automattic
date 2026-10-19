@@ -67,7 +67,7 @@ reason records the service's choice; it is not a generated rationale. Confidence
 measures score concentration, not calibrated correctness; no universal confidence
 threshold is imposed. Preflight and final verification still apply.
 `decision_warnings` carries calibration status and detected benchmark regressions;
-surface new warnings using the [decision workflow](../decisions/workflow.md).
+surface new warnings using the [decision workflow](../decisions/decision.md).
 Configured periodic calibration replays are separate diagnostic requests and never
 replace the saved baseline or consume worker attempts.
 

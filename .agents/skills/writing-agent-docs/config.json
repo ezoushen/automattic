@@ -1,7 +1,6 @@
 {
   "docs": [
     "skills/**/*.md",
-    "harnesses/**/*.md",
     "agents/*.md",
     ".agents/skills/**/*.md",
     "bootstrap.md",
@@ -17,7 +16,6 @@
   ],
   "code": [
     "scripts/*.py",
-    "scripts/*.sh",
     "hooks/*.py",
     "hooks/*.json",
     "tests/*.py",
@@ -35,7 +33,7 @@
     "tests/test_architecture_rules.py",
     "tests/test_fold_check.py"
   ],
-  "code_doc_pattern": "(?<![\\w/.-])(?:(?:harnesses|skills|agents|flows|standards|runtime|hosts)/[\\w/-]+|bootstrap)\\.md",
+  "code_doc_pattern": "(?<![\\w/.-])(?:(?:skills|agents|flows|standards|runtime|hosts)/[\\w/-]+|bootstrap)\\.md",
   "entry_points": [
     "skills/*/SKILL.md",
     "agents/*.md",

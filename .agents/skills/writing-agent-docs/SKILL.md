@@ -63,6 +63,7 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
 | `first-read` | Bootstrap, host session, skill and the docs its `First read:` paragraph links, over the budget | Move detail out of those docs or the bootstrap |
 | `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add a paragraph starting `First read:` that links the docs the skill reads before acting |
+| `entry-doc` | A skill's `First read:` paragraph links no doc named after the skill, or links one in another flow | Name the procedure `<skill>.md`; under `flows/`, keep it in `flows/<skill>/` |
 | `host-shape` | A folder under `hosts/` that does not hold exactly `session.md` and `workers.md` | Move other text to the runtime doc that owns it |
 | `shared-section` | A section linked from 3+ files in other modules | Make it its own file |
 | `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |
@@ -97,9 +98,15 @@ each other, so the order grows without loosening a rule. Run the checker and
   job that applies it.
 - **Add a standard:** write `standards/<name>.md`, mapped to the `standards` module,
   and link it from the agents and flows that follow it.
-- **Add a flow:** create `flows/<flow>/` with a procedure and a folder index, add the
-  module to `architecture.json` at its level, name the flow in the pipeline map, and
-  keep its skill a thin entry that links the procedure.
+- **Add a flow:** create `flows/<flow>/` with its procedure, add the module to
+  `architecture.json` at its level and name the flow in the pipeline map
+  (`flows/brief/pipeline.md`). A flow shared by several commands takes a noun
+  (`board`, `interview`) and sits below them.
+- **Add a command:** create `skills/<command>/SKILL.md` as a thin entry whose
+  `First read:` paragraph links `flows/<command>/<command>.md`, the doc that holds its
+  procedure (`entry-doc`); a skill the agent loads itself names a doc after it in its
+  own module and sets `user-invocable: false`. Add the command to the README's
+  command table.
 
 ## Practices
 

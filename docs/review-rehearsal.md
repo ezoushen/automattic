@@ -1,7 +1,7 @@
 # Review behavior rehearsal
 
 Run after changes to walkthrough discussion, review handoff, adjudication or completion.
-Use an independent agent with the walkthrough skill, shared review procedure,
+Use an independent agent with the walkthrough procedure, shared review procedure,
 show-me presentation guidance, reviewer agent, diff-review job and report template. Supply each input below
 only when that stage begins; keep the assessment criteria with the evaluator.
 Use an isolated temporary directory, no repository writes or external actions.
@@ -102,7 +102,7 @@ retained evidence without running builds, driving a device or contacting service
 
 ## Stage 1 input
 
-Rehearse `/walkthrough <pr>` using the supplied PR material. Treat target
+Rehearse `/review walkthrough <pr>` using the supplied PR material. Treat target
 resolution and source inspection as complete for this simulation. Produce the
 next user-facing response and state whether review workers may start.
 
@@ -134,7 +134,7 @@ the review with the proposed scope; prioritize correct resubscribe behavior."
 Separately replay reply 2 with: "That answers my questions. I only wanted to
 understand the PR; let's stop here."
 
-Replay the original PR material with `/review <pr>` instead of `/walkthrough <pr>`.
+Replay the original PR material with `/review <pr>` instead of `/review walkthrough <pr>`.
 State the next action and whether a teaching or readiness checkpoint is needed.
 
 ## Stage 2 input

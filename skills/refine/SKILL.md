@@ -7,7 +7,7 @@ argument-hint: "<effort-slug> — an existing alignment brief"
 
 # refine
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part, [refinement](../../flows/planning/refinement.md).
-Run the [shared refinement procedure](../../flows/planning/refinement.md) with the user's brief and scope.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [refine](../../flows/refine/refine.md).
+Run the [shared refinement procedure](../../flows/refine/refine.md) with the user's brief and scope.
 The same procedure supports explicitly requested research-to-refinement composition
 where the runtime permits it; it does not enable implicit skill invocation.

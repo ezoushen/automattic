@@ -1,23 +1,14 @@
----
-name: setup-automattic
-description: "Walk through the current Automattic setup and help change user, project or session configuration."
-disable-model-invocation: true
-argument-hint: "[question or desired change] [--scope user|project|session]"
----
+# Setup tour
 
-# Set up Automattic
-
-First read: [runtime bootstrap](../../bootstrap.md), the host session part, [procedure](../../flows/setup/procedure.md).
 Help the user understand the effective setup and adjust it for their work. With
 no request to change settings, stay read-only. A scope flag focuses the discussion;
 it does not itself authorize edits. No board, new session or configuration file is
 required to have this conversation.
 
-Use the [shared configuration procedure](../../flows/setup/procedure.md) for
-inspection and any requested changes. Read only the relevant referenced branches.
-It is the same procedure used by models; do not invoke the explicit-only models
-skill or require the user to type a second command. This adds a guided entry point,
-not a new configuration format or a second resolver.
+Use the [configuration procedure](setup.md) for inspection and any requested changes.
+Read only the relevant referenced branches. The tour and a direct change are two ways
+through the same command; do not require the user to type a second command. This adds
+a guided path, not a new configuration format or a second resolver.
 
 ## Explain the actual setup
 
@@ -58,7 +49,7 @@ Keep the explanation in chat before asking for a decision.
 
 Follow the user's question rather than a questionnaire over every field. Recommend
 the next useful topic with its tradeoff, leave room for questions, and apply the
-[question filter](../../flows/planning/question-filter.md) to material unresolved choices.
+[question filter](../interview/question-filter.md) to material unresolved choices.
 Discover facts from configuration and installed contracts yourself. Reuse stated
 preferences; a fully specified change can proceed without a mandatory tour.
 
@@ -94,5 +85,5 @@ Calibration runs and live worker probes are separate requests, not setup checks.
 Finish an explanation when the user's question is answered; no configuration change
 is required. Finish an edit with the saved path/scope, effective result and any
 remaining runtime check. If the user wants to begin work afterward, point to the
-appropriate phase in the pipeline map (`/automattic:pipeline`) and carry existing
+appropriate phase in the pipeline map (`/automattic:brief map`) and carry existing
 authorization forward. A setup tour alone does not launch a workflow.

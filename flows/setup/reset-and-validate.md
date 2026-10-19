@@ -44,7 +44,7 @@ user/project/session layers; reject unknown names without invoking a skill.
 
 ## Legacy preferences and native profiles
 
-For structured `/models` legacy commands without **--route**, **--config-profile**, session
+For structured legacy commands without **--route**, **--config-profile**, session
 scope or pool options, show/set/reset models.json.
 Accept thinking as an input alias but store legacy `effort`; `defaults` applies only
 here. Preserve its per-field precedence and null masks. Validate with `read_config`

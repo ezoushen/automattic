@@ -11,7 +11,7 @@ import unittest
 import support
 
 HOOK = support.HOOKS / 'agent_model.py'
-TICKET = support.ROOT / 'flows/delivery/jobs/ticket.md'
+TICKET = support.ROOT / 'flows/dispatch/jobs/ticket.md'
 
 
 def assignment(job_file=TICKET, drop=()):
@@ -91,7 +91,7 @@ class AgentModelHook(unittest.TestCase):
             with self.subTest(subagent=subagent):
                 launch = {'subagent_type': subagent, **({'model': model} if model else {})}
                 for prompt, reason in (('Implement ticket 3.', 'No `job_file:` found'),
-                                       ('job_file: flows/delivery/jobs/ticket.md', 'is not an absolute path'),
+                                       ('job_file: flows/dispatch/jobs/ticket.md', 'is not an absolute path'),
                                        (assignment(drop=('worktree', 'brief')), 'Missing: brief, worktree'),
                                        (assignment(review), 'Job diff-review is not done by builder')):
                     decision = self.run_hook(dict(launch, prompt=prompt))
@@ -101,7 +101,7 @@ class AgentModelHook(unittest.TestCase):
 
     def test_the_denial_offers_only_the_job_location_that_resolves(self):
         decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',
-                                  'prompt': 'job_file: flows/delivery/jobs/ticket.md'})
+                                  'prompt': 'job_file: flows/dispatch/jobs/ticket.md'})
         reason = decision['permissionDecisionReason']
         self.assertIn('flows/<flow>/jobs/<job>.md', reason)
         self.assertNotIn('skills', reason)
@@ -118,7 +118,7 @@ class AgentModelHook(unittest.TestCase):
         self.assertIn('Missing: worktree', decision['permissionDecisionReason'])
 
     def test_a_job_without_an_inputs_list_is_denied_not_skipped(self):
-        job = self.home / 'plugin/flows/delivery/jobs/ticket.md'
+        job = self.home / 'plugin/flows/dispatch/jobs/ticket.md'
         job.parent.mkdir(parents=True)
         job.write_text('---\nname: ticket\nagent: builder\n---\n')
         decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',

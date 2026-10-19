@@ -10,7 +10,7 @@ acceptance: false
 # audit
 
 Detect and prove one remediation kind or goal across an assigned file inventory at a
-pinned head. [Remediate](../procedure.md) assigns it; there is no diff and no repair.
+pinned head. [Remediate](../remediate.md) assigns it; there is no diff and no repair.
 
 ## Inputs
 

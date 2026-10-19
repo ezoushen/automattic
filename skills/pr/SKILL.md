@@ -7,5 +7,5 @@ argument-hint: "<effort-slug> — review and applicable verification must alread
 
 # pr
 
-First read: [runtime bootstrap](../../bootstrap.md), the host session part, [pr](../../flows/delivery/pr.md).
-Run the [PR procedure](../../flows/delivery/pr.md) for the effort.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [pr](../../flows/pr/pr.md).
+Run the [PR procedure](../../flows/pr/pr.md) for the effort.

@@ -13,7 +13,7 @@ reason and any existing backend decision when using it.
 If this skill is the returned fallback after that service failed or abstained,
 choose here directly and submit `--selection`; do not call the service again.
 Shared `decisions` configuration supplies the backend and calibration policy.
-Surface its new warnings through the [decision workflow](../decisions/workflow.md).
+Surface its new warnings through the [decision workflow](../decisions/decision.md).
 At recovery checkpoints, choose the recovery action before worker reselection;
 context or environment repairs can retain the existing choice.
 

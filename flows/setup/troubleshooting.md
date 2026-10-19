@@ -2,13 +2,13 @@
 
 ## Reset and troubleshooting
 
-Command examples below use Claude's spelling; use the corresponding models command
+Command examples below use Claude's spelling; use the corresponding setup command
 in Codex or Pi.
 
 | Intent or problem | Action |
 |---|---|
-| Keep the executor, restore native model/thinking | `/automattic:models reset <agent> --route` |
-| Clear only one override | `/automattic:models reset <agent> --route thinking` or `model` |
+| Keep the executor, restore native model/thinking | `/automattic:setup reset <agent> --route` |
+| Clear only one override | `/automattic:setup reset <agent> --route thinking` or `model` |
 | Use the lower-layer configuration again | Ask the skill to remove the selected profile or shared agent entry |
 | Mask a personal executor selection for this project | Set the project agent entry to null; existing native preferences then apply |
 | Missing `jsonschema` | Use the prepared plugin Python environment, or run the [setup steps](../../runtime/config/executors.md#manual-setup-and-inspection) |
@@ -30,7 +30,7 @@ Preview/validate the replacement before writing it. Existing `models.json` remai
 supported for unconfigured native workers; migrating it is optional and explicit.
 
 Installation preserves existing user configuration and writes no model/thinking
-presets; to pin a pair for an agent, save it through the models skill. Reload native
+presets; to pin a pair for an agent, save it through the setup command. Reload native
 agent definitions when they change; existing workers retain their launch settings.
 
 ## Migrate earlier configurations

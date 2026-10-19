@@ -1,5 +1,5 @@
 interface:
-  short_description: "Brief current progress, blockers and next steps"
-  default_prompt: "Use $automattic:brief to explain current progress, remaining work, verification status and any decisions needed for the active task."
+  short_description: "Brief progress and next steps, or show the pipeline map"
+  default_prompt: "Use $automattic:brief to explain current progress, remaining work, verification status and any decisions needed for the active task, or $automattic:brief map to see which command fits."
 policy:
   allow_implicit_invocation: false

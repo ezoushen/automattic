@@ -1,5 +1,0 @@
-interface:
-  short_description: "Explain the workflow and where to start or resume"
-  default_prompt: "Use $automattic:pipeline to explain the workflow and which phase fits my current task."
-policy:
-  allow_implicit_invocation: false

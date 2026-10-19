@@ -156,13 +156,20 @@ class CrossHarness(unittest.TestCase):
         # Codex 0.162 reads a root manifest declaring the Agent Plugins $schema as that format and drops
         # .codex-plugin hooks, so a copied install would register none.
         assert '$schema' not in portable, 'root plugin.json must not declare $schema'
+        commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief'}
+        implicit_skills = {'code-comments', 'housekeeping', 'model-routing', 'decision'}
+        assert {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')} == commands | implicit_skills
         for path in (PLUGIN / 'skills').glob('*/SKILL.md'):
-            implicit = path.parent.name in {'code-comments', 'housekeeping', 'model-routing', 'decision'}
+            implicit = path.parent.name in implicit_skills
+            text = path.read_text()
+            assert len(text.encode()) < 2500, f'{path}: a skill is a thin entry over the doc that holds its procedure'
             if not implicit:
-                assert 'runtime bootstrap' in path.read_text(), path
-                assert 'disable-model-invocation: true' in path.read_text(), path
+                assert 'runtime bootstrap' in text, path
+                assert 'disable-model-invocation: true' in text, path
+                assert 'user-invocable: false' not in text, path
             else:
-                assert 'disable-model-invocation: true' not in path.read_text(), path
+                assert 'disable-model-invocation: true' not in text, path
+                assert 'user-invocable: false' in text, f'{path}: only the commands appear in the typed menu'
             ui = (path.parent / 'agents/openai.yaml').read_text()
             assert f'policy:\n  allow_implicit_invocation: {str(implicit).lower()}\n' in ui, path
         # Agent and job structure is checked by agent_defs (tests/test_agent_definitions.py).
@@ -216,6 +223,19 @@ class CrossHarness(unittest.TestCase):
             for folder, script in re.findall(r'\b(scripts|hooks)/([A-Za-z0-9_.-]+\.(?:py|sh))\b', path.read_text()):
                 assert (PLUGIN / folder / script).is_file(), (name, folder, script)
 
+    def test_every_named_command_is_a_skill_that_exists(self):
+        import re
+        skills = {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')}
+        tracked = run('git', '-C', str(PLUGIN), 'ls-files', '-z').stdout.split('\0')
+        for name in filter(None, tracked):
+            path = PLUGIN / name
+            if name.startswith(('tests/', 'journals/')) or not path.is_file() or path.is_symlink():
+                continue
+            if path.suffix not in {'.md', '.py', '.json', '.yaml', '.mjs', '.ts'}:
+                continue
+            for command in re.findall(r'(?:[/$]automattic:|/skill:)([a-z][a-z0-9-]*)', path.read_text()):
+                assert command in skills, (name, command)
+
     def test_agent_docs_pass_the_doc_checker(self):
         # Agents read a linked doc whole, with no way to jump to an anchor; the checker
         # (project skill writing-agent-docs) enforces size, contents, links, anchors,
@@ -225,9 +245,9 @@ class CrossHarness(unittest.TestCase):
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_oversized_selected_work_is_split_by_delivery_and_children_inherit_the_selection(self):
-        split = (PLUGIN / 'flows/delivery/split-work.md').read_text()
-        assert '](../planning/refinement.md' in split and 'too large for one worker' in split
-        assert '](split-work.md' in (PLUGIN / 'flows/delivery/dispatch.md').read_text()
+        split = (PLUGIN / 'flows/dispatch/split-work.md').read_text()
+        assert '](../refine/refine.md' in split and 'too large for one worker' in split
+        assert '](split-work.md' in (PLUGIN / 'flows/dispatch/dispatch.md').read_text()
         scope = (PLUGIN / 'flows/board/scope.md').read_text()
         assert "inherit the parent's selection" in scope and 'Keep the parent outstanding' in scope
 
@@ -235,8 +255,8 @@ class CrossHarness(unittest.TestCase):
         import re
         path = PLUGIN / 'skills/remediate/SKILL.md'
         entry = path.read_text()
-        source = (PLUGIN / 'flows/remediation/procedure.md').read_text()
-        assert '](../../flows/remediation/procedure.md)' in entry
+        source = (PLUGIN / 'flows/remediate/remediate.md').read_text()
+        assert '](../../flows/remediate/remediate.md)' in entry
         metadata = entry.split('---', 2)[1]
         assert re.search(r'^name: remediate$', metadata, re.M)
         assert re.search(r'^disable-model-invocation: true$', metadata, re.M)
@@ -262,7 +282,7 @@ class CrossHarness(unittest.TestCase):
 
     def test_remediate_proof_experiments_follow_the_kind(self):
         import re
-        skill = (PLUGIN / 'flows/remediation/procedure.md').read_text()
+        skill = (PLUGIN / 'flows/remediate/remediate.md').read_text()
         prove = re.search(r'^2\. \*\*Prove\.\*\*(.+?)^3\. ', skill, re.M | re.S).group(1)
         prove = ' '.join(prove.split())
         assert "only where the kind's Proof calls for them" in prove, prove
@@ -278,7 +298,7 @@ class CrossHarness(unittest.TestCase):
     def test_both_callers_of_the_tautological_kind_still_require_a_reproduce_job(self):
         review = ' '.join((PLUGIN / 'flows/review/jobs/diff-review.md').read_text().split())
         assert 'A flag you would dismiss is disputed: send it to a [reproduce](reproduce.md) job' in review, review
-        remediate = ' '.join((PLUGIN / 'flows/remediation/procedure.md').read_text().split())
+        remediate = ' '.join((PLUGIN / 'flows/remediate/remediate.md').read_text().split())
         assert "Send disputed or UNVERIFIED findings to a reviewer's [reproduce](../review/jobs/reproduce.md)" in remediate
 
     def test_remediate_detection_covers_every_test(self):
@@ -292,7 +312,7 @@ class CrossHarness(unittest.TestCase):
         assert 'A flag you would dismiss is disputed and needs independent verification' in proof, proof
         routing = ' '.join((PLUGIN / 'runtime/decisions/test-shape.md').read_text().split())
         assert 'A flagged test is not resubmitted' in routing, routing
-        skill = (PLUGIN / 'flows/remediation/procedure.md').read_text()
+        skill = (PLUGIN / 'flows/remediate/remediate.md').read_text()
         detect = ' '.join(re.search(r'^1\. \*\*Detect read-only\.\*\*(.+?)^2\. ', skill, re.M | re.S).group(1).split())
         assert "run them for every test in scope during detection, before selecting candidates" in detect, detect
         assert 'For a paths or whole-project scan, reconcile the file inventory' in detect, detect

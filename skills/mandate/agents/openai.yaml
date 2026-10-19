@@ -1,5 +1,0 @@
-interface:
-  short_description: "Clarify a goal, constraints and missing context"
-  default_prompt: "Use $automattic:mandate to clarify this idea, plan, or decision: <describe it>. Decide reversible details within accepted constraints; add --interactive for a human checkpoint."
-policy:
-  allow_implicit_invocation: false
