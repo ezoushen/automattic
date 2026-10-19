@@ -116,6 +116,6 @@ ordering provisional and complete fact-finding; draft design questions rather th
 inventing product decisions. Such findings are ineligible for automatic redesign.
 Conflicting human direction or a missing decision that determines correctness stays
 an explicit unresolved item. Neither timeout nor a review request supplies a missing decision.
-Resolve apparent conflicts using the priority authority above and cite the deciding
+Resolve apparent conflicts using the priority authority in [agree scope and priorities](#agree-scope-and-priorities) and cite the deciding
 source. If it does not settle the conflict, keep the item unresolved and continue
 independent work; do not amend accepted criteria merely to match the implementation.

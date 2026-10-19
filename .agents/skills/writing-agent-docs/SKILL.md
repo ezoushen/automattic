@@ -64,8 +64,8 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `link`, `anchor` | Target file or heading missing | Retarget to the file and section that hold the text |
 | `orphan` | No doc or code links it | Link it where a reader needs it, or delete it |
 | `code-path` | Code names a doc that does not exist | Update the path in the code |
-| `direction` | A link, or a doc path named in text or code, goes to a higher level, a sibling module or another thin skill | Move the shared text below its users, or invert the link |
-| `import-direction` | A script or hook imports, or names the path of, one in a higher or sibling module | Move the shared code below its users |
+| `direction` | A link, or a doc path named in text or code, goes to a higher level, a sibling module or another thin skill | Move the shared text into a lower module its users can link, or invert the link |
+| `import-direction` | A script or hook imports, or names the path of, one in a higher or sibling module | Move the shared code into a lower module |
 | `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
 | `first-read` | Bootstrap, host session, skill and the docs its `First read:` paragraph links, over the budget | Move detail out of those docs or the bootstrap |
 | `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add a paragraph starting `First read:` that links the docs the skill reads before acting |
@@ -107,8 +107,8 @@ each other, so the order grows without loosening a rule. Run the checker and
 - **Add a standard:** write `standards/<name>.md`, mapped to the `standards` module,
   and link it from the agents and flows that follow it.
 - **Add a flow:** a procedure several commands share and none owns goes in
-  `flows/<flow>/`, named with a noun (`board`, `interview`), as a module below its
-  users; name it in the pipeline map (`skills/brief/pipeline.md`).
+  `flows/<flow>/`, named with a noun (`board`, `interview`), as a module lower than
+  its users; name it in the pipeline map (`skills/brief/pipeline.md`).
 - **Add a command:** create `skills/<command>/SKILL.md` holding its procedure, after a
   `First read:` paragraph naming the bootstrap and host session part, with its other
   docs and `jobs/` beside it. Map `skills/<command>/**/*.md` as a module at its level
