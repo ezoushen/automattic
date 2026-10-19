@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Diagnosis builds a failing loop before any theory, under the plugin's own procedure."""
+import re
 import unittest
 
 import support
@@ -27,8 +28,13 @@ class Diagnose(unittest.TestCase):
                 self.assertIn(rule, text)
 
     def test_the_diagnose_doc_names_no_language_specific_tooling(self):
+        source = (ROOT / DOC).read_text()
+        self.assertNotIn('```', source)
+        self.assertEqual(set(re.findall(r'`([^`]+)`', source)), {'<REDACTED>'})
         text = prose(DOC).lower()
-        for tool in ('pytest', 'jest', 'playwright', 'puppeteer', 'curl', 'npm', 'git bisect', 'performance.now'):
+        for tool in ('pytest', 'unittest', 'python', 'jest', 'node', 'npm', 'yarn', 'playwright', 'puppeteer', 'curl',
+                     'cargo', 'go test', 'gradle', 'maven', 'dotnet', 'rspec', 'xcodebuild', 'swift test',
+                     'git bisect', 'performance.now'):
             with self.subTest(tool=tool):
                 self.assertNotIn(tool, text)
 

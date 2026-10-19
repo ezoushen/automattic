@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """A throwaway prototype answers one design question and records its verdict, under align's own job."""
+import re
 import unittest
 
 import support
@@ -36,9 +37,17 @@ class Prototype(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, text)
 
+    def test_the_job_keeps_the_builders_core_gates(self):
+        self.assertNotRegex(prose(JOB).lower(), r'(test-first|mutation)[^.]*(do|does) not apply')
+
     def test_the_job_is_language_neutral(self):
+        body = (ROOT / JOB).read_text().split('---', 2)[2]
+        self.assertNotIn('```', body)
+        self.assertEqual(set(re.findall(r'`([^`]+)`', body)),
+                         {'question', 'branch', 'worktree', 'report', 'main', '## Verdict'})
         text = prose(JOB).lower()
-        for tool in ('pnpm', 'npm', 'bun ', 'python ', 'html file', 'url search param'):
+        for tool in ('pnpm', 'npm', 'yarn', 'bun ', 'node', 'python', 'cargo', 'go run', 'gradle', 'dotnet',
+                     'swift run', 'html file', 'url search param'):
             with self.subTest(tool=tool):
                 self.assertNotIn(tool, text)
 

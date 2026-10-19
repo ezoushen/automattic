@@ -28,12 +28,19 @@ class Research(unittest.TestCase):
     def test_align_review_and_the_pipeline_map_use_it(self):
         for path, link in (('skills/align/SKILL.md', '../../runtime/research/research.md'),
                            ('skills/review/SKILL.md', '../../runtime/research/research.md'),
-                           ('skills/brief/pipeline.md', '../../runtime/research/research.md')):
+                           ('skills/brief/pipeline.md', '../../runtime/research/research.md'),
+                           ('skills/dispatch/iteration.md', '../../runtime/research/research.md')):
             with self.subTest(path=path):
                 text = prose(path)
                 self.assertIn(f']({link})', text)
                 self.assertNotIn('mattpocock-skills:research', text)
                 self.assertNotRegex(text, r"Matt(?: Pocock)?'s `research`|Use `research`")
+
+    def test_research_runs_as_a_host_helper_not_a_worker_job(self):
+        text = prose(DOC)
+        self.assertIn("a helper agent of the host, not a job of the builder, reviewer or verifier", text)
+        self.assertIn('](../resources/capacity.md)', text)
+        self.assertNotIn('](../workers/launch.md)', text)
 
     def test_the_pipeline_map_sends_a_defect_to_diagnosis(self):
         text = prose('skills/brief/pipeline.md')

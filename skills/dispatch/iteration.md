@@ -118,8 +118,9 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    On conflict, assign a builder the `merge-conflict` job and its inputs in the spec
    worktree, except on `main` ([directly on main](modes.md#directly-on-main)).
    No other worker may use that worktree then; the orchestrator completes the merge.
-6. A blocked ticket is the orchestrator's work: research missing facts, diagnose
-   defects under [diagnosis](../../runtime/diagnose/diagnose.md), resolve engineering choices within accepted constraints, or return to
+6. A blocked ticket is the orchestrator's work: research missing facts under
+   [research](../../runtime/research/research.md), diagnose defects under
+   [diagnosis](../../runtime/diagnose/diagnose.md), resolve engineering choices within accepted constraints, or return to
    align/refine for design errors. Apply [escalation checkpoints](../../runtime/workers/escalation.md)
    before retrying a worker, and report the retain/replacement decision.
    Read scoped source/diffs when needed to resolve

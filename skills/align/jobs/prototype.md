@@ -35,9 +35,8 @@ neither kind, goes back to align.
 - For a logic question, drive the cases that are hard to reason about on paper; for
   a look question, offer a few clearly different variants side by side.
 
-The prototype is evidence, not product behavior: test-first and mutation checks do
-not apply to it, because none of it merges. Commit it only to the throwaway branch;
-it never merges into the effort branch or `main`, which keep only the verdict.
+Commit it only to the throwaway branch; it never merges into the effort branch or
+`main`, which keep only the verdict.
 
 Done when the run gives a verdict on the question, or shows the question cannot be
 answered this way.

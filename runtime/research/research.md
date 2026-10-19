@@ -22,8 +22,10 @@ what to do with it.
 
 ## Run
 
-Run it as a background worker so the caller keeps working while it reads, under
-[launching a worker](../workers/launch.md). The worker reads and runs read-only
+Run it as a background worker so the caller keeps working while it reads: a helper
+agent of the host, not a job of the builder, reviewer or verifier, on the cheapest
+model adequate for reading. Count it in [shared capacity](../resources/capacity.md)
+and record it in the run report like any other worker. It reads and runs read-only
 commands; it changes no code, configuration or tracker state.
 
 Save the findings where the project already keeps such notes, following its
