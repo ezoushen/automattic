@@ -42,13 +42,13 @@ as the opening. A shorter interview must still represent uncertainty accurately.
 
 | Case | Expected behavior |
 | --- | --- |
-| Bare "grill this plan" during mandate/alignment | Apply the bounded shared filter before composing questions. Naming grilling does not opt into the dependency's exhaustive frontier. |
+| Bare "grill this plan" during mandate/alignment | Follow grilling and its question filter before composing questions: principles first, one or two per round. |
 | User says "API changes only if that is the only adequate way" | Record the condition, investigate non-breaking mechanisms and retain comparison evidence. Continue authorized work without another approval of the same condition; other permission gates still apply. |
 | Five independent material forks remain | Ask at most the two that unblock the next work, retain the others as unresolved and pause their dependent work. Do not silently choose user-reserved forks. |
 | Two numbered questions contain several decisions | Count the subquestions and trailing approval requests. Reduce the round to its governing decisions; headings alone do not satisfy the budget. |
 | Missing technical fact | Investigate it rather than asking the user to choose a mechanism without evidence. Keep independent work moving. |
 | Accepted mandate already settles the next step | Ask no new steering question. Preserve the decisions and proceed within authorization. |
-| User explicitly asks for an exhaustive design-tree interview | Use the requested depth and the dependency's interaction contract. Preserve settled choices and apply the same fact/engineering/material-fork filter; missing sources remain investigation gaps. |
+| User explicitly asks for an exhaustive design-tree interview | Ask more questions per round, still only principles and material forks; the agent decides implementation detail and lists it for veto. Preserve settled choices; missing sources remain investigation gaps. |
 
 ## Assessment
 

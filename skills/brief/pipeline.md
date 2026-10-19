@@ -111,16 +111,15 @@ folder; commands read the shared interview and board procedures and the other ru
 - [Setup](../setup/SKILL.md): the configuration procedure and its tour.
 - [Brief](SKILL.md): progress briefings and this map.
 - [Housekeeping](../housekeeping/SKILL.md): residue and documentation currency, run by dispatch and PR.
-- [Interview](../../runtime/interview/question-filter.md): authority, the question filter and the ledger record, shared by the commands that ask questions.
+- [Interview](../../runtime/interview/question-filter.md): authority, [grilling](../../runtime/interview/grilling.md), the question filter and the ledger record, shared by the commands that ask questions.
 - [Board](../../runtime/board/board.md): tracker conventions, scope and the project loop.
 - [Explain](../../runtime/explain/explain.md): the re-pitch and the views, shared by briefings, the walkthrough, the setup tour and `/automattic:huh`, a sibling command this map names without a link.
 
 ## Matt Pocock's skills underneath
 
 Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
-`diagnosing-bugs`, `domain-modeling`, `prototype` and `grilling` for their respective
-work. Planning uses the [question filter](../../runtime/interview/question-filter.md)
-with grilling's internal design-tree reasoning. The review command supplies scope,
+`diagnosing-bugs`, `domain-modeling` and `prototype` for their respective
+work. The review command supplies scope,
 priority and allowed mutation
 context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
 Honor each dependency's actual invocation

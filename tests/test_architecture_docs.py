@@ -61,7 +61,7 @@ class ArchitectureDocs(unittest.TestCase):
 
     def test_the_bootstrap_keeps_the_rules_every_session_needs_before_any_skill_or_launch(self):
         flat = ' '.join(BOOTSTRAP.split())
-        self.assertIn("the dependency's exhaustive interview requires an explicit request for that depth", flat)
+        self.assertIn('even exhaustive depth asks only principles and material forks', flat)
         self.assertRegex(flat, r'Resolve dependency identity from the active catalog once per session: '
                                r'for Matt use the exact `mattpocock-skills:<name>` entry, never a bare colliding name '
                                r'such as `tdd` \(\[before a launch\]\(runtime/workers/before-launch\.md\)')

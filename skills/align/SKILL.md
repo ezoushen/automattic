@@ -12,12 +12,13 @@ Contents:
 - [Establish the design](#establish-the-design)
 - [Save the current alignment](#save-the-current-alignment)
 
-First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [question filter](../../runtime/interview/question-filter.md).
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [grilling](../../runtime/interview/grilling.md), [question filter](../../runtime/interview/question-filter.md).
 
 Settle the mandate, then turn it into a plan sufficient to split and verify. Reuse
 the conversation and existing alignment; a mandate the user already stated need not
-be settled again. Apply the [question filter](../../runtime/interview/question-filter.md) before
-each question round, including requests to grill the design. Record consequential
+be settled again. Interview through [grilling](../../runtime/interview/grilling.md) and apply the
+[question filter](../../runtime/interview/question-filter.md) before each question round,
+including requests to grill the design. Record consequential
 decisions in the same ledger. Preserve the distinction between accepted user
 decisions and reversible agent choices.
 If a governing mandate constraint is unresolved, ask that first and wait for its
@@ -30,14 +31,10 @@ A request to settle only the goal and constraints ends with the mandate's exit b
 
 A mandate is the user's goal, principles, constraints and reserved decisions.
 Inside it the agent decides; a material choice outside it needs the user.
-Reuse Matt's `/mattpocock-skills:grilling` design-tree reasoning internally with
-the [question filter](../../runtime/interview/question-filter.md). A request to "grill" an Automattic plan uses this
-bounded policy. Use Matt's exhaustive interview only when the user explicitly
-requests that depth; naming grilling alone does not select it.
-At exhaustive depth, relax the round's question-count/detail limit while keeping
-the same fact/engineering/material-fork filter and settled decisions. Missing
-sources remain investigation gaps; ask the human only for material choices they
-can decide from their priorities.
+Work the mandate's design tree through [grilling](../../runtime/interview/grilling.md):
+the user decides principles and material forks, the agent decides implementation
+detail and shows it for veto, at every depth. Missing sources remain investigation
+gaps; ask the human only for material choices they can decide from their priorities.
 
 Work in this order: [establish authority](../../runtime/interview/authority.md),
 [filter questions](../../runtime/interview/question-filter.md), then
