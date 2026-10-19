@@ -29,7 +29,7 @@ personal preferences are not repair instructions. If the minimal fix needs a
 materially wider change, report the boundary and wait for human alignment; don't
 refactor around it. Preserve unrelated work.
 
-Use `/mattpocock-skills:tdd` at accepted public seams for behavioral repairs; reuse
+Use the [TDD standard](../../../standards/tdd.md) at accepted public seams for behavioral repairs; reuse
 already accepted project/brief decisions instead of asking again. If a seam/API
 choice is genuinely new, obtain that decision before implementing it. Verify
 documentation repairs using code-comments and the original finding's evidence. A

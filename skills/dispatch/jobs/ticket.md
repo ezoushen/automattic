@@ -36,8 +36,8 @@ silently followed.
 On initial implementation, write `base: <git rev-parse HEAD>` as the first line of
 `report` before any change. On resume, preserve the existing base and evidence.
 
-Implement the accepted behavior; use `/mattpocock-skills:tdd` for behavioral changes
-at the agreed seams. Documentation-only work uses code-comments' checks.
+Implement the accepted behavior test-first under the [TDD standard](../../../standards/tdd.md),
+at the ticket's seams. Documentation-only work uses code-comments' checks.
 Choose the smallest sufficient verification: the focused and affected checks the
 assignment tiers for you, and the full gate only when the assignment names you for
 it. Use the assignment's explicit E2E owner under
@@ -49,7 +49,8 @@ failures caused by this ticket without another request. Keep unavailable require
 checks explicit.
 For important failure paths, check that the test actually reaches the failing
 operation and that its assertion can fail; a dry-run bypass is not refusal evidence.
-Use a focused negative control when necessary, not blanket mutation testing.
+The standard's deliberate break of each test's rule is the negative control; it is
+not blanket mutation testing.
 For changed parsers, accessors or lifecycles, account for affected entry points
 and input classes; use a table when it clarifies coverage or the project requires it.
 

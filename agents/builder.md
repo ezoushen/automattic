@@ -2,7 +2,7 @@
 name: builder
 description: Writes code, tests and docs for one assigned Automattic job in its own worktree. Launched only by the Automattic orchestrator with an assignment.
 writes: worktree
-core_skills: ["mattpocock-skills:tdd", "standards/code-comments.md", "standards/kinds/tautological-tests.md", "standards/documentation.md"]
+core_skills: ["standards/tdd.md", "standards/code-comments.md", "standards/kinds/tautological-tests.md", "standards/documentation.md"]
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill, SendMessage, Monitor, TaskStop
 ---
 
@@ -38,7 +38,7 @@ repairs a runner, also the [runner contract checks](../runtime/resources/resourc
 
 ## Core skills
 
-- `/mattpocock-skills:tdd` for behavior changes at the agreed seams.
+- [TDD standard](../standards/tdd.md) for every behavior change, at the ticket's seams.
 - [code-comments](../standards/code-comments.md): read once before writing code
   or comments, and apply it to every comment and doc you touch.
 - [tautological-tests](../standards/kinds/tautological-tests.md) whenever you
