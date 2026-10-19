@@ -95,7 +95,7 @@ class DesignStandard(unittest.TestCase):
                        'Intro\n\n    - name: example\n      value: 1\n',
                        '- Parent\n  - Nested rule\n\n  Parent paragraph.\n\n      print(1)\n',
                        '- an item\n  wrapped\n\n    its second paragraph\n', 'Text\n  \n    print(1)\n',
-                       '- An item\n  ~~~\n  print(1)\n  ~~~\n'):
+                       '- An item\n  ~~~\n  print(1)\n  ~~~\n', 'Para.\n\n\tprint(1)\n', '    print(1)\n\n'):
             with self.subTest(sample=sample):
                 self.assertNotEqual([], support.code_samples(sample))
         for legitimate in ('See [module design](design.md).\n- a list\n  continued\n',

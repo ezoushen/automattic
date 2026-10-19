@@ -50,6 +50,6 @@ def code_samples(text):
     unquoted = '\n'.join(re.sub(r'^ {0,3}(?:> ?)+', '', line).rstrip() for line in text.expandtabs(4).splitlines())
     prose = re.sub(r'\]\([^)]*\)', ']', unquoted)
     return (re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^[ \t]*(?:```|~~~).*$', prose)
-            + re.findall(r'(?m)(?<=\n\n) {4,}\S.*$', prose)
+            + re.findall(r'(?m)(?<=\n\n) {4,}\S.*$', '\n\n' + prose)
             + [name for name in re.findall(r'\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+', prose)
                if not name.endswith('.md') and max(map(len, name.split('.'))) > 1])
