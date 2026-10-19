@@ -82,7 +82,8 @@ Use the project branch convention; otherwise a stable filesystem-safe issue key
 (for example `eng-123` or `gh-123`) replaces local `NN` in branch/report names.
 
 Acceptance requires the worker report's original base, each criterion's evidence,
-required checks, and reported commits verified on the assigned branch. Confirm
+required checks, and reported commits verified on the branch the report records:
+the effort branch for a ticket the orchestrator ran inline, otherwise the assigned one. Confirm
 integration into the effort branch before recording implementation complete.
 Apply remote status changes at the project's milestones: implementation complete
 can remain In Review until merge. Compute execution counts from those verified

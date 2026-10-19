@@ -142,6 +142,33 @@ class BoardCLI(unittest.TestCase):
         history.write_text('---\nstatus: implementing\ntouches: [runtime]\n---\n')
         assert 'missing ticket' in cli('active', '--board', code=1).stderr
 
+    def git(self, *args):
+        return subprocess.run(['git', '-C', str(self.root), *args], check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    def commit(self, message):
+        self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', message)
+        return self.git('rev-parse', 'HEAD')
+
+    def write_report(self, base, branch=None):
+        report = self.root / '.scratch/inline/reports/01.md'
+        report.parent.mkdir(parents=True, exist_ok=True)
+        branch_line = f'branch: {branch}\n' if branch else ''
+        report.write_text(f'base: `{base}`\n{branch_line}## Implemented\n- [x] done\n')
+
+    def test_acceptance_checks_the_branch_the_report_records(self):
+        self.write_ticket('inline/01', 'implementing')
+        base = self.commit('base')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        # An inline ticket commits on the effort branch and records it.
+        self.write_report(base, 'feat/inline')
+        assert 'no commit past base on feat/inline' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        self.commit('ticket work')
+        assert 'carry the evidence' in self.cli('inline', '--accept', 'inline/01').stdout
+        # Without a recorded branch, the delegated ticket branch is still the one checked.
+        self.write_report(base)
+        assert 'feat/inline-01' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -13,7 +13,7 @@ Typed as `/automattic:<name>` in Claude Code, `$automattic:<name>` in Codex and
 |---|---|
 | `align` | Settle the goal and constraints, then a WHAT / WHY / HOW plan |
 | `refine` | Split the plan into tickets on the project's tracker or local Markdown |
-| `dispatch` | Implement the tickets, then review; `--autofix` adds repairs and E2E |
+| `dispatch` | Implement the tickets, inline or in builder worktrees, then review; `--autofix` adds repairs and E2E |
 | `review` | Review a branch or PR; `review walkthrough <target>` explains it first |
 | `pr` | Open the PR once review and verification evidence is current |
 | `remediate` | Find, prove and repair tautological tests or misleading comments |

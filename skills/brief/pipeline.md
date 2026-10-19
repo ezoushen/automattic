@@ -23,7 +23,7 @@ alternatives — the principal can veto. Align and refine append to one
 |---|---|---|---|---|
 | Mandate and alignment | `/automattic:align` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape; WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `ledger.md` (first rows), standing principles in `CONTEXT.md`/ADRs/memory, `alignment.md` | slug, ledger, the brief |
 | Refinement | `/automattic:refine` | ticket slicing, edges, sizing and their rejected alternatives | configured tracker issues, or local Markdown tickets | dispatch-ready tickets |
-| Execution | `/automattic:dispatch` | scheduling on `blocked_by`, capacity and area locks; worktrees and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` | implementation status and review report |
+| Execution | `/automattic:dispatch` | scheduling on `blocked_by`, capacity and area locks; how each ticket runs (inline or a builder worktree) and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` | implementation status and review report |
 | Review | `/automattic:review` | direction → blast radius → implementation, complete layer batches, scoped invalidation, reproduction, optional autofix with applicable E2E, local comment drafts and follow-ups | review and verification report | reviewed commit, gate outcomes and unresolved findings |
 | Delivery | `/automattic:pr` (optional) | the description assembled from the artefacts above | `pr.md`, the PR | a URL |
 
@@ -64,7 +64,7 @@ outer loop is this pipeline's, and each command is one of its nodes:
 |---|---|---|
 | Intent | success criteria and constraints: the mandate's limits, the brief, every criterion's `Verify` command | `/automattic:align`, `/automattic:refine` |
 | Context | a state payload, not a conversation: ticket, brief, project vocabulary/instructions, absolute paths | `/automattic:dispatch` prompts |
-| Action | one fresh builder per ticket in its own worktree | `/automattic:dispatch` |
+| Action | each ticket inline by the orchestrator or by a fresh builder in its own worktree, chosen per ticket | `/automattic:dispatch` |
 | Observation | the report's recorded evidence; board acceptance checks; scoped review with repros; applicable verification | `/automattic:dispatch`, shared review procedure |
 | Adjustment | use blocker/failure evidence to correct context, environment, approach or worker; preserve scope and attempt limits | `/automattic:dispatch`, shared review procedure, re-entry below |
 

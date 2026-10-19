@@ -207,7 +207,9 @@ def accept(tickets, name):
     problems = report_problems(text)
     base = re.search(r"^base:\s*`?([0-9a-f]{40})", text, re.M)
     if base:
-        branch = f"feat/{slug}-{nn}"
+        # An inline ticket records the effort branch it committed on; a delegated one has its own.
+        recorded = re.search(r"^branch:\s*`?([^\s`]+)", text, re.M)
+        branch = recorded.group(1) if recorded else f"feat/{slug}-{nn}"
         count = subprocess.run(["git", "-C", str(ROOT), "rev-list", "--count", f"{base.group(1)}..{branch}"],
                                capture_output=True, text=True)
         if count.returncode != 0:
