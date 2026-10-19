@@ -30,7 +30,8 @@ list short; usually zero to three. A longer list usually means the assignment ho
 more than one job; split it.
 
 Pass a situational skill as a path or name the worker reads before the step it
-serves. That works on every host: Claude Code's subagent `skills` preload is fixed
+serves. Honor each skill's invocation policy in the host's catalog: never read a
+skill's body to get around an invocation that is denied or reserved for the user. That works on every host: Claude Code's subagent `skills` preload is fixed
 per agent definition, and Codex agents can only disable inherited skills.
 
 ## Pick situational skills

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Agents share one language-neutral module-design vocabulary from our own standard."""
-import subprocess
 import unittest
 
 import support
@@ -109,13 +108,6 @@ class DesignStandard(unittest.TestCase):
         align = prose(ROOT / 'skills/align/SKILL.md')
         self.assertIn('[module design](../../standards/design.md)', align)
         self.assertIn('[module design](../../standards/design.md)', prose(ROOT / 'skills/review/SKILL.md'))
-
-    def test_no_doc_names_matts_codebase_design(self):
-        found = subprocess.run(
-            ['git', 'grep', '-n', '-I', 'codebase-design', '--', '.', ':!journals', ':!tests/test_design_standard.py'],
-            cwd=ROOT, capture_output=True, text=True)
-        self.assertIn(found.returncode, (0, 1), found.stderr)
-        self.assertEqual('', found.stdout)
 
 
 if __name__ == '__main__':

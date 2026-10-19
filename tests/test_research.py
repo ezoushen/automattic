@@ -33,7 +33,7 @@ class Research(unittest.TestCase):
             with self.subTest(path=path):
                 text = prose(path)
                 self.assertIn(f']({link})', text)
-                self.assertNotIn('Use `research`', text)
+                self.assertNotIn('use `research`', text.lower())
 
     def test_research_runs_as_a_host_helper_not_a_worker_job(self):
         text = prose(DOC)

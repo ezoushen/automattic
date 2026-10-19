@@ -42,9 +42,7 @@ class Diagnose(unittest.TestCase):
         for path, link in (('skills/review/jobs/reproduce.md', '../../../runtime/diagnose/diagnose.md'),
                            ('skills/dispatch/iteration.md', '../../runtime/diagnose/diagnose.md')):
             with self.subTest(path=path):
-                text = prose(path)
-                self.assertIn(f']({link})', text)
-                self.assertNotIn('diagnosing-bugs', text)
+                self.assertIn(f']({link})', prose(path))
         self.assertIn('diagnose defects under [diagnosis](../../runtime/diagnose/diagnose.md)',
                       prose('skills/dispatch/iteration.md'))
 

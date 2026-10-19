@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """A decision that affects others or passes the three tests is offered as an ADR, written on the user's yes, and binds later work."""
-import subprocess
 import unittest
 
 import support
@@ -43,13 +42,6 @@ class Adrs(unittest.TestCase):
                       ticket)
         self.assertIn('A change that contradicts an accepted ADR', prose('skills/review/method.md'))
         self.assertIn('a conflict with an accepted [ADR](../domain/adr.md)', prose('runtime/workers/design-hold.md'))
-
-    def test_no_doc_names_matts_domain_modeling(self):
-        found = subprocess.run(
-            ['git', 'grep', '-n', '-I', 'domain-modeling', '--', '.', ':!journals', ':!tests/test_adrs.py'],
-            cwd=ROOT, capture_output=True, text=True)
-        self.assertIn(found.returncode, (0, 1), found.stderr)
-        self.assertEqual('', found.stdout)
 
 
 if __name__ == '__main__':

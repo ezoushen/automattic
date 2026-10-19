@@ -10,7 +10,12 @@ import support
 ROOT = support.ROOT
 # Journals and accepted decisions are history: they may say where a method came from.
 HISTORY = ('journals/', 'docs/adr/')
-EXTERNAL = re.compile(r'mattpocock|\bmatt\b', re.IGNORECASE)
+# The package's skills that the plugin never had under its own name.
+SKILLS = ('ask-matt', 'codebase-design', 'diagnosing-bugs', 'domain-modeling', 'grill-me', 'grill-with-docs',
+          'implement-spec', 'improve-codebase-architecture', 'to-prd', 'to-spec', 'to-tickets', 'to-questionnaire',
+          'wait-what', 'wayfinder', 'writing-for-agents', 'claude-handoff')
+EXTERNAL = re.compile(r'mattpocock|\bmatt\b|pocock|(?<![\w-])(?:%s)(?![\w-])' % '|'.join(map(re.escape, SKILLS)),
+                      re.IGNORECASE)
 
 
 def prose(path):
@@ -47,13 +52,17 @@ class Standalone(unittest.TestCase):
             self.assertNotIn('on top of', manifest['description'])
 
     def test_no_session_or_launch_doc_resolves_an_external_package(self):
-        for path in ('bootstrap.md', 'runtime/workers/before-launch.md', 'hosts/claude/session.md',
-                     'hosts/codex/session.md', 'hosts/pi/session.md', 'hosts/opencode/session.md',
-                     'docs/installation.md'):
+        for path in ('bootstrap.md', 'runtime/workers/before-launch.md', 'runtime/workers/README.md',
+                     'runtime/resources/capacity.md', 'hosts/claude/session.md', 'hosts/codex/session.md',
+                     'hosts/pi/session.md', 'hosts/opencode/session.md', 'docs/installation.md'):
             with self.subTest(path=path):
                 text = prose(path)
-                self.assertNotRegex(text, r'(?i)dependency identity|dependency skills|resolve (?:a |its )?dependenc'
+                self.assertNotRegex(text, r'(?i)dependency identity|dependency skills|resolve [^.]{0,40}dependenc'
                                           r'|plugin dependency|skill dependency')
+
+    def test_a_situational_skill_keeps_its_invocation_policy(self):
+        self.assertIn("Honor each skill's invocation policy in the host's catalog: never read a skill's body to get "
+                      "around an invocation that is denied or reserved for the user.", prose('runtime/workers/skills.md'))
 
     def test_the_pipeline_map_names_our_methods_underneath(self):
         text = (ROOT / 'skills/brief/pipeline.md').read_text()
