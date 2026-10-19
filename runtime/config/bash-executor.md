@@ -22,7 +22,7 @@ runs argv in that worktree and supplies this JSON on stdin:
 
 ```json
 {
-  "assignment": {"assignment_id": "review-1", "worktree": "/repo", "agent_file": "/plugin/agents/reviewer.md", "job_file": "/plugin/flows/review/jobs/diff-review.md", "head": "pinned-sha", "prompt": "Review the assigned scope"},
+  "assignment": {"assignment_id": "review-1", "worktree": "/repo", "agent_file": "/plugin/agents/reviewer.md", "job_file": "/plugin/skills/review/jobs/diff-review.md", "head": "pinned-sha", "prompt": "Review the assigned scope"},
   "models": {"mode": "override", "model": "requested-id", "thinking": "high"}
 }
 ```

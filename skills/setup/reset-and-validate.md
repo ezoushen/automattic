@@ -36,7 +36,7 @@ The former per-model executor catalog needs the migration described in [models a
 confirm destination runtimes from known configuration/contracts, preserve IDs and
 thinking, and reconcile shared route conflicts. Back up the existing file before
 migration. Legacy package/routes files use the executor
-[migration](troubleshooting.md#migration). Never
+[migration](../../runtime/config/troubleshooting.md#migration). Never
 reinterpret malformed/old configuration as an absent configuration.
 Named executor types encapsulate skill usage under the bundled schema; they do not
 load custom schemas, code or nested definitions. Resolve references after merging

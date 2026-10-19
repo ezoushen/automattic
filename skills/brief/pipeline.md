@@ -34,10 +34,10 @@ For a change you want to understand before assessing it, use
 then can hand agreed criteria into the same review procedure when requested.
 It is optional; direct review starts assessment without this learning step.
 For a progress snapshot of the active task or a named effort, use
-[/automattic:brief](brief.md); `/automattic:brief map` shows this map.
+[/automattic:brief](SKILL.md); `/automattic:brief map` shows this map.
 
 Configuration is optional and separate from the delivery phases. Use
-[/automattic:setup](../setup/setup.md) to understand the current setup and update it
+[/automattic:setup](../setup/SKILL.md) to understand the current setup and update it
 at user, project or session scope, or name the setting directly;
 see [configuration examples](../../runtime/config/executors.md). Existing native behavior
 continues without configuration. Setup does not start workers or change review gates.
@@ -48,7 +48,7 @@ recovery considers the cause before rerouting. The host accepts or overrides eac
 recommendation, reports its source and surfaces calibration warnings. Existing
 phase owners and gates remain in place; there is no second planning/review loop.
 
-Dispatch reuses [existing project execution facts](../board/project-loop.md):
+Dispatch reuses [existing project execution facts](../../flows/board/project-loop.md):
 commands, areas/resources, verification and environment constraints. Missing
 facts go in the effort's alignment/report; no new maintained setup file is required.
 Run history stays in reports/journals. Workers call shared plugin scripts directly.
@@ -98,26 +98,26 @@ human-authorized merge by the orchestrator.
 
 ## Flows
 
-Each command is a thin entry over the flow folder named after it, whose main doc
-carries the same name; shared flows and runtime rules sit below them.
+Each command's procedure is its `SKILL.md`, with its other docs and jobs in the same
+folder; shared flows and runtime rules sit below them.
 
-- [Align](../align/align.md): the mandate, then the WHAT / WHY / HOW brief.
-- [Refine](../refine/refine.md): ticket slicing and the ticket template.
-- [Dispatch](../dispatch/dispatch.md): scheduling, the iteration, the review handoff and the ticket and merge-conflict jobs.
-- [Review](../review/review.md): the shared review procedure, its walkthrough and its jobs.
-- [PR](../pr/pr.md): the description and publication.
-- [Remediate](../remediate/remediate.md): the audit procedure and job.
-- [Setup](../setup/setup.md): the configuration procedure and its tour.
-- [Brief](brief.md): progress briefings and this map.
-- [Housekeeping](../housekeeping/housekeeping.md): residue and documentation currency, run by dispatch and PR.
-- [Interview](../interview/question-filter.md): authority, the question filter and the ledger record, shared by the commands that ask questions.
-- [Board](../board/board.md): tracker conventions, scope and the project loop.
+- [Align](../align/SKILL.md): the mandate, then the WHAT / WHY / HOW brief.
+- [Refine](../refine/SKILL.md): ticket slicing and the ticket template.
+- [Dispatch](../dispatch/SKILL.md): scheduling, the iteration, the review handoff and the ticket and merge-conflict jobs.
+- [Review](../review/SKILL.md): the shared review procedure, its walkthrough and its jobs.
+- [PR](../pr/SKILL.md): the description and publication.
+- [Remediate](../remediate/SKILL.md): the audit procedure and job.
+- [Setup](../setup/SKILL.md): the configuration procedure and its tour.
+- [Brief](SKILL.md): progress briefings and this map.
+- [Housekeeping](../housekeeping/SKILL.md): residue and documentation currency, run by dispatch and PR.
+- [Interview](../../flows/interview/question-filter.md): authority, the question filter and the ledger record, shared by the commands that ask questions.
+- [Board](../../flows/board/board.md): tracker conventions, scope and the project loop.
 
 ## Matt Pocock's skills underneath
 
 Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
 `diagnosing-bugs`, `domain-modeling`, `prototype` and `grilling` for their respective
-work. Planning uses the [question filter](../interview/question-filter.md)
+work. Planning uses the [question filter](../../flows/interview/question-filter.md)
 with grilling's internal design-tree reasoning. The review command supplies scope,
 priority and allowed mutation
 context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
@@ -140,11 +140,11 @@ authorized. Retrospective evidence stays in the existing reports or journals.
 ## Delivery composition
 
 Dispatch's handoff applies housekeeping and runs the [shared review
-procedure](../review/review.md); only an explicit implementation-only request
+procedure](../review/SKILL.md); only an explicit implementation-only request
 omits review. Existing accepted alignment supplies scope, non-goals, priorities
 and test seams. Without those decisions, review records provisional priorities or
 asks for material human choices. Follow-ups never expand the current review batch;
-dispatch's [overall selection](../board/scope.md)
+dispatch's [overall selection](../../flows/board/scope.md)
 determines whether they enter the next batch under existing authorization.
 
 `review --autofix` owns scoped repairs, local effort integration and applicable E2E

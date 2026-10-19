@@ -11,7 +11,7 @@ import unittest
 import support
 
 HOOK = support.HOOKS / 'agent_model.py'
-TICKET = support.ROOT / 'flows/dispatch/jobs/ticket.md'
+TICKET = support.ROOT / 'skills/dispatch/jobs/ticket.md'
 
 
 def assignment(job_file=TICKET, drop=()):
@@ -86,12 +86,12 @@ class AgentModelHook(unittest.TestCase):
 
     def test_automattic_launch_needs_its_job_file_and_inputs(self):
         self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
-        review = support.ROOT / 'flows/review/jobs/diff-review.md'
+        review = support.ROOT / 'skills/review/jobs/diff-review.md'
         for subagent, model in (('automattic:builder', 'sonnet'), ('automattic-builder-0123456789ab', None)):
             with self.subTest(subagent=subagent):
                 launch = {'subagent_type': subagent, **({'model': model} if model else {})}
                 for prompt, reason in (('Implement ticket 3.', 'No `job_file:` found'),
-                                       ('job_file: flows/dispatch/jobs/ticket.md', 'is not an absolute path'),
+                                       ('job_file: skills/dispatch/jobs/ticket.md', 'is not an absolute path'),
                                        (assignment(drop=('worktree', 'brief')), 'Missing: brief, worktree'),
                                        (assignment(review), 'Job diff-review is not done by builder')):
                     decision = self.run_hook(dict(launch, prompt=prompt))
@@ -101,14 +101,14 @@ class AgentModelHook(unittest.TestCase):
 
     def test_the_denial_offers_only_the_job_location_that_resolves(self):
         decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',
-                                  'prompt': 'job_file: flows/dispatch/jobs/ticket.md'})
+                                  'prompt': 'job_file: skills/dispatch/jobs/ticket.md'})
         reason = decision['permissionDecisionReason']
-        self.assertIn('flows/<flow>/jobs/<job>.md', reason)
-        self.assertNotIn('skills', reason)
+        self.assertIn('skills/<skill>/jobs/<job>.md', reason)
+        self.assertNotIn('flows/', reason)
 
-    def test_a_job_under_a_flow_is_resolved_like_one_under_a_skill(self):
+    def test_a_job_under_a_skill_folder_of_another_plugin_root_is_resolved(self):
         self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
-        job = self.home.joinpath('plugin', 'flows', 'review', 'jobs', 'ticket.md')
+        job = self.home.joinpath('plugin', 'skills', 'review', 'jobs', 'ticket.md')
         job.parent.mkdir(parents=True)
         job.write_text(TICKET.read_text())
         launch = {'subagent_type': 'automattic-builder-0123456789ab'}
@@ -118,7 +118,7 @@ class AgentModelHook(unittest.TestCase):
         self.assertIn('Missing: worktree', decision['permissionDecisionReason'])
 
     def test_a_job_without_an_inputs_list_is_denied_not_skipped(self):
-        job = self.home / 'plugin/flows/dispatch/jobs/ticket.md'
+        job = self.home / 'plugin/skills/dispatch/jobs/ticket.md'
         job.parent.mkdir(parents=True)
         job.write_text('---\nname: ticket\nagent: builder\n---\n')
         decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',

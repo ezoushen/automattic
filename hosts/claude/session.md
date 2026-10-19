@@ -7,7 +7,7 @@ Confirm required dependency skills are installed before dispatch.
 
 Read shared docs with the Read tool, not `cat`, `sed` or `head`: Bash output over
 about 30 KB is saved to a file instead of shown, and a guessed line range can cut
-a section short. Each doc under `flows/`, `runtime/`, `standards/` and `hosts/` fits one read.
+a section short. Each doc under `skills/`, `flows/`, `runtime/`, `standards/` and `hosts/` fits one read.
 
 Automattic does not block Git commands. The orchestrator can perform authorized
 publication and cleanup directly; workers retain their agent's permissions.

@@ -7,7 +7,7 @@ skills, agent and job instructions, scheduling and check execution guidance stay
 ## Commands
 
 Eight commands, typed as `/automattic:<name>` in Claude Code, `$automattic:<name>` in
-Codex and `/skill:<name>` in Pi. Each one's procedure is `flows/<name>/<name>.md`.
+Codex and `/skill:<name>` in Pi. Each one's procedure is its `skills/<name>/SKILL.md`.
 
 | Command | Does |
 |---|---|
@@ -32,10 +32,9 @@ separate copies of skills or scripts.
 
 | Path | Owns |
 |---|---|
-| `skills/` | Thin entry skills: the eight commands, and the decision, routing, writing and housekeeping skills the agent selects itself. A skill first reads the doc named after it and links no other skill |
+| `skills/<command>/` | One folder per skill. The eight commands and housekeeping hold their procedure in `SKILL.md`, beside their other docs and job files (`jobs/`): the mandate and design brief; ticket slicing; scheduling and the review handoff; shared review and its walkthrough; PR description and publication; the remediation audit; the configuration procedure and its tour; briefings and the pipeline map; residue and documentation currency. The decision, routing and writing skills the agent selects itself are thin entries over a `runtime/` or `standards/` doc named after them |
 | `scripts/` | Scheduler, optional resource lock, worker/decision resolution, calibration and runnable checks |
 | `bootstrap.md` | Session rules every host reads first, with the triggers table for rules that fire outside their owner |
-| `flows/align/`, `flows/refine/`, `flows/dispatch/`, `flows/review/`, `flows/pr/`, `flows/remediate/`, `flows/setup/`, `flows/brief/` | One flow per command, named after it, with its job files (`jobs/`): the mandate and design brief; ticket slicing; scheduling and the review handoff; shared review and its walkthrough; PR description and publication; the remediation audit; the configuration procedure and its tour; briefings and the pipeline map |
 | `standards/` | What good looks like: PR description, code comments, documentation and the remediation kinds (`kinds/`) |
 | `hosts/claude/` | Claude session part and worker part (lifecycle and native settings controls) |
 | `hosts/codex/` | Codex session part, worker part (lifecycle and capacity) and hook registration |
@@ -46,7 +45,7 @@ separate copies of skills or scripts.
 | `addons/show-me/` | Shared presentation reference and thin manual show-me entry |
 | `hosts/herdr.md`, `hosts/executors/` | Herdr environment guidance; Bash, Sub-agent and Skill execution adapters |
 | `runtime/workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/` | Shared runtime rules by reader, each file small enough for one read; a module depends only on those after it in this order, and the configuration format is in `config/` |
-| `flows/housekeeping/`, `flows/interview/`, `flows/board/` | Shared flows below the commands: residue and documentation currency; authority, the question filter and the ledger record; board operations and tracker conventions |
+| `flows/interview/`, `flows/board/` | Shared procedures no command owns, below the commands: authority, the question filter and the ledger record; board operations and tracker conventions |
 | `agents/` | Three worker agents (builder, reviewer, verifier): permissions, principles and core skills; Claude loads them natively |
 | `hooks/` | Shared session-start hook; Claude hook registration |
 | `plugin.json`, `.claude-plugin/`, `.codex-plugin/` | Portable metadata and compatibility registration |
@@ -63,14 +62,17 @@ scheduling and integration.
 
 ## Architecture
 
-The Markdown is layered so a reader follows links in one direction. Entry skills and
-hooks sit on top; below them come `bootstrap.md`, the flows (brief; dispatch and remediate; pr;
-review; housekeeping; align, refine and setup; interview; board), `agents/`, `standards/`, `hosts/` and the `runtime/` modules
+The Markdown is layered so a reader follows links in one direction. Hooks and the commands
+(`skills/<command>/`: brief; dispatch and remediate; pr; review; housekeeping; align, refine
+and setup) sit on top; below them come `bootstrap.md`, the shared `flows/` (interview; board),
+`agents/`, `standards/`, `hosts/` and the `runtime/` modules
 (workers, checks, routing, resources, decisions, config). A doc links only its own module or
-a lower one, no skill links another, each skill first reads the doc named after it, and
-`scripts/` and `hooks/` import under the same order.
+a lower one, so a command may read a lower command's procedure but never a sibling's or a
+higher one's; the thin skills link no other skill, and a command holds its procedure in its
+`SKILL.md`. A doc path named in prose or code counts as a dependency too, and `scripts/`
+and `hooks/` import under the same order.
 `.agents/skills/writing-agent-docs/architecture.json` records the order; the doc checker
-and `tests/test_import_direction.py` enforce it with no recorded debt.
+enforces it with no recorded debt on every commit, and in Claude Code after every edit.
 
 To add a host, executor, agent, job, kind, standard or flow, follow
 [extend the architecture](.agents/skills/writing-agent-docs/SKILL.md#extend-the-architecture),
@@ -101,7 +103,7 @@ defaults for omitted fields. Adapters translate settings into native controls;
 workload labels do not select models.
 
 PR descriptions use WHAT / WHY / HOW, adapted to the repository's PR template.
-The [PR procedure](flows/pr/pr.md#description) reuses Matt's writing reference when
+The [PR procedure](skills/pr/SKILL.md#description) reuses Matt's writing reference when
 available and existing verification evidence; Automattic owns delivery and publication.
 
 Existing project-management conventions take precedence over Matt's setup options.
@@ -166,7 +168,7 @@ session to refresh loaded instructions and hooks; existing conversations
 may retain earlier instructions. Review any native hook-trust prompt. A reinstall
 or version change may replace the links; verify them afterward. Refresh the small
 registration when the Codex manifest changes and add a link when introducing a new
-top-level package entry; `flows/`, `runtime/`, `standards/`, `hosts/` and `bootstrap.md` are such entries, so link each in an
+top-level package entry; `skills/`, `flows/`, `runtime/`, `standards/`, `hosts/` and `bootstrap.md` are such entries, so link each in an
 existing cache directory before starting a session. Check installation with
 `codex plugin list --marketplace automattic-dev --json` and the native readers below.
 Also check runtime `skills/list` and `hooks/list`: a listed installation alone does
@@ -183,7 +185,8 @@ ln -s /absolute/path/to/automattic/hosts/pi/bootstrap.ts ~/.pi/agent/extensions/
 
 Keep an existing matching symlink; do not overwrite a different installation.
 For the earlier link to this repository's root, retarget only that verified
-development symlink to `skills/`. Pi discovers skills recursively; restricting the
+development symlink to `skills/`. Pi discovers skills recursively but treats a folder
+holding `SKILL.md` as one skill, so a command's other docs and jobs never load as skills; restricting the
 link prevents optional add-on skills elsewhere in the repository from loading.
 Re-point an extension symlink that does not target `hosts/pi/bootstrap.ts`.
 Run `/reload` in Pi, then `/skill:dispatch <scope> --autofix` or
@@ -195,9 +198,9 @@ the installed `subagent` tool. See the [Pi session part](hosts/pi/session.md).
 
 ## Guided setup
 
-Use [setup](flows/setup/setup.md) for a guided explanation of the current
+Use [setup](skills/setup/SKILL.md) for a guided explanation of the current
 configuration and help changing it. With no arguments or a question it takes the
-[tour](flows/setup/tour.md): available workers, launch routes, selection policy,
+[tour](skills/setup/tour.md): available workers, launch routes, selection policy,
 decision opt-ins and which scope supplies each effective value.
 
 | Host | Command |
@@ -317,7 +320,7 @@ without creating nested teams. Existing fixed instances and thinking bounds rema
 supported. Configuration inspection never starts a router or worker.
 
 The [configuration guide](runtime/config/executors.md) contains executor examples
-and manual setup; [reset and troubleshooting](flows/setup/troubleshooting.md)
+and manual setup; [reset and troubleshooting](runtime/config/troubleshooting.md)
 covers reset recipes and fixes. Choose:
 
 - **Sub-agent:** the host's native worker or an installed named delegate.
@@ -350,19 +353,19 @@ a configured external executor owns its lifecycle and needs runtime verification
 Existing `models.json` preferences still apply to unconfigured native workers.
 Older structured `show`/`set`/`reset` commands without `--route`, `--config-profile`, session scope
 or pool options keep that behavior; see
-[legacy model preferences](flows/setup/legacy-preferences.md). New agent instances do not merge
+[legacy model preferences](skills/setup/legacy-preferences.md). New agent instances do not merge
 those files. Old executor-package/`routes` files need the explicit
-[migration](flows/setup/troubleshooting.md#migration).
+[migration](runtime/config/troubleshooting.md#migration).
 
 ## On-demand briefing
 
 Request a read-only progress snapshot with `/automattic:brief` in Claude,
 `$automattic:brief` in Codex, or `/skill:brief` in Pi. It defaults to the active
 task; optionally name an effort, branch, PR or a focus such as "what needs me?".
-`brief map` shows the [pipeline map](flows/brief/pipeline.md) of which command fits; a
+`brief map` shows the [pipeline map](skills/brief/pipeline.md) of which command fits; a
 brief with nothing in progress offers it.
 
-The [briefing procedure](flows/brief/brief.md) explains the goal, completed/current/next
+The [briefing procedure](skills/brief/SKILL.md) explains the goal, completed/current/next
 work, review and verification status, and decisions needing your input. It checks
 fresh scoped evidence, identifies stale or unavailable state, and preserves the
 running workflow. It creates no journal or maintained-document update.
@@ -384,7 +387,7 @@ checkpoint before dependent work; a plan-only request remains planning only.
 Use `/automattic:review walkthrough <branch|PR-number|PR-URL>` in Claude,
 `$automattic:review walkthrough <target>` in Codex, or `/skill:review walkthrough <target>` in Pi
 when you want to understand a change and form a judgment. `--base <ref>` selects
-the comparison. The [walkthrough](flows/review/walkthrough.md) explains WHY / WHAT /
+the comparison. The [walkthrough](skills/review/walkthrough.md) explains WHY / WHAT /
 HOW using the shared show-me guidance, deepens through your questions, and guides
 the next step. It can finish with shared understanding and review criteria.
 When you ask to proceed, it continues into the shared review procedure in the same
@@ -408,7 +411,7 @@ decision pauses dependent detail review while independent scopes continue. Matt'
 Standards/Spec review runs once for each eligible implementation batch; later rounds
 reopen only affected scope and evidence. Security, testability, integrity and
 maintainability are lenses within these layers. Documentation correctness stays a
-hard gate. See [review layers](flows/review/layers.md).
+hard gate. See [review layers](skills/review/layers.md).
 
 Review starts assessment directly, reusing any accepted walkthrough decisions.
 By default it produces local comment drafts without changing source code.
@@ -440,7 +443,7 @@ it automatically while writing comments; it is not in Claude Code's command menu
 Its [research basis](standards/code-comments-sources.md) separates common
 principles from language-specific style choices. Review owns the hard gate.
 
-[housekeeping](flows/housekeeping/housekeeping.md) removes task-created disposable
+[housekeeping](skills/housekeeping/SKILL.md) removes task-created disposable
 intermediates and test outputs, preserves required evidence and updates affected
 project documentation using existing conventions. Maintained docs describe current
 behavior; retained development history belongs in `journals/` or the project's
@@ -450,11 +453,11 @@ independently; dispatch applies it before review, and PR preparation checks
 for remaining work. It reuses code-comments for source documentation. Cleanup
 does not delete unrelated files, retire branches or replace the review gate.
 
-[remediate](flows/remediate/remediate.md) finds and proves `tautological-tests`,
+[remediate](skills/remediate/SKILL.md) finds and proves `tautological-tests`,
 `misleading-comments` or a free-form goal. Invoke
 `/automattic:remediate [kind|"goal"] [--base <ref> | <path>... | --project]` in Claude,
 `$automattic:remediate ...` in Codex or `/skill:remediate ...` in Pi; OpenCode uses
-its native skill discovery. The skill's [arguments](flows/remediate/remediate.md#arguments)
+its native skill discovery. The skill's [arguments](skills/remediate/SKILL.md#arguments)
 table lists each value and its default.
 It runs only when explicitly requested. Scope defaults to the established diff;
 named paths repair after proof, while whole-project scans report first and wait
@@ -464,12 +467,12 @@ A test is [tautological](standards/kinds/tautological-tests.md) when a defect in
 the behavior it claims leaves it passing; review applies the same check to every
 added or modified test by reading: an assertion checklist, routing by the decision
 model, and a code trace for expected failures checked only by code.
-The [comment audit](flows/remediate/remediate.md#comment-audit) lists added plain
+The [comment audit](skills/remediate/SKILL.md#comment-audit) lists added plain
 comment lines as review candidates, with language and syntax limits documented
 there. Remediation supplies its own proof and test-first repair procedure.
 
-The [shared review procedure](flows/review/review.md) owns the review workflow's
-repair loop with its own [Standards/Spec method](flows/review/method.md) and reuses Matt's
+The [shared review procedure](skills/review/SKILL.md) owns the review workflow's
+repair loop with its own [Standards/Spec method](skills/review/method.md) and reuses Matt's
 grilling, diagnosis and TDD where applicable.
 `/automattic:review` (with or without `walkthrough`) and `/automattic:dispatch` retain
 `disable-model-invocation: true`. Manual review forwards its target and flags;
@@ -479,7 +482,7 @@ requests skip review; otherwise dispatch defaults to read-only assessment.
 `/automattic:dispatch <scope> --autofix` includes the same repair/verification loop. This entry-point
 restriction is a workflow convention, not a native caller-specific permission.
 The report tracks coverage rather than a fixed number of findings.
-The [pipeline map](flows/brief/pipeline.md) maps the workflow; autofix review owns E2E
+The [pipeline map](skills/brief/pipeline.md) maps the workflow; autofix review owns E2E
 execution and device reservation. It reconciles existing evidence, runs missing
 applicable checks, and feeds failures back through the same scoped repair loop.
 Operator-only work outside the accepted scope stays excluded. Genuine missing

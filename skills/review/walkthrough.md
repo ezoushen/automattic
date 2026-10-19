@@ -47,7 +47,7 @@ report the gap and continue the factual explanation.
    the user. After a tangent, return to the remaining decision. Adapt depth to the
    user; a fixed question count or an answered scope question does not establish
    readiness to review.
-4. **Summarize understanding.** Apply the [question filter](../interview/question-filter.md)
+4. **Summarize understanding.** Apply the [question filter](../../flows/interview/question-filter.md)
    to material unresolved choices. Summarize intended behavior, scope, constraints,
    accepted tradeoffs, open questions and recommended review priorities. When the
    user has enough context, recommend reviewing or exploring a remaining question.
@@ -57,7 +57,7 @@ report the gap and continue the factual explanation.
 ## Continue into review when requested
 
 When the user indicates readiness to review, run the
-[shared review procedure](review.md) in the same conversation. A new
+[shared review procedure](SKILL.md) in the same conversation. A new
 task or second `/review` invocation is unnecessary. If they already authorized
 review once a named question was settled, announce the transition and proceed
 without another approval. Silence or scope agreement alone does not authorize it.

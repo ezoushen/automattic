@@ -235,7 +235,7 @@ print(json.dumps({'assignment_id': 'wrong' if mode == 'mismatch' else assignment
             launcher.write_text(f'exec {shlex.quote(sys.executable)} {shlex.quote(str(worker))} "$@"\n')
             assignment = {'assignment_id': 'review-1', 'head': 'pinned-sha', 'worktree': str(root),
                           'agent_file': str(models.ROOT / 'agents/reviewer.md'),
-                          'job_file': str(models.ROOT / 'flows/review/jobs/diff-review.md'),
+                          'job_file': str(models.ROOT / 'skills/review/jobs/diff-review.md'),
                           'prompt': 'Literal $(touch unexpected); `touch unexpected`'}
 
             def execution(mode='completed', policy=None):

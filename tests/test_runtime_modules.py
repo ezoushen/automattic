@@ -32,9 +32,9 @@ class RuntimeModules(unittest.TestCase):
         for name in ('workers/recovery.md', 'config/catalog.md', 'config/routers.md', 'config/session.md',
                      'config/executors.md', 'resources/resources.md', 'resources/retire-worktree.md'):
             self.assertTrue((RUNTIME / name).is_file(), name)
-        for name in ('setup.md', 'tour.md', 'apply.md', 'reset-and-validate.md', 'troubleshooting.md',
-                     'legacy-preferences.md'):
-            self.assertTrue((ROOT / 'flows/setup' / name).is_file(), name)
+        self.assertTrue((RUNTIME / 'config/troubleshooting.md').is_file())
+        for name in ('SKILL.md', 'tour.md', 'apply.md', 'reset-and-validate.md', 'legacy-preferences.md'):
+            self.assertTrue((ROOT / 'skills/setup' / name).is_file(), name)
 
     def test_the_decision_and_routing_skills_are_thin_entries_over_runtime(self):
         for skill, target in (('decision', 'runtime/decisions/decision.md'),
@@ -45,7 +45,7 @@ class RuntimeModules(unittest.TestCase):
             self.assertTrue((ROOT / target).is_file(), target)
 
     def test_housekeeping_keeps_a_pointer_to_worktree_retirement(self):
-        text = (ROOT / 'flows/housekeeping/housekeeping.md').read_text()
+        text = (ROOT / 'skills/housekeeping/SKILL.md').read_text()
         self.assertIn('## Retire a worktree\n\nFollow [worktree retirement](../../runtime/resources/retire-worktree.md).', text)
         self.assertNotIn('git -C <checkout> status --porcelain --ignored', text)
         self.assertIn('git -C <checkout> status --porcelain --ignored', (RUNTIME / 'resources/retire-worktree.md').read_text())

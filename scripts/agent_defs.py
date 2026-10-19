@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load and check the plugin's agents (agents/*.md) and jobs (flows/*/jobs/*.md).
+"""Load and check the plugin's agents (agents/*.md) and jobs (skills/*/jobs/*.md).
 
 An agent holds permissions, principles and core skills; a job holds what one assignment
 needs and returns. Code reads both from here, so no script needs an agent's name.
@@ -49,8 +49,8 @@ def tool_set(value):
 
 
 def job_files(root):
-    """Job files of a plugin root, named by file stem across flows."""
-    return sorted(Path(root).glob('flows/*/jobs/*.md'))
+    """Job files of a plugin root, named by file stem across skills."""
+    return sorted(Path(root).glob('skills/*/jobs/*.md'))
 
 
 def load(root=ROOT):

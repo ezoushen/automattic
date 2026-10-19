@@ -28,7 +28,7 @@ class ArchitectureDocs(unittest.TestCase):
     def test_the_readme_layout_has_a_row_for_every_top_level_folder(self):
         rows = [line.split('|')[1] for line in README.split('## Layout', 1)[1].split('\n## ', 1)[0].splitlines()
                 if line.startswith('| `')]
-        for name in ('flows/dispatch', 'flows/review', 'flows/remediate', 'flows/interview', 'standards/', 'runtime/workers/', 'hosts/claude/',
+        for name in ('skills/<command>/', 'flows/interview/', 'flows/board/', 'standards/', 'runtime/workers/', 'hosts/claude/',
                      'bootstrap.md'):
             self.assertTrue(any(f'`{name}' in row for row in rows), name)
         self.assertIn('writing-agent-docs/SKILL.md', README)
@@ -37,7 +37,7 @@ class ArchitectureDocs(unittest.TestCase):
         levels = json.loads((ROOT / '.agents/skills/writing-agent-docs/architecture.json').read_text())['levels']
         rank = {name: number for number, names in enumerate(levels) for name in names}
         section = README.split('## Architecture', 1)[1].split('\n## ', 1)[0]
-        layers = {'bootstrap.md': 'bootstrap', 'flows': 'brief', 'agents/': 'agents', 'standards/': 'standards',
+        layers = {'skills/<command>/': 'brief', 'bootstrap.md': 'bootstrap', 'flows/': 'interview', 'agents/': 'agents', 'standards/': 'standards',
                   'hosts/': 'hosts', 'runtime/': 'workers'}
         self.assertEqual(sorted(layers, key=section.index), sorted(layers, key=lambda token: rank[layers[token]]))
         runtime = ('workers', 'checks', 'routing', 'resources', 'decisions', 'config')
@@ -97,7 +97,7 @@ class ArchitectureDocs(unittest.TestCase):
             self.assertIn('](skill-executor.md)', (ROOT / 'runtime/config' / name).read_text(), name)
 
     def test_the_dispatch_reference_sends_no_reader_up_to_a_skill(self):
-        self.assertNotIn('pipeline skill', (ROOT / 'flows/dispatch/reference.md').read_text())
+        self.assertNotIn('pipeline skill', (ROOT / 'skills/dispatch/reference.md').read_text())
 
     def test_no_recorded_debt_remains(self):
         base = ROOT / '.agents/skills/writing-agent-docs'

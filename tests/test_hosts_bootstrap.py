@@ -22,7 +22,7 @@ HOSTS = ('claude', 'codex', 'pi', 'opencode')
 TRIGGERS = {
     r'creat\w+ a PR': 'standards/pr.md',
     r'mandate/alignment questions': 'flows/interview/question-filter.md',
-    r'explicit phase composition': 'flows/refine/refine.md',
+    r'explicit phase composition': 'flows/interview/authority.md',
     r'before .*worker launch': 'runtime/workers/launch.md',
     r'worker blockers': 'runtime/workers/recovery.md#escalation-checkpoints',
     r'decisions\.enabled': 'runtime/decisions/checkpoint.md#phase-checkpoints',

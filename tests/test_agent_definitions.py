@@ -62,7 +62,7 @@ class Definitions(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.write('agents/checker.md', AGENT)
         self.write('skills/craft/SKILL.md', '---\nname: craft\ndescription: Craft.\n---\n')
-        self.write('flows/craft/jobs/inspect.md', JOB)
+        self.write('skills/craft/jobs/inspect.md', JOB)
         self.write('runtime/rules.md', '# Rules\n')
         self.write('scripts/tool.py', "JOB = 'inspect'\n")
 
@@ -91,7 +91,7 @@ class Definitions(unittest.TestCase):
         self.assertEqual(loaded['jobs']['inspect'], {
             'name': 'inspect', 'agent': 'checker', 'inputs': ['worktree', 'head', 'report'],
             'returns': ['## Coverage'], 'independent_of': [], 'acceptance': False,
-            'path': str(self.root / 'flows/craft/jobs/inspect.md')})
+            'path': str(self.root / 'skills/craft/jobs/inspect.md')})
 
     def test_an_agent_holds_only_its_three_sections(self):
         self.edit('agents/checker.md', '## Core skills', '## Diff boundary\n\nOnly the changed range.\n\n## Core skills')
@@ -154,40 +154,40 @@ class Definitions(unittest.TestCase):
                  ('inputs: ["worktree", "head", "report"]', 'inputs: worktree', 'inputs must be a list of strings')]
         for old, new, fragment in cases:
             with self.subTest(fragment=fragment):
-                self.write('flows/craft/jobs/inspect.md', JOB)
-                self.edit('flows/craft/jobs/inspect.md', old, new)
+                self.write('skills/craft/jobs/inspect.md', JOB)
+                self.edit('skills/craft/jobs/inspect.md', old, new)
                 self.assertProblem(fragment)
 
     def test_job_names_an_existing_agent(self):
-        self.edit('flows/craft/jobs/inspect.md', 'agent: checker', 'agent: auditor')
+        self.edit('skills/craft/jobs/inspect.md', 'agent: checker', 'agent: auditor')
         self.assertProblem('unknown agent auditor')
 
     def test_job_holds_inputs_finish_line_and_return(self):
-        self.edit('flows/craft/jobs/inspect.md', '## Finish line', '## Steps')
+        self.edit('skills/craft/jobs/inspect.md', '## Finish line', '## Steps')
         self.assertProblem('sections must be Inputs, Finish line, Return')
 
     def test_job_returns_are_report_headings(self):
-        self.edit('flows/craft/jobs/inspect.md', '["## Coverage"]', '["Coverage"]')
+        self.edit('skills/craft/jobs/inspect.md', '["## Coverage"]', '["Coverage"]')
         self.assertProblem('returns must be Markdown headings')
 
     def test_job_independence_names_existing_jobs(self):
-        self.edit('flows/craft/jobs/inspect.md', 'independent_of: []', 'independent_of: ["review"]')
+        self.edit('skills/craft/jobs/inspect.md', 'independent_of: []', 'independent_of: ["review"]')
         self.assertProblem('independent_of names unknown job review')
 
     def test_job_names_are_unique_across_flows(self):
-        self.write('flows/other/jobs/inspect.md', JOB)
+        self.write('skills/other/jobs/inspect.md', JOB)
         self.assertProblem('job inspect is defined twice')
 
     def test_a_job_under_a_flow_loads_and_shares_the_unique_name_space(self):
-        self.write('flows/craft/jobs/survey.md', JOB.replace('name: inspect', 'name: survey'))
+        self.write('skills/craft/jobs/survey.md', JOB.replace('name: inspect', 'name: survey'))
         self.assertEqual(self.problems(), [])
         self.assertEqual(agent_defs.load(self.root)['jobs']['survey']['path'],
-                         str(self.root / 'flows/craft/jobs/survey.md'))
-        self.write('flows/other/jobs/inspect.md', JOB)
+                         str(self.root / 'skills/craft/jobs/survey.md'))
+        self.write('skills/other/jobs/inspect.md', JOB)
         self.assertProblem('job inspect is defined twice')
 
     def test_job_name_matches_its_file(self):
-        self.edit('flows/craft/jobs/inspect.md', 'name: inspect', 'name: survey')
+        self.edit('skills/craft/jobs/inspect.md', 'name: inspect', 'name: survey')
         self.assertProblem('name survey does not match file inspect')
 
     def test_scripts_never_name_an_agent(self):

@@ -10,7 +10,7 @@ acceptance: false
 # diff-review
 
 Review a pinned change range: the implementation layer of the
-[shared review procedure](../review.md).
+[shared review procedure](../SKILL.md).
 
 Contents:
 - [Inputs](#inputs)

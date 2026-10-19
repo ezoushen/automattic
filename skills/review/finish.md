@@ -1,6 +1,6 @@
 # Review finish and comment publication
 
-The closing stages of the [shared review procedure](review.md).
+The closing stages of the [shared review procedure](SKILL.md).
 
 ## Finish
 

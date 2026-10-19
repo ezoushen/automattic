@@ -1,6 +1,6 @@
 # Dispatch review handoff
 
-The handoff stage of [dispatch](dispatch.md), after the [iteration](iteration.md).
+The handoff stage of [dispatch](SKILL.md), after the [iteration](iteration.md).
 
 ## Review handoff
 
@@ -9,10 +9,10 @@ state that review has not run and provide the exact standalone review command.
 Otherwise continue in this invocation, without waiting for another user turn.
 
 For each selected effort with integrated changes, finish or reconcile its writers,
-then apply [housekeeping](../housekeeping/housekeeping.md) to the effort worktree. Commit
+then apply [housekeeping](../housekeeping/SKILL.md) to the effort worktree. Commit
 intended tracked cleanup/documentation changes there before pinning the review
 head; preserve unrelated local edits. Run the
-[shared review procedure](../review/review.md) on the verified effort branch,
+[shared review procedure](../review/SKILL.md) on the verified effort branch,
 one target at a time. Pass the selected ticket scope, accepted alignment/ledger,
 priority sources, project instructions and report path. Include `--autofix` only
 when repairs are authorized. If the user explicitly requested a walkthrough before

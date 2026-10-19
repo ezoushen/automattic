@@ -19,8 +19,8 @@ Shared docs are grouped by reader, each folder with a README that lists its file
 [workers](runtime/workers/README.md) (launch, wait for, collect and retire workers),
 [routing](runtime/routing/README.md) (choose and report worker models),
 [decisions](runtime/decisions/README.md) (decision checkpoints and journals),
-[checks](runtime/checks/README.md) (plan and run checks), [setup](flows/setup/README.md)
-(configuration format and procedure) and `hosts/executors/` (one guide per executor type).
+[checks](runtime/checks/README.md) (plan and run checks), [config](runtime/config/README.md)
+(configuration format) and `hosts/executors/` (one guide per executor type).
 A link names the file to read; read it whole. Each doc in these folders fits one read, and
 a `#anchor` names a section inside it.
 
@@ -34,8 +34,7 @@ the exact `mattpocock-skills:<name>` entry, never a bare colliding name such as 
 Orchestrators and workers follow shared [assignment focus](runtime/workers/focus.md)
 for priority, scope and concise updates.
 
-`/automattic:setup` explains configuration and handles direct settings requests through
-the [configuration procedure](flows/setup/setup.md), only for user-requested changes;
+`/automattic:setup` explains configuration and handles direct settings requests, only for user-requested changes;
 workflow execution reads configuration without invoking that explicit-only command.
 
 ## Triggers
@@ -44,9 +43,9 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 
 | When | Read |
 |---|---|
-| Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the required-check watch in `flows/pr/pr.md` |
+| Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the [required-check watch](standards/pr.md#watch-the-required-checks) |
 | Before mandate/alignment questions, including a request to "grill" the plan | [question filter](flows/interview/question-filter.md): it owns question depth and continuation; the dependency's exhaustive interview requires an explicit request for that depth |
-| Explicit phase composition, such as refinement after research | [refinement procedure](flows/refine/refine.md#explicit-phase-composition) |
+| Explicit phase composition, such as refinement after research | [explicit phase composition](flows/interview/authority.md#explicit-phase-composition) |
 | Before each worker launch, including workers that dependency skills launch | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
 | Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](runtime/workers/recovery.md#escalation-checkpoints); ordinary resumes reuse the saved choice |
 | Before the first phase checkpoint, when `decisions.enabled` has a family | [phase checkpoints](runtime/decisions/checkpoint.md#phase-checkpoints) |

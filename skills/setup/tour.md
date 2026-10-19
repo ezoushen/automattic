@@ -5,7 +5,7 @@ no request to change settings, stay read-only. A scope flag focuses the discussi
 it does not itself authorize edits. No board, new session or configuration file is
 required to have this conversation.
 
-Use the [configuration procedure](setup.md) for inspection and any requested changes.
+Use the [configuration procedure](SKILL.md) for inspection and any requested changes.
 Read only the relevant referenced branches. The tour and a direct change are two ways
 through the same command; do not require the user to type a second command. This adds
 a guided path, not a new configuration format or a second resolver.
@@ -49,7 +49,7 @@ Keep the explanation in chat before asking for a decision.
 
 Follow the user's question rather than a questionnaire over every field. Recommend
 the next useful topic with its tradeoff, leave room for questions, and apply the
-[question filter](../interview/question-filter.md) to material unresolved choices.
+[question filter](../../flows/interview/question-filter.md) to material unresolved choices.
 Discover facts from configuration and installed contracts yourself. Reuse stated
 preferences; a fully specified change can proceed without a mandatory tour.
 

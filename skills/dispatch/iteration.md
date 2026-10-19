@@ -1,6 +1,6 @@
 # Dispatch iteration
 
-The iteration stage of [dispatch](dispatch.md); the [review handoff](handoff.md) follows it.
+The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) follows it.
 
 ## One iteration
 
@@ -9,7 +9,7 @@ The iteration stage of [dispatch](dispatch.md); the [review handoff](handoff.md)
    Refresh human changes to scope, criteria and priority before assigning work;
    materially changed active work returns for alignment. A principle the user states
    mid-dispatch is recorded verbatim and checked against the plan under
-   [authority rules](../interview/authority.md). Keep local runtime state
+   [authority rules](../../flows/interview/authority.md). Keep local runtime state
    and canonical issue state distinct, and apply authorized tracker transitions
    at the project's actual milestones. Read pending receipts and attention items
    under [worker waits](../../runtime/workers/wait.md#wake-and-yield)
@@ -62,7 +62,7 @@ The iteration stage of [dispatch](dispatch.md); the [review handoff](handoff.md)
 
    ```text
    adapter: <absolute active adapter>  plugin_root: <absolute>  repo: <absolute main checkout>
-   agent_file: <plugin_root>/agents/builder.md  job_file: <plugin_root>/flows/dispatch/jobs/ticket.md
+   agent_file: <plugin_root>/agents/builder.md  job_file: <plugin_root>/skills/dispatch/jobs/ticket.md
    ticket: <canonical ID/URL or absolute local ticket path>
    ticket context: <current issue content, criteria, dependencies, priority and revision>
    focus: <highest-priority outcome, next acceptance condition and deferred optional work>

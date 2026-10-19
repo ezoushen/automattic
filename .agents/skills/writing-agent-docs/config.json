@@ -31,7 +31,8 @@
     "tests/hook_case.py",
     "tests/test_agent_definitions.py",
     "tests/test_architecture_rules.py",
-    "tests/test_fold_check.py"
+    "tests/test_fold_check.py",
+    "tests/test_edit_check.py"
   ],
   "code_doc_pattern": "(?<![\\w/.-])(?:(?:skills|agents|flows|standards|runtime|hosts)/[\\w/-]+|bootstrap)\\.md",
   "entry_points": [
@@ -40,7 +41,7 @@
     ".agents/skills/*/SKILL.md",
     "bootstrap.md",
     "hosts/*/session.md",
-    "flows/*/jobs/*.md"
+    "skills/*/jobs/*.md"
   ],
   "skill_files": [
     "skills/*/SKILL.md",

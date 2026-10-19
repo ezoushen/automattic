@@ -1,6 +1,6 @@
 # Review coverage and findings
 
-The coverage stage of the [shared review procedure](review.md).
+The coverage stage of the [shared review procedure](SKILL.md).
 
 ## Review to coverage completion
 

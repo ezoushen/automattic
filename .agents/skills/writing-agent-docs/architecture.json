@@ -9,9 +9,6 @@
    "hooks"
   ],
   [
-   "bootstrap"
-  ],
-  [
    "brief"
   ],
   [
@@ -31,6 +28,9 @@
    "align",
    "refine",
    "setup"
+  ],
+  [
+   "bootstrap"
   ],
   [
    "interview"
@@ -66,13 +66,16 @@
    "config"
   ],
   [
-   "addons"
+   "addons",
+   "authoring"
   ]
  ],
  "modules": {
   "skills": {
    "docs": [
-    "skills/*/SKILL.md",
+    "skills/code-comments/SKILL.md",
+    "skills/decision/SKILL.md",
+    "skills/model-routing/SKILL.md",
     ".agents/skills/*/SKILL.md"
    ],
    "isolated": true
@@ -97,27 +100,27 @@
   },
   "brief": {
    "docs": [
-    "flows/brief/**/*.md"
+    "skills/brief/**/*.md"
    ]
   },
   "dispatch": {
    "docs": [
-    "flows/dispatch/**/*.md"
+    "skills/dispatch/**/*.md"
    ]
   },
   "pr": {
    "docs": [
-    "flows/pr/**/*.md"
+    "skills/pr/**/*.md"
    ]
   },
   "housekeeping": {
    "docs": [
-    "flows/housekeeping/**/*.md"
+    "skills/housekeeping/**/*.md"
    ]
   },
   "remediate": {
    "docs": [
-    "flows/remediate/**/*.md"
+    "skills/remediate/**/*.md"
    ]
   },
   "standards": {
@@ -131,7 +134,7 @@
   },
   "review": {
    "docs": [
-    "flows/review/**/*.md"
+    "skills/review/**/*.md"
    ],
    "code": [
     "scripts/review_target.py"
@@ -139,12 +142,12 @@
   },
   "align": {
    "docs": [
-    "flows/align/**/*.md"
+    "skills/align/**/*.md"
    ]
   },
   "refine": {
    "docs": [
-    "flows/refine/**/*.md"
+    "skills/refine/**/*.md"
    ]
   },
   "interview": {
@@ -180,7 +183,7 @@
   },
   "setup": {
    "docs": [
-    "flows/setup/**/*.md"
+    "skills/setup/**/*.md"
    ]
   },
   "resources": {
@@ -233,6 +236,11 @@
    "docs": [
     "addons/**/*.md"
    ]
+  },
+  "authoring": {
+   "docs": [
+    ".agents/skills/writing-agent-docs/practices.md"
+   ]
   }
  },
  "first_read": {
@@ -257,7 +265,7 @@
    "agents/*.md"
   ],
   "jobs": [
-   "flows/*/jobs/*.md"
+   "skills/*/jobs/*.md"
   ],
   "kinds": [
    "standards/**/kinds/*.md"
@@ -293,6 +301,6 @@
   ]
  },
  "entry_doc": {
-  "flows": "flows"
+  "wrappers": "skills"
  }
 }

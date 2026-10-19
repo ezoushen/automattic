@@ -1,6 +1,6 @@
 # Autofix verification
 
-The verification stage of the [shared review procedure](review.md).
+The verification stage of the [shared review procedure](SKILL.md).
 
 ## Verify autofix through E2E
 

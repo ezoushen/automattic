@@ -9,6 +9,7 @@ Contents:
 - [Length](#length)
 - [Refreshing an existing PR](#refreshing-an-existing-pr)
 - [Self-check before every publish](#self-check-before-every-publish)
+- [Watch the required checks](#watch-the-required-checks)
 
 Read this before writing a PR description and before every later edit or push to a
 PR branch, whether or not `/automattic:pr` was invoked. It applies to free-text
@@ -121,7 +122,7 @@ details in reports and inline only the essentials.
 5. Lint, then publish with `gh pr edit <n> --body-file .scratch/<slug>/pr.md`, then
    verify the live body equals the file (`--published` below).
 6. A push or an edit is a delivery boundary. Run the `delivery` checkpoint, or
-   record an evidenced skip, and watch the required checks (pr step 5).
+   record an evidenced skip, and [watch the required checks](#watch-the-required-checks).
 
 ## Self-check before every publish
 
@@ -146,3 +147,15 @@ rules the script can't:
 - Out items trace to decisions;
 - merge risk and rollback are stated;
 - the Summary answers the four questions.
+
+## Watch the required checks
+
+Watch the required checks for the pushed SHA. Confirm the PR head equals that
+SHA, then run `gh pr checks <n> --required --watch` as a background job. When the
+repository reports no required checks, the watch returns at once: watch every
+check with `gh pr checks <n> --watch` instead, and treat each as required. A
+failing required check is not "delivered". Read the failed job's log and return through `recovery` to
+`review --autofix`. The repair reproduces the full failing CI job locally before
+pushing, and the watch restarts on the new SHA. Report "ready to merge" only when
+every required check is green and the approval path is known. The same watch
+follows every later push to the PR branch.

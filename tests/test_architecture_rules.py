@@ -67,6 +67,45 @@ class ArchitectureRules(Fixture):
         [(_, _, message)] = self.messages('direction')
         self.assertIn('sibling', message)
 
+    def test_a_doc_path_named_in_text_is_a_dependency_like_a_link(self):
+        self.write('flows/a/one.md', '# One\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + '[one](../../flows/a/one.md)\n')
+        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nThe watch is step 5 of `flows/a/one.md`.\n')
+        self.assertEqual(self.check(), {('shared/guide.md', 5, 'direction', 'error')})
+        [(_, _, message)] = self.messages('direction')
+        self.assertIn('shared/guide.md -> flows/a/one.md', message)
+        self.write('shared/guide.md', GUIDE)
+        self.write('flows/a/one.md', '# One\n\nSee `shared/guide.md`, in a lower module.\n')
+        self.assertEqual(self.check(), set())
+
+    def test_a_doc_may_name_a_module_injected_by_path_in_text(self):
+        self.architecture['levels'].append(['hosts'])
+        self.architecture['modules']['hosts'] = {'docs': ['hosts/**/*.md'], 'unlinked': True}
+        self.config['docs'] = self.config['docs'] + ['hosts/**/*.md']
+        self.config['entry_points'] = self.config['entry_points'] + ['hosts/*/session.md']
+        self.config['code_doc_pattern'] = r'(?:shared|skills|flows|hosts)/[\w/-]+\.md'
+        self.write('hosts/small/session.md', '# Session\n')
+        self.write('shared/guide.md', GUIDE + '\nThe host part is `hosts/small/session.md`.\n')
+        self.assertEqual(self.check(), set())
+
+    def test_code_naming_a_doc_of_a_higher_module_is_a_direction_error(self):
+        self.architecture['modules']['runtime']['code'] = ['scripts/run.py']
+        self.write('flows/a/one.md', '# One\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + '[one](../../flows/a/one.md)\n')
+        self.assertEqual(self.check(), set())
+        self.write('scripts/run.py', "GUIDE = 'shared/guide.md'\nHELP = 'see flows/a/one.md'\n")
+        self.assertEqual(self.check(), {('scripts/run.py', 2, 'direction', 'error')})
+
+    def test_the_checker_reports_a_script_importing_a_higher_module(self):
+        self.architecture['modules']['flows']['code'] = ['scripts/high.py']
+        self.architecture['modules']['runtime']['code'] = ['scripts/run.py']
+        self.write('scripts/high.py', 'X = 1\n')
+        self.assertEqual(self.check(), set())
+        self.write('scripts/run.py', "GUIDE = 'shared/guide.md'\n\ndef f():\n    import high\n")
+        self.assertEqual(self.check(), {('scripts/run.py', 4, 'import-direction', 'error')})
+
     def test_a_module_injected_by_path_may_not_be_linked(self):
         self.first_read_tree()
         self.write('flows/a/one.md', '# One\n\nSee [host](../../hosts/small/session.md).\n')
@@ -187,41 +226,54 @@ class ArchitectureRules(Fixture):
         self.architecture['first_read']['budget'] = total + 1
         self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'stale-debt', 'warning')})
 
-    def entry_tree(self, target):
-        """The first-read fixture with the entry-doc rule on and the skill's declaration naming target."""
-        self.first_read_tree()
-        self.architecture['entry_doc'] = {'flows': 'flows'}
-        path = self.root / 'skills/tool/SKILL.md'
-        self.write(target, '# Tool procedure\n')
-        path.write_text(path.read_text().replace('[the guide](../../shared/guide.md).',
-                                                 f'[the guide](../../shared/guide.md), [procedure](../../{target}).'))
+    def entry_tree(self, target, own_module=False, command=False):
+        """The first-read fixture with the entry-doc rule on and the skill's declaration naming target.
 
-    def test_a_skill_whose_first_reads_name_no_doc_after_it_is_an_error(self):
-        self.entry_tree('flows/tool/procedure.md')
+        own_module maps skills/tool/ as the skill's own module, so its SKILL.md holds a procedure;
+        otherwise the skill is a wrapper in the `skills` module."""
+        self.first_read_tree()
+        self.architecture['entry_doc'] = {'wrappers': 'skills'}
+        self.architecture['modules']['skills']['docs'] = ['skills/other/SKILL.md']
+        if own_module:
+            self.architecture['levels'].insert(1, ['tool'])
+            self.architecture['modules']['tool'] = {'docs': ['skills/tool/**/*.md']}
+        else:
+            self.architecture['modules']['skills']['docs'].append('skills/tool/SKILL.md')
+        path = self.root / 'skills/tool/SKILL.md'
+        text = path.read_text()
+        if command:
+            text = text.replace('---\n\n', 'disable-model-invocation: true\n---\n\n', 1)
+        if target:
+            self.write(target, '# Tool procedure\n')
+            text = text.replace('[the guide](../../shared/guide.md).',
+                                f'[the guide](../../shared/guide.md), [procedure](../../{target}).')
+        path.write_text(text)
+
+    def test_a_wrapper_skill_whose_first_reads_name_no_doc_after_it_is_an_error(self):
+        self.entry_tree('shared/procedure.md')
         self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
         [(_, _, message)] = self.messages('entry-doc')
         self.assertIn('tool.md', message)
 
-    def test_a_skill_entry_doc_in_flows_sits_in_the_flow_named_after_it(self):
-        self.entry_tree('flows/other/tool.md')
-        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
-        [(_, _, message)] = self.messages('entry-doc')
-        self.assertIn('flows/tool/tool.md', message)
-
-    def test_a_command_entry_doc_outside_its_flow_is_an_error(self):
-        self.entry_tree('shared/tool.md')
-        path = self.root / 'skills/tool/SKILL.md'
-        path.write_text(path.read_text().replace('---\n\n', 'disable-model-invocation: true\n---\n\n', 1))
-        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
-        [(_, _, message)] = self.messages('entry-doc')
-        self.assertIn('flows/tool/tool.md', message)
-
-    def test_a_skill_entry_doc_in_its_own_flow_or_outside_flows_passes(self):
-        self.entry_tree('flows/tool/tool.md')
-        self.assertEqual(self.check(), set())
-        (self.root / 'flows/tool/tool.md').unlink()
+    def test_a_wrapper_skill_naming_a_doc_after_it_in_a_lower_module_passes(self):
         self.entry_tree('shared/tool.md')
         self.assertEqual(self.check(), set())
+
+    def test_a_typed_command_that_wraps_a_doc_is_an_error_naming_its_own_folder(self):
+        self.entry_tree('shared/tool.md', command=True)
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
+        [(_, _, message)] = self.messages('entry-doc')
+        self.assertIn('skills/tool/', message)
+
+    def test_a_command_holding_its_procedure_in_its_own_module_passes(self):
+        self.entry_tree(None, own_module=True, command=True)
+        self.assertEqual(self.check(), set())
+
+    def test_a_skill_in_its_own_module_that_first_reads_a_doc_named_after_it_is_an_error(self):
+        self.entry_tree('skills/tool/tool.md', own_module=True, command=True)
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
+        [(_, _, message)] = self.messages('entry-doc')
+        self.assertIn('SKILL.md', message)
 
     def host_tree(self, **extra):
         self.first_read_tree()
@@ -271,8 +323,9 @@ class ArchitectureRules(Fixture):
 
 TARGET_DOCS = {  # doc under a target folder: is it an entry point (exempt from the orphan rule)?
     'bootstrap.md': True,
-    'flows/dispatch/procedure.md': False,
-    'flows/dispatch/jobs/job.md': True,
+    'skills/dispatch/handoff.md': False,
+    'skills/dispatch/jobs/job.md': True,
+    'flows/board/board.md': False,
     'standards/style.md': False,
     'runtime/workers/launch.md': False,
     'hosts/claude/session.md': True,
@@ -289,7 +342,9 @@ class TargetFolders(Fixture):
         result = subprocess.run([sys.executable, str(CHECKER), '--root', str(self.root), '--json'],
                                 capture_output=True, text=True)
         assert result.returncode in (0, 1), result.stderr
-        return {f['code'] for f in json.loads(result.stdout) if f['path'] == self.doc or f['path'] == 'scripts/run.py'}
+        # the fixture script is unmapped under the repository's architecture; only its doc paths matter here
+        return {f['code'] for f in json.loads(result.stdout)
+                if f['path'] == self.doc or (f['path'] == 'scripts/run.py' and f['code'] == 'code-path')}
 
     def test_each_target_folder_gets_the_size_link_orphan_and_code_path_rules(self):
         for doc, entry in TARGET_DOCS.items():

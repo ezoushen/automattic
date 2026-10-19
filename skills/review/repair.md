@@ -1,6 +1,6 @@
 # Review repair and evidence pin
 
-The repair and pin stages of the [shared review procedure](review.md).
+The repair and pin stages of the [shared review procedure](SKILL.md).
 
 ## Optional repair
 

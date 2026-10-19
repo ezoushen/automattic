@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Each command's procedure lives in the flow named after it, shared flows sit below their users, and the
-jobs load from the flow that owns them. Direction, size and naming are the doc checker's rules; this checks
-what lives where."""
+"""Each command's procedure is its SKILL.md, in a folder that also holds its other docs and jobs; flows/
+holds only the shared procedures no command owns, below their users. Direction, size and shape are the doc
+checker's rules; this checks what lives where."""
 import re
 import unittest
 
@@ -9,28 +9,29 @@ import support
 
 ROOT = support.ROOT
 FLOWS = ROOT / 'flows'
+SKILLS = ROOT / 'skills'
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
 COMMANDS = ('align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief')
 # a procedure each merged or moved command must still carry, by the doc that now holds it
 HOLDS = {
-    'flows/align/align.md': ('## Settle the mandate', '## Establish the design', '## Save the current alignment'),
-    'flows/interview/authority.md': ('A decision the user reserved is always theirs.',),
+    'skills/align/SKILL.md': ('## Settle the mandate', '## Establish the design', '## Save the current alignment'),
+    'flows/interview/authority.md': ('A decision the user reserved is always theirs.', '## Explicit phase composition'),
     'flows/interview/question-filter.md': ('**Material fork:** ask only if plausible answers change the goal',),
     'flows/interview/record.md': ('`## Standing directives` section in the ledger',),
-    'flows/refine/refine.md': ("Matt Pocock's `/mattpocock-skills:to-tickets` breaks a spec",),
-    'flows/refine/ticket-template.md': ('# NN: <title, a behaviour not a component>',),
-    'flows/dispatch/dispatch.md': ('# dispatch',),
-    'flows/dispatch/iteration.md': ('## One iteration',),
-    'flows/dispatch/handoff.md': ('## Review handoff',),
-    'flows/housekeeping/housekeeping.md': ('## Remove disposable residue',),
-    'flows/pr/pr.md': ('## Repository approval path',),
-    'flows/review/review.md': ('# Shared review procedure',),
-    'flows/review/walkthrough.md': ('## Continue into review when requested',),
-    'flows/remediate/remediate.md': ('## Arguments',),
-    'flows/setup/setup.md': ('## Direct changes', 'No arguments means read-only inspection'),
-    'flows/setup/tour.md': ('## Explain the actual setup', '## Discuss one useful topic at a time'),
-    'flows/brief/brief.md': ('## Brief the human', '## Show the pipeline map'),
-    'flows/brief/pipeline.md': ('## The outer loop', '## Failure modes and where the loop catches them'),
+    'skills/refine/SKILL.md': ("Matt Pocock's `/mattpocock-skills:to-tickets` breaks a spec",),
+    'skills/refine/ticket-template.md': ('# NN: <title, a behaviour not a component>',),
+    'skills/dispatch/SKILL.md': ('# dispatch',),
+    'skills/dispatch/iteration.md': ('## One iteration',),
+    'skills/dispatch/handoff.md': ('## Review handoff',),
+    'skills/housekeeping/SKILL.md': ('## Remove disposable residue',),
+    'skills/pr/SKILL.md': ('## Repository approval path',),
+    'skills/review/SKILL.md': ('# Shared review procedure',),
+    'skills/review/walkthrough.md': ('## Continue into review when requested',),
+    'skills/remediate/SKILL.md': ('## Arguments',),
+    'skills/setup/SKILL.md': ('## Direct changes', 'No arguments means read-only inspection'),
+    'skills/setup/tour.md': ('## Explain the actual setup', '## Discuss one useful topic at a time'),
+    'skills/brief/SKILL.md': ('## Brief the human', '## Show the pipeline map'),
+    'skills/brief/pipeline.md': ('## The outer loop', '## Failure modes and where the loop catches them'),
     'flows/board/board.md': ('## Local Markdown board',),
 }
 JOBS = {'diff-review': ('reviewer', 'review'), 'repair': ('builder', 'review'), 'reproduce': ('reviewer', 'review'),
@@ -45,12 +46,24 @@ def targets(path):
 
 
 class Flows(unittest.TestCase):
-    def test_every_command_reads_first_the_procedure_in_the_flow_named_after_it(self):
+    def test_every_command_holds_its_procedure_and_first_reads_no_wrapped_doc(self):
         for command in COMMANDS:
             with self.subTest(command=command):
-                text = (ROOT / 'skills' / command / 'SKILL.md').read_text()
-                declaration = re.search(r'^First read:.*$', text, re.M).group(0)
-                self.assertIn(f'](../../flows/{command}/{command}.md)', declaration)
+                text = (SKILLS / command / 'SKILL.md').read_text()
+                declaration = re.search(r'^First read:.*?(?:\n\n|\Z)', text, re.M | re.S).group(0)
+                self.assertNotIn(f'{command}.md', declaration)
+                self.assertIn('\n## ', text)
+                self.assertFalse((FLOWS / command).exists())
+
+    def test_flows_holds_only_the_shared_procedures_no_command_owns(self):
+        self.assertEqual({path.name for path in FLOWS.iterdir() if path.is_dir()}, {'interview', 'board'})
+
+    def test_review_reads_the_walkthrough_only_when_asked_for_one(self):
+        text = (SKILLS / 'review/SKILL.md').read_text()
+        declaration = re.search(r'^First read:.*?(?:\n\n|\Z)', text, re.M | re.S).group(0)
+        self.assertNotIn('walkthrough', declaration)
+        argument = ' '.join(text.split('\n## ', 1)[0].split())
+        self.assertIn('A first argument `walkthrough` selects the [walkthrough procedure](walkthrough.md)', argument)
 
     def test_each_procedure_is_in_its_new_home(self):
         for name, markers in HOLDS.items():
@@ -66,22 +79,23 @@ class Flows(unittest.TestCase):
         for name, (agent, owner) in JOBS.items():
             with self.subTest(job=name):
                 self.assertEqual(jobs[name]['agent'], agent)
-                self.assertEqual(jobs[name]['path'], str(FLOWS / owner / 'jobs' / f'{name}.md'))
+                self.assertEqual(jobs[name]['path'], str(SKILLS / owner / 'jobs' / f'{name}.md'))
         self.assertEqual(agent_defs.problems(ROOT), [])
 
     def test_the_builder_packet_names_the_ticket_job_where_it_lives(self):
-        self.assertIn('job_file: <plugin_root>/flows/dispatch/jobs/ticket.md', (FLOWS / 'dispatch/iteration.md').read_text())
+        self.assertIn('job_file: <plugin_root>/skills/dispatch/jobs/ticket.md', (SKILLS / 'dispatch/iteration.md').read_text())
 
     def test_the_board_does_not_link_the_review_flow_or_carry_the_split_rule(self):
         for path in (FLOWS / 'board').rglob('*.md'):
             self.assertNotIn('too large for one worker', path.read_text(), path)
             for target in targets(path):
-                self.assertNotEqual(target.parts[:2], ('flows', 'review'), path)
+                self.assertNotEqual(target.parts[:2], ('skills', 'review'), path)
 
-    def test_the_pipeline_map_links_every_flow(self):
-        linked = {target.parts[1] for target in targets(FLOWS / 'brief/pipeline.md') if target.parts[0] == 'flows'}
-        self.assertEqual(linked, {path.name for path in FLOWS.iterdir() if path.is_dir()})
-
+    def test_the_pipeline_map_links_every_command_and_every_shared_flow(self):
+        linked = {target.parts[:2] for target in targets(SKILLS / 'brief/pipeline.md') if target.parts[0] in ('flows', 'skills')}
+        expected = {('flows', path.name) for path in FLOWS.iterdir() if path.is_dir()}
+        expected |= {('skills', command) for command in COMMANDS if command != 'brief'}
+        self.assertLessEqual(expected, linked)
 
 if __name__ == '__main__':
     unittest.main()

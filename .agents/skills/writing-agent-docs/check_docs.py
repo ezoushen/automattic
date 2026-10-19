@@ -20,7 +20,7 @@ from urllib.parse import unquote
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from architecture import Architecture  # noqa: E402
+from architecture import Architecture, check_imports  # noqa: E402
 
 INLINE_LINK = re.compile(r'!?\[((?:[^\[\]]|\[[^\]]*\])*)\]\(\s*(<[^>]*>|(?:[^()\s]|\([^()\s]*\))+)'
                          r'(?:\s+(?:"[^"]*"|\'[^\']*\'|\([^)]*\)))?\s*\)')
@@ -237,24 +237,29 @@ def first_read(root, architecture, rel):
 
 
 def entry_doc(root, architecture, rel, skill, declared):
-    """A finding when a skill's first reads name no doc after the skill, or name one outside the flow
-    named after it (`flows/<skill>/<skill>.md`) when it is under the flows root or the skill is a typed
-    command (`disable-model-invocation: true`)."""
+    """A finding when a skill has the wrong shape: a wrapper (a skill in the wrappers module) must
+    first-read a doc named after it and may not be a typed command (`disable-model-invocation: true`);
+    a skill in its own module holds its procedure in SKILL.md and first-reads no doc named after it."""
     settings = architecture.data.get('entry_doc')
     if not settings:
         return []
     fields = frontmatter(skill.read_text())[0] or {}
     name = fields.get('name') or skill.parent.name
     command = fields.get('disable-model-invocation') in (True, 'true')
-    flows = (root / settings['flows']).resolve()
     named = [path for path in declared if path.name == f'{name}.md']
+    folder = rel(skill).rsplit('/', 1)[0] + '/'
+    if architecture.module(rel(skill)) != settings['wrappers']:
+        if named:
+            return [Finding(rel(skill), 1, 'error', 'entry-doc',
+                            f'its `First read:` paragraph links {name}.md; move that procedure into this SKILL.md')]
+        return []
+    if command:
+        return [Finding(rel(skill), 1, 'error', 'entry-doc',
+                        f'a typed command holds its procedure in its SKILL.md; map {folder} as its own module')]
     if not named:
         return [Finding(rel(skill), 1, 'error', 'entry-doc',
                         f'its `First read:` paragraph links no {name}.md, the doc that holds this skill\'s procedure')]
-    if any(path.parent == flows / name or (flows not in path.parents and not command) for path in named):
-        return []
-    return [Finding(rel(skill), 1, 'error', 'entry-doc',
-                    f'its procedure doc is in another flow; move it to {settings["flows"]}/{name}/{name}.md')]
+    return []
 
 
 def host_shape(root, architecture):
@@ -389,13 +394,25 @@ def check(root, config, changed=None, architecture=None):
                 if anchor and resolved.suffix == '.md' and anchor not in outline(resolved)[0]:
                     findings.append(Finding(rel(path), number, 'error', 'anchor', f'{link}: no such heading'))
 
-    # Doc paths named in code.
+    # Doc paths named in text: a dependency like a link, wherever the doc names it.
     pattern = re.compile(config['code_doc_pattern'])
+    for path in linking:
+        for number, line in enumerate(path.read_text().splitlines(), 1):
+            for doc in pattern.findall(line):
+                owner = architecture.module(doc) if architecture else None
+                if owner and architecture.modules[owner].get('unlinked'):
+                    continue  # injected by path, so naming it is how a doc reaches it
+                if doc != rel(path) and exists_exactly(root / doc) and (root / doc).is_file():
+                    edges.append((rel(path), number, doc))
+
+    # Doc paths named in code.
+    named = []
     for path in expand(root, config.get('code', []), config.get('exclude', [])):
         for number, line in enumerate(path.read_text(errors='replace').splitlines(), 1):  # any source encoding
             for doc in pattern.findall(line):
                 if exists_exactly(root / doc) and (root / doc).is_file():
                     reached.add((root / doc).resolve())
+                    named.append((rel(path), number, doc))
                 else:
                     findings.append(Finding(rel(path), number, 'error', 'code-path', f'{doc} does not exist'))
 
@@ -407,7 +424,14 @@ def check(root, config, changed=None, architecture=None):
             if architecture.module(rel(path)) is None:
                 findings.append(Finding(rel(path), 1, 'error', 'unmapped', 'no module in the architecture file owns this doc'))
         debt = architecture.debt
-        for found in architecture.assess(edges, 'docs', 'direction', debt.get('links', []), debt.get('cycles', [])):
+        for found in architecture.assess(sorted(set(edges)), 'docs', 'direction', debt.get('links', []), debt.get('cycles', [])):
+            findings.append(Finding(*found))
+        for src, number, doc in named:
+            src_module, dst_module = architecture.module(src, 'code'), architecture.module(doc)
+            if src_module and dst_module and not architecture.modules[dst_module].get('unlinked'):
+                if reason := architecture.reason(src, src_module, doc, dst_module):
+                    findings.append(Finding(src, number, 'error', 'direction', f'{src} -> {doc}: {reason}'))
+        for found in check_imports(root, architecture):
             findings.append(Finding(*found))
         limit = architecture.data.get('shared_section_links', 3)
         for (target, anchor), sources in sorted(anchored.items()):
