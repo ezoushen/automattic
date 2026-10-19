@@ -27,7 +27,7 @@ class AdrSupersession(unittest.TestCase):
                      'updated in the same commit as the ADRs it lists',
                      'Read the index first, then only the ADRs that bear on the work',
                      'when run with `--index`, which also makes a missing index a failure',
-                     'Prose and headings are not entries', 'A list line that names an ADR file but is not an entry is reported, never skipped'):
+                     'a list line that starts with a plain link to the ADR\'s file', 'Prose and headings are not entries', 'A list line that names an ADR file but is not an entry is reported, never skipped'):
             self.assertIn(rule, index)
         self.assertNotIn('`proposed`, `accepted`', text)
 

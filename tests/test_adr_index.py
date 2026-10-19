@@ -212,6 +212,26 @@ class AdrIndex(unittest.TestCase):
         self.assertEqual(1, code)
         self.assertEqual(['9999-ghost.md: listed in the index but no such file'], out['index_problems'])
 
+    def test_a_target_that_only_starts_like_the_file_is_not_an_entry(self):
+        for broken in ('- [0002](0002-cents.md.bak) A decision', '- [0002](0002-cents.md A decision'):
+            with self.subTest(line=broken):
+                self.consistent()
+                text = (self.folder / 'README.md').read_text().replace(
+                    '- [0002](0002-cents.md) A decision: the rule in one line', broken)
+                (self.folder / 'README.md').write_text(text)
+                code, out = check(self.repo)
+                self.assertEqual(1, code)
+                self.assertIn('0002-cents.md: accepted but not listed under Accepted', out['index_problems'])
+
+    def test_a_file_name_label_and_an_escaped_bracket_are_read(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text()
+        text = text.replace('- [0002](0002-cents.md)', '- [0002-cents.md](0002-cents.md)')
+        text = text.replace('- [0003](0003-async-api.md)', '- [Async \\] API](0003-async-api.md)')
+        (self.folder / 'README.md').write_text(text)
+        code, out = check(self.repo)
+        self.assertEqual(0, code, out)
+
     def test_a_link_outside_any_section_is_reported_not_a_crash(self):
         self.consistent()
         text = (self.folder / 'README.md').read_text()
