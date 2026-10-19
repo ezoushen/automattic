@@ -32,6 +32,23 @@ class Standards(unittest.TestCase):
                     self.assertNotIn(resolved.parts[0], {'skills', 'agents', 'bootstrap.md'})
                     self.assertNotIn('jobs', resolved.parts)
 
+    def test_agent_docs_stay_language_neutral(self):
+        extension = re.compile(r'`\.(?:py|pyi|js|jsx|mjs|cjs|ts|tsx|mts|cts|sh|bash|zsh|sql|go|rs|swift|kt|java|cs|c|cpp|h|rb|php)`')
+        for folder in ('skills', 'runtime', 'standards', 'agents', 'hosts'):
+            for path in sorted((ROOT / folder).rglob('*.md')):
+                with self.subTest(doc=str(path.relative_to(ROOT))):
+                    text = path.read_text()
+                    self.assertIsNone(extension.search(text))
+                    self.assertNotIn('comment_audit', text)
+        self.assertFalse((ROOT / 'scripts/comment_audit.py').exists())
+
+    def test_comment_detection_reads_the_diff_in_each_files_language(self):
+        for name in ('skills/remediate/SKILL.md', 'skills/review/jobs/diff-review.md'):
+            text = ' '.join((ROOT / name).read_text().split())
+            with self.subTest(doc=name):
+                self.assertIn('git diff -U0', text)
+                self.assertIn("in each file's language", text)
+
     def test_the_four_standards_exist(self):
         for name in ('code-comments.md', 'code-comments-sources.md', 'documentation.md', 'pr.md'):
             self.assertTrue((STANDARDS / name).is_file(), name)

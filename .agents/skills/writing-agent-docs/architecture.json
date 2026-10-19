@@ -124,7 +124,6 @@
     "standards/**/*.md"
    ],
    "code": [
-    "scripts/comment_audit.py",
     "scripts/lint_pr_body.py"
    ]
   },

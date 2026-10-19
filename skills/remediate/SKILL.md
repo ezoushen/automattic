@@ -11,7 +11,6 @@ Contents:
 - [Arguments](#arguments)
 - [Establish goal and scope](#establish-goal-and-scope)
 - [Detect, prove, repair, recheck](#detect-prove-repair-recheck)
-- [Comment audit](#comment-audit)
 
 First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
@@ -73,10 +72,10 @@ report that boundary for a separate implementation task.
 1. **Detect read-only.** Read the selected scope and the kind's Signal and Not a
    finding sections. Record candidates with IDs, file/line, the precise disputed
    assertion or claim, its contract source and counter-evidence. For comment
-   diffs, run the [comment audit](#comment-audit) and inspect its output in context;
-   its candidates alone prove no violation; it lists only comments added in the
-   diff, and also read changed doc comments, which the audit intentionally
-   excludes. A whole-project or paths scan discovers existing comments and
+   diffs, list the added lines with `git diff -U0 <base> [<head>] -- [paths]` and
+   identify the added and changed comments, doc comments included, in each file's
+   language; retain that list as evidence. A listed comment is a candidate, not a
+   violation. A whole-project or paths scan discovers existing comments and
    docstrings by inventorying the source (language tokenizer/AST where available,
    otherwise careful reading). When the kind's Proof has steps for every test,
    run them for every test in scope during detection, before selecting candidates.
@@ -123,35 +122,3 @@ report that boundary for a separate implementation task.
    kind; write it only if requested. Finish when every candidate is accounted for,
    or return the exact blocker with partial evidence. Publication and integration
    retain their existing owners and authorization.
-
-## Comment audit
-
-Run from any directory, resolving the script from `plugin_root`:
-
-```sh
-python3 <plugin_root>/scripts/comment_audit.py --repo <repo> --base <base> [--head <head>] [paths...]
-```
-
-It emits a JSON list of `{file, line, text}` for added plain comment lines,
-ordered by path and new-file line number. Paths are relative to the repo root.
-The comparison is a direct Git diff from base, not an inferred merge base.
-Omit `--head` for staged plus unstaged tracked changes; untracked files are outside
-Git's diff until added. An empty list means no candidates within supported syntax,
-not that comments are correct. Errors exit nonzero and prevent a clean audit claim.
-
-Supported extensions are `.py`, `.pyi`; `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`,
-`.tsx`, `.mts`, `.cts`; `.sh`, `.bash`, `.zsh`; and `.sql`. Unknown types are skipped.
-Full-file context distinguishes comments from quoted text, Python docstrings,
-JS template text and common regex literals, shell here-documents and SQL dollar
-strings. Added lines inside an existing plain block comment remain candidates.
-Python string tokens and `/** ... */` documentation are excluded, as are first-line
-shebangs, TypeScript triple-slash reference directives, leading license notices
-and common lint/type pragmas (`noqa`, `type:`, `pylint`, `pyright`, `mypy`,
-`fmt`, `isort`, `shellcheck`, `shfmt`, `sqlfluff`, `eslint`, `tslint`, `@ts-*`,
-`prettier-ignore`, coverage-ignore directives and Python encoding declarations).
-Ordinary triple-slash prose remains a candidate.
-
-This is a bounded lexical audit, not a language parser or blocking hook. Inspect
-JSX markup, ambiguous JS regex/division contexts, shell expansions and SQL dialect
-syntax manually. Project-specific doc/pragma forms need contextual review. Apply
-the kind's proof before deciding whether any listed comment needs repair.

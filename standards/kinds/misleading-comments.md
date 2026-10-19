@@ -6,7 +6,7 @@ Look for comments or docstrings that promise behavior the implementation does no
 provide, describe a removed path, contradict the accepted contract, or narrate code
 without adding a caller contract or necessary constraint. Check renamed symbols,
 units, ownership, ordering and failure behavior against relevant callers and tests.
-Comment-audit output is a discovery aid, not proof.
+A list of added comments is a discovery aid, not proof.
 
 ## Proof
 
@@ -39,6 +39,6 @@ the bug as intended behavior.
 Accurate function/interface documentation, required project docs, machine-consumed
 directives, shebangs, license notices and generated markers are not narration.
 A necessary external constraint can justify a non-doc comment. A comment's age,
-length or appearance in audit output alone proves no defect. Preserve accurate
+length or appearance in a candidate list alone proves no defect. Preserve accurate
 existing comments unless the selected goal and scope establish a proven violation;
 this kind is not a repo-wide comment purge.

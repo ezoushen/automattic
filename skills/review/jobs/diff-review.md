@@ -63,15 +63,15 @@ with cited evidence. Report a finding only with that kind's cited proof.
 A flag you would dismiss is disputed: send it to a [reproduce](reproduce.md) job, given
 your contrary evidence and the flagged shape.
 
-For added comments, run `python3 <plugin_root>/scripts/comment_audit.py --repo
-<worktree> --base <diff_base> --head <head>` on the pinned reviewed diff and retain
-the JSON output as evidence. Its entries are candidates, not verdicts; inspect
-changed comments outside its supported syntax too. Apply code-comments and the
+For added comments, list the added lines of the pinned reviewed diff with
+`git diff -U0 <diff_base> <head>` in the worktree, identify the comments among them
+in each file's language and retain that list as evidence. Its entries are
+candidates, not verdicts. Apply code-comments and the
 project's documented convention: function/interface docs are allowed; other
 comments require a constraint that cannot be encoded as a type, assertion, test
 or lint rule after trying to encode it. For each violation, cite the exact added
 comment, applicable rule and proof (for example, the statements it merely narrates
-or an executable encoding of its constraint). Audit output alone is not proof.
+or an executable encoding of its constraint). A listed comment alone is not proof.
 
 Report only proven violations of these test/comment rules as findings. Drop
 unproven candidates from findings, recording the dropped count and reason;
