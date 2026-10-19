@@ -112,9 +112,9 @@ def index_problems(texts, folder):
             continue
         if line.startswith('## '):
             section = line[3:].strip()
-        if not LIST_ITEM.match(line) or not MENTION.search(line):
-            continue
         entry = ENTRY.match(line)
+        if not LIST_ITEM.match(line) or not (entry or MENTION.search(line)):
+            continue
         if not entry:
             problems.append(f'README.md: cannot read an index entry in: {line.strip()}')
             continue

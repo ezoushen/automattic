@@ -232,6 +232,14 @@ class AdrIndex(unittest.TestCase):
         code, out = check(self.repo)
         self.assertEqual(0, code, out)
 
+    def test_an_entry_naming_a_missing_bracketed_file_is_reported(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text()
+        (self.folder / 'README.md').write_text(text + '- [ghost](9999-cache[v2].md)\n')
+        code, out = check(self.repo)
+        self.assertEqual(1, code)
+        self.assertEqual(['9999-cache[v2].md: listed in the index but no such file'], out['index_problems'])
+
     def test_a_link_outside_any_section_is_reported_not_a_crash(self):
         self.consistent()
         text = (self.folder / 'README.md').read_text()
