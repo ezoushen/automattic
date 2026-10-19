@@ -1,6 +1,7 @@
 """Shared test helpers: plugin paths, script loading and machine-state isolation."""
 import importlib.util
 import os
+import re
 from pathlib import Path
 import sys
 
@@ -41,3 +42,11 @@ def assignment_file(root, job, text=''):
     path = Path(root) / f'{job}-assignment.txt'
     path.write_text('\n'.join(lines) + '\n' + text)
     return path
+
+
+def code_samples(text):
+    """Code a prose-only doc must not contain: code spans, fenced or indented blocks, dotted identifiers."""
+    prose = re.sub(r'\]\([^)]*\)', ']', text)
+    return (re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^ {0,3}(?:```|~~~).*$', prose)
+            + re.findall(r'(?m)^(?: {4}|\t)(?![-*] |\d+\. ).*\S.*$', prose)
+            + re.findall(r'\b[A-Za-z_]\w*\.[A-Za-z_]\w*', prose))

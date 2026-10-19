@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Agents share one language-neutral module-design vocabulary from our own standard, not Matt's codebase-design."""
-import re
 import subprocess
 import unittest
 
@@ -51,10 +50,46 @@ class DesignStandard(unittest.TestCase):
                       text)
         self.assertIn('a test that must reach past the interface means the module has the wrong shape', text)
 
+    def test_the_interface_is_shaped_for_its_callers(self):
+        text = prose(DESIGN)
+        self.assertIn('**Shape the interface for its callers.** Prefer fewer operations, simpler inputs and more hidden '
+                      'inside', text)
+        self.assertIn('A module that receives its dependencies, and returns results instead of only changing shared '
+                      'state, can be tested through its interface alone', text)
+
+    def test_a_seam_is_placed_by_what_the_dependency_is(self):
+        text = prose(DESIGN)
+        for rule in ('In-process computation and state need no seam: test through the module\'s interface',
+                     'A dependency with a local stand-in, such as an embedded database, runs in the tests behind an '
+                     'internal seam',
+                     'An owned remote service gets a seam with a production and an in-memory adapter',
+                     'A third-party service gets a seam whose test adapter is a mock'):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, text)
+
+    def test_tests_of_merged_shallow_modules_are_replaced_not_layered(self):
+        self.assertIn('**Replace shallow tests, don\'t layer them.** When shallow modules merge into a deep one, write '
+                      'tests at its interface and delete the old tests of the parts', prose(DESIGN))
+
+    def test_a_questioned_interface_is_designed_several_ways_by_independent_designers(self):
+        text = prose(DESIGN)
+        self.assertIn('**Design it twice** when an interface is in question', text)
+        self.assertIn('three or more independent designers, launched in parallel through the orchestrator', text)
+        for constraint in ('the smallest interface', 'the most flexibility', 'the simplest common call',
+                           'ports and adapters across the seam'):
+            with self.subTest(constraint=constraint):
+                self.assertIn(constraint, text)
+        self.assertIn('compare them on depth, locality and seam placement and recommend one', text)
+
     def test_the_standard_has_no_code_in_any_language(self):
-        text = DESIGN.read_text()
-        self.assertNotIn('```', text)
-        self.assertIsNone(re.search(r'`[^`]*[(){};=][^`]*`', text), 'inline code sample')
+        self.assertEqual([], support.code_samples(DESIGN.read_text()))
+
+    def test_the_code_detector_finds_each_kind_of_sample(self):
+        for sample in ('Use `mock()` here.', '~~~\nprint(1)\n~~~', '```\nx\n```', 'Text\n\n    print(1)\n',
+                       'Patch jest.mock first.', 'Use unittest.mock for it.'):
+            with self.subTest(sample=sample):
+                self.assertNotEqual([], support.code_samples(sample))
+        self.assertEqual([], support.code_samples('See [module design](design.md).\n- a list\n  continued\n'))
 
     def test_align_designs_with_our_standard(self):
         align = prose(ROOT / 'skills/align/SKILL.md')

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Every builder works test-first from our own TDD standard, whose tests protect business rules, not coverage."""
-import re
 import subprocess
 import unittest
 
@@ -34,7 +33,10 @@ class TddStandard(unittest.TestCase):
         text = prose(TDD)
         self.assertIn("A test checks behavior through the module's public interface, the seam its callers use, "
                       'and survives a refactor of the implementation', text)
-        self.assertIn('**Mock only at system boundaries:**', text)
+        self.assertIn('**Mock only at system boundaries:** external services, time and randomness, and storage or the '
+                      'file system when no local stand-in exists', text)
+        self.assertIn('At a boundary, prefer one specific operation per external action over one generic call, so each '
+                      'mock returns one shape and needs no conditional logic', text)
         self.assertIn("Never mock the project's own modules or internal collaborators", text)
 
     def test_seams_come_from_the_ticket(self):
@@ -44,6 +46,12 @@ class TddStandard(unittest.TestCase):
         self.assertIn('A seam the ticket does not name goes back to the orchestrator before any test is written there',
                       text)
         self.assertIn('[module design](design.md)', text)
+
+    def test_a_seam_with_a_test_adapter_is_not_forbidden(self):
+        # module design calls a seam with a production and a test adapter real; the TDD standard must not forbid it
+        text = prose(TDD)
+        self.assertNotIn('Do not add a seam only for a test', text)
+        self.assertIn('Do not expose an internal seam through the interface only because a test uses it', text)
 
     def test_each_test_protects_a_stated_business_rule(self):
         self.assertIn('**Each test states the business rule it protects**', prose(TDD))
@@ -81,21 +89,22 @@ class TddStandard(unittest.TestCase):
     def test_the_standard_agrees_with_the_tautological_tests_kind(self):
         tdd, kind = prose(TDD), prose(KIND)
         self.assertIn('[tautological-tests](kinds/tautological-tests.md)', tdd)
-        for source in ('a specified literal', 'a worked example', 'a separate trusted oracle'):
-            with self.subTest(source=source):
-                self.assertIn(source, tdd)
-                self.assertIn(source, kind)
-        for shape in ('the code under test', 'a copy of its logic', 'configured on a mock'):
-            with self.subTest(shape=shape):
-                self.assertIn(shape, tdd)
-                self.assertIn(shape, kind)
-        self.assertIn('a plausible defect in that behavior leaves it passing', kind)
-        self.assertIn('a plausible defect in the claimed rule leaves it passing', tdd)
+        # The same independent sources, in the rule each document gives
+        self.assertIn('Expected values come from an independent source:** a specified literal, a worked example from '
+                      'the ticket or spec, or a separate trusted oracle; never from the code under test, a copy of its '
+                      'logic or a value the test configured on a mock', tdd)
+        self.assertIn('Rewrite the test so it checks the claim with an expected result from an independent source: a '
+                      'specified literal, a worked example, or a separate trusted oracle', kind)
+        # The forbidden sources are the kind's signals
+        self.assertIn('- an expected value computed by the code under test or a copy of its logic;', kind)
+        self.assertIn('- assertions on values the test configured on a mock;', kind)
+        # The same defect check
+        self.assertIn('A test is tautological for the behavior it claims when a plausible defect in that behavior leaves '
+                      'it passing', kind)
+        self.assertIn('**Tautological:** a plausible defect in the claimed rule leaves it passing', tdd)
 
     def test_the_standard_has_no_code_in_any_language(self):
-        text = TDD.read_text()
-        self.assertNotIn('```', text)
-        self.assertIsNone(re.search(r'`[^`]*[(){};=][^`]*`', text), 'inline code sample')
+        self.assertEqual([], support.code_samples(TDD.read_text()))
 
     def test_builders_ticket_and_repair_jobs_and_the_pipeline_use_it(self):
         import agent_defs

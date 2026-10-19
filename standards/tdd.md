@@ -23,7 +23,7 @@ framework or test runner is assumed.
 - **Seams come from the ticket.** Its **Seams** line names the public interfaces its
   tests reach, approved with the ticket.
 - Prefer the highest existing seam that exposes the rule, and the fewest seams. Do not
-  add a seam only for a test: one adapter is a hypothetical seam.
+  expose an internal seam through the interface only because a test uses it.
 - A seam the ticket does not name goes back to the orchestrator before any test is
   written there.
 
@@ -34,7 +34,9 @@ framework or test runner is assumed.
   is, not how the code does it.
 - **Mock only at system boundaries:** external services, time and randomness, and
   storage or the file system when no local stand-in exists. Never mock the project's
-  own modules or internal collaborators.
+  own modules or internal collaborators. At a boundary, prefer one specific operation
+  per external action over one generic call, so each mock returns one shape and needs
+  no conditional logic.
 
 ## Effectiveness over volume
 
