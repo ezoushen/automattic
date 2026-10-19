@@ -20,8 +20,8 @@ framework or test runner is assumed.
 
 ## Seams
 
-- **Seams come from the ticket.** Its seams are the public interfaces its tests reach,
-  approved with the ticket.
+- **Seams come from the ticket.** Its **Seams** line names the public interfaces its
+  tests reach, approved with the ticket.
 - Prefer the highest existing seam that exposes the rule, and the fewest seams. Do not
   add a seam only for a test: one adapter is a hypothetical seam.
 - A seam the ticket does not name goes back to the orchestrator before any test is
