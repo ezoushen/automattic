@@ -8,7 +8,8 @@ and changes it.
 |---|---|
 | [executors.md](executors.md) | executor examples, named skill types and manual setup |
 | [catalog.md](catalog.md) | models, runtime bindings and caller-specific routes |
-| [routers.md](routers.md) | routers, sparse profiles and the decision backend |
+| [routers.md](routers.md) | routers and sparse profiles |
+| [decision-backend.md](decision-backend.md) | the decision backend |
 | [session.md](session.md) | session-scoped overrides |
 | [bash-executor.md](bash-executor.md) | the Bash executor's assignment/result contract |
 | [skill-executor.md](skill-executor.md) | the skill executor |

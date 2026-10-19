@@ -49,7 +49,7 @@ slot when its limit includes the parent. For the local Markdown board, pass that
 ceiling as `--max-live` on every scheduler call. Apply it to native tracker dispatch
 too; admit only free slots, counting reviewer and verifier jobs. Idle or interrupted
 agents may still occupy slots. Interruption ends a turn; reconcile owned jobs under
-[job lifetime](../../runtime/resources/resources.md#resource-and-job-lifetime). Release capacity only after
+[job lifetime](../../runtime/resources/lifetime.md). Release capacity only after
 their teardown and a supported close operation with confirmed status. When closing
 is unavailable, `followup_task` may continue only a collected, explicitly retained
 same-assignment repair/recheck with matching agent, settings and permissions.

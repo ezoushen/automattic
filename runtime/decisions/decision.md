@@ -1,6 +1,6 @@
 # Decision workflow
 
-Use the decision contract: [configuration](../config/routers.md#decision-backend),
+Use the decision contract: [configuration](../config/decision-backend.md),
 [phase boundaries and recovery actions](phases.md), the
 [checkpoint command](checkpoint.md) and [calibration](calibration.md). The host owns the outcome;
 the backend returns a recommendation and never executes work.
@@ -21,7 +21,7 @@ assignment/attempt or phase/scope/revision. Carry the returned `checkpoint_id`
 and, when consulted, `decision_id` into the existing record; ordinary resumes reuse them.
 
 At each reached phase boundary, run the
-[configured checkpoint command](checkpoint.md#configured-checkpoint-command).
+[configured checkpoint command](checkpoint-command.md).
 Supply compact current evidence and only permitted options for an unresolved
 enabled choice. Include accepted priorities, relevant constraints and observed
 outcomes. For settled, required or human-reserved steps, supply the explicit skip

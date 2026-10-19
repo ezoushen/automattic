@@ -19,7 +19,7 @@ project checks, source instructions and reusable evidence. An Automattic effort
 also supplies its selected tickets' `touches` union. Verify the assigned head.
 For a pre-delivery snapshot check, verify the supplied immutable input identity;
 retain that identity rather than attributing dirty execution to HEAD alone.
-Use [worker return and checkpoints](../../../runtime/workers/focus.md#worker-return-and-checkpoints)
+Use [worker return and checkpoints](../../../runtime/workers/return.md)
 for estimates, milestones and bounded failed/incomplete returns. Before a full run,
 verify interaction/readback, localized permissions, recording and fixture/event
 alignment through the project's actual driver. Repeated invalid scenario runs
@@ -27,7 +27,7 @@ without new evidence need host recovery, not another full measurement batch.
 
 ## Finish line
 
-Before executing or accepting checks, apply [plan and accept checks](../../../runtime/checks/plan.md#plan-and-accept-checks)
+Before executing or accepting checks, apply [plan and accept checks](../../../runtime/checks/accept.md)
 to the supplied evidence. Record each reuse/execute decision and its reason in the
 existing report. Reconcile a blanket freshness instruction with the actual project
 requirements; a phase change alone does not justify rerunning every gate.

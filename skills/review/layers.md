@@ -28,7 +28,7 @@ Include adjacent state transitions, ownership/lifetime cases and affected public
 contracts in the same scoped batch. Batch independent checks within the assigned
 reviewer rather than creating a worker or round for every case. Use an independent
 oracle where shared implementations can agree on the same wrong result, following
-[check acceptance](../../runtime/checks/plan.md#plan-and-accept-checks).
+[check acceptance](../../runtime/checks/accept.md).
 
 If direction or scope is rejected or a material decision remains unresolved,
 finish that layer's independent fact-finding and batch its concerns. Mark the

@@ -107,7 +107,7 @@ historical assignment in the journal:
   --journal <absolute-journal> --decision-id <id> --stage completion --revision <full-checked-head>
 ```
 
-For a phase boundary, use the [family/assignment check](checkpoint.md#configured-checkpoint-command)
+For a phase boundary, use the [family/assignment check](checkpoint-command.md)
 instead of `--decision-id`. It detects a missing checkpoint even when there is no
 returned ID; a consulted checkpoint then applies the annotation checks below.
 A recorded skip completes only this bookkeeping check. Skip freshness comes from

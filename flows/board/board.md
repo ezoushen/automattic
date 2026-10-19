@@ -18,7 +18,7 @@ Only for projects using local tickets: run
 with `--max-live <runtime ceiling>` on scheduling calls. This board uses
 `.scratch/<slug>/issues/NN-<title>.md`. An omitted slug selects all local efforts;
 a supplied slug never widens. `TICKET_PRIORITY=a,b` orders efforts when requested.
-Also apply [shared capacity](../../runtime/resources/resources.md#shared-capacity) across
+Also apply [shared capacity](../../runtime/resources/capacity.md) across
 known account users; `--max-live` sees this board's workers, not every service client.
 
 Use `--check` for validation, no action for candidates, `--counts` for counts,

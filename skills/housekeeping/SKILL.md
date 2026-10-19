@@ -36,7 +36,7 @@ Preserve reports and the logs/screenshots they cite, unresolved failure evidence
 follow-ups and interruption/resume state. `.scratch/` is often working evidence,
 not a directory to empty. Remove experimental edits surgically without restoring
 over someone else's changes.
-Apply [evidence retention](../../runtime/checks/run.md#retain-evidence) to deletion by
+Apply [evidence retention](../../runtime/checks/evidence.md) to deletion by
 size/type and outside worktrees too; verify proof and downstream references before
 removing recordings or traces. Derived summaries may have narrower audit value.
 

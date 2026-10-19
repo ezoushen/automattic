@@ -50,7 +50,7 @@ None of the three is a phase boundary: they need no checkpoint or skip.
 
 ## Apply a checkpoint
 
-At the phase's named boundary, run the [configured checkpoint command](checkpoint.md#configured-checkpoint-command)
+At the phase's named boundary, run the [configured checkpoint command](checkpoint-command.md)
 before choosing the next action. The host supplies the phase and concrete
 alternatives, or evidence that the next step is settled. Code loads the effective
 user/project/session configuration, consults an enabled family or records a skip,

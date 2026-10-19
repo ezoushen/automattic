@@ -454,7 +454,7 @@ def check(root, config, changed=None, architecture=None):
             isolated = architecture.modules[owner].get('isolated')
             outside = {src for src in sources if (m := architecture.module(src)) is not None and (m != owner or isolated)}
             if len(outside) >= limit:
-                findings.append(Finding(target, 1, 'warning', 'shared-section',
+                findings.append(Finding(target, 1, 'error', 'shared-section',
                                         f'#{anchor} is linked from {len(outside)} files in other modules; make it its own file'))
         findings.extend(first_read(root, architecture, rel))
         findings.extend(host_shape(root, architecture))

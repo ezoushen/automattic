@@ -45,7 +45,7 @@ review. Publication requires its own request.
 3. Check the active adapter, selected executor tools and permissions. Verify assigned
    repository/worktree identities before starting workers. Automattic does not
    require a Git denial probe or impose a Git-command blocklist.
-   Reconcile the [shared capacity budget](../../runtime/resources/resources.md#shared-capacity)
+   Reconcile the [shared capacity budget](../../runtime/resources/capacity.md)
    across known sessions/accounts before admitting the batch; local scheduler
    capacity is not an account-wide allocation.
 4. Resolve and validate the selected board and invocation scope using board

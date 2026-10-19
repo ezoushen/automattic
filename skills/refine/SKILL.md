@@ -85,7 +85,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    When that result can make later work unnecessary, give the later work a blocking
    edge and retain it as deferred scope until the result is accepted.
    Before adopting the split/grouping, run the configured
-   [`refinement` checkpoint](../../runtime/decisions/checkpoint.md#configured-checkpoint-command)
+   [`refinement` checkpoint](../../runtime/decisions/checkpoint-command.md)
    with viable cuts and their evidence, or an evidenced skip for settled cuts.
    Check this phase record before declaring the breakdown ready.
 3. **Draw the edges.** Preserve native blocking relationships and issue IDs in a

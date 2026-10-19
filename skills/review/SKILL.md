@@ -60,7 +60,7 @@ Stages after this one, in order: [coverage and findings](coverage.md),
    this target. Before starting workers, verify the active adapter, selected executor
    tools, permissions and capacity. Unconfigured native review can run locally where
    permitted when child tools are absent. For an unavailable configured worker,
-   follow [pool recovery](../../runtime/workers/recovery.md#feedback-and-recovery):
+   follow [pool recovery](../../runtime/workers/recovery.md):
    automatically select a suitable allowed alternative, preserving explicit user
    pins and permission boundaries. Read-only review does not require an implementation board.
    Record the resolver's profile/source, executor and requested settings before

@@ -42,6 +42,16 @@ class EditCheck(Fixture):
         self.assertIn('shared/guide.md:5 direction', result.stderr)
         self.assertIn('writing-agent-docs', result.stderr)
 
+    def test_a_section_many_modules_link_is_reported_back_to_the_agent(self):
+        self.write('shared/guide.md', '# Guide\n\n## Steps\n\nRun.\n')
+        for name in ('a', 'b', 'c'):
+            self.write(f'flows/{name}/f.md', '# F\n\nSee [steps](../../shared/guide.md#steps).\n')
+        self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
+                   + ''.join(f'[{n}](../../flows/{n}/f.md) ' for n in 'abc') + '\n')
+        result = self.run_hook(self.root / 'flows/a/f.md')
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('shared/guide.md:1 shared-section', result.stderr)
+
     def test_other_findings_such_as_a_long_doc_are_left_to_the_commit_check(self):
         self.write('shared/guide.md', '# Guide\n\n## Steps\n\n' + 'x' * 3000 + '\n')
         result = self.run_hook(self.root / 'shared/guide.md')

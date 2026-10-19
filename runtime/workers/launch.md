@@ -26,7 +26,7 @@ Top-level `agents` defines shared pools for `builder`, `reviewer` and `verifier`
 [routers and sparse profiles](../config/routers.md#routers-and-sparse-profiles) for the
 configuration and omission semantics. A profile key such as `builder.codex`
 addresses the worker runtime, even when the host is Claude.
-Shared [decisions and calibration](../config/routers.md#decision-backend) configure a reusable backend and
+Shared [decisions and calibration](../config/decision-backend.md) configure a reusable backend and
 explicit phase opt-ins. A decision-model worker router can use that backend;
 skill/profile routers retain their existing selection policy.
 
@@ -112,7 +112,7 @@ successful capability evidence for the same host/session, executor, settings and
 environment; invalidate it when any changes or a launch fails. Use the first real
 assignment to establish runtime availability when no read-only probe exists.
 A missing profile or quota failure excludes all candidates sharing that failed
-capability/account. Follow [automatic recovery](recovery.md#feedback-and-recovery)
+capability/account. Follow [automatic recovery](recovery.md)
 to choose another suitable candidate in the allowed pool without another approval.
 Retry a failed route only after a relevant state change. Permission denials remain
 boundaries; do not use fallback to bypass them.
@@ -156,7 +156,7 @@ pending approvals for the user and clean up only this assignment's resources.
 Size a fan-out by how many parts can proceed without each other's results, not by
 idle capacity. A question one search or read answers gets no worker; one coherent
 change gets one worker. Launch independent siblings together, within
-[shared capacity](../resources/resources.md#shared-capacity).
+[shared capacity](../resources/capacity.md).
 Each sibling's assignment states its objective, its boundary and what the other
 siblings cover, so no two workers repeat the same investigation and no part is left
 unowned. A worker that writes its own report returns status, decisive evidence and

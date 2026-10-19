@@ -53,7 +53,7 @@ their decision, not a skill choice.
 ## Open candidates
 
 When the `skill-selection` family is [enabled](../decisions/phases.md#phase-checkpoints),
-run one [checkpoint](../decisions/checkpoint.md#configured-checkpoint-command) per
+run one [checkpoint](../decisions/checkpoint-command.md) per
 open candidate before launch, with assignment ID `<assignment>/<attempt>/skill/<name>`
 (add the revision for Git scopes) and two options: `load` and `skip`. Describe
 both at the same depth: the fact for, the fact against, and what the worker would
@@ -63,7 +63,7 @@ option orders. The host accepts or overrides the recommendation; an abstention,
 failure or disabled family leaves the choice to the host. Record the host's
 accept or override with the [annotation commands](../decisions/annotate.md) before
 launch; the outcome is whether the worker used the skill, recorded at collection.
-Run the [phase check](../decisions/checkpoint.md#configured-checkpoint-command) at
+Run the [phase check](../decisions/checkpoint-command.md) at
 both stages. The boundary exists only for an open candidate: settled skills and a
 launch with no open candidate need no checkpoint, skip or check.
 

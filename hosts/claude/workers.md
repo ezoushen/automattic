@@ -34,7 +34,7 @@ needed controls and supply the parent's actual recipient/handle in the assignmen
 Workers send checkpoints to that parent; lifecycle actions cover only their assigned
 jobs. A native task stop does not cancel a remote job: use the runner's own cancel
 and confirm teardown. If messaging is unavailable, use the shared
-[bounded return](../../runtime/workers/focus.md#worker-return-and-checkpoints) fallback.
+[bounded return](../../runtime/workers/return.md) fallback.
 Regenerate a configured profile after a shipped profile changes; its content-derived
 name changes with the tool list. An older registered snapshot retains its old tools,
 and the Agent-model hook denies launching one whose tools differ from its shipped agent.

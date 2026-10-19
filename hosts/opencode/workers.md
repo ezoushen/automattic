@@ -2,7 +2,7 @@
 
 Resolve [executors](../../runtime/workers/launch.md) first. A configured external executor, such as
 the Herdr skill, owns invocation and collection through its own adapter. Apply
-[pool recovery](../../runtime/workers/recovery.md#feedback-and-recovery) for availability failures.
+[pool recovery](../../runtime/workers/recovery.md) for availability failures.
 The native settings procedure below does not implement that external lifecycle.
 
 For model management, use only the settings returned by executor resolution.

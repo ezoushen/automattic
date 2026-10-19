@@ -26,7 +26,7 @@ request it from the orchestrator. Links below are relative to `agent_file`.
 ## Principles
 
 Follow [assignment focus](../runtime/workers/focus.md) and
-[resource and job lifetime](../runtime/resources/resources.md#resource-and-job-lifetime).
+[resource and job lifetime](../runtime/resources/lifetime.md).
 
 - Verify the assigned worktree, branch and starting HEAD before the first edit — shown by: the report records the checked branch and HEAD.
 - Change only what the job's scope allows; a fix that needs a wider change goes back to the orchestrator — shown by: the diff touches only allowed files and behaviors, and any boundary is reported.

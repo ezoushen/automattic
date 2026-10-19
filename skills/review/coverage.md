@@ -10,7 +10,7 @@ coverage when an upstream decision blocks it. Carry accepted alignment forward.
 The coordinator owns direction/scope; one reviewer owns the implementation batch
 and its Matt axes. Share the layer decisions and permitted coverage before launch.
 At each completed layer, run the configured
-[`review-triage` checkpoint](../../runtime/decisions/checkpoint.md#configured-checkpoint-command)
+[`review-triage` checkpoint](../../runtime/decisions/checkpoint-command.md)
 before choosing an investigation or finding grouping. Identify the layer and head
 in its phase assignment and check that record before leaving the layer. This also
 applies without autofix; a clean, fully covered layer records an evidenced skip.

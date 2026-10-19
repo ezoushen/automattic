@@ -24,7 +24,7 @@ TRIGGERS = {
     r'mandate/alignment questions': 'flows/interview/question-filter.md',
     r'explicit phase composition': 'skills/refine/SKILL.md',
     r'before .*worker launch': 'runtime/workers/launch.md',
-    r'worker blockers': 'runtime/workers/recovery.md#escalation-checkpoints',
+    r'worker blockers': 'runtime/workers/escalation.md',
     r'decisions\.enabled': 'runtime/decisions/checkpoint.md#phase-checkpoints',
     r'HERDR_ENV=1': 'hosts/herdr.md',
     r'tracker': 'flows/board/conventions.md',

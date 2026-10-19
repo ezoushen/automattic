@@ -8,7 +8,7 @@ Native dispatch requires Pi's `subagent` capability (provided here by pi-subagen
 Inspect its current schema and `subagent({ action: "list", capabilities: true })`
 before assigning work. Use `action: "guide", topic: "tool-reference"` for unfamiliar
 operations. A missing delegation capability blocks that native launch. Return the
-gap to [pool recovery](../../runtime/workers/recovery.md#feedback-and-recovery); use only an already
+gap to [pool recovery](../../runtime/workers/recovery.md); use only an already
 configured suitable alternative. Do not install a provider to force a launch.
 
 Use the registered generic `worker` with the assigned `agent_file` (builder, reviewer

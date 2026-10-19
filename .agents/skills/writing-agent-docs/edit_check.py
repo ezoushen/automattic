@@ -18,7 +18,7 @@ import subprocess
 import sys
 
 RULES = {'direction', 'cycle', 'import-direction', 'unmapped', 'entry-doc', 'first-read', 'first-read-line',
-         'host-shape'}
+         'host-shape', 'shared-section'}
 CHECKER = Path('.agents/skills/writing-agent-docs')
 
 

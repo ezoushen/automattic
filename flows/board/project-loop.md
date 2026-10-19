@@ -42,7 +42,7 @@ the runner's supported invocation or transfer. Name the corpus a
 Distinguish pre-PR verification from operator-only pilots, production rollouts and
 post-merge checks, including which are actual prerequisites for the selected scope.
 Identify the owner of each implementation/runtime check and valid reuse at later
-handoffs under [worker return and checkpoints](../../runtime/workers/focus.md#worker-return-and-checkpoints).
+handoffs under [worker return and checkpoints](../../runtime/workers/return.md).
 For live operations, name the authoritative target inventory, required execution
 identity/configuration, reservations and permitted operator. State how to verify
 post-state and restore the prior configuration. Use an idle representative target
@@ -69,7 +69,7 @@ fields or value-presence flags from configuration; keep credentials out of outpu
 ## Run evidence
 
 Keep timings, findings and execution snapshots in existing run reports or journals.
-Use the [retention contract](../../runtime/checks/run.md#retain-evidence) for files those
+Use the [retention contract](../../runtime/checks/evidence.md) for files those
 reports cite; a report in the main checkout does not preserve worktree-local logs.
 Maintained project instructions contain only current commands, constraints and
 reusable conventions; they are not a running retrospective.

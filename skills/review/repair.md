@@ -17,7 +17,7 @@ names the attempt it fixes in `repairs`
 ([attribution](../../runtime/workers/collect.md#accept-and-record-outcomes),
 [repair registration](../../runtime/workers/prepare.md)).
 Before assigning the next repair or retry, apply the shared
-[escalation checkpoints](../../runtime/workers/recovery.md#escalation-checkpoints)
+[escalation checkpoints](../../runtime/workers/escalation.md)
 to this evidence: run the configured `recovery` checkpoint for the action before
 deciding who executes it. A worker-routing call alone does not satisfy recovery.
 Check this phase record before acting, record its outcome at the repair handoff,

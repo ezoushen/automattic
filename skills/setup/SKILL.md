@@ -82,7 +82,7 @@ caller from the worker runtime. A named-profile request uses
 from the requested candidate's binding when unambiguous. Preserve omitted fields.
 Profiles never replace pools or routes. `--config-profile` explicitly selects a
 profile router; host/Herdr names do not automatically select profiles.
-For reusable models, read [model definitions](../../runtime/config/catalog.md#configure-an-agent).
+For reusable models, read [model definitions](../../runtime/config/catalog.md).
 Store descriptions under `models.<name>`; its `runtimes.<runtime>` bindings contain
 the registered `id` and thinking policy. Top-level `runtimes.<runtime>.executors`
 owns reusable launch routes indexed by caller context. For skill bridges, use

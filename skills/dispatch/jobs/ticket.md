@@ -35,7 +35,7 @@ at the agreed seams. Documentation-only work uses code-comments' checks.
 Choose the smallest sufficient verification: the focused and affected checks the
 assignment tiers for you, and the full gate only when the assignment names you for
 it. Use the assignment's explicit E2E owner under
-[worker return and checkpoints](../../../runtime/workers/focus.md#worker-return-and-checkpoints);
+[worker return and checkpoints](../../../runtime/workers/return.md);
 do not silently absorb the entire review/repair/E2E workflow into implementation.
 Reuse passing evidence only when relevant code, inputs and environment match; retain
 its original head and provenance. Run missing or invalidated checks and repair
@@ -76,7 +76,7 @@ applicable; every ticket checkbox as `[x]` or the reason it stays `[ ]`.
 For a later-phase criterion, name its assigned owner and phase; pending verification
 is not a failed implementation check or proof of ticket completion.
 Use the supplied evidence directory and the shared
-[retention contract](../../../runtime/checks/run.md#retain-evidence); report any
+[retention contract](../../../runtime/checks/evidence.md); report any
 missing input. Planned checks and local substitutes for required remote checks stay
 unchecked.
 

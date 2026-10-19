@@ -19,7 +19,7 @@ retain unrecorded behavior; configured phase consultations require recording.
 Skills supply these arguments for live backend decisions. Offline pool
 inspection, explicit pins and ordinary resumes do not create backend records.
 
-The [configured checkpoint helper](checkpoint.md#configured-checkpoint-command)
+The [configured checkpoint helper](checkpoint-command.md)
 returns `checkpoint_id` and `journal`, plus `decision_id` for a consultation.
 Worker routing uses the same checkpoint implementation. Low-level `decide` remains
 available for callers that only need a consultation. New journal files have mode

@@ -328,7 +328,7 @@ class ArchitectureRules(Fixture):
             self.write(f'flows/{name}/f.md', f'# F\n\nSee [steps](../../shared/guide.md#steps).\n')
         self.write('skills/tool/SKILL.md', SKILL.format(name='tool', description='Runs the tool.')
                    + ''.join(f'[{n}](../../flows/{n}/f.md) ' for n in 'abc') + '\n')
-        self.assertEqual(self.check(), {('shared/guide.md', 1, 'shared-section', 'warning')})
+        self.assertEqual(self.check(), {('shared/guide.md', 1, 'shared-section', 'error')})
         self.write('flows/c/f.md', '# F\n\nSee [guide](../../shared/guide.md).\n')
         self.assertEqual(self.check(), set())
         self.write('shared/other.md', '# Other\n\nSee [steps](guide.md#steps).\n')
@@ -341,7 +341,7 @@ class ArchitectureRules(Fixture):
             self.write(f'skills/{name}/SKILL.md', SKILL.format(name=name, description='Runs a tool.')
                        + 'See [filter](../tool/SKILL.md#filter).\n')
         self.architecture['debt'] = {'links': [f'skills/{n}/SKILL.md -> skills/tool/SKILL.md' for n in 'abc']}
-        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'shared-section', 'warning')})
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'shared-section', 'error')})
 
 
 TARGET_DOCS = {  # doc under a target folder: is it an entry point (exempt from the orphan rule)?

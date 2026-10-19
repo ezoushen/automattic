@@ -17,7 +17,7 @@ Prefer configured native children for same-runtime assignments, including Pi-to-
 Use Herdr for configured cross-runtime assignments or an explicit Herdr route.
 Preserve an explicit user-selected executor and model policy;
 do not infer the destination from a model name or silently replace a saved route.
-Use [runtime definitions](../runtime/config/catalog.md#configure-an-agent) to share launch routes
+Use [runtime definitions](../runtime/config/catalog.md) to share launch routes
 across models; model bindings declare each runtime's registered ID and thinking
 policy. Agent pools stay shared; routing profiles override candidate/thinking by
 worker runtime only when selected explicitly. If a saved route sends same-runtime
@@ -25,7 +25,7 @@ work through Herdr, show the mismatch and
 use the setup command for an authorized correction. Environment detection alone
 does not rewrite configuration. Native capacity or permission limits do not
 authorize a Herdr fallback; queue work or report the boundary.
-Quota/provider failures instead follow [pool recovery](../runtime/workers/recovery.md#feedback-and-recovery):
+Quota/provider failures instead follow [pool recovery](../runtime/workers/recovery.md):
 exclude the failed account/capability, choose a suitable allowed alternative and
 state the switch. Do not try another model on the same exhausted account.
 

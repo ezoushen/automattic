@@ -37,7 +37,7 @@ the local repair branch without changing the author's branch or the user's
 checkout. Finish intended tracked housekeeping changes before pinning that head.
 
 Prepare the per-check reuse/execute plan using
-[plan and accept checks](../../runtime/checks/plan.md#plan-and-accept-checks), including
+[plan and accept checks](../../runtime/checks/accept.md), including
 implementation, review and repair evidence. Pass that plan to the e2e-gate job;
 preserve justified reuse in its assignment rather than replacing it with a demand
 for fresh execution of every gate. Missing run preconditions require fresh evidence
@@ -56,7 +56,7 @@ locally where permitted. Reserve required devices through the configured
 for standalone review. Do not create local tickets for remote boards or standalone
 reviews. Reconcile interrupted reservations and release only after actual teardown.
 Supply the expected duration and next milestone under
-[worker return and checkpoints](../../runtime/workers/focus.md#worker-return-and-checkpoints).
+[worker return and checkpoints](../../runtime/workers/return.md).
 Accept a bounded failed/incomplete return promptly and take the existing recovery
 action; keep the workflow gated and reuse already completed valid segments.
 

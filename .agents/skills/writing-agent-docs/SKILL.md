@@ -87,7 +87,7 @@ flows (`flows/<flow>/`); `agents/`; `standards/`;
 lower level, never on a sibling or a higher level: a command may read a lower command's
 procedure, and a thin skill links no other skill. No two modules depend on each other,
 directly or through others (`cycle`). **Strict:** these direction rules, the first-read budget, the host
-shape and unmapped docs are errors with no recorded debt. **Room:** a new module
+shape, shared sections and unmapped docs are errors with no recorded debt. **Room:** a new module
 joins `architecture.json` in a level of its own or beside siblings that need not link
 each other, so the order grows without loosening a rule. Run the checker and
 `tests/run_all.py` after each addition.

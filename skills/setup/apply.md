@@ -65,7 +65,7 @@ saved change. Explicit profile selection changes the view, not the saved router.
 For a **router** request, store `{"type":"skill","skill":"<name>"}` with
 optional user-specific `instruction`, `{"type":"profile","profile":"<name>"}`,
 or `{"type":"decision-model"}` with the backend configured under
-[`decisions`](../../runtime/config/routers.md#decision-backend). For a decisions request, preserve
+[`decisions`](../../runtime/config/decision-backend.md). For a decisions request, preserve
 the effective object, then edit backend, enabled families or calibration as requested.
 Enable only explicitly requested families. Record the registered endpoint/model and
 known revision; absolute suite/baseline paths belong to the chosen config scope.

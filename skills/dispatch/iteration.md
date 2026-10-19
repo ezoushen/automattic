@@ -53,7 +53,7 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    merge the base's later fixes into the dependent branch before accepting it.
    Prepare fresh and recreated worktrees with the same project-identified gitignored
    build inputs; verify required paths without printing credential-bearing files.
-   Plan the assigned checks using [plan and accept checks](../../runtime/checks/plan.md#plan-and-accept-checks).
+   Plan the assigned checks using [plan and accept checks](../../runtime/checks/accept.md).
    Verify the runner's current contract and the worker's checkpoint capability;
    carry the runner's currently supported wait/status/log/cancel operations
    ([check execution](../../runtime/checks/run.md#run-a-bounded-check)).
@@ -95,10 +95,10 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    [completion record check](../../runtime/decisions/annotate.md#check-a-handoff)
    for the recorded decision. Preserve any capture gap explicitly; bookkeeping
    failure does not justify repeating implementation or inventing passing evidence.
-   Apply [worker return and checkpoints](../../runtime/workers/focus.md#worker-return-and-checkpoints):
+   Apply [worker return and checkpoints](../../runtime/workers/return.md):
    a failed/incomplete return hands recovery to the host, not verification to the user.
    Missing assigned implementation evidence → blocked with the exact failure in the issue or run report.
-   Accepted → retain the [check evidence](../../runtime/checks/run.md#retain-evidence)
+   Accepted → retain the [check evidence](../../runtime/checks/evidence.md)
    outside the ticket worktree, verify its report links, then merge its branch in
    the spec worktree. Record implementation integrated, record lifecycle `accepted`
    on the attempt with the integrated commit, and apply the project's
@@ -113,7 +113,7 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    No other worker may use that worktree then; the orchestrator completes the merge.
 6. A blocked ticket is the orchestrator's work: research missing facts, diagnose
    defects, resolve engineering choices within accepted constraints, or return to
-   align/refine for design errors. Apply [escalation checkpoints](../../runtime/workers/recovery.md#escalation-checkpoints)
+   align/refine for design errors. Apply [escalation checkpoints](../../runtime/workers/escalation.md)
    before retrying a worker, and report the retain/replacement decision.
    Read scoped source/diffs when needed to resolve
    the block. Before asking the user to provide or start a resource, check what is already

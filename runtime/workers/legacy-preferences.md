@@ -70,7 +70,7 @@ provider failures. If policy substitutes a model or a requested setting cannot b
 applied, report the requested and actual values and stop that affected assignment;
 continue independent work. Do not change account settings or bypass permissions.
 These legacy fixed preferences define no alternative pool. Configured pools use
-the separate [availability recovery policy](recovery.md#feedback-and-recovery).
+the separate [availability recovery policy](recovery.md).
 
 Record agent, requested settings/sources, native agent/run ID and confirmed model
 and effort with the existing worker evidence. Mark unavailable runtime metadata
