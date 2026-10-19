@@ -61,6 +61,10 @@ class Bootstrap(unittest.TestCase):
                 if anchor:
                     self.assertTrue(has_heading(ROOT / path, anchor), owner)
 
+    def test_the_pr_row_names_the_delivery_checkpoint_before_the_check_watch(self):
+        [owner] = [cell for trigger, cell in rows() if re.search(r'creat\w+ a PR', trigger)]
+        self.assertRegex(owner, r'run the `delivery` checkpoint or record an evidenced skip, then the \[required-check watch\]')
+
     def test_every_path_a_row_names_exists(self):
         for trigger, cell in rows():
             for named in PATH.findall(cell):
