@@ -249,6 +249,9 @@
   "domain": {
    "docs": [
     "runtime/domain/**/*.md"
+   ],
+   "code": [
+    "scripts/adr_numbers.py"
    ]
   }
  },

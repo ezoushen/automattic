@@ -46,7 +46,7 @@ not applicable, with the review and E2E evidence, and stop.
    Required gates and publication permission are facts the backend cannot waive.
 2. **Read the whole range**, not the last commit: `git log --oneline main..feat/<slug>`
    and `git diff main...feat/<slug>`. Use the accepted brief to explain intent and
-   the final diff to explain resulting behavior. Reuse the current review report;
+   the final diff to explain resulting behavior, and list the ADRs the effort adds. Reuse the current review report;
    preparing the description does not start another review or testing loop.
 3. **Write the description** following [PR writing standard](../../standards/pr.md) into
    `.scratch/<slug>/pr.md`, run its self-check, and present it as a brief. Carry forward existing

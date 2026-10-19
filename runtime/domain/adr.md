@@ -52,3 +52,25 @@ the old one's Status becomes `superseded by ADR-NNNN`. Accepted ADRs bind later 
 read those in the area before planning or changing it. Work that would contradict one
 stops for a design decision; one that looks outdated is flagged to the user, not
 silently followed.
+
+## Deliver an effort's decisions
+
+An effort's ledger stays in ignored `.scratch/`, so its lasting decisions reach other
+members only as ADRs. When the effort's implementation is complete, list each ledger
+row that passes the three tests as a candidate ADR in the run report, with the row it
+comes from. Ask the user once for the whole list, and write only the candidates the
+user approves into the effort branch, before its review head is pinned, so the review
+covers them. Under `--autofix` with the user away, the candidates wait among the
+actions only the user can take; an approved candidate written later returns that
+change to review.
+
+Numbers are claimed on `main`. Before the effort lands, merge the current `main` into
+the effort branch and run the ADR number check on it:
+
+```sh
+python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> [--dir <project ADR folder>]
+```
+
+It prints the duplicated numbers and the next free one, and exits 1 on a duplicate.
+On a duplicate, renumber the effort's ADR to the next free number and update every
+reference to it in the same commit; a duplicate number fails the delivery gate.

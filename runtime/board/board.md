@@ -99,7 +99,8 @@ existing project resource reservation mechanism as well.
 ## Delivery gate for either board
 
 Verify all selected work is implemented and integrated, with no unresolved required
-work or reservation. Require `review_status: clean`, `documentation_status: passed`,
+work or reservation, and that the
+[ADR number check](../domain/adr.md#deliver-an-efforts-decisions) passes on the effort branch. Require `review_status: clean`, `documentation_status: passed`,
 `e2e_status: passed`, and
 `review_head`/`e2e_head` equal to the current effort branch commit, and
 `review_by`/`e2e_by` naming the worker runs that produced them. With `effort_branch: main`

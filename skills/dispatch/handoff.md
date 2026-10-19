@@ -9,7 +9,8 @@ state that review has not run and provide the exact standalone review command.
 Otherwise continue in this invocation, without waiting for another user turn.
 
 For each selected effort with integrated changes, finish or reconcile its writers,
-then apply [housekeeping](../housekeeping/SKILL.md) to the effort worktree. Commit
+then apply [housekeeping](../housekeeping/SKILL.md) to the effort worktree and list its
+[candidate ADRs](../../runtime/domain/adr.md#deliver-an-efforts-decisions). Commit
 intended tracked cleanup/documentation changes there before pinning the review
 head; preserve unrelated local edits. Run the
 [shared review procedure](../review/SKILL.md), read as a file (its typed-only setting governs
