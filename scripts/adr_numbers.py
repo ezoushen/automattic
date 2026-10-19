@@ -21,7 +21,7 @@ import sys
 
 NAME = re.compile(r'(\d{4})-.+\.md')
 # An index entry is a list line whose first link names the ADR file; later links annotate it.
-ENTRY = re.compile(r' {0,3}[-*+] +\[[^\]]*\]\(\s*<?(?:\./)?(\d{4}-[^)\s#>]+\.md)')
+ENTRY = re.compile(r' {0,3}[-*+] +\[[^\]]*\]\(\s*(?:\./)?(\d{4}-[^)\s#>]+\.md)')
 LIST_ITEM = re.compile(r' {0,3}[-*+] ')
 # A backtick fence's info string may not contain a backtick, so an inline code span opens nothing.
 FENCE = re.compile(r' {0,3}(`{3,}(?=[^`]*$)|~{3,})')
