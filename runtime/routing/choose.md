@@ -36,7 +36,9 @@ the selected executor applies settings and confirms what actually ran.
    inventory does not establish the running host's capability.
    A pool without a choice
    returns `status: selection_required`, eligible options and `selection_router`,
-   without executable settings. For a skill router, load that skill in the
+   without executable settings. For the host router (`{"type": "host"}`, the default
+   and every fallback), choose by [model routing](model-routing.md) in the
+   orchestrator and submit `--selection`. For a skill router, load that skill in the
    orchestrator, choose a model and thinking setting, and submit `--selection`.
    For a decision-model router, supply `--assignment <compact-text-file>` with
    the filtered pool, `--journal <absolute-journal>` and
@@ -92,8 +94,8 @@ An external routing skill owns its API, credentials and uncertainty handling.
 Pass a compact assignment, eligible model/effort options, user guidance and relevant
 verified outcomes. A Jev adapter can choose one enumerated model/effort pair and
 record factual decision provenance; it must not invent a generated explanation.
-Unavailability, abstention or invalid router output falls back once to the built-in
-host skill. Distinguish router uncertainty from no suitable worker; neither consumes
+Unavailability, abstention or invalid router output falls back once to the host
+router. Distinguish router uncertainty from no suitable worker; neither consumes
 worker repair attempts. The router cannot launch workers, widen pools, waive gates
 or recursively select itself. No provider-specific dependency is required by core.
 

@@ -30,6 +30,7 @@ TRIGGERS = {
     r'tracker': 'runtime/board/conventions.md',
     r'compaction': 'runtime/workers/long-sessions.md',
     r'correction': 'runtime/interview/record.md',
+    r'source comment': 'standards/code-comments.md',
 }
 PATH = re.compile(r'(?:[\w.-]+/)*[\w.-]+\.md(?:#[\w-]+)?')
 

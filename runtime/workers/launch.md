@@ -22,7 +22,7 @@ host for its adapter. Without that hint, select the harness explicitly under the
 runtime bootstrap. OpenCode currently requires explicit selection.
 
 Top-level `agents` defines shared pools for `builder`, `reviewer` and `verifier`, or intentional fixed instances.
-`router` selects a routing skill, a System One decision model or a sparse named profile. See
+`router` selects host judgment (the default), a routing skill, a System One decision model or a sparse named profile. See
 [routers and sparse profiles](../config/routers.md#routers-and-sparse-profiles) for the
 configuration and omission semantics. A profile key such as `builder.codex`
 addresses the worker runtime, even when the host is Claude.
@@ -31,8 +31,8 @@ explicit phase opt-ins. A decision-model worker router can use that backend;
 skill/profile routers retain their existing selection policy.
 
 Routing profile selection is explicit: `--config-profile <name>`, then
-`AUTOMATTIC_PROFILE`, then the configured router. Omitting the router uses the
-built-in routing skill. Profile names do not establish Herdr or select the host.
+`AUTOMATTIC_PROFILE`, then the configured router. Omitting the router uses
+host judgment. Profile names do not establish Herdr or select the host.
 Caller-specific native routes continue to win over a Herdr bridge when available;
 Herdr routes still require `HERDR_ENV=1` and runtime preflight. A single routing
 profile can contain preferences for several worker runtimes without duplicating

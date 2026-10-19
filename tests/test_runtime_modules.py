@@ -58,6 +58,16 @@ class RuntimeModules(unittest.TestCase):
         docs = {f'runtime/checks/{path.name}' for path in (RUNTIME / 'checks').glob('*.md') if path.name != 'README.md'}
         self.assertEqual(set(core), docs)
 
+    def test_a_host_router_result_leads_to_the_model_routing_procedure(self):
+        text = ' '.join((RUNTIME / 'routing/choose.md').read_text().split())
+        self.assertIn('For the host router (`{"type": "host"}`, the default and every fallback), choose by '
+                      '[model routing](model-routing.md)', text)
+        for path in sorted(ROOT.glob('**/*.md')):
+            if '.worktrees' in path.parts or 'journals' in path.parts or '.scratch' in path.parts:
+                continue
+            with self.subTest(doc=str(path.relative_to(ROOT))):
+                self.assertNotRegex(' '.join(path.read_text().split()), r'built-in (?:host |routing )?skill|this skill returns')
+
     def test_decision_and_routing_are_runtime_docs_not_skills(self):
         for skill, target in (('decision', 'runtime/decisions/decision.md'),
                               ('model-routing', 'runtime/routing/model-routing.md')):

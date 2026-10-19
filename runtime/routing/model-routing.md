@@ -1,6 +1,6 @@
 # Model routing
 
-Choose in the host's existing context. This skill returns a decision; the existing
+Choose in the host's existing context. This procedure returns a decision; the existing
 executor handles dispatch. Use [selection](choose.md)
 for resolver arguments, profile overrides and recovery.
 When the configured router is `decision-model`, use its compact assignment input
@@ -10,7 +10,7 @@ choice, plus `--after-failure "<evidence>"` when retrying after a failed attempt
 correct, not evidence that the backend is unavailable. Host `--selection` is not
 a shortcut around the configured router; preserve the actual fallback or override
 reason and any existing backend decision when using it.
-If this skill is the returned fallback after that service failed or abstained,
+If the host router is the returned fallback after that service failed or abstained,
 choose here directly and submit `--selection`; do not call the service again.
 Shared `decisions` configuration supplies the backend and calibration policy.
 Surface its new warnings through the [decision workflow](../decisions/decision.md).

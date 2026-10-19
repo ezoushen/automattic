@@ -73,8 +73,8 @@ executor owns its lifecycle and needs runtime verification.
 
 ## Routers and decisions
 
-An agent can define a pool of allowed candidates. The `router` chooses through a
-skill, a built-in decision-model client, or a named profile. Profiles use
+An agent can define a pool of allowed candidates. The `router` chooses through host
+judgment (the default), a skill, a built-in decision-model client, or a named profile. Profiles use
 `profiles.<name>.<agent>.<worker-runtime>.candidate/thinking`; omitted fields leave
 selection unchanged ([routers and sparse profiles](../runtime/config/routers.md#routers-and-sparse-profiles)).
 Select one with `router: {"type":"profile","profile":"balanced"}`,

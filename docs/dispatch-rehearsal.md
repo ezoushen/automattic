@@ -80,7 +80,7 @@ not the installed bridge's actual behavior.
     user-visible attribution. Repeat with a missing fixture instead of a reasoning
     failure, an explicit Luna/xhigh pin, and an exhausted repair-attempt budget.
 15. During an initial assignment selection, the configured OpenJev service times
-    out. The host chooses Sol/medium using the built-in routing skill. Provide the
+    out. The host chooses Sol/medium by its own judgment (the host router). Provide the
     user-facing decision update and the retained decision record. Then show the
     update for a successful OpenJev recommendation accepted by the host; the service
     returns a chosen option and probabilities, with no generated explanation.

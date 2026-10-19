@@ -52,4 +52,5 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 | `HERDR_ENV=1`, before cross-runtime dispatch, even when no hook supplied it | `hosts/herdr.md` |
 | Choosing or updating a tracker, board or destination; project workflow | [tracker and project conventions](runtime/board/conventions.md), [board operations](runtime/board/board.md) |
 | After a compaction or resume | re-read this bootstrap and the host session part before the next worker launch or phase checkpoint; [long sessions](runtime/workers/long-sessions.md) |
+| Writing or changing a source comment or API doc, outside a builder or reviewer job | [code comments standard](standards/code-comments.md) |
 | A user correction to how you work | record it under the ledger's `## Standing directives` ([record and continue](runtime/interview/record.md)) or the host's project memory; a compaction summary is not a durable store |
