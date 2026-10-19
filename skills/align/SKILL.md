@@ -33,7 +33,7 @@ Inside it the agent decides; a material choice outside it needs the user.
 Work the mandate's design tree through [grilling](../../runtime/interview/grilling.md):
 the user decides principles and material forks; the agent decides implementation
 detail, showing material ones for veto, at every depth. Missing sources remain investigation
-gaps; ask the human only for material choices they can decide from their priorities.
+gaps for [research](../../runtime/research/research.md); ask the human only for material choices they can decide from their priorities.
 
 Work in this order: [establish authority](../../runtime/interview/authority.md),
 [filter questions](../../runtime/interview/question-filter.md), then
@@ -60,7 +60,7 @@ that resolve a live risk. These are lenses on one brief, not three approval turn
 Read the ADR [index](../../runtime/domain/adr-index.md) and the ADRs in the area first; a plan that
 contradicts one proposes a superseding ADR. Reuse existing mechanisms; compare an alternative only when it is viable and
 material. Use the project's [glossary](../../runtime/domain/glossary.md) and keep it current as terms settle.
-Assign the [prototype](jobs/prototype.md) job only for a question that evidence on paper cannot settle.
+Use [prototype](jobs/prototype.md) only for a question that evidence on paper cannot settle.
 Leave ordinary types, helper files and library plumbing to implementation. A
 concrete interface or snippet belongs here only when needed to settle the contract.
 Check that each acceptance method can distinguish success from failure with the

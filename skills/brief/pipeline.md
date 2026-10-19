@@ -87,8 +87,8 @@ human-authorized merge by the orchestrator.
 
 ## Re-entry
 
-- A blocked ticket whose cause is a missing **fact** → `/mattpocock-skills:research`; a **defect** →
-  `/mattpocock-skills:diagnosing-bugs`; a **contract decision** → resolve against accepted
+- A blocked ticket whose cause is a missing **fact** → [research](../../runtime/research/research.md); a **defect** →
+  [diagnosis](../../runtime/diagnose/diagnose.md); a **contract decision** → resolve against accepted
   priorities and record the deciding source; unresolved conflicts return for human
   alignment while independent work continues, not a retrospective rewrite of criteria; a **wrong
   design** → `/automattic:align` at the affected level, then `/automattic:refine` re-cuts.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The runtime holds eleven modules in a fixed order; its docs link only down, and the skills over them stay thin."""
+"""The runtime holds twelve modules in a fixed order; its docs link only down, and the skills over them stay thin."""
 import re
 import unittest
 
@@ -7,12 +7,12 @@ import support
 
 ROOT = support.ROOT
 RUNTIME = ROOT / 'runtime'
-ORDER = ['diagnose', 'interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config', 'explain', 'domain']
+ORDER = ['diagnose', 'research', 'interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config', 'explain', 'domain']
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
 
 
 class RuntimeModules(unittest.TestCase):
-    def test_the_runtime_folder_holds_exactly_the_eleven_modules(self):
+    def test_the_runtime_folder_holds_exactly_the_twelve_modules(self):
         self.assertEqual(sorted(path.name for path in RUNTIME.iterdir()), sorted(ORDER))
 
     def test_a_runtime_doc_links_only_its_own_or_a_later_module(self):

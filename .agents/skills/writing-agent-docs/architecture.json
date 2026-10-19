@@ -41,7 +41,8 @@
    "hosts"
   ],
   [
-   "diagnose"
+   "diagnose",
+   "research"
   ],
   [
    "interview"
@@ -165,6 +166,11 @@
   "diagnose": {
    "docs": [
     "runtime/diagnose/**/*.md"
+   ]
+  },
+  "research": {
+   "docs": [
+    "runtime/research/**/*.md"
    ]
   },
   "agents": {
