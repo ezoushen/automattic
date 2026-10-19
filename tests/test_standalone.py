@@ -10,10 +10,12 @@ import support
 ROOT = support.ROOT
 # Journals and accepted decisions are history: they may say where a method came from.
 HISTORY = ('journals/', 'docs/adr/')
-# The package's skills that the plugin never had under its own name.
-SKILLS = ('ask-matt', 'codebase-design', 'diagnosing-bugs', 'domain-modeling', 'grill-me', 'grill-with-docs',
-          'implement-spec', 'improve-codebase-architecture', 'to-prd', 'to-spec', 'to-tickets', 'to-questionnaire',
-          'wait-what', 'wayfinder', 'writing-for-agents', 'claude-handoff')
+# Every skill of the package except those named by a plain word (research, tdd, handoff and the like).
+SKILLS = ('ask-matt', 'chief-of-staff', 'claude-handoff', 'codebase-design', 'diagnosing-bugs', 'domain-modeling',
+          'git-guardrails-claude-code', 'grill-me', 'grill-with-docs', 'implement-spec',
+          'improve-codebase-architecture', 'loop-me', 'migrate-to-shoehorn', 'scaffold-exercises', 'setup-pre-commit',
+          'setup-ts-deep-modules', 'to-prd', 'to-questionnaire', 'to-spec', 'to-tickets', 'wait-what', 'wayfinder',
+          'writing-beats', 'writing-for-agents', 'writing-fragments', 'writing-shape')
 EXTERNAL = re.compile(r'mattpocock|\bmatt\b|pocock|(?<![\w-])(?:%s)(?![\w-])' % '|'.join(map(re.escape, SKILLS)),
                       re.IGNORECASE)
 
