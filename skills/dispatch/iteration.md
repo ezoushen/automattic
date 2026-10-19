@@ -42,7 +42,8 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    exist. A new effort branches from `main` after fetching and comparing it with
    its remote. A stale or diverged local `main`, or a stale consumer checkout used
    as a base, is reported, and the effort branches from the verified remote tip;
-   never commit to the user's local `main`. Choose [how a ticket runs](modes.md):
+   never commit to the user's local `main` unless the user said to work
+   [directly on main](modes.md#directly-on-main). Choose [how a ticket runs](modes.md):
    an inline ticket continues there, and the rest of this step and step 5 describe a
    delegated one. Then create the ticket branch/worktree
    from that effort branch using the project's naming convention. The fallback

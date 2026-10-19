@@ -29,3 +29,13 @@ work, so its acceptance is a self-check: the integrated review is its independen
 Commit inline work before merging a delegated ticket into the effort worktree, so the two
 never write there at once. A blocked inline ticket follows the same escalation and
 two-attempt rules; delegating it is one of the recovery choices.
+
+## Directly on main
+
+Every effort gets a dedicated branch by default. Only an explicit user instruction to
+work directly on main makes `main` the effort branch and the main checkout its worktree;
+record that instruction and the starting commit in the run report. Inline tickets commit
+there, and delegated tickets merge into `main` under that instruction, which is the merge
+authorization. Never push. The integrated review covers the starting commit to the
+current `main`, its report records `effort_branch: main` so the delivery gate reads
+`main`, and PR publication is reported as not applicable.

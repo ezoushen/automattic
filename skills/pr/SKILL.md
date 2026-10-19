@@ -27,6 +27,9 @@ to the effort worktree if it has not covered the current task state. If it chang
 tracked content, return that delta to review and refresh required delivery evidence
 before proceeding. Preserve artifacts used by the PR's claims.
 
+An effort the user ran directly on `main` has no branch to publish: report the PR as
+not applicable, with the review and E2E evidence, and stop.
+
 1. **Confirm delivery evidence**, from the main checkout, using the selected
    [board's delivery gate](../../runtime/board/board.md). Remote issues are checked
    directly alongside Git and reports; no local ticket mirror or scheduler call.

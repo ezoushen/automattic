@@ -39,6 +39,21 @@ class TicketModes(unittest.TestCase):
         diff = subprocess.run(['git', '-C', str(ROOT), 'diff', '--quiet', 'main', '--', 'agents/builder.md'])
         self.assertEqual(diff.returncode, 0)
 
+    def test_an_effort_gets_its_own_branch_unless_the_user_says_main(self):
+        text = prose(MODES)
+        for rule in ('Every effort gets a dedicated branch by default',
+                     'Only an explicit user instruction to work directly on main makes `main` the effort branch',
+                     'record that instruction and the starting commit in the run report',
+                     'delegated tickets merge into `main` under that instruction', 'Never push'):
+            self.assertIn(rule, text)
+        self.assertIn('[directly on main](modes.md#directly-on-main)', prose(DISPATCH / 'iteration.md'))
+
+    def test_an_effort_on_main_is_reviewed_from_its_starting_commit_and_has_no_pr(self):
+        self.assertIn('review covers the starting commit to the current `main`', prose(MODES))
+        self.assertIn('`effort_branch: main`', prose(MODES))
+        self.assertIn('`effort_branch: main`', prose(ROOT / 'skills/review/report.md'))
+        self.assertIn('An effort the user ran directly on `main` has no branch to publish', prose(ROOT / 'skills/pr/SKILL.md'))
+
     def test_the_map_and_readme_name_both_modes(self):
         self.assertIn('inline by the orchestrator or by a fresh builder in its own worktree',
                       prose(ROOT / 'skills/brief/pipeline.md'))

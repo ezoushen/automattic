@@ -6,7 +6,8 @@ Front matter uses literal scalars, never quoted placeholders in a finished repor
 `review_by` and `e2e_by` name the reviewer and E2E worker runs (agent or attempt
 IDs) that produced the statuses at those heads. When the orchestrator runs checks itself, where that is
 permitted, it names the run log instead. A status with no run behind it is not
-evidence, and the delivery gate rejects a bare `orchestrator` or `host`:
+evidence, and the delivery gate rejects a bare `orchestrator` or `host`. An effort the
+user ran directly on main adds `effort_branch: main`; the gate reads `feat/<slug>` otherwise:
 
 ```markdown
 ---

@@ -111,7 +111,7 @@ def integrated(tickets, name, dependency):
         return False
     if not delivery_evidence(source):
         return False
-    prerequisite = f"refs/heads/feat/{source}"
+    prerequisite = f"refs/heads/{effort_branch(source)}"
     target = f"refs/heads/feat/{spec_of(name)}"
     exists = subprocess.run(["git", "-C", str(ROOT), "show-ref", "--verify", "--quiet", target])
     bases = ["refs/heads/main"] + ([target] if exists.returncode == 0 else [])
@@ -119,14 +119,24 @@ def integrated(tickets, name, dependency):
                               capture_output=True).returncode == 0 for base in bases)
 
 
+def review_front_matter(slug):
+    report = ISSUES / slug / 'reports' / 'spec-review.md'
+    return (parse_front_matter(report.read_text()) or {}) if report.is_file() else None
+
+
+def effort_branch(slug):
+    """feat/<slug>, or main when the user had the effort work directly on main."""
+    branch = (review_front_matter(slug) or {}).get('effort_branch')
+    return branch if isinstance(branch, str) and branch else f'feat/{slug}'
+
+
 def delivery_evidence(slug):
     """Structural delivery gate; the orchestrator must also judge the recorded evidence."""
-    report = ISSUES / slug / 'reports' / 'spec-review.md'
-    if not report.is_file():
+    fm = review_front_matter(slug)
+    if fm is None:
         return False
-    fm = parse_front_matter(report.read_text()) or {}
     head = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--verify',
-                           f'refs/heads/feat/{slug}^{{commit}}'], capture_output=True, text=True)
+                           f'refs/heads/{effort_branch(slug)}^{{commit}}'], capture_output=True, text=True)
     base = fm.get('review_base', '')
     if head.returncode or not isinstance(base, str) or not re.fullmatch('[0-9a-f]{40}', base):
         return False

@@ -169,6 +169,24 @@ class BoardCLI(unittest.TestCase):
         self.write_report(base)
         assert 'feat/inline-01' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
 
+    def test_an_effort_run_on_main_is_delivered_from_main_and_releases_its_dependents(self):
+        self.write_ticket('onmain/01', 'done')
+        self.write_ticket('later/01', blocked='onmain/01', touches='docs')
+        start = self.commit('start')
+        head = self.commit('ticket work on main')
+        review = self.root / '.scratch/onmain/reports/spec-review.md'
+        review.parent.mkdir(parents=True, exist_ok=True)
+        evidence = (f'---\neffort_branch: main\nreview_status: clean\ndocumentation_status: passed\n'
+                    f'review_head: {head}\nreview_base: {start}\nreview_diff_base: {start}\n'
+                    f'e2e_status: passed\ne2e_head: {head}\nreview_by: reviewer/1\ne2e_by: verifier/2\n---\n')
+        review.write_text(evidence)
+        self.cli('onmain', '--delivery')
+        assert [t['ticket'] for t in json.loads(self.cli('later').stdout)] == ['later/01']
+        # Without the recorded branch the gate still looks for feat/<slug>.
+        review.write_text(evidence.replace('effort_branch: main\n', ''))
+        self.cli('onmain', '--delivery', code=1)
+        assert json.loads(self.cli('later').stdout) == []
+
 
 if __name__ == '__main__':
     unittest.main()
