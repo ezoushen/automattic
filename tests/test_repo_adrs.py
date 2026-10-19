@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""This repository records its own binding decisions as ADRs with a checked index."""
+import json
+import subprocess
+import unittest
+
+import support
+
+ROOT = support.ROOT
+
+
+class RepoAdrs(unittest.TestCase):
+    def test_the_repositorys_adrs_pass_the_check_with_an_index(self):
+        result = subprocess.run(['python3', str(support.script('adr_numbers.py')), '--repo', str(ROOT),
+                                 '--require-index'], capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual('0003', out['next'])
+        index = (ROOT / 'docs/adr/README.md').read_text()
+        accepted = index[index.index('## Accepted'):index.index('## Superseded')]
+        for name in ('0001-adr-numbers-are-checked-on-main.md', '0002-grilling-asks-principles-only.md'):
+            self.assertIn(f']({name})', accepted)
+
+    def test_contributors_are_told_to_read_the_index_first(self):
+        text = ' '.join((ROOT / 'docs/development.md').read_text().split())
+        self.assertIn('[decision index](adr/README.md) before an architectural change', text)
+        self.assertIn('only accepted ADRs bind', text)
+
+
+if __name__ == '__main__':
+    unittest.main()

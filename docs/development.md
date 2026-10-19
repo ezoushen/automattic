@@ -2,7 +2,8 @@
 
 Changes to the plugin follow its own architecture rules
 ([writing-agent-docs](../.agents/skills/writing-agent-docs/SKILL.md)); the checks
-below enforce them.
+below enforce them. Read the [decision index](adr/README.md) before an architectural change:
+only accepted ADRs bind, and a change that conflicts with one is raised, not worked around.
 
 ## Suite and hooks
 
