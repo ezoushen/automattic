@@ -30,11 +30,18 @@ downstream effect is not obvious.
 
 ## When to offer one
 
-All three must hold; when any is missing, skip the ADR:
+Offer one when a decision qualifies by either rule:
 
-1. **Hard to reverse:** changing your mind later has a meaningful cost.
-2. **Surprising without context:** a future reader would wonder why it was done this way.
-3. **A real trade-off:** there were genuine alternatives, chosen between for specific reasons.
+- **It affects others:** it shapes the structure, interfaces or dependencies others
+  build on, or sets a rule every later change must follow.
+- **It passes the three tests**, all of them:
+  1. **Hard to reverse:** changing your mind later has a meaningful cost.
+  2. **Surprising without context:** a future reader would wonder why it was done this way.
+  3. **A real trade-off:** there were genuine alternatives, chosen between for specific reasons.
+
+A bare rule with no real trade-off is not an ADR: it goes where the project keeps its
+rules, such as its agent instruction or contributing file. A rule chosen over a real
+alternative gets the ADR for its reason, plus a one-line rule there that points to it.
 
 Typical cases: the architecture's shape, how contexts integrate, technology with
 lock-in, ownership and scope boundaries (the explicit no's too), deliberate departures
@@ -57,7 +64,7 @@ silently followed.
 
 An effort's ledger stays in ignored `.scratch/`, so its lasting decisions reach other
 members only as ADRs. When the effort's implementation is complete, list each ledger
-row that passes the three tests as a candidate ADR in the run report, with the row it
+row that qualifies as a candidate ADR in the run report, with the row it
 comes from, and ask the user once for the whole list. Do not wait for the answer:
 write only the candidates the user approves into the effort branch, those answered
 before its review head is pinned, so the review covers them; candidates still

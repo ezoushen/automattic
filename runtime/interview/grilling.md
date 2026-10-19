@@ -24,7 +24,7 @@ one or two questions per round, in the user's terms, each with a recommendation 
 
 When a term settles, or the user uses one against its definition, add the term to the
 [glossary](../domain/glossary.md) the moment it settles, or call out the conflict. When a
-decision settles that passes the three tests, offer an [ADR](../domain/adr.md); write it only
+decision settles that qualifies for an ADR, offer an [ADR](../domain/adr.md); write it only
 after the user's yes.
 
 Finding facts is the agent's job, never the user's. Look facts up in the background,

@@ -14,7 +14,7 @@ def prose(path):
 class DeliveryHistory(unittest.TestCase):
     def test_the_adr_doc_says_how_an_effort_delivers_its_decisions(self):
         text = prose('runtime/domain/adr.md')
-        for rule in ('list each ledger row that passes the three tests as a candidate ADR',
+        for rule in ('list each ledger row that qualifies as a candidate ADR',
                      'write only the candidates the user approves into the effort branch',
                      'before its review head is pinned',
                      'Do not wait for the answer',
