@@ -79,8 +79,9 @@ without those conditions; it cannot claim acceptance.
 ## Return
 
 Append to `report` under `## Implemented`: one `Commit: <sha>` line per commit; check commands, outcomes
-and meaningful evidence or reuse provenance; affected entry-point coverage when
-applicable; every ticket checkbox as `[x]` or the reason it stays `[ ]`.
+and meaningful evidence or reuse provenance; for each slice, its failing run, its
+passing run and the run that breaks its rule on purpose; affected entry-point coverage
+when applicable; every ticket checkbox as `[x]` or the reason it stays `[ ]`.
 For a later-phase criterion, name its assigned owner and phase; pending verification
 is not a failed implementation check or proof of ticket completion.
 Use the supplied evidence directory and the shared

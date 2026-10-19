@@ -111,6 +111,15 @@ class TddStandard(unittest.TestCase):
             with self.subTest(doc=name):
                 self.assertIn(link, prose(ROOT / name))
 
+    def test_a_builder_reads_the_standard_and_records_each_slice(self):
+        builder = prose(ROOT / 'agents/builder.md')
+        self.assertIn('[TDD standard](../standards/tdd.md): read it in full before the first test', builder)
+        self.assertIn('Change behavior test-first at the ticket\'s seams, one slice at a time — shown by: the report '
+                      'names the TDD standard as read and records, for each slice, a failing run before the passing '
+                      'one and the run that breaks its rule on purpose', builder)
+        self.assertIn('for each slice, its failing run, its passing run and the run that breaks its rule on purpose',
+                      prose(ROOT / 'skills/dispatch/jobs/ticket.md'))
+
     def test_no_doc_names_matts_tdd_skill(self):
         found = subprocess.run(
             ['git', 'grep', '-n', '-I', 'mattpocock-skills:tdd', '--', '.', ':!journals', ':!bootstrap.md',
