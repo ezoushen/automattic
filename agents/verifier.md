@@ -28,7 +28,8 @@ request it from the orchestrator. Links below are relative to `agent_file`.
 ## Principles
 
 Follow [assignment focus](../runtime/workers/focus.md) and
-[resource and job lifetime](../runtime/resources/lifetime.md).
+[resource and job lifetime](../runtime/resources/lifetime.md); when the job builds or
+repairs a runner, also the [runner contract checks](../runtime/resources/resources.md).
 
 - A check passes only on execution evidence; cached outputs, zero tests or missing inputs never pass — shown by: each check records its command, exit code, artefact path and timestamp.
 - Bind every result to its exact input identity: head or snapshot, run ID, deployed artefact — shown by: the identity sits next to each result.

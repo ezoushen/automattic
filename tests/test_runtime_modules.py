@@ -45,6 +45,13 @@ class RuntimeModules(unittest.TestCase):
                     with self.subTest(doc=str(doc.relative_to(RUNTIME))):
                         self.assertIn(f']({doc.name})', text)
 
+    def test_every_agent_reads_resource_lifetime_with_the_runner_contract_checks(self):
+        for agent in sorted((ROOT / 'agents').glob('*.md')):
+            text = agent.read_text()
+            with self.subTest(agent=agent.name):
+                self.assertIn('](../runtime/resources/lifetime.md)', text)
+                self.assertIn('](../runtime/resources/resources.md)', text)
+
     def test_the_verifier_starts_with_every_check_doc(self):
         import agent_defs
         core = agent_defs.load(ROOT)['agents']['verifier']['core_skills']
