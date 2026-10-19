@@ -20,7 +20,8 @@ import subprocess
 import sys
 
 NAME = re.compile(r'(\d{4})-.+\.md')
-LINK = re.compile(r'\]\((?:\./)?(\d{4}-[^)\s#]+\.md)(?:#[^)\s]*)?\)')
+LINK = re.compile(r'\]\((?:\./)?(\d{4}-[^)\s#]+\.md)(?:#[^)\s]*)?(?:\s+"[^"]*"|\s+\'[^\']*\')?\s*\)')
+FENCE = re.compile(r' {0,3}(`{3,}|~{3,})')
 SECTIONS = {'accepted': 'Accepted', 'superseded': 'Superseded', 'deprecated': 'Deprecated'}
 
 
@@ -93,11 +94,16 @@ def index_problems(texts, folder):
                 problems.append(f'{name}: supersedes ADR-{older}, which is not superseded by ADR-{name[:4]}')
     if 'README.md' not in texts:
         return problems + ([f'{folder.rstrip("/")}/README.md: no index'] if adrs else [])
-    listed, section, fenced = {}, 'outside a status section', False
+    listed, section, fence = {}, 'outside a status section', None
     for line in texts['README.md'].splitlines():
-        if line.lstrip().startswith(('```', '~~~')):
-            fenced = not fenced
-        if fenced:
+        opening = FENCE.match(line)
+        if fence is None and opening:
+            fence = opening[1]
+            continue
+        if fence is not None:
+            # A fence closes only on a line of its own character, at least as long as the opening.
+            if opening and line.strip() == opening[1] and opening[1][0] == fence[0] and len(opening[1]) >= len(fence):
+                fence = None
             continue
         if line.startswith('## '):
             section = line[3:].strip()

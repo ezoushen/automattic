@@ -147,6 +147,28 @@ class AdrIndex(unittest.TestCase):
         self.assertEqual(1, code)
         self.assertEqual(['0002-cents.md: accepted but not listed under Accepted'], out['index_problems'])
 
+    def test_nested_and_indented_fences_follow_markdown(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text().replace('- [0002](0002-cents.md) A decision: the rule in one line\n', '')
+        example = ('````md\n```\n## Accepted\n- [0002](0002-cents.md) example\n```\n````\n'
+                   '```\n~~~\n## Accepted\n- [0002](0002-cents.md) example\n```\n')
+        (self.folder / 'README.md').write_text(example + text)
+        code, out = check(self.repo)
+        self.assertEqual(1, code)
+        self.assertEqual(['0002-cents.md: accepted but not listed under Accepted'], out['index_problems'])
+        self.consistent()
+        text = (self.folder / 'README.md').read_text()
+        (self.folder / 'README.md').write_text('    ``` an indented code line, not a fence\n' + text)
+        self.assertEqual(0, check(self.repo)[0])
+
+    def test_links_with_a_title_name_their_file(self):
+        self.consistent()
+        text = (self.folder / 'README.md').read_text().replace('](0002-cents.md)', '](0002-cents.md "Cents")')
+        (self.folder / 'README.md').write_text(text + '- [9999](9999-missing.md "Missing") gone\n')
+        code, out = check(self.repo)
+        self.assertEqual(1, code)
+        self.assertEqual(['9999-missing.md: listed in the index but no such file'], out['index_problems'])
+
     def test_a_link_outside_any_section_is_reported_not_a_crash(self):
         self.consistent()
         text = (self.folder / 'README.md').read_text()

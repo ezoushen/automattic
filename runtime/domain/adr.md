@@ -95,8 +95,11 @@ python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch>
 ```
 
 It prints the duplicated numbers, the next free one and any index problems, and exits
-1 on either. Fix an index problem in the same commit as its ADR: list the ADR under its
-status, or correct the status or supersede link. Run it once for each ADR folder: the
+1 on either. Fix an index problem the effort caused in the same commit as its ADR: list
+the ADR under its status, or correct the status or supersede link. A problem that comes
+from `main` and needs only the index corrected is fixed in the effort branch with the
+merge; one that would change another ADR's status or supersede
+link goes to the user. Run it once for each ADR folder: the
 root one and each context's. `--index` applies this convention's index; a project with
 its own decision-record convention drops it, and one that also numbers differently
 uses its own check or records an evidenced skip. A merge, renumbering or index fix
