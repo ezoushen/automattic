@@ -24,8 +24,9 @@ class Slicing(unittest.TestCase):
                 'Preparatory refactors and wide mechanical changes are the exceptions to end-to-end slices.',
                 'Preparatory refactors come first: when a slice is easier after a change that keeps behaviour the '
                 'same, that change is its own earlier ticket, and the slice is blocked by it.',
-                'runs as expand → migrate in batches → contract: add the new form beside the old, move callers over '
-                'in batches, then remove the old form once nothing uses it.',
+                'A wide mechanical change, such as a rename or an interface replaced across many callers, runs as '
+                'expand → migrate in batches → contract: add the new form beside the old, move callers over in '
+                'batches, then remove the old form once nothing uses it.',
                 'Expand, each migrate batch and contract are tickets: each batch is blocked by expand and contract is '
                 'blocked by every batch, with batches sized by blast radius.',
                 'Batches that cannot stay green alone share the effort branch and end in the spec E2E: write them as '
