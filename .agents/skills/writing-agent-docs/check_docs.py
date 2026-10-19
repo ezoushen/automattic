@@ -197,7 +197,7 @@ def tracked_names(root):
 
 def first_read(root, architecture, rel):
     """Findings for each skill whose first reads (bootstrap, the largest host session, the
-    skill and the docs its `First read:` line links) are over the budget, or that has no such
+    skill and the docs its `First read:` paragraph links) are over the budget, or that has no such
     line; recorded debt may only shrink."""
     settings = architecture.data.get('first_read')
     findings = []
@@ -205,12 +205,17 @@ def first_read(root, architecture, rel):
         sessions = expand(root, settings['host_session'])
         reads = {skill, *expand(root, settings['bootstrap'])}
         reads.update(sorted(sessions, key=lambda path: path.stat().st_size)[-1:])
-        declared = next((line for _, line in prose(skill) if line.startswith('First read:')), None)
-        if declared is None:
+        declared = []
+        for _, line in prose(skill):
+            if declared and not line.strip():
+                break
+            if declared or line.startswith('First read:'):
+                declared.append(line)
+        if not declared:
             findings.append(Finding(rel(skill), 1, 'error', 'first-read-line',
                                     'no `First read:` line declaring the docs this skill reads first'))
             continue
-        for _, link in links(declared):
+        for _, link in links(' '.join(declared)):
             target = (skill.parent / unquote(link.split('#')[0].split('?')[0])).resolve()
             if link.split('#')[0] and not re.match(r'[a-z][\w+.-]*:', link, re.I) and target.suffix == '.md' and target.is_file():
                 reads.add(target)
@@ -224,7 +229,7 @@ def first_read(root, architecture, rel):
                                         f'first reads total {total} bytes, over {limit}; lower the recorded size to {total}'))
         elif total > limit:
             findings.append(Finding(rel(skill), 1, 'error', 'first-read',
-                                    f'first reads total {total} bytes, over {limit}: bootstrap, host session, this skill and the docs its `First read:` line links'))
+                                    f'first reads total {total} bytes, over {limit}: bootstrap, host session, this skill and the docs its `First read:` paragraph links'))
     return findings
 
 

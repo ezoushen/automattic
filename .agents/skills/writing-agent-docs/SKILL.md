@@ -61,8 +61,8 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `code-path` | Code names a doc that does not exist | Update the path in the code |
 | `direction` | A link goes to a higher level, a sibling module or another skill | Move the shared text below its users, or invert the link |
 | `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
-| `first-read` | Bootstrap, host session, skill and the docs its `First read:` line links, over the budget | Move detail out of those docs or the bootstrap |
-| `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add one linking the docs the skill reads before acting |
+| `first-read` | Bootstrap, host session, skill and the docs its `First read:` paragraph links, over the budget | Move detail out of those docs or the bootstrap |
+| `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add a paragraph starting `First read:` that links the docs the skill reads before acting |
 | `host-shape` | A folder under `hosts/` that does not hold exactly `session.md` and `workers.md` | Move other text to the runtime doc that owns it |
 | `shared-section` | A section linked from 3+ files in other modules | Make it its own file |
 | `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |

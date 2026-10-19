@@ -161,6 +161,15 @@ class ArchitectureRules(Fixture):
         path.write_text(text.replace('# Tool\n', '# Tool\n' + extra, 1))
         self.assertEqual(self.check(), set())
 
+    def test_a_wrapped_first_read_declaration_counts_every_line_of_its_paragraph(self):
+        total = self.first_read_tree()
+        path = self.root / 'skills/tool/SKILL.md'
+        path.write_text(path.read_text().replace('(../../bootstrap.md), [the guide]', '(../../bootstrap.md),\n[the guide]'))
+        self.architecture['first_read']['budget'] = total
+        self.assertEqual(self.check(), set())
+        self.architecture['first_read']['budget'] = total - 1
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'first-read', 'error')})
+
     def test_a_skill_whose_first_reads_exceed_the_budget_is_reported_with_its_total_bytes(self):
         total = self.first_read_tree()
         self.architecture['first_read']['budget'] = total
