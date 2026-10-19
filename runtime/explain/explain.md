@@ -33,7 +33,8 @@ Contents:
 ## Re-pitch what lost the reader
 
 A user who says they are lost is reporting their state, not asking for fewer words.
-Clipping the same message loses them further.
+Clipping the same message loses them further. A re-pitch replaces telling in layers: no
+new headline and no closing summary, only these steps.
 
 1. Find where they lost it: usually the first premise, term or step they could not have
    known, which can be earlier than the last message.

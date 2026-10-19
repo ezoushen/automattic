@@ -57,7 +57,7 @@ and publication. Keep unrelated follow-ups separate from current blockers.
 
 If a previous briefing is available, emphasize the meaningful changes since it;
 still make this briefing understandable on its own. Otherwise report current state
-without inventing a baseline.
+without inventing a baseline. Match an explicitly requested depth or focus.
 
 ## Present it
 

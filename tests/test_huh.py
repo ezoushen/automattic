@@ -41,10 +41,14 @@ class Huh(unittest.TestCase):
 
     def test_the_explain_doc_owns_telling_in_layers(self):
         section = prose(EXPLAIN).split('## Tell it in layers', 1)[1].split(' ## ', 1)[0]
-        for rule in ('headline', 'one representative flow', 'responsibility becomes relevant',
-                     'only when they help the user steer', 'one topic at a time', 'before any decision',
+        for rule in ('headline in plain language', 'one representative flow', 'responsibility becomes relevant',
+                     'only when they help the user steer', 'may not know to ask about', 'one topic at a time',
+                     "follow the user's question rather than a questionnaire", 'match an explicitly requested depth or focus',
+                     'leave room for questions', 'before any decision', 'an artifact link alone cannot establish it',
                      'what is settled, what remains uncertain', 'return to the remaining decision'):
             self.assertIn(rule, section)
+        repitch = prose(EXPLAIN).split('## Re-pitch what lost the reader', 1)[1]
+        self.assertIn('replaces telling in layers', repitch)
 
     def test_the_callers_tell_by_the_explain_doc_instead_of_restating_it(self):
         restated = {'skills/brief/SKILL.md': 'Lead with the goal',
@@ -55,6 +59,15 @@ class Huh(unittest.TestCase):
             with self.subTest(doc=name):
                 self.assertIn('in layers, as [explain](../../runtime/explain/explain.md) says', text)
                 self.assertNotIn(phrase, text)
+        # what each caller still covers itself
+        kept = {'skills/brief/SKILL.md': ('What is complete, with its meaningful result', 'no invented percentages',
+                                          'Match an explicitly requested depth or focus'),
+                'skills/review/walkthrough.md': ('WHY, WHAT, then HOW', 'Explain material tradeoffs, alternatives and scope limits',
+                                                 'documented author rationale'),
+                'skills/setup/tour.md': ('Explain responsibilities before field names', 'Give the next useful topic its tradeoff')}
+        for name, phrases in kept.items():
+            for phrase in phrases:
+                self.assertIn(phrase, prose(ROOT / name), name)
 
     def test_the_pipeline_map_names_huh(self):
         self.assertIn('`/automattic:huh`', (ROOT / 'skills/brief/pipeline.md').read_text())
