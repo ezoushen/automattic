@@ -34,7 +34,14 @@ class Slicing(unittest.TestCase):
         for rule in ('Preparatory refactors and wide mechanical changes are the exceptions to end-to-end slices',
                      'Expand, each migrate batch and contract are tickets',
                      'each batch is blocked by expand and contract is blocked by every batch',
-                     'batches sized by blast radius'):
+                     'batches sized by blast radius',
+                     'with no separate integration branch or integrate-and-verify ticket',
+                     'distinguish research hypotheses from measurements on the actual targets',
+                     'Evidence from another environment suggests what to investigate, not what to build',
+                     'Ticket cycles and cycles between efforts are invalid',
+                     'Work that must integrate before then belongs in the same effort',
+                     'Individual settings or acceptance criteria need not each become a ticket',
+                     'account for that resource during implementation, not only E2E'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, text)
         self.assertIn('[Slicing tickets](slicing.md)', prose(ROOT / 'runtime/board/board.md'))
