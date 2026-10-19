@@ -21,10 +21,8 @@ Read the PR/issue discussion, changed code, relevant callers, project standards 
 existing accepted decisions. Research discoverable facts before explaining them.
 If the target is unclear, establish what is known and ask for the missing selection.
 
-Read the bundled [show-me presentation guidance](../../addons/show-me/presentation.md)
-directly and choose the smallest in-chat view that clarifies the change. The manual
-brief and show-me commands need no invocation here. If the reference is unavailable,
-report the gap and continue the factual explanation.
+Read [explain](../../runtime/explain/explain.md) and choose the smallest in-chat view
+that clarifies the change. The brief command needs no invocation here.
 
 ## Teach and discuss
 

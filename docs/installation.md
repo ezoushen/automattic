@@ -40,7 +40,7 @@ codex plugin add automattic@automattic-dev
 The installer copies a snapshot. For development on this machine,
 `~/.codex/plugins/cache/automattic-dev/automattic/0.3.0` is a real directory whose
 workflow directories are symlinks into this checkout, including `skills`, `agents`,
-`runtime`, `standards`, `hosts`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`, and
+`runtime`, `standards`, `hosts`, `hooks`, `scripts`, `schemas` and `benchmarks`, and
 the top-level `bootstrap.md` file is a symlink too. Its `.codex-plugin/` directory and
 small `plugin.json` registration are regular files/directories, copied from this
 tree's Codex manifest; the portable root `plugin.json` is omitted from that local
@@ -85,15 +85,6 @@ extension loading disabled, supply `harness=pi` when invoking a phase instead.
 Planning/review can run without delegation where the shared procedure allows it;
 dispatch requires the installed `subagent` tool (pi-subagents). See the
 [Pi session part](../hosts/pi/session.md).
-
-## Show-me
-
-Briefing, walkthroughs and the setup tour use the
-[composable show-me adaptation](../addons/show-me/README.md), with HumanLayer's
-MIT-licensed visual guidance in one shared reference. Each uses it directly in the
-same response on every host; no second command or external show-me plugin is
-required. The adaptation also preserves a manual show-me entry for standalone use.
-See its README for installation and upstream updates.
 
 ## Runtime references
 

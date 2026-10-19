@@ -156,16 +156,19 @@ class CrossHarness(unittest.TestCase):
         # Codex 0.162 reads a root manifest declaring the Agent Plugins $schema as that format and drops
         # .codex-plugin hooks, so a copied install would register none.
         assert '$schema' not in portable, 'root plugin.json must not declare $schema'
-        commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief'}
+        commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief', 'huh'}
         implicit_skills = {'housekeeping'}
         assert {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')} == commands | implicit_skills
         for path in (PLUGIN / 'skills').glob('*/SKILL.md'):
             implicit = path.parent.name in implicit_skills
             text = path.read_text()
             # Every skill holds its procedure in SKILL.md; none is a thin entry over a lower doc.
-            assert len(text.encode()) >= 2500, f'{path}: a skill holds its procedure'
-            if not implicit:
+            # huh is a short re-pitch trigger that launches nothing (tests/test_huh.py).
+            if path.parent.name != 'huh':
+                assert len(text.encode()) >= 2500, f'{path}: a skill holds its procedure'
+            if not implicit and path.parent.name != 'huh':
                 assert 'runtime bootstrap' in text, path
+            if not implicit:
                 assert 'disable-model-invocation: true' in text, path
                 assert 'user-invocable: false' not in text, path
             else:
@@ -174,7 +177,7 @@ class CrossHarness(unittest.TestCase):
             ui = (path.parent / 'agents/openai.yaml').read_text()
             assert f'policy:\n  allow_implicit_invocation: {str(implicit).lower()}\n' in ui, path
         # Agent and job structure is checked by agent_defs (tests/test_agent_definitions.py).
-        for folder in ('skills', 'agents', 'addons', 'standards', 'runtime', 'hosts'):
+        for folder in ('skills', 'agents', 'standards', 'runtime', 'hosts'):
             for path in (PLUGIN / folder).rglob('*.md'):
                 for link in re.findall(r'\]\(([^)]+)\)', path.read_text()):
                     if '://' not in link and '<' not in link:

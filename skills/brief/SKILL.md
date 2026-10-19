@@ -10,7 +10,7 @@ argument-hint: "[map | effort|branch|PR-number|PR-URL] [focus or question] — d
 Contents:
 - [Establish the current snapshot](#establish-the-current-snapshot)
 - [Brief the human](#brief-the-human)
-- [Show-me presentation](#show-me-presentation)
+- [Present it](#present-it)
 - [Preserve the workflow](#preserve-the-workflow)
 - [Show the pipeline map](#show-the-pipeline-map)
 
@@ -60,20 +60,13 @@ If a previous briefing is available, emphasize the meaningful changes since it;
 still make this briefing understandable on its own. Otherwise report current state
 without inventing a baseline. Match an explicitly requested depth or focus.
 
-## Show-me presentation
+## Present it
 
-Read the bundled [show-me presentation guidance](../../addons/show-me/presentation.md)
-and use it to present this snapshot in the same response. Automattic owns the
-facts and scope; the maintained show-me adaptation owns the visual vocabulary.
-Select the smallest view that clarifies current state or dependencies; plain prose
-is sufficient for a simple status. No second manual invocation is needed.
-
-This shared reference is deliberately outside either skill's invocation boundary.
-The standalone show-me command remains manual. Use the reference directly, not
-an unavailable or forbidden Skill call. Default to in-chat presentation; exports
-or file creation require the user's request. If the bundled file is unavailable,
-report the packaging gap and still give the factual briefing without installing
-anything or claiming presentation guidance was loaded.
+Read [explain](../../runtime/explain/explain.md) and use it to present this snapshot in
+the same response. Select the smallest view that clarifies current state or
+dependencies; plain prose is sufficient for a simple status. No second command is
+needed. Default to in-chat presentation; exports or file creation require the user's
+request.
 
 ## Preserve the workflow
 
@@ -94,5 +87,5 @@ does not resurrect an inactive task.
 Read the [pipeline map](pipeline.md) and explain which command fits the user's
 current task, what each command owns and what it hands on. Lead with the phase that
 matches the conversation and the next command to run; give the whole map only when
-asked. Present it with the same show-me guidance, in the conversation.
+asked. Present it the same way, in the conversation.
 

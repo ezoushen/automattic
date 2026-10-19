@@ -10,7 +10,7 @@ ROOT = support.ROOT
 README = (ROOT / 'README.md').read_text()
 SKILL = (ROOT / '.agents/skills/writing-agent-docs/SKILL.md').read_text()
 BOOTSTRAP = (ROOT / 'bootstrap.md').read_text()
-TOP = ('skills', 'runtime', 'hosts', 'standards', 'agents', 'hooks', 'scripts', 'schemas', 'addons',
+TOP = ('skills', 'runtime', 'hosts', 'standards', 'agents', 'hooks', 'scripts', 'schemas',
        'benchmarks', 'docs', 'bootstrap.md')
 # Codex runtime method names, not repository paths.
 CODEX_RPC = ('skills/list', 'hooks/list')

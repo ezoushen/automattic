@@ -83,7 +83,7 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 Layers, top first: this repository's project skills (`.agents/skills/`), hooks and
 `bootstrap.md` (injected by path, so skills name it rather than link it); skills
 (`skills/<skill>/`, in their own order);
-`agents/`; `standards/`; `hosts/`; `runtime/` modules; add-ons. A doc or script depends on its own module or a
+`agents/`; `standards/`; `hosts/`; `runtime/` modules. A doc or script depends on its own module or a
 lower level, never on a sibling or a higher level: a command may read a lower command's
 procedure, and a project skill links no other skill. No two modules depend on each other,
 directly or through others (`cycle`). **Strict:** these direction rules, the first-read budget, the host
@@ -119,3 +119,5 @@ each other, so the order grows without loosening a rule. Run the checker and
   `user-invocable: false`; add one only when its trigger must fire outside the commands
   (as `housekeeping` does). Text that agents or commands read by link is a `runtime/`
   module or a standard, named in an agent's `core_skills` when every job needs it.
+  A command that only re-pitches the conversation and launches nothing (`huh`) skips
+  the bootstrap and the procedure size floor; keep its trigger short.

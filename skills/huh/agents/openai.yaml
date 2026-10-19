@@ -1,0 +1,5 @@
+interface:
+  short_description: "Re-pitch what lost you, plainly"
+  default_prompt: "Use $automattic:huh to back up to the point I stopped following and explain it again plainly."
+policy:
+  allow_implicit_invocation: false

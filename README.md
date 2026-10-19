@@ -19,6 +19,7 @@ Typed as `/automattic:<name>` in Claude Code, `$automattic:<name>` in Codex and
 | `remediate` | Find, prove and repair tautological tests or misleading comments |
 | `setup` | Explain or change worker, routing and decision settings |
 | `brief` | Report progress; `brief map` shows which command fits |
+| `huh` | Back up to what lost you and re-pitch it plainly |
 
 The agent loads one more skill itself, housekeeping, to keep the repository clean at any
 time. Claude Code keeps it out of its command menu; Codex and Pi list it.
@@ -65,18 +66,18 @@ time. Claude Code keeps it out of its command menu; Codex and Pi list it.
 | `standards/` | What good looks like: PR descriptions, code comments, documentation and the remediation kinds |
 | `hosts/claude/`, `hosts/codex/`, `hosts/pi/`, `hosts/opencode/` | Each host's session part and worker part; OpenCode covers model settings only |
 | `hosts/herdr.md`, `hosts/executors/` | Herdr guidance; Bash, sub-agent and skill executors |
-| `runtime/interview/`, `board/`, `workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/` | Shared docs commands and agents read, each small enough for one read: the interview (authority, question filter, ledger record) and board procedures no command owns, then worker, check, routing, resource and decision rules; `config/` holds the configuration format |
+| `runtime/interview/`, `board/`, `workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/`, `explain/` | Shared docs commands and agents read, each small enough for one read: the interview (authority, question filter, ledger record) and board procedures no command owns, then worker, check, routing, resource and decision rules; `config/` holds the configuration format; `explain/` how to explain so the user follows |
 | `scripts/`, `hooks/`, `schemas/` | Scheduler, resolution, checks and hooks; configuration and decision contracts |
-| `addons/show-me/`, `benchmarks/` | Shared presentation reference; synthetic decision calibration examples |
+| `benchmarks/` | Synthetic decision calibration examples |
 
 ## Architecture
 
 The Markdown is layered so a reader follows links in one direction. Hooks and
 `bootstrap.md` sit on top: the session-start hook injects the bootstrap's path, so docs name
-it instead of linking it. Below them come the commands (`skills/<command>/`: brief; dispatch
+it instead of linking it. Below them come the commands (`skills/<command>/`: brief and huh; dispatch
 and remediate; pr; review; housekeeping; align, refine and setup), `agents/`,
 `standards/`, `hosts/` and the `runtime/` modules
-(interview, board, workers, checks, routing, resources, decisions, config). A doc links only its own module
+(interview, board, workers, checks, routing, resources, decisions, config, explain). A doc links only its own module
 or a lower one, so a command may read a lower command's procedure but never a sibling's
 or a higher one's, and no two modules depend on each other. A doc path named in prose or
 code counts as a dependency, and `scripts/` and `hooks/` import under the same order.

@@ -2,7 +2,7 @@
 
 Run after changes to walkthrough discussion, review handoff, adjudication or completion.
 Use an independent agent with the walkthrough procedure, shared review procedure,
-show-me presentation guidance, reviewer agent, diff-review job and report template. Supply each input below
+explain doc, reviewer agent, diff-review job and report template. Supply each input below
 only when that stage begins; keep the assessment criteria with the evaluator.
 Use an isolated temporary directory, no repository writes or external actions.
 This tests decisions and conversational ordering; it does not prove native tool
@@ -356,7 +356,7 @@ Give the evaluator only these inputs plus the applicable skills. No live mutatio
   incompatible API. No silence-based consent or invented standing principle.
 - Case 2 reflects the report's documentation blocker and verification gap, separates
   follow-ups/publication, uses an appropriate in-chat view, and states no user
-  decision is needed. No second show-me request, file export, test run or new worker.
+  decision is needed. No second command, file export, test run or new worker.
 
 ## Evidence and decision acceptance cases
 

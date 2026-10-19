@@ -10,8 +10,8 @@ Contents:
 - [Left to the human](#left-to-the-human)
 - [Delivery composition](#delivery-composition)
 
-The automattic plugin: eight commands, five of them in loop order (align, refine,
-dispatch, review, pr) plus remediate, setup and brief; one artefact directory
+The automattic plugin: nine commands, five of them in loop order (align, refine,
+dispatch, review, pr) plus remediate, setup, brief and huh; one artefact directory
 `.scratch/<slug>/`; one principle: the
 principal answers **steering** questions (goal, principles, constraints) and
 **context** questions (what the machine cannot know); the agent decides everything
@@ -34,7 +34,8 @@ For a change you want to understand before assessing it, use
 then can hand agreed criteria into the same review procedure when requested.
 It is optional; direct review starts assessment without this learning step.
 For a progress snapshot of the active task or a named effort, use
-[/automattic:brief](SKILL.md); `/automattic:brief map` shows this map.
+[/automattic:brief](SKILL.md); `/automattic:brief map` shows this map. When an
+explanation loses you, `/automattic:huh` backs up to what you missed and re-pitches it.
 
 Configuration is optional and separate from the delivery phases. Use
 [/automattic:setup](../setup/SKILL.md) to understand the current setup and update it

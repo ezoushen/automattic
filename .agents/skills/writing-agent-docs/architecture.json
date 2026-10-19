@@ -10,7 +10,8 @@
    "bootstrap"
   ],
   [
-   "brief"
+   "brief",
+   "huh"
   ],
   [
    "dispatch",
@@ -64,7 +65,7 @@
    "config"
   ],
   [
-   "addons",
+   "explain",
    "authoring"
   ]
  ],
@@ -97,6 +98,11 @@
   "brief": {
    "docs": [
     "skills/brief/**/*.md"
+   ]
+  },
+  "huh": {
+   "docs": [
+    "skills/huh/**/*.md"
    ]
   },
   "dispatch": {
@@ -176,6 +182,11 @@
     "scripts/native_settings.py"
    ]
   },
+  "explain": {
+   "docs": [
+    "runtime/explain/**/*.md"
+   ]
+  },
   "setup": {
    "docs": [
     "skills/setup/**/*.md"
@@ -225,11 +236,6 @@
    "code": [
     "scripts/decisions.py",
     "scripts/decision_journal.py"
-   ]
-  },
-  "addons": {
-   "docs": [
-    "addons/**/*.md"
    ]
   },
   "authoring": {

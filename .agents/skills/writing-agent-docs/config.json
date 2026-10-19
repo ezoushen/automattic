@@ -10,8 +10,7 @@
   ],
   "linking": [
     "README.md",
-    "docs/**/*.md",
-    "addons/**/*.md"
+    "docs/**/*.md"
   ],
   "code": [
     "scripts/*.py",

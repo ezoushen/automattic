@@ -74,7 +74,7 @@ class Bootstrap(unittest.TestCase):
                     self.assertTrue(has_heading(ROOT / path, anchor), (trigger, named))
 
     def test_no_lower_document_links_the_bootstrap(self):
-        for folder in ('hosts', 'agents', 'addons', 'standards', 'runtime'):
+        for folder in ('hosts', 'agents', 'standards', 'runtime'):
             for path in (ROOT / folder).rglob('*.md'):
                 for line in path.read_text().splitlines():
                     for _, link in check_docs.links(line):

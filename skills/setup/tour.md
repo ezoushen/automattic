@@ -41,8 +41,8 @@ before field names, using one representative agent from the actual configuration
 Tailor this map to the request. An unconfigured project can use native defaults;
 do not fill every field or recommend every optional feature. Distinguish a possible
 route from a selected assignment and requested settings from runtime-confirmed ones.
-Use [show-me presentation guidance](../../addons/show-me/presentation.md) directly
-when a small diagram or before/after view helps; no extra show-me invocation.
+Use [explain](../../runtime/explain/explain.md) when a small text picture or
+before/after view helps; no extra command.
 Keep the explanation in chat before asking for a decision.
 
 ## Discuss one useful topic at a time
