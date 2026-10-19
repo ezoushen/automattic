@@ -45,6 +45,12 @@ class RuntimeModules(unittest.TestCase):
                     with self.subTest(doc=str(doc.relative_to(RUNTIME))):
                         self.assertIn(f']({doc.name})', text)
 
+    def test_the_verifier_starts_with_every_check_doc(self):
+        import agent_defs
+        core = agent_defs.load(ROOT)['agents']['verifier']['core_skills']
+        docs = {f'runtime/checks/{path.name}' for path in (RUNTIME / 'checks').glob('*.md') if path.name != 'README.md'}
+        self.assertEqual(set(core), docs)
+
     def test_the_decision_and_routing_skills_are_thin_entries_over_runtime(self):
         for skill, target in (('decision', 'runtime/decisions/decision.md'),
                               ('model-routing', 'runtime/routing/model-routing.md')):
