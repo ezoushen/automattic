@@ -1,12 +1,34 @@
 # Explain
 
-How to explain something so the user follows it: a re-pitch when they are lost, and the
-smallest view that shows a shape. Briefings, walkthroughs, the setup tour and `huh` use it.
+How to explain something so the user follows it: tell it in layers, re-pitch when they
+are lost, and show a shape with the smallest view. Briefings, walkthroughs, the setup
+tour and `huh` use it; each caller supplies what to cover.
 
 Contents:
+- [Tell it in layers](#tell-it-in-layers)
 - [Re-pitch what lost the reader](#re-pitch-what-lost-the-reader)
 - [Choose the smallest view](#choose-the-smallest-view)
 - [Keep to the caller's scope](#keep-to-the-callers-scope)
+
+## Tell it in layers
+
+1. Lead with the headline in plain language: the outcome, the most consequential
+   current fact, or the decision that needs the user.
+2. Then tell the story in the order the reader needs it. For a change: a concrete
+   problem scenario and the intended outcome, current against proposed behavior, then
+   one representative flow. For a state: what is complete, what is running now, what
+   comes next, and what needs the user.
+3. Introduce a technical name when its responsibility becomes relevant. Explain
+   mechanisms or tradeoffs only when they help the user steer, and surface the
+   consequential ones the user may not know to ask about.
+4. Go deeper on request, one topic at a time: follow the user's question rather than a
+   questionnaire, answer at the depth it needs, and match an explicitly requested depth
+   or focus. Recommend a useful next topic and leave room for questions.
+5. Explain before asking. Present the explanation in the conversation before any
+   decision; a question, file names or an artifact link alone cannot establish it.
+6. At meaningful checkpoints, and at the end, say what is settled, what remains
+   uncertain, and the recommended next step with any input needed from the user. After a
+   tangent, return to the remaining decision.
 
 ## Re-pitch what lost the reader
 

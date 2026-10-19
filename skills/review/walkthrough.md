@@ -26,25 +26,19 @@ that clarifies the change. The brief command needs no invocation here.
 
 ## Teach and discuss
 
-1. **Explain WHY, WHAT, then HOW.** Start with a concrete problem scenario and the
-   intended outcome, compare current and proposed behavior, then walk through one
-   representative flow. Introduce technical names as their responsibilities become
-   relevant. Explain material tradeoffs, alternatives and scope limits; distinguish
-   observed behavior, documented author rationale, accepted requirements and hypotheses.
-   Present the explanation in the conversation before any decision form. A brief
-   embedded in a question, filenames or an artifact link alone cannot establish it.
-2. **Discuss and deepen.** Invite the user's questions and reactions, recommend a
-   useful next topic, and leave room for their reply. Answer at the depth needed for
-   their question, using a diagram, sequence or before/after sketch when helpful.
-   Surface consequential tradeoffs the user may not know to ask about. Connect each
-   answer to what it means for the change and its review, then recommend the next
-   topic or transition while leaving room for more questions. Resolve confusion
-   before asking the user to accept the affected scope or behavior.
-3. **Guide the next step.** At meaningful checkpoints, say what is settled, what
-   remains uncertain, and the recommended next step with any input needed from
-   the user. After a tangent, return to the remaining decision. Adapt depth to the
-   user; a fixed question count or an answered scope question does not establish
-   readiness to review.
+Teach the change in layers, as [explain](../../runtime/explain/explain.md) says,
+WHY, WHAT, then HOW, and keep these walkthrough rules:
+
+1. **Explain the change.** Explain material tradeoffs, alternatives and scope limits;
+   distinguish observed behavior, documented author rationale, accepted requirements
+   and hypotheses.
+2. **Discuss and deepen.** Invite the user's questions and reactions. Connect each
+   answer to what it means for the change and its review. Resolve confusion, by a
+   [re-pitch](../../runtime/explain/explain.md#re-pitch-what-lost-the-reader) when the
+   user is lost, before asking the user to accept the affected scope or behavior.
+3. **Guide the next step.** Recommend the next topic or the transition to review.
+   Adapt depth to the user; a fixed question count or an answered scope question does
+   not establish readiness to review.
 4. **Summarize understanding.** Apply the [question filter](../../runtime/interview/question-filter.md)
    to material unresolved choices. Summarize intended behavior, scope, constraints,
    accepted tradeoffs, open questions and recommended review priorities. When the

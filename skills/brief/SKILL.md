@@ -40,8 +40,8 @@ establish completed work. Do not wait for workers to finish just to give a brief
 
 ## Brief the human
 
-Lead with the goal and the most consequential current fact in plain language.
-Then give the smallest useful view of:
+Tell it in layers, as [explain](../../runtime/explain/explain.md) says: the
+headline is the goal and the most consequential current fact. Then cover:
 
 - What is complete, with its meaningful result.
 - What is running now, what comes next and what remains outside this batch.
@@ -49,8 +49,7 @@ Then give the smallest useful view of:
 - Blockers and decisions that actually need the user, with a recommendation and
   consequence. Say when no user decision is needed.
 
-Use the project's domain language. Explain mechanisms or tradeoffs only when they
-help the user steer. A small status table or flow can connect completed/current/next
+Use the project's domain language. A small status table or flow can connect completed/current/next
 work; skip it when a sentence is clearer. Link the few artifacts that support the
 important claims. Give counts only for a verified scope; no invented percentages,
 ETAs or adoption claims. Separate local implementation, integration, verification
@@ -58,7 +57,7 @@ and publication. Keep unrelated follow-ups separate from current blockers.
 
 If a previous briefing is available, emphasize the meaningful changes since it;
 still make this briefing understandable on its own. Otherwise report current state
-without inventing a baseline. Match an explicitly requested depth or focus.
+without inventing a baseline.
 
 ## Present it
 

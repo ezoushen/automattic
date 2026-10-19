@@ -39,6 +39,23 @@ class Huh(unittest.TestCase):
         self.assertIn('Draw with text pictures by default', text)
         self.assertIn("only where the reader's surface renders it", text)
 
+    def test_the_explain_doc_owns_telling_in_layers(self):
+        section = prose(EXPLAIN).split('## Tell it in layers', 1)[1].split(' ## ', 1)[0]
+        for rule in ('headline', 'one representative flow', 'responsibility becomes relevant',
+                     'only when they help the user steer', 'one topic at a time', 'before any decision',
+                     'what is settled, what remains uncertain', 'return to the remaining decision'):
+            self.assertIn(rule, section)
+
+    def test_the_callers_tell_by_the_explain_doc_instead_of_restating_it(self):
+        restated = {'skills/brief/SKILL.md': 'Lead with the goal',
+                    'skills/review/walkthrough.md': 'Introduce technical names as their responsibilities',
+                    'skills/setup/tour.md': 'Follow the user\'s question rather than a questionnaire'}
+        for name, phrase in restated.items():
+            text = prose(ROOT / name)
+            with self.subTest(doc=name):
+                self.assertIn('in layers, as [explain](../../runtime/explain/explain.md) says', text)
+                self.assertNotIn(phrase, text)
+
     def test_the_pipeline_map_names_huh(self):
         self.assertIn('`/automattic:huh`', (ROOT / 'skills/brief/pipeline.md').read_text())
 
