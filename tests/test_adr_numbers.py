@@ -134,6 +134,57 @@ class AdrNumbers(unittest.TestCase):
         self.assertEqual(0, code, out)
         self.assertEqual('0005', out['next'])
 
+    def test_against_handles_a_criss_cross_history(self):
+        self.write('0009-root.md')
+        self.commit('root')
+        git(self.repo, 'checkout', '-q', '-b', 'a')
+        self.write('0001-old.md')
+        self.commit('a')
+        git(self.repo, 'checkout', '-q', 'main')
+        git(self.repo, 'checkout', '-q', '-b', 'b')
+        self.write('0002-other.md')
+        self.commit('b')
+        for branch, other in (('feat/x', 'b'), ('main', 'a')):
+            git(self.repo, 'checkout', '-q', '-B', branch, 'a' if branch == 'feat/x' else 'b')
+            git(self.repo, 'merge', '-q', '--no-edit', other)
+        git(self.repo, 'checkout', '-q', 'feat/x')
+        git(self.repo, 'mv', 'docs/adr/0001-old.md', 'docs/adr/0001-new.md')
+        self.commit('effort renames')
+        code, out, _ = check(self.repo, '--ref', 'feat/x', '--against', 'main')
+        self.assertEqual(0, code, out)
+        self.assertEqual('0010', out['next'])
+
+    def test_a_missing_ancestor_object_is_invalid_input(self):
+        self.write('0001-a.md')
+        self.commit('base')
+        base = subprocess.run(['git', '-C', str(self.repo), 'rev-parse', 'HEAD'],
+                              capture_output=True, text=True).stdout.strip()
+        git(self.repo, 'checkout', '-q', '-b', 'feat/x')
+        self.write('0002-b.md')
+        self.commit('effort')
+        git(self.repo, 'checkout', '-q', 'main')
+        self.write('0003-c.md')
+        self.commit('main')
+        (self.repo / '.git/objects' / base[:2] / base[2:]).unlink()
+        code, out, _ = check(self.repo, '--ref', 'feat/x', '--against', 'main')
+        self.assertEqual(2, code)
+        self.assertIsNone(out)
+
+    def test_against_still_checks_when_the_merge_has_a_conflict(self):
+        self.write('0001-a.md')
+        self.commit('base')
+        git(self.repo, 'checkout', '-q', '-b', 'feat/x')
+        (self.repo / 'docs/adr/0001-a.md').write_text('# effort wording\n')
+        self.write('0002-effort.md')
+        self.commit('effort')
+        git(self.repo, 'checkout', '-q', 'main')
+        (self.repo / 'docs/adr/0001-a.md').write_text('# main wording\n')
+        self.write('0002-main.md')
+        self.commit('main')
+        code, out, _ = check(self.repo, '--ref', 'feat/x', '--against', 'main')
+        self.assertEqual(1, code)
+        self.assertEqual({'0002': ['0002-effort.md', '0002-main.md']}, out['duplicates'])
+
     def test_an_unknown_ref_is_invalid_input(self):
         code, out, err = check(self.repo, '--ref', 'no-such-branch')
         self.assertEqual(2, code)

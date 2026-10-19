@@ -3,11 +3,11 @@
 
 usage: adr_numbers.py --repo <checkout> [--dir docs/adr] [--ref <commit> [--against <commit>]]
 
-Checks one folder of `NNNN-slug.md` files. With --against, the folder is checked as a merge
-of the two commits would leave it: the ref's files, without those the other commit deleted
-or renamed since their merge base, plus those it added. Prints JSON {"dir",
-"duplicates": {number: [files]}, "next"}. Exits 1 when a number is used twice, 2 on invalid
-input. An absent folder has no duplicates and next "0001".
+Checks one folder of `NNNN-slug.md` files. With --against, the folder is checked as merging
+the two commits would leave it, using `git merge-tree` (Git 2.38 or later) without touching
+any branch or working tree. Prints JSON {"dir", "duplicates": {number: [files]}, "next"}.
+Exits 1 when a number is used twice, 2 on invalid input. An absent folder has no
+duplicates and next "0001".
 """
 import argparse
 import json
@@ -27,13 +27,24 @@ def names(repo, folder, ref):
     if ref is None:
         path = repo / folder
         return {p.name for p in path.iterdir() if p.is_file()} if path.is_dir() else set()
-    resolved = git(repo, 'rev-parse', '--verify', '--quiet', f'{ref}^{{commit}}')
+    resolved = git(repo, 'rev-parse', '--verify', '--quiet', f'{ref}^{{tree}}')
     if resolved.returncode:
         raise ValueError(f'{ref}: not a commit in {repo}')
     listed = git(repo, 'ls-tree', '-z', '--name-only', resolved.stdout.strip(), f'{folder.rstrip("/")}/')
     if listed.returncode:
         raise ValueError(listed.stderr.strip())
     return {Path(entry).name for entry in listed.stdout.split('\0') if entry}
+
+
+def merged_tree(repo, ref, against):
+    for name in (ref, against):
+        if git(repo, 'rev-parse', '--verify', '--quiet', f'{name}^{{commit}}').returncode:
+            raise ValueError(f'{name}: not a commit in {repo}')
+    # Exit 1 means the merge has conflicts, which still yields a tree; anything else is fatal.
+    merged = git(repo, 'merge-tree', '--write-tree', ref, against)
+    if merged.returncode not in (0, 1):
+        raise ValueError(merged.stderr.strip() or f'git merge-tree failed for {ref} and {against}')
+    return merged.stdout.splitlines()[0]
 
 
 def report(files):
@@ -60,12 +71,10 @@ def main(argv):
             raise ValueError(f'{repo}: not a directory')
         if args.against and not args.ref:
             raise ValueError('--against needs --ref')
-        files = names(repo, args.dir, args.ref)
+        ref = args.ref
         if args.against:
-            other = names(repo, args.dir, args.against)
-            base = git(repo, 'merge-base', args.ref, args.against)
-            ancestor = names(repo, args.dir, base.stdout.strip()) if base.returncode == 0 else set()
-            files = (files - (ancestor - other)) | (other - ancestor)
+            ref = merged_tree(repo, args.ref, args.against)
+        files = names(repo, args.dir, ref)
         duplicates, following = report(files)
     except (ValueError, OSError) as error:
         print(error, file=sys.stderr)
