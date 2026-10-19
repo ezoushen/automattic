@@ -43,7 +43,8 @@ suites, and the full gate only when the assignment names you for it; repeat only
 checks invalidated by subsequent changes. Follow check
 [planning](../../../runtime/checks/plan.md) and [execution](../../../runtime/checks/run.md)
 for snapshot proof, execution output and project-required resource coordination;
-do not commit temporary probes just for identity.
+do not commit temporary probes just for identity. A repair that introduces or changes a
+domain term updates the [glossary](../../../runtime/domain/glossary.md) in the same commit that introduces or changes it.
 
 Done when every assigned finding is repaired with evidence, or its boundary is
 reported.

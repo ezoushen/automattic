@@ -23,7 +23,10 @@ Sources, in order of authority:
    [code-comments](../../standards/code-comments.md) and
    [tautological-tests](../../standards/kinds/tautological-tests.md), applied as the
    [reviewer](../../agents/reviewer.md) agent describes.
-3. Simplicity within the change: logic the diff duplicates, and parameters,
+3. The project's [glossary](../../runtime/domain/glossary.md): a term used against its
+   glossary definition, or one of its `_Avoid_` words, in names, docs or messages the
+   change adds, cited with the glossary line.
+4. Simplicity within the change: logic the diff duplicates, and parameters,
    branches or abstractions it adds that nothing in the accepted scope uses.
 
 Skip what the project's tooling already enforces. Each finding cites its source

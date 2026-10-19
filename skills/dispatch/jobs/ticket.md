@@ -25,7 +25,7 @@ need no local ticket file. Read the supplied criteria, dependencies, priority,
 areas and workload; report missing or changed requirements to the orchestrator
 rather than creating a mirror or changing the tracker yourself.
 
-Read the ticket and accepted brief; use `CONTEXT.md` for domain vocabulary, relevant
+Read the ticket and accepted brief; use the project's [glossary](../../../runtime/domain/glossary.md) for domain vocabulary, relevant
 ADRs for design constraints, and the applicable project build/test instructions.
 
 ## Finish line
@@ -60,8 +60,9 @@ including descendants holding the build lock; report failed teardown without kil
 unrelated processes or deleting the shared lock file.
 
 Update affected comments/documentation alongside behavior using code-comments.
-Documentation correctness remains a hard review gate. Use `CONTEXT.md` vocabulary
-in documentation, test names and commit messages.
+Documentation correctness remains a hard review gate. Use the glossary's terms
+in documentation, test names and commit messages, and add or update a domain term in
+the same commit that introduces or changes it.
 Commit scoped changes to the assigned branch. Review remains at the spec gate.
 
 Done when the scoped deliverable and assigned checks are accounted for, or a

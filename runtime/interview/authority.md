@@ -1,7 +1,7 @@
 # Establish authority
 
 Start with the current request and accepted conversation, then relevant project
-instructions, `CONTEXT.md`, decisions and an existing effort ledger. Read only
+instructions, the [glossary](../domain/glossary.md), decisions and an existing effort ledger. Read only
 sources needed for this task. The goal need not be confirmed again when the user
 already stated it. A decision the user reserved is always theirs.
 Discover facts from code, tools or authoritative sources. Distinguish observed

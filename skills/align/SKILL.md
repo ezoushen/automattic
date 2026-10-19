@@ -59,7 +59,7 @@ Choose depth by uncertainty: context for system boundaries; modules for changing
 responsibilities; behavior for flows, state and ordering. Include only the views
 that resolve a live risk. These are lenses on one brief, not three approval turns.
 Reuse existing mechanisms; compare an alternative only when it is viable and
-material. Use the project's vocabulary and Matt's `domain-modeling` when needed.
+material. Use the project's [glossary](../../runtime/domain/glossary.md) and keep it current as terms settle.
 Use `prototype` only for a question that evidence on paper cannot settle.
 Leave ordinary types, helper files and library plumbing to implementation. A
 concrete interface or snippet belongs here only when needed to settle the contract.

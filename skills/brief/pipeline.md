@@ -21,7 +21,7 @@ alternatives — the principal can veto. Align and refine append to one
 
 | Phase | Command | Owns | Writes | Hands on |
 |---|---|---|---|---|
-| Mandate and alignment | `/automattic:align` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape; WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `ledger.md` (first rows), standing principles in `CONTEXT.md`/ADRs/memory, `alignment.md` | slug, ledger, the brief |
+| Mandate and alignment | `/automattic:align` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape; WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `ledger.md` (first rows), settled terms in `GLOSSARY.md`, standing principles in ADRs/memory, `alignment.md` | slug, ledger, the brief |
 | Refinement | `/automattic:refine` | ticket slicing from the brief or a plan agreed in chat, edges, sizing and their rejected alternatives | configured tracker issues, or local Markdown tickets | dispatch-ready tickets |
 | Execution | `/automattic:dispatch` | scheduling on `blocked_by`, capacity and area locks; how each ticket runs (inline or a builder worktree) and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` (or `main` when the user says so) | implementation status and review report |
 | Review | `/automattic:review` | direction → blast radius → implementation, complete layer batches, scoped invalidation, reproduction, optional autofix with applicable E2E, local comment drafts and follow-ups | review and verification report | reviewed commit, gate outcomes and unresolved findings |

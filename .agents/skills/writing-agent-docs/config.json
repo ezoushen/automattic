@@ -48,8 +48,8 @@
   "known_names": [
     "AGENTS.md",
     "CLAUDE.md",
-    "CONTEXT.md",
-    "GLOSSARY.md"
+    "GLOSSARY.md",
+    "GLOSSARY-MAP.md"
   ],
   "max_bytes": 12288,
   "description_budget": 4000,

@@ -24,6 +24,9 @@ user's terms, each with a recommendation that "yes" accepts. A question whose an
 depends on another one still open belongs to a later round. Each answer reshapes the
 tree: recompute which branches are now askable before the next round.
 
+When a term settles, or the user uses one against its definition, add the term to the
+[glossary](../domain/glossary.md) the moment it settles, or call out the conflict.
+
 Finding facts is the agent's job, never the user's. Look facts up in the background
 (a worker or a search) without blocking the questions that do not depend on them;
 only the dependent questions wait for the answer.

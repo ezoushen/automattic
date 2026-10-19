@@ -20,7 +20,8 @@ Contents:
    comes next, and what needs the user.
 3. Introduce a technical name when its responsibility becomes relevant. Explain
    mechanisms or tradeoffs only when they help the user steer, and surface the
-   consequential ones the user may not know to ask about.
+   consequential ones the user may not know to ask about. Use the glossary's terms and
+   avoid its `_Avoid_` words ([glossary](../domain/glossary.md)).
 4. Go deeper on request, one topic at a time: follow the user's question rather than a
    questionnaire, answer at the depth it needs, and match an explicitly requested depth
    or focus. Recommend a useful next topic and leave room for questions.

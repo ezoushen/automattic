@@ -67,6 +67,9 @@
   [
    "explain",
    "authoring"
+  ],
+  [
+   "domain"
   ]
  ],
  "modules": {
@@ -241,6 +244,11 @@
   "authoring": {
    "docs": [
     ".agents/skills/writing-agent-docs/practices.md"
+   ]
+  },
+  "domain": {
+   "docs": [
+    "runtime/domain/**/*.md"
    ]
   }
  },

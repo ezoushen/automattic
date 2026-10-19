@@ -10,8 +10,8 @@ Keep rows short; omit artificial alternatives and routine implementation choices
 Record the source of user decisions separately from agent decisions. Keep a
 `## Standing directives` section in the ledger for the user's corrections to how
 agents work (routing, reporting, retention, permissions), quoted with their date. Persist
-standing principles only where this project already keeps them, using Matt's
-`domain-modeling` when terminology or durable domain decisions actually change.
+standing principles only where this project already keeps them; settled terminology
+goes to the [glossary](../domain/glossary.md).
 Follow the host's rules for writing memory; this procedure supplies no extra permission.
 
 When mandate completes, not after each question round, close the phase record.

@@ -62,7 +62,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
    and record them in the effort alignment for dispatch. Tickets using the same
    exclusive GPU, serving lane or mutable fixture must share a reservation even
    when their files differ; account for that
-   resource during implementation, not only E2E. `CONTEXT.md` for the words. Read the
+   resource during implementation, not only E2E. The project's [glossary](../../runtime/domain/glossary.md) for the words. Read the
    configured tracker and relevant existing issues; preserve their destination,
    identity, scope and priority.
    Record the effort's intended branch base and any unmerged prerequisites before
@@ -155,7 +155,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
 
 A builder with an empty context can build the ticket using its story,
 criteria with verifying commands/tests, dependency edges, accepted brief and
-applicable project instructions, with `CONTEXT.md` for vocabulary. The assignment
+applicable project instructions, with the glossary for vocabulary. The assignment
 fits one context window. Before reporting readiness, reconcile all
 criteria with their discriminating signal, preconditions and known variation;
 surface the complete remaining gaps in one summary. State spec readiness separately
