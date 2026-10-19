@@ -63,7 +63,7 @@ class RuntimeModules(unittest.TestCase):
         self.assertIn('For the host router (`{"type": "host"}`, the default and every fallback), choose by '
                       '[model routing](model-routing.md)', text)
         for path in sorted(ROOT.glob('**/*.md')):
-            if '.worktrees' in path.parts or 'journals' in path.parts or '.scratch' in path.parts:
+            if {'.worktrees', 'journals', '.scratch'} & set(path.relative_to(ROOT).parts):
                 continue
             with self.subTest(doc=str(path.relative_to(ROOT))):
                 self.assertNotRegex(' '.join(path.read_text().split()), r'built-in (?:host |routing )?skill|this skill returns')

@@ -90,7 +90,7 @@ never use the fallback. If the profile leaves the choice open, or
 none is configured, the following host path applies.
 
 An outage, timeout, abstention or invalid answer returns `selection_required`,
-`selection_error` and the built-in host skill as `selection_router`. Continue
+`selection_error` and the host router (`{"type": "host"}`) as `selection_router`. Continue
 there with the same exclusions and pins, then submit `--selection`; this bypasses
 another service call. Do not loop on the endpoint, consume worker repair attempts
 or ask the user to route an ordinary assignment. If no permitted worker fits,
