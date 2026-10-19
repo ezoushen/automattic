@@ -40,7 +40,7 @@ class ArchitectureDocs(unittest.TestCase):
         layers = {'skills/<command>/': 'brief', 'bootstrap.md': 'bootstrap', 'agents/': 'agents', 'standards/': 'standards',
                   'hosts/': 'hosts', 'runtime/': 'interview'}
         self.assertEqual(sorted(layers, key=section.index), sorted(layers, key=lambda token: rank[layers[token]]))
-        runtime = ('interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config')
+        runtime = ('interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config', 'explain')
         listed = section.split('(interview', 1)[1].split(')', 1)[0]
         self.assertEqual(sorted(runtime, key=lambda name: (f'interview{listed}').index(name)),
                          sorted(runtime, key=rank.get))

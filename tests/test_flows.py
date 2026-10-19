@@ -9,10 +9,11 @@ import support
 
 ROOT = support.ROOT
 RUNTIME = ROOT / 'runtime'
-SHARED = ('interview', 'board')
+SHARED = ('interview', 'board', 'explain')
 SKILLS = ROOT / 'skills'
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
 COMMANDS = ('align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief')
+# huh is a short trigger with no sections, a sibling of brief the pipeline map names without a link (tests/test_huh.py).
 # a procedure each merged or moved command must still carry, by the doc that now holds it
 HOLDS = {
     'skills/align/SKILL.md': ('## Settle the mandate', '## Establish the design', '## Save the current alignment'),

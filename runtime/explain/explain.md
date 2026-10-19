@@ -53,6 +53,16 @@ sometimes right; all of them never are.
     accept and merge
   ```
 
+- **How a screen is built:** a component tree, with the state and module boundaries
+  that matter.
+
+  ```text
+  SessionPage           owns the session state
+    Toolbar
+      RunButton         from the shared UI package
+    Timeline
+  ```
+
 - **What lives where:** a shallow file tree with one comment per entry.
 
   ```text
@@ -63,11 +73,15 @@ sometimes right; all of them never are.
 
 - **Order between parties:** a sequence as text arrows (`user -> host: request`), one
   line per message.
-- **What changes:** a `diff` of the same shape (call tree, file tree, steps or a block),
-  so unchanged lines give the context. Show the whole block instead when most of it is
-  new or the user needs a copyable target.
+- **What changes:** a `diff` of the same shape (call tree, component tree, file tree,
+  steps or a block), so unchanged lines give the context. Show the whole block instead
+  when most of it is new, when leaving lines out would hide ownership or order, or when
+  the user needs a copyable target.
 - **A layout, a comparison of states, or a picture too dense for text:** a short table,
-  or one focused page or image when the user asks for a file.
+  or, when the user asks for a file, one focused page: a diagram, an infographic or a
+  short deck. Match the product's colors, type, spacing and components, use real labels
+  and data, support desktop and mobile, and open it through the host's preview when it
+  has one.
 
 Draw with text pictures by default: they read the same in every terminal. Use a rendered
 diagram format only where the reader's surface renders it, such as a PR body or a
