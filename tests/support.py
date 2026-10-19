@@ -48,7 +48,7 @@ def code_samples(text):
     """Code a prose-only doc must not contain: code spans, fenced or indented blocks, dotted identifiers."""
     unquoted = '\n'.join(re.sub(r'^ {0,3}(?:> ?)+', '', line) for line in text.splitlines())
     prose = re.sub(r'\]\([^)]*\)', ']', unquoted)
-    found = re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^ {0,3}(?:```|~~~).*$', prose)
+    found = re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^[ \t]*(?:```|~~~).*$', prose)
     in_list, after_blank = False, True
     for line in prose.splitlines():
         if not line.strip():
@@ -58,8 +58,8 @@ def code_samples(text):
             in_list = True
         elif line[0] not in ' \t':
             in_list = False
-        elif line.startswith(('    ', '\t')) and after_blank and not in_list:
+        elif after_blank and line.startswith(('      ', '\t\t') if in_list else ('    ', '\t')):
             found.append(line)
         after_blank = False
-    return found + [name for name in re.findall(r'\b[A-Za-z_]\w+(?:\.[A-Za-z_]\w+)+', prose)
-                    if not name.endswith('.md')]
+    return found + [name for name in re.findall(r'\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+', prose)
+                    if not name.endswith('.md') and max(map(len, name.split('.'))) > 1]

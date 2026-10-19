@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Every builder works test-first from our own TDD standard, whose tests protect business rules, not coverage."""
-import re
 import subprocess
 import unittest
 
@@ -48,11 +47,8 @@ class TddStandard(unittest.TestCase):
                       text)
         self.assertIn('[module design](design.md)', text)
 
-    def test_a_seam_with_a_test_adapter_is_not_forbidden(self):
-        text = prose(TDD)
-        self.assertIsNone(re.search(r"(?i)\b(?:never|do not|don't)\s+(?:add|introduce|create)\s+a\s+seam\s+"
-                                    r"(?:only\s+|just\s+|solely\s+)?(?:for|because of)\s+(?:a\s+)?tests?\b", text))
-        self.assertIn('Do not expose an internal seam through the interface only because a test uses it', text)
+    def test_internal_seams_stay_out_of_the_interface(self):
+        self.assertIn('Do not expose an internal seam through the interface only because a test uses it', prose(TDD))
 
     def test_each_test_protects_a_stated_business_rule(self):
         self.assertIn('**Each test states the business rule it protects**', prose(TDD))

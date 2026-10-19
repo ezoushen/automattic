@@ -88,7 +88,9 @@ class DesignStandard(unittest.TestCase):
 
     def test_the_code_detector_finds_each_kind_of_sample(self):
         for sample in ('Use `mock()` here.', '~~~\nprint(1)\n~~~', '```\nx\n```', 'Text\n\n    print(1)\n',
-                       '> ~~~python\n> print(1)\n> ~~~\n', 'Patch jest.mock first.', 'Use unittest.mock for it.'):
+                       '> ~~~python\n> print(1)\n> ~~~\n', '- Example:\n\n        print(1)\n',
+                       '- An item\n\n    ~~~\n    print(1)\n    ~~~\n', 'Patch jest.mock first.',
+                       'Use unittest.mock for it.', 'Use re.I to ignore case.', 'Call x.append(1).'):
             with self.subTest(sample=sample):
                 self.assertNotEqual([], support.code_samples(sample))
         for legitimate in ('See [module design](design.md).\n- a list\n  continued\n',
