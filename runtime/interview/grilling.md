@@ -35,9 +35,8 @@ round; implementation detail still stays with the agent.
 
 ## Finish
 
-Grilling stops asking when the [question filter](question-filter.md)'s stop rule holds
-and nothing is silently assumed, and it is done only when the user confirms a shared
-understanding. A plan the user calls ready, or an accepted mandate that already settles
+Grilling stops asking when the question filter's stop rule holds and nothing is
+silently assumed, and it is done only when the user confirms a shared understanding. A plan the user calls ready, or an accepted mandate that already settles
 the next step, is that confirmation; otherwise ask once, with the summary. Then close
 with the [record](record.md) exit block: the user's decisions, the agent's decisions the user
 may veto, and pending user actions.

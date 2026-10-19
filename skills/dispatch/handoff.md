@@ -10,8 +10,8 @@ Otherwise continue in this invocation, without waiting for another user turn.
 
 For each selected effort with integrated changes, finish or reconcile its writers,
 then apply [housekeeping](../housekeeping/SKILL.md) to the effort worktree, list its
-[candidate ADRs](../../runtime/domain/adr.md#deliver-an-efforts-decisions), merge the current `main`
-and run the ADR number check. Commit
+[candidate ADRs](../../runtime/domain/adr.md#deliver-an-efforts-decisions) and commit the approved ones,
+merge the verified `main` tip and run the ADR number check. Commit
 intended tracked cleanup/documentation changes there before pinning the review
 head; preserve unrelated local edits. Run the
 [shared review procedure](../review/SKILL.md), read as a file (its typed-only setting governs

@@ -33,6 +33,9 @@ class Grilling(unittest.TestCase):
                      'a material agent choice', 'A plan the user calls ready, or an accepted mandate that already settles the next step, is that confirmation'):
             self.assertIn(rule, text)
         align = prose(ROOT / 'skills/align/SKILL.md')
+        self.assertIn('showing material ones for veto', align)
+        self.assertNotIn('shows it for veto', align)
+        self.assertIn('lists material ones for veto', prose(ROOT / 'docs/planning-rehearsal.md'))
         self.assertNotIn('relax the round', align)
         self.assertNotIn('question-count/detail limit', align)
 

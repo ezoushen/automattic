@@ -48,7 +48,7 @@ as the opening. A shorter interview must still represent uncertainty accurately.
 | Two numbered questions contain several decisions | Count the subquestions and trailing approval requests. Reduce the round to its governing decisions; headings alone do not satisfy the budget. |
 | Missing technical fact | Investigate it rather than asking the user to choose a mechanism without evidence. Keep independent work moving. |
 | Accepted mandate already settles the next step | Ask no new steering question. Preserve the decisions and proceed within authorization. |
-| User explicitly asks for an exhaustive design-tree interview | Ask more questions per round, still only principles and material forks; the agent decides implementation detail and lists it for veto. Preserve settled choices; missing sources remain investigation gaps. |
+| User explicitly asks for an exhaustive design-tree interview | Ask more questions per round, still only principles and material forks; the agent decides implementation detail and lists material ones for veto. Preserve settled choices; missing sources remain investigation gaps. |
 
 ## Assessment
 

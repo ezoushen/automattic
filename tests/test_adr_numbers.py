@@ -119,6 +119,21 @@ class AdrNumbers(unittest.TestCase):
         self.assertEqual(0, code)
         self.assertEqual('0003', out['next'])
 
+    def test_against_follows_renames_and_deletions_as_a_merge_would(self):
+        self.write('0001-a.md', '0002-billing.md', '0003-old-name.md')
+        self.commit('base')
+        git(self.repo, 'checkout', '-q', '-b', 'feat/x')
+        git(self.repo, 'mv', 'docs/adr/0003-old-name.md', 'docs/adr/0003-new-name.md')
+        self.write('0004-ticket-modes.md')
+        self.commit('effort renames and adds')
+        git(self.repo, 'checkout', '-q', 'main')
+        git(self.repo, 'mv', 'docs/adr/0002-billing.md', 'docs/adr/0002-billing-limits.md')
+        git(self.repo, 'rm', '-q', 'docs/adr/0001-a.md')
+        self.commit('main renames and deletes')
+        code, out, _ = check(self.repo, '--ref', 'feat/x', '--against', 'main')
+        self.assertEqual(0, code, out)
+        self.assertEqual('0005', out['next'])
+
     def test_an_unknown_ref_is_invalid_input(self):
         code, out, err = check(self.repo, '--ref', 'no-such-branch')
         self.assertEqual(2, code)

@@ -3,8 +3,9 @@
 
 usage: adr_numbers.py --repo <checkout> [--dir docs/adr] [--ref <commit> [--against <commit>]]
 
-Checks one folder of `NNNN-slug.md` files. With --against, the ref's files and the other
-commit's are checked together, as they would be after merging. Prints JSON {"dir",
+Checks one folder of `NNNN-slug.md` files. With --against, the folder is checked as a merge
+of the two commits would leave it: the ref's files, without those the other commit deleted
+or renamed since their merge base, plus those it added. Prints JSON {"dir",
 "duplicates": {number: [files]}, "next"}. Exits 1 when a number is used twice, 2 on invalid
 input. An absent folder has no duplicates and next "0001".
 """
@@ -51,7 +52,7 @@ def main(argv):
     parser.add_argument('--repo', type=Path, required=True)
     parser.add_argument('--dir', default='docs/adr', help="the project's ADR folder")
     parser.add_argument('--ref', help='read the folder at this commit instead of the working tree')
-    parser.add_argument('--against', help='also read the folder at this commit, as after a merge')
+    parser.add_argument('--against', help='check the folder as merging this commit would leave it')
     args = parser.parse_args(argv)
     repo = args.repo.resolve()
     try:
@@ -61,7 +62,10 @@ def main(argv):
             raise ValueError('--against needs --ref')
         files = names(repo, args.dir, args.ref)
         if args.against:
-            files |= names(repo, args.dir, args.against)
+            other = names(repo, args.dir, args.against)
+            base = git(repo, 'merge-base', args.ref, args.against)
+            ancestor = names(repo, args.dir, base.stdout.strip()) if base.returncode == 0 else set()
+            files = (files - (ancestor - other)) | (other - ancestor)
         duplicates, following = report(files)
     except (ValueError, OSError) as error:
         print(error, file=sys.stderr)

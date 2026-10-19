@@ -31,8 +31,8 @@ A request to settle only the goal and constraints ends with the mandate's exit b
 A mandate is the user's goal, principles, constraints and reserved decisions.
 Inside it the agent decides; a material choice outside it needs the user.
 Work the mandate's design tree through [grilling](../../runtime/interview/grilling.md):
-the user decides principles and material forks, the agent decides implementation
-detail and shows it for veto, at every depth. Missing sources remain investigation
+the user decides principles and material forks; the agent decides implementation
+detail, showing material ones for veto, at every depth. Missing sources remain investigation
 gaps; ask the human only for material choices they can decide from their priorities.
 
 Work in this order: [establish authority](../../runtime/interview/authority.md),

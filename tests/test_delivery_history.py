@@ -20,9 +20,11 @@ class DeliveryHistory(unittest.TestCase):
                      'Do not wait for the answer',
                      'candidates still unanswered wait among the actions only the user can take',
                      'an approved candidate written later returns that change to review and E2E',
-                     'merge the current `main` into the effort branch and run the ADR number check',
+                     'merge the verified `main` tip into the effort branch and run the ADR number check',
                      'renumber the effort\'s ADR to the next free number and update every reference to it',
-                     'scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against main',
+                     'scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip>',
+                     'Fetch first', "each `main` the effort lands on: the local one and, once fetched, the remote's",
+                     'Commit the approved ADRs before the check',
                      'Run it once for each ADR folder', 'checks only `NNNN-slug.md` names',
                      'records an evidenced skip', 'A merge or renumbering after the review head is pinned returns to review and E2E',
                      'a duplicate number fails the delivery gate'):
@@ -33,7 +35,9 @@ class DeliveryHistory(unittest.TestCase):
         handoff = prose('skills/dispatch/handoff.md')
         self.assertIn(f'candidate ADRs]({link})', handoff)
         self.assertLess(handoff.index('candidate ADRs]'), handoff.index('before pinning the review head'))
-        self.assertIn('merge the current `main`', handoff[:handoff.index('before pinning the review head')])
+        before_pin = handoff[:handoff.index('before pinning the review head')]
+        self.assertIn('commit the approved ones', before_pin)
+        self.assertLess(before_pin.index('commit the approved ones'), before_pin.index('run the ADR number check'))
         self.assertIn('the ADRs the effort adds', prose('skills/pr/SKILL.md'))
         board = prose('runtime/board/board.md')
         self.assertIn('[ADR number check](../domain/adr.md#deliver-an-efforts-decisions) passes on the effort branch',

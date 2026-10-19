@@ -64,14 +64,15 @@ before its review head is pinned, so the review covers them; candidates still
 unanswered wait among the actions only the user can take, and an approved candidate
 written later returns that change to review and E2E.
 
-Numbers are claimed on `main`. Before pinning the review head, merge the current
-`main` into the effort branch and run the ADR number check; on a duplicate, renumber
-the effort's ADR to the next free number and update every reference to it in the same
-commit. The delivery gate repeats the check without merging, against `main` as it is
-then:
+Numbers are claimed on `main`. Commit the approved ADRs before the check. Fetch first,
+then, before pinning the review head, merge the verified `main` tip into the effort
+branch and run the ADR number check; on a duplicate, renumber the effort's ADR to the
+next free number and update every reference to it in the same commit. The delivery
+gate repeats the check without merging, against each `main` the effort lands on: the
+local one and, once fetched, the remote's when the effort is published:
 
 ```sh
-python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against main [--dir <ADR folder>]
+python3 <plugin_root>/scripts/adr_numbers.py --repo <repo> --ref <effort branch> --against <main tip> [--dir <ADR folder>]
 ```
 
 It prints the duplicated numbers and the next free one, and exits 1 on a duplicate.
