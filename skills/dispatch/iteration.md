@@ -123,7 +123,8 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    before retrying a worker, and report the retain/replacement decision.
    Read scoped source/diffs when needed to resolve
    the block. Before asking the user to provide or start a resource, check what is already
-   available yourself, and name what you checked when you ask. Ask the user only for missing
+   available yourself, and name what you checked when you
+   [ask with context](../../runtime/explain/ask.md). Ask the user only for missing
    context, product choices or actual permission boundaries. Replacing a criterion's
    `Verify` method with a weaker one is the user's decision. Record failed commands
    verbatim. Resolve → ready.

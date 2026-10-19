@@ -56,7 +56,8 @@ Carry forward already accepted decisions with their source; implementing that
 settled contract requires no new hold or user confirmation.
 
 Complete the brief before adjudication: governing requirement, current evidence,
-alternatives, compatibility/user effects, recommendation and the decision owner.
+alternatives, compatibility/user effects, recommendation and the decision owner. A
+brief that goes to the user [asks with context](../explain/ask.md).
 Use a separate fresh assignment for independent adjudication. Routine reversible
 engineering stays with the coordinator; user-reserved product/API choices need
 the user's ruling. Model strength does not transfer that authority.

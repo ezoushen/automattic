@@ -25,8 +25,8 @@ choice, even when their technical alternatives are already known.
 
 Compose the user-facing round in this order:
 
-1. State the goal and material uncertainty in one or two sentences; keep the
-   user's scope intact.
+1. State the goal and material uncertainty, [with context](../explain/ask.md);
+   keep the user's scope intact.
 2. Ask the highest unresolved boundary in the user's terms: what may be removed
    or what must keep working. Usually ask one question; at most two independent
    choices, including subquestions and trailing approval asks; exhaustive

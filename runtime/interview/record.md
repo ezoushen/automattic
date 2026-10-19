@@ -15,7 +15,8 @@ goes to the [glossary](../domain/glossary.md).
 Follow the host's rules for writing memory; this procedure supplies no extra permission.
 
 When mandate completes, not after each question round, close the phase record.
-End that reply with a short exit block:
+End that reply with a short exit block, each item with its context
+([ask with context](../explain/ask.md)):
 - the user's decisions recorded;
 - the agent's decisions, which the user may veto;
 - pending actions only the user can take.

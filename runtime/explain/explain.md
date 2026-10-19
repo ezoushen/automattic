@@ -2,7 +2,8 @@
 
 How to explain something so the user follows it: tell it in layers, re-pitch when they
 are lost, and show a shape with the smallest view. Briefings, walkthroughs, the setup
-tour and `huh` use it; each caller supplies what to cover.
+tour and `huh` use it; each caller supplies what to cover. Questions to the user
+[ask with context](ask.md).
 
 Contents:
 - [Tell it in layers](#tell-it-in-layers)
