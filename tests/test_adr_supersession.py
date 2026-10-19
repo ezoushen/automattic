@@ -18,6 +18,7 @@ class AdrSupersession(unittest.TestCase):
                      'There is no `proposed` status',
                      'names the ADR it replaces in `supersedes: ADR-NNNN`',
                      "the old ADR's only edit is its status line",
+                     "Repairing a broken status or supersede link in an ADR's front matter is the one other edit; its text never changes",
                      'A partial overrule supersedes the whole ADR and restates what still holds',
                      '--index [--dir', 'Before offering, check the [index](adr-index.md)'):
             self.assertIn(rule, text)

@@ -23,6 +23,10 @@ class RepoAdrs(unittest.TestCase):
                      '0005-the-adr-index-is-the-current-state.md', '0006-adr-statuses-have-no-proposed.md'):
             self.assertIn(f']({name})', accepted)
 
+    def test_adr_0004_states_the_repair_exception(self):
+        text = ' '.join((ROOT / 'docs/adr/0004-adrs-are-superseded-never-rewritten.md').read_text().split())
+        self.assertIn('apart from repairing a broken status or supersede link', text)
+
     def test_contributors_are_told_to_read_the_index_first(self):
         text = ' '.join((ROOT / 'docs/development.md').read_text().split())
         self.assertIn('[decision index](adr/README.md) before an architectural change', text)

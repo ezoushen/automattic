@@ -65,7 +65,8 @@ changes an earlier one is offered as a replacement, never a duplicate.
 
 Never rewrite an accepted ADR. A changed decision is a new ADR that names the ADR it
 replaces in `supersedes: ADR-NNNN`; the old ADR's only edit is its status line, which
-becomes `superseded by ADR-NNNN`. A partial overrule supersedes the whole ADR and
+becomes `superseded by ADR-NNNN`. Repairing a broken status or supersede link in an ADR's
+front matter is the one other edit; its text never changes. A partial overrule supersedes the whole ADR and
 restates what still holds, so one ADR states each current decision. A decision dropped
 without a replacement becomes `deprecated`. Accepted ADRs bind later work: read the
 [index](adr-index.md) and the ADRs in the area before planning or changing it. Work that would contradict one
