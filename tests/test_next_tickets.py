@@ -75,6 +75,12 @@ class Scheduling(unittest.TestCase):
         line = counts({"a/01": ticket("a/01", "done", ["x"])})
         assert line == "1 done · 0 blocked · 0 ready · 0 live", line
 
+    def test_a_recorded_branch_name_follows_git_rules_and_is_never_head_or_an_option(self):
+        for name in ('-h', 'HEAD', 'feat/\x00bad', 'main~1', '', None):
+            assert not nt.valid_branch_name(name), name
+        for name in ('main', 'feat/x-01', 'feat/x+01', '_effort', 'feat/v1.2'):
+            assert nt.valid_branch_name(name), name
+
     def test_acceptance_requires_base_section_and_checkboxes(self):
         good = "base: `" + "a" * 40 + "`\n## Implemented\n- [x] done\n"
         assert report_problems(good) == [], report_problems(good)

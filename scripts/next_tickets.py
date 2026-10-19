@@ -126,7 +126,8 @@ def review_front_matter(slug):
 
 
 def valid_branch_name(name):
-    return isinstance(name, str) and bool(name) and not name.startswith("-") and subprocess.run(
+    return isinstance(name, str) and bool(name) and name != "HEAD" and not name.startswith("-") \
+        and "\0" not in name and subprocess.run(
         ["git", "check-ref-format", f"refs/heads/{name}"]).returncode == 0
 
 
