@@ -91,16 +91,17 @@ class DesignStandard(unittest.TestCase):
                        '> ~~~python\n> print(1)\n> ~~~\n', '- Example:\n\n        print(1)\n',
                        '- An item\n\n    ~~~\n    print(1)\n    ~~~\n', '- An item\n\nA paragraph.\n\n    print(1)\n',
                        'Patch jest.mock first.',
-                       'Use unittest.mock for it.', 'Use re.I to ignore case.', 'Call x.append(1).'):
+                       'Use unittest.mock for it.', 'Use re.I to ignore case.', 'Call x.append(1).',
+                       'Intro\n\n    - name: example\n      value: 1\n',
+                       '- Parent\n  - Nested rule\n\n  Parent paragraph.\n\n      print(1)\n',
+                       '- an item\n  wrapped\n\n    its second paragraph\n', 'Text\n  \n    print(1)\n',
+                       '- An item\n  ~~~\n  print(1)\n  ~~~\n'):
             with self.subTest(sample=sample):
                 self.assertNotEqual([], support.code_samples(sample))
         for legitimate in ('See [module design](design.md).\n- a list\n  continued\n',
                            'A stand-in, e.g. an embedded database, i.e. one that runs locally.',
                            'The tautological-tests.md kind lists them.',
-                           '- a list\n    - a nested item\n      continued\n',
-                           '- an item\n  wrapped\n\n    its second paragraph\n',
-                           '- Parent\n  - Nested rule\n\n      A second paragraph explaining that rule.\n',
-                           '1. a\n   1. b\n\n      second paragraph of b\n'):
+                           '- a list\n    - a nested item\n      continued\n'):
             with self.subTest(legitimate=legitimate):
                 self.assertEqual([], support.code_samples(legitimate))
 

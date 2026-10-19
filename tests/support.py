@@ -45,23 +45,11 @@ def assignment_file(root, job, text=''):
 
 
 def code_samples(text):
-    """Code a prose-only doc must not contain: code spans, fenced or indented blocks, dotted identifiers."""
-    unquoted = '\n'.join(re.sub(r'^ {0,3}(?:> ?)+', '', line) for line in text.splitlines())
+    """Code a prose-only doc must not contain: code spans, fences, dotted identifiers, and any line indented four
+    or more spaces after a blank line, which such a doc never needs since each list item keeps to one paragraph."""
+    unquoted = '\n'.join(re.sub(r'^ {0,3}(?:> ?)+', '', line).rstrip() for line in text.expandtabs(4).splitlines())
     prose = re.sub(r'\]\([^)]*\)', ']', unquoted)
-    found = re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^[ \t]*(?:```|~~~).*$', prose)
-    content, after_blank = 0, True
-    for line in prose.expandtabs(4).splitlines():
-        if not line.strip():
-            after_blank = True
-            continue
-        indent = len(line) - len(line.lstrip(' '))
-        item = re.match(r' *(?:[-*+]|\d+\.) ', line)
-        if item:
-            content = len(item.group(0))
-        elif not indent:
-            content = 0
-        elif after_blank and indent >= content + 4:
-            found.append(line)
-        after_blank = False
-    return found + [name for name in re.findall(r'\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+', prose)
-                    if not name.endswith('.md') and max(map(len, name.split('.'))) > 1]
+    return (re.findall(r'`[^`\n]+`', prose) + re.findall(r'(?m)^[ \t]*(?:```|~~~).*$', prose)
+            + re.findall(r'(?m)(?<=\n\n) {4,}\S.*$', prose)
+            + [name for name in re.findall(r'\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+', prose)
+               if not name.endswith('.md') and max(map(len, name.split('.'))) > 1])
