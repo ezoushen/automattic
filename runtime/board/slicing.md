@@ -10,6 +10,7 @@ where the cuts go.
 Cut thin end-to-end slices: each delivers one observable behaviour through every
 layer it needs, each verifiable on its own, each sized for one fresh context window.
 A slice that only builds one layer for a later slice to use is not a ticket.
+Preparatory refactors and wide mechanical changes are the exceptions to end-to-end slices.
 
 Preparatory refactors come first: when a slice is easier after a change that keeps
 behaviour the same, that change is its own earlier ticket, and the slice is
@@ -18,9 +19,11 @@ blocked by it.
 A wide mechanical change, such as a rename or an interface replaced across many
 callers, runs as expand → migrate in batches → contract: add the new form beside the
 old, move callers over in batches, then remove the old form once nothing uses it.
-Each batch that stays green alone is its own ticket. Batches that cannot stay green
-alone share the effort branch and end in the spec E2E: write them as ordinary
-tickets in a chain, with no separate integration branch or integrate-and-verify ticket.
+Expand, each migrate batch and contract are tickets: each batch is blocked by expand
+and contract is blocked by every batch, with batches sized by blast radius. Batches
+that cannot stay green alone share the effort branch and end in the spec E2E: write
+them as ordinary tickets in a chain, with no separate integration branch or
+integrate-and-verify ticket.
 
 ## Edges
 
@@ -44,8 +47,8 @@ when their files differ; account for that resource during implementation, not on
 
 ## Experiments before automation
 
-The experiment that decides value precedes the automation that depends on it. For
-optimization or operational work, distinguish research hypotheses from measurements
+Separate the experiment that decides value from the automation that depends on it,
+and run it first. For optimization or operational work, distinguish research hypotheses from measurements
 on the actual targets. When local applicability or benefit decides the implementation,
 put a baseline using existing tools first, then a representative trial before wider
 application. Define the metric, comparable workload conditions and success criterion,
