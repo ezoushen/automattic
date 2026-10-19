@@ -3,9 +3,11 @@
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 import support
@@ -69,6 +71,25 @@ class RunAll(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn('FAIL test_bytes', result.stdout)
         self.assertIn('second failure', result.stdout)
+
+    def test_a_terminated_run_removes_its_logs(self):
+        root = Path(tempfile.mkdtemp(prefix='run all term '))
+        self.addCleanup(shutil.rmtree, root)
+        (root / 'tests').mkdir()
+        (root / 'tmp').mkdir()
+        shutil.copy(RUNNER, root / 'tests/run_all.py')
+        (root / 'tests/test_slow.py').write_text('import time\ntime.sleep(30)\n')
+        subprocess.run(['git', 'init', '-q', str(root)], check=True)
+        runner = subprocess.Popen([sys.executable, str(root / 'tests/run_all.py')], start_new_session=True,
+                                  env=dict(os.environ, PYTHON=sys.executable, TMPDIR=str(root / 'tmp')))
+        deadline = time.monotonic() + 10
+        while not list((root / 'tmp').glob('*/test_slow.log')):
+            self.assertLess(time.monotonic(), deadline, 'the run never started')
+            time.sleep(0.05)
+        runner.send_signal(signal.SIGTERM)
+        self.assertEqual(runner.wait(timeout=10), 128 + signal.SIGTERM)
+        os.killpg(runner.pid, signal.SIGKILL)  # the sleeping test, as a hook's teardown would
+        self.assertEqual(list((root / 'tmp').iterdir()), [])
 
     def test_scripts_do_not_inherit_the_git_hook_environment(self):
         result = self.suite({'test_env.py': 'import os\nraise SystemExit(1 if "GIT_DIR" in os.environ else 0)\n'})

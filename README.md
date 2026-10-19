@@ -359,8 +359,8 @@ those files. Old executor-package/`routes` files need the explicit
 Request a read-only progress snapshot with `/automattic:brief` in Claude,
 `$automattic:brief` in Codex, or `/skill:brief` in Pi. It defaults to the active
 task; optionally name an effort, branch, PR or a focus such as "what needs me?".
-`brief map`, or a brief with no active task, shows the [pipeline map](flows/brief/pipeline.md)
-of which command fits.
+`brief map` shows the [pipeline map](flows/brief/pipeline.md) of which command fits; a
+brief with nothing in progress offers it.
 
 The [briefing procedure](flows/brief/brief.md) explains the goal, completed/current/next
 work, review and verification status, and decisions needing your input. It checks
