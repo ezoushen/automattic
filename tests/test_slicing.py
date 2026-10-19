@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Tickets are cut by one slicing doc of our own, which refine and dispatch's split step both read."""
+import re
 import unittest
 
 import support
@@ -14,34 +15,43 @@ def prose(path):
 
 class Slicing(unittest.TestCase):
     def test_the_slicing_doc_states_each_rule(self):
-        text = prose(SLICING)
-        for rule in ('Cut thin end-to-end slices', 'each verifiable on its own',
-                     'sized for one fresh context window',
-                     'Preparatory refactors come first',
-                     'expand → migrate in batches → contract',
-                     'Batches that cannot stay green alone share the effort branch and end in the spec E2E',
-                     'Each ticket lists what blocks it',
-                     'Weigh handoff cost before splitting adjacent outcomes',
-                     'Separate the experiment that decides value from the automation that depends on it, and run it first',
-                     'put a baseline using existing tools first, then a representative trial before wider application',
-                     'Define the metric, comparable workload conditions and success criterion',
-                     'keep a supported no-change outcome when the change adds no value',
-                     'the later work is blocked by it and stays deferred scope until the result is accepted',
-                     'Tickets sharing a device, serving lane or mutable fixture share a reservation',
-                     'A cross-effort edge waits for the prerequisite effort to finish and merge into main'):
-            with self.subTest(rule=rule):
-                self.assertIn(rule, text)
-        for rule in ('Preparatory refactors and wide mechanical changes are the exceptions to end-to-end slices',
-                     'Expand, each migrate batch and contract are tickets',
-                     'each batch is blocked by expand and contract is blocked by every batch',
-                     'batches sized by blast radius',
-                     'with no separate integration branch or integrate-and-verify ticket',
-                     'distinguish research hypotheses from measurements on the actual targets',
-                     'Evidence from another environment suggests what to investigate, not what to build',
-                     'Ticket cycles and cycles between efforts are invalid',
-                     'Work that must integrate before then belongs in the same effort',
-                     'Individual settings or acceptance criteria need not each become a ticket',
-                     'account for that resource during implementation, not only E2E'):
+        text = re.sub(r'<!--.*?-->', '', prose(SLICING))
+        for rule in (
+                'The cutting procedure owns stories, criteria and publication; this doc owns where the cuts go.',
+                'Cut thin end-to-end slices: each delivers one observable behaviour through every layer it needs, '
+                'each verifiable on its own, each sized for one fresh context window.',
+                'A slice that only builds one layer for a later slice to use is not a ticket.',
+                'Preparatory refactors and wide mechanical changes are the exceptions to end-to-end slices.',
+                'Preparatory refactors come first: when a slice is easier after a change that keeps behaviour the '
+                'same, that change is its own earlier ticket, and the slice is blocked by it.',
+                'runs as expand → migrate in batches → contract: add the new form beside the old, move callers over '
+                'in batches, then remove the old form once nothing uses it.',
+                'Expand, each migrate batch and contract are tickets: each batch is blocked by expand and contract is '
+                'blocked by every batch, with batches sized by blast radius.',
+                'Batches that cannot stay green alone share the effort branch and end in the spec E2E: write them as '
+                'ordinary tickets in a chain, with no separate integration branch or integrate-and-verify ticket.',
+                'Each ticket lists what blocks it.',
+                "Draw an edge only where one ticket needs another's result; independent slices stay parallel.",
+                'Ticket cycles and cycles between efforts are invalid.',
+                'A cross-effort edge waits for the prerequisite effort to finish and merge into main.',
+                'Work that must integrate before then belongs in the same effort.',
+                'Weigh handoff cost before splitting adjacent outcomes.',
+                'When they share the same small implementation, fixtures and verification, keep them together as one '
+                'coherent slice; split where independent delivery, risk, dependencies or context size earns the extra '
+                'worker setup and integration.',
+                'Individual settings or acceptance criteria need not each become a ticket.',
+                'Tickets sharing a device, serving lane or mutable fixture share a reservation, even when their files '
+                'differ; account for that resource during implementation, not only E2E.',
+                'Separate the experiment that decides value from the automation that depends on it, and run it first.',
+                'For optimization or operational work, distinguish research hypotheses from measurements on the '
+                'actual targets.',
+                'When local applicability or benefit decides the implementation, put a baseline using existing tools '
+                'first, then a representative trial before wider application.',
+                'Define the metric, comparable workload conditions and success criterion, and keep a supported '
+                'no-change outcome when the change adds no value.',
+                'Evidence from another environment suggests what to investigate, not what to build.',
+                'When the result can make later work unnecessary, the later work is blocked by it and stays deferred '
+                'scope until the result is accepted.'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, text)
         self.assertIn('[Slicing tickets](slicing.md)', prose(ROOT / 'runtime/board/board.md'))
