@@ -74,19 +74,22 @@ class Slicing(unittest.TestCase):
         self.assertLess(len((ROOT / 'skills/refine/SKILL.md').read_bytes()), 12 * 1024)
 
     def test_a_split_child_meets_the_bar_a_refined_ticket_meets(self):
-        text = prose(ROOT / 'skills/dispatch/split-work.md')
-        for rule in ('Each child meets the bar a refined ticket meets',
-                     'a `Verify` line naming the command or test and who observes it (`code`, `agent` or `user`)',
-                     'a check that cannot pass while the criterion is broken',
-                     'normal variation cannot swamp',
-                     'An edge the parent\'s brief does not settle is a ledger row with a hinge',
-                     '[`refinement` checkpoint](../../runtime/decisions/checkpoint-command.md)',
-                     'a builder with an empty context can build it',
-                     '`ticket`, `status`, `blocked_by` (always present, `[]` when nothing gates it), `touches`, `devices`, `model` and `worker`',
-                     'next_tickets.py" --repo "<repo>" <slug> --check'):
+        text = re.sub(r'<!--.*?-->', '', prose(ROOT / 'skills/dispatch/split-work.md'))
+        for rule in (
+                'Each child meets the bar a refined ticket meets: a one-sentence story; observable Given/When/Then '
+                'criteria, each with a `Verify` line naming the command or test and who observes it (`code`, `agent` '
+                'or `user`), and a check that cannot pass while the criterion is broken and that normal variation '
+                'cannot swamp.',
+                "An edge the parent's brief does not settle is a ledger row with a hinge.",
+                'Run the configured [`refinement` checkpoint](../../runtime/decisions/checkpoint-command.md) on the cut.',
+                'A child is ready when a builder with an empty context can build it from these, the parent\'s brief and '
+                'the project instructions.',
+                'On a local Markdown board each child carries the front matter the scheduler reads — `ticket`, '
+                '`status`, `blocked_by` (always present, `[]` when nothing gates it), `touches`, `devices`, `model` and '
+                '`worker` — and the split ends with `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" '
+                '<slug> --check`.'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, text)
-
 
 if __name__ == '__main__':
     unittest.main()
