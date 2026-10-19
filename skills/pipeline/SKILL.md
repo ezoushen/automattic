@@ -16,7 +16,7 @@ Contents:
 - [Left to the human](#left-to-the-human)
 - [Delivery composition](#delivery-composition)
 
-First read [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part.
 
 The automattic plugin: six phase skills, one artefact directory `.scratch/<slug>/`, one principle: the
 principal answers **steering** questions (goal, principles, constraints) and

@@ -7,7 +7,7 @@ argument-hint: "[question or desired change] [--scope user|project|session]"
 
 # Set up Automattic
 
-Read [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [procedure](../../flows/setup/procedure.md).
 Help the user understand the effective setup and adjust it for their work. With
 no request to change settings, stay read-only. A scope flag focuses the discussion;
 it does not itself authorize edits. No board, new session or configuration file is

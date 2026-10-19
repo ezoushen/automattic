@@ -6,5 +6,5 @@ argument-hint: "[assignment and eligible worker choices]"
 
 # Model routing
 
-Read the [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [select](../../runtime/routing/select.md).
 Follow [model routing](../../runtime/routing/select.md).

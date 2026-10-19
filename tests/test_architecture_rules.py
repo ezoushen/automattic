@@ -129,15 +129,37 @@ class ArchitectureRules(Fixture):
         self.config['code_doc_pattern'] = r'(?:shared|skills|flows|hosts)/[\w/-]+\.md'
         bootstrap, small, large = '# Bootstrap\n' + 'b' * 300 + '\n', '# S\n' + 'h' * 200 + '\n', '# L\n' + 'h' * 500 + '\n'
         skill = SKILL.format(name='tool', description='Runs the tool.') + '\n## Later\n\nSee [flow](../../flows/a/late.md).\n'
-        skill = skill.replace('Read [the guide](../../shared/guide.md).', 'First [bootstrap](../../bootstrap.md), then [the guide](../../shared/guide.md).')
+        skill = skill.replace('Read [the guide](../../shared/guide.md).', 'First read: [bootstrap](../../bootstrap.md), [the guide](../../shared/guide.md).')
         self.write('bootstrap.md', bootstrap)
         self.write('hosts/small/session.md', small)
         self.write('hosts/large/session.md', large)
         self.write('flows/a/late.md', '# Late\n' + 'x' * 5000 + '\n')
         self.write('skills/tool/SKILL.md', skill)
         encoded = lambda text: len(text.encode())
-        # Bootstrap, the larger host session, the skill and its opening link; the link after "## Later" is not read first.
         return encoded(bootstrap) + encoded(large) + encoded(skill) + encoded(GUIDE)
+
+    def test_a_declared_first_read_under_a_heading_counts_toward_the_budget(self):
+        total = self.first_read_tree()
+        path = self.root / 'skills/tool/SKILL.md'
+        heading = '## Required reads\n\n'
+        path.write_text(path.read_text().replace('First read:', heading + 'First read:'))
+        total += len(heading.encode())
+        self.architecture['first_read']['budget'] = total - 1
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'first-read', 'error')})
+        [(_, _, message)] = self.messages('first-read')
+        self.assertIn(f'first reads total {total} bytes', message)
+
+    def test_a_skill_without_a_first_read_line_is_an_error_and_only_that_line_counts(self):
+        total = self.first_read_tree()
+        path = self.root / 'skills/tool/SKILL.md'
+        text = path.read_text()
+        self.architecture['first_read']['budget'] = total
+        path.write_text(text.replace('First read:', 'Start with:'))
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'first-read-line', 'error')})
+        extra = '\nSee [late](../../flows/a/late.md).\n'
+        self.architecture['first_read']['budget'] = total + len(extra.encode())
+        path.write_text(text.replace('# Tool\n', '# Tool\n' + extra, 1))
+        self.assertEqual(self.check(), set())
 
     def test_a_skill_whose_first_reads_exceed_the_budget_is_reported_with_its_total_bytes(self):
         total = self.first_read_tree()

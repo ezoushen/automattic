@@ -7,7 +7,7 @@ argument-hint: "<idea, plan, or decision to clarify> [--interactive]"
 
 # mandate
 
-First read [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [authority](../../flows/planning/authority.md), [question filter](../../flows/planning/question-filter.md), [record](../../flows/planning/record.md).
 
 A mandate is the user's goal, principles, constraints and reserved decisions.
 Inside it the agent decides; a material choice outside it needs the user.

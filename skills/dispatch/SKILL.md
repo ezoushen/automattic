@@ -7,5 +7,5 @@ argument-hint: "[effort|project|milestone|issue-ID|issue-URL] [--autofix]"
 
 # dispatch
 
-First read [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [dispatch](../../flows/delivery/dispatch.md).
 Run the [dispatch procedure](../../flows/delivery/dispatch.md) with the user's arguments.

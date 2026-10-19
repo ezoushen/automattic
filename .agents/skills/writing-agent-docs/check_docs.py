@@ -197,20 +197,23 @@ def tracked_names(root):
 
 def first_read(root, architecture, rel):
     """Findings for each skill whose first reads (bootstrap, the largest host session, the
-    skill and the files its opening links) are over the budget; recorded debt may only shrink."""
+    skill and the docs its `First read:` line links) are over the budget, or that has no such
+    line; recorded debt may only shrink."""
     settings = architecture.data.get('first_read')
     findings = []
     for skill in expand(root, settings['skills']) if settings else []:
         sessions = expand(root, settings['host_session'])
         reads = {skill, *expand(root, settings['bootstrap'])}
         reads.update(sorted(sessions, key=lambda path: path.stat().st_size)[-1:])
-        for number, line in prose(skill):
-            if re.match(r'##\s', line):
-                break
-            for _, link in links(line):
-                target = (skill.parent / unquote(link.split('#')[0].split('?')[0])).resolve()
-                if link.split('#')[0] and not re.match(r'[a-z][\w+.-]*:', link, re.I) and target.suffix == '.md' and target.is_file():
-                    reads.add(target)
+        declared = next((line for _, line in prose(skill) if line.startswith('First read:')), None)
+        if declared is None:
+            findings.append(Finding(rel(skill), 1, 'error', 'first-read-line',
+                                    'no `First read:` line declaring the docs this skill reads first'))
+            continue
+        for _, link in links(declared):
+            target = (skill.parent / unquote(link.split('#')[0].split('?')[0])).resolve()
+            if link.split('#')[0] and not re.match(r'[a-z][\w+.-]*:', link, re.I) and target.suffix == '.md' and target.is_file():
+                reads.add(target)
         total, limit = sum(path.stat().st_size for path in reads), settings['budget']
         recorded = architecture.debt.get('first_read', {}).get(rel(skill))
         if total <= limit and recorded is not None:
@@ -221,7 +224,7 @@ def first_read(root, architecture, rel):
                                         f'first reads total {total} bytes, over {limit}; lower the recorded size to {total}'))
         elif total > limit:
             findings.append(Finding(rel(skill), 1, 'error', 'first-read',
-                                    f'first reads total {total} bytes, over {limit}: bootstrap, host session, this skill and its opening links'))
+                                    f'first reads total {total} bytes, over {limit}: bootstrap, host session, this skill and the docs its `First read:` line links'))
     return findings
 
 

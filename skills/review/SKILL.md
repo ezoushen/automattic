@@ -7,7 +7,7 @@ argument-hint: "<branch|PR-number|PR-URL> [--autofix] [--comments draft|confirm|
 
 # review
 
-First read [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [review](../../flows/review/review.md), [guided](../../flows/review/guided.md).
 Run the [shared review procedure](../../flows/review/review.md) with the user's target and flags.
 This public command remains user-invoked; dispatch and an authorized walkthrough
 handoff use the same procedure without calling this command through Skill.

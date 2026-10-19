@@ -6,5 +6,7 @@ argument-hint: "[files, symbols, or comment-writing task]"
 
 # Code comments
 
+First read: [code comments standard](../../standards/code-comments.md).
+
 The rules live in the [code comments standard](../../standards/code-comments.md); read it
 before writing or changing comments and API docs, and apply it to the task.

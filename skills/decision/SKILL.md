@@ -6,5 +6,5 @@ argument-hint: "[checkpoint and evidence | retro <journal> | replay <journal> <c
 
 # Workflow decision
 
-Read the [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [workflow](../../runtime/decisions/workflow.md).
 Follow the [decision workflow](../../runtime/decisions/workflow.md).

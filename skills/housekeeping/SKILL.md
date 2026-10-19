@@ -6,4 +6,6 @@ argument-hint: "[task scope or paths to clean up]"
 
 # Housekeeping
 
+First read: [housekeeping procedure](../../flows/delivery/housekeeping.md).
+
 Run the [housekeeping procedure](../../flows/delivery/housekeeping.md) on the assigned scope.

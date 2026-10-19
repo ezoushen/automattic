@@ -7,7 +7,7 @@ argument-hint: "[request|show|set|reset] [agent|router|decisions|profile|model-d
 
 # models
 
-Read [runtime bootstrap](../../bootstrap.md) and the host session part.
+First read: [runtime bootstrap](../../bootstrap.md), the host session part, [procedure](../../flows/setup/procedure.md).
 Handle the user's direct inspection, change or reset with the
 [shared configuration procedure](../../flows/setup/procedure.md). It owns the
 current shape, legacy command compatibility, scope precedence and validation.
