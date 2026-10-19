@@ -9,7 +9,8 @@ The configuration procedure for the user-invoked setup command. The entry point 
 reads runtime bootstrap and the active host adapter. No arguments means read-only
 inspection, presented as the [setup tour](tour.md); so does a question or a request to
 understand the setup. A direct request handles inspection, edits, resets and
-validation with the flows below, and a one-run choice is not a saved default.
+validation through [select the configuration flow](#select-the-configuration-flow),
+and a one-run choice is not a saved default.
 Respect native invocation restrictions; a refused operation stays refused.
 This file selects the flow and inspects settings. For edits read
 [apply requested changes](apply.md); for resets and the final check read
@@ -23,7 +24,8 @@ authorization and report its effective result.
 
 Use `/automattic:setup` in Claude Code, `$automattic:setup` in Codex, or
 `/skill:setup` in Pi. These are chat invocations, not shell commands. A request that
-names `show`, `set` or `reset` goes straight to the flows below without the tour.
+names `show`, `set` or `reset` goes straight to
+[select the configuration flow](#select-the-configuration-flow) without the tour.
 For example, using Claude's spelling:
 
 ```text
