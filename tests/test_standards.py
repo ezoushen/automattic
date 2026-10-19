@@ -34,12 +34,13 @@ class Standards(unittest.TestCase):
 
     def test_agent_docs_stay_language_neutral(self):
         extension = re.compile(r'`\.(?:py|pyi|js|jsx|mjs|cjs|ts|tsx|mts|cts|sh|bash|zsh|sql|go|rs|swift|kt|java|cs|c|cpp|h|rb|php)`')
-        for folder in ('skills', 'runtime', 'standards', 'agents', 'hosts'):
-            for path in sorted((ROOT / folder).rglob('*.md')):
-                with self.subTest(doc=str(path.relative_to(ROOT))):
-                    text = path.read_text()
-                    self.assertIsNone(extension.search(text))
-                    self.assertNotIn('comment_audit', text)
+        docs = [ROOT / 'bootstrap.md'] + [path for folder in ('skills', 'runtime', 'standards', 'agents', 'hosts')
+                                          for path in sorted((ROOT / folder).rglob('*.md'))]
+        for path in docs:
+            with self.subTest(doc=str(path.relative_to(ROOT))):
+                text = path.read_text()
+                self.assertIsNone(extension.search(text))
+                self.assertNotIn('comment_audit', text)
         self.assertFalse((ROOT / 'scripts/comment_audit.py').exists())
 
     def test_comment_detection_reads_the_diff_in_each_files_language(self):
@@ -48,6 +49,9 @@ class Standards(unittest.TestCase):
             with self.subTest(doc=name):
                 self.assertIn('git diff -U0', text)
                 self.assertIn("in each file's language", text)
+                self.assertIn('reading each added line in its file', text)
+        remediate = ' '.join((ROOT / 'skills/remediate/SKILL.md').read_text().split())
+        self.assertIn('untracked files are outside the diff', remediate)
 
     def test_the_four_standards_exist(self):
         for name in ('code-comments.md', 'code-comments-sources.md', 'documentation.md', 'pr.md'):

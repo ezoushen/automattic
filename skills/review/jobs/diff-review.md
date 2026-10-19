@@ -65,7 +65,8 @@ your contrary evidence and the flagged shape.
 
 For added comments, list the added lines of the pinned reviewed diff with
 `git diff -U0 <diff_base> <head>` in the worktree, identify the comments among them
-in each file's language and retain that list as evidence. Its entries are
+in each file's language, reading each added line in its file so a line inside an
+existing block comment counts, and retain that list as evidence. Its entries are
 candidates, not verdicts. Apply code-comments and the
 project's documented convention: function/interface docs are allowed; other
 comments require a constraint that cannot be encoded as a type, assertion, test

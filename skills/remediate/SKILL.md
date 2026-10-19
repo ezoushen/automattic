@@ -74,8 +74,10 @@ report that boundary for a separate implementation task.
    assertion or claim, its contract source and counter-evidence. For comment
    diffs, list the added lines with `git diff -U0 <base> [<head>] -- [paths]` and
    identify the added and changed comments, doc comments included, in each file's
-   language; retain that list as evidence. A listed comment is a candidate, not a
-   violation. A whole-project or paths scan discovers existing comments and
+   language, reading each added line in its file so a line inside an existing block
+   comment counts; untracked files are outside the diff, so add them with
+   `git add -N` or list them with `git ls-files --others --exclude-standard`. Retain
+   that list as evidence. A listed comment is a candidate, not a violation. A whole-project or paths scan discovers existing comments and
    docstrings by inventorying the source (language tokenizer/AST where available,
    otherwise careful reading). When the kind's Proof has steps for every test,
    run them for every test in scope during detection, before selecting candidates.
