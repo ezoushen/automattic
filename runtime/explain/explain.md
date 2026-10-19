@@ -23,8 +23,10 @@ Clipping the same message loses them further.
    or leave it out. Never use a ticket or decision ID in place of what it stands for.
 5. Add a view below only when the shape is what confuses them.
 
-The re-pitch should be shorter and clearer than the original, not shorter and blunter.
-Asked twice, go further back rather than further down.
+Keep the re-pitch no longer than the message it replaces: pay for the added context by
+dropping detail the point does not need, not by clipping sentences. A view replaces the
+prose for the same steps; never say them twice. Asked twice, go further back rather than
+further down.
 
 ## Choose the smallest view
 
