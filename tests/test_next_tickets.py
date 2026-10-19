@@ -150,43 +150,82 @@ class BoardCLI(unittest.TestCase):
         self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', message)
         return self.git('rev-parse', 'HEAD')
 
-    def write_report(self, base, branch=None):
+    def write_report(self, base, branch=None, commits=(), body=''):
         report = self.root / '.scratch/inline/reports/01.md'
         report.parent.mkdir(parents=True, exist_ok=True)
         branch_line = f'branch: {branch}\n' if branch else ''
-        report.write_text(f'base: `{base}`\n{branch_line}## Implemented\n- [x] done\n')
+        listed = ''.join(f'- Commit: {sha}\n' for sha in commits)
+        report.write_text(f'base: `{base}`\n{branch_line}## Implemented\n{listed}- [x] done\n{body}')
 
     def test_acceptance_checks_the_branch_the_report_records(self):
         self.write_ticket('inline/01', 'implementing')
         base = self.commit('base')
         self.git('switch', '-q', '-c', 'feat/inline')
-        # An inline ticket commits on the effort branch and records it.
         self.write_report(base, 'feat/inline')
         assert 'no commit past base on feat/inline' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
-        self.commit('ticket work')
+        work = self.commit('ticket work')
+        self.write_report(base, 'feat/inline', [work])
         assert 'carry the evidence' in self.cli('inline', '--accept', 'inline/01').stdout
-        # Without a recorded branch, the delegated ticket branch is still the one checked.
         self.write_report(base)
         assert 'feat/inline-01' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        self.write_report(base, body=f'Checked branch: feat/inline\nbranch: feat/inline\n')
+        assert 'feat/inline-01' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+
+    def test_a_shared_effort_branch_counts_only_the_commits_the_report_lists(self):
+        self.write_ticket('inline/01', 'implementing')
+        base = self.commit('base')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        other = self.commit('another ticket merged here')
+        self.write_report(base, 'feat/inline')
+        assert 'no listed commit' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        self.write_report(base, 'feat/inline', [base])
+        assert 'no listed commit' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        self.write_report(base, 'feat/inline', [other])
+        self.cli('inline', '--accept', 'inline/01')
+
+    def test_a_recorded_branch_must_name_an_existing_branch(self):
+        self.write_ticket('inline/01', 'implementing')
+        base = self.commit('base')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        work = self.commit('ticket work')
+        for value in ('HEAD', work, 'feat/inline~1', '-h', 'feat/missing'):
+            self.write_report(base, value, [work])
+            assert 'not an existing branch' in self.cli('inline', '--accept', 'inline/01', code=1).stderr, value
+
+    def deliver(self, slug, branch, start, head):
+        review = self.root / f'.scratch/{slug}/reports/spec-review.md'
+        review.parent.mkdir(parents=True, exist_ok=True)
+        evidence = (f'---\neffort_branch: {branch}\nreview_status: clean\ndocumentation_status: passed\n'
+                    f'review_head: {head}\nreview_base: {start}\nreview_diff_base: {start}\n'
+                    f'e2e_status: passed\ne2e_head: {head}\nreview_by: reviewer/1\ne2e_by: verifier/2\n---\n')
+        review.write_text(evidence)
+        return review, evidence
+
+    def ready_names(self, slug):
+        return [t['ticket'] for t in json.loads(self.cli(slug).stdout)]
 
     def test_an_effort_run_on_main_is_delivered_from_main_and_releases_its_dependents(self):
         self.write_ticket('onmain/01', 'done')
         self.write_ticket('later/01', blocked='onmain/01', touches='docs')
+        self.write_ticket('later/02', blocked='onmain/01', touches='tests')
         start = self.commit('start')
         head = self.commit('ticket work on main')
-        review = self.root / '.scratch/onmain/reports/spec-review.md'
-        review.parent.mkdir(parents=True, exist_ok=True)
-        evidence = (f'---\neffort_branch: main\nreview_status: clean\ndocumentation_status: passed\n'
-                    f'review_head: {head}\nreview_base: {start}\nreview_diff_base: {start}\n'
-                    f'e2e_status: passed\ne2e_head: {head}\nreview_by: reviewer/1\ne2e_by: verifier/2\n---\n')
-        review.write_text(evidence)
+        review, evidence = self.deliver('onmain', 'main', start, head)
         self.cli('onmain', '--delivery')
-        assert [t['ticket'] for t in json.loads(self.cli('later').stdout)] == ['later/01']
-        # Without the recorded branch the gate still looks for feat/<slug>.
+        assert self.ready_names('later') == ['later/01', 'later/02']
+        self.git('branch', 'feat/later', start)
+        self.deliver('later', 'main', start, start)
+        self.commit('later/01 lands on main')
+        self.cli('onmain', '--delivery')
+        assert self.ready_names('later') == ['later/01', 'later/02']
         review.write_text(evidence.replace('effort_branch: main\n', ''))
         self.cli('onmain', '--delivery', code=1)
-        assert json.loads(self.cli('later').stdout) == []
-
+        assert self.ready_names('later') == []
+        review.write_text(evidence.replace('effort_branch: main', 'effort_branch: main~1'))
+        self.cli('onmain', '--delivery', code=1)
+        unreviewed = review.read_text().replace('effort_branch: main~1', 'effort_branch: main')
+        review.write_text(unreviewed.replace(head, start))
+        self.cli('onmain', '--delivery', code=1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -38,14 +38,16 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    [yield gate](../../runtime/workers/wait.md#wake-and-yield), then yield. Ready work without
    a candidate → identify area/capacity/dependency/integration waits. If none can be
    resolved within scope, record the attempted resolution and block those tickets.
-4. For each candidate, from `repo`, ensure `feat/<slug>` and its spec worktree
-   exist. A new effort branches from `main` after fetching and comparing it with
-   its remote. A stale or diverged local `main`, or a stale consumer checkout used
-   as a base, is reported, and the effort branches from the verified remote tip;
-   never commit to the user's local `main` unless the user said to work
-   [directly on main](modes.md#directly-on-main). Choose [how a ticket runs](modes.md):
-   an inline ticket continues there, and the rest of this step and step 5 describe a
-   delegated one. Then create the ticket branch/worktree
+4. For each candidate, from `repo`, ensure the effort branch and its worktree exist:
+   `feat/<slug>` in its spec worktree, or `main` in the main checkout when the user
+   said to work [directly on main](modes.md#directly-on-main). A new effort branches
+   from `main` after fetching and comparing it with its remote. A stale or diverged
+   local `main`, or a stale consumer checkout used as a base, is reported, and the
+   effort branches from the verified remote tip; otherwise never commit to the user's
+   local `main`. Choose [how a ticket runs](modes.md). An inline ticket skips only the
+   ticket branch and worktree, their preparation, the builder launch with its launch
+   decision record, and the merge; everything else in steps 4 and 5 applies to both
+   modes. For a delegated ticket, create the ticket branch/worktree
    from that effort branch using the project's naming convention. The fallback
    is `feat/<slug>-<key>` in `.worktrees/<slug>-<key>`, where key is local `NN` or
    a stable safe remote issue key from board operations. Reuse existing branches and
@@ -112,7 +114,8 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    review/repair and applicable E2E; integration alone does not retire it.
    Once an integrated build allows checks that only the user can observe
    (`Verify (user)`), send the user one request covering all of them.
-   On conflict, assign a builder the `merge-conflict` job and its inputs in the spec worktree.
+   On conflict, assign a builder the `merge-conflict` job and its inputs in the spec
+   worktree, except on `main` ([directly on main](modes.md#directly-on-main)).
    No other worker may use that worktree then; the orchestrator completes the merge.
 6. A blocked ticket is the orchestrator's work: research missing facts, diagnose
    defects, resolve engineering choices within accepted constraints, or return to
@@ -125,7 +128,8 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    `Verify` method with a weaker one is the user's decision. Record failed commands
    verbatim. Resolve → ready.
    Two failed attempts at the same ticket → split it around one deterministic
-   Verify per criterion; never an unchanged third attempt.
+   Verify per criterion; never an unchanged third attempt. Like any new cut, the new
+   tickets wait for the user's check.
    An agent's permission limit does not establish a human-only task. Separate missing
    authorization, access, capability and unresolved user choices. When the user has
    authorized the operation, the orchestrator may perform it within native permissions;

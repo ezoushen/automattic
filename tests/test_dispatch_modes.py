@@ -35,9 +35,20 @@ class TicketModes(unittest.TestCase):
         self.assertIn('For an inline ticket the orchestrator follows this job itself', job)
         self.assertIn('the branch the report records', prose(ROOT / 'runtime/board/board.md'))
 
-    def test_the_builder_agent_is_unchanged(self):
-        diff = subprocess.run(['git', '-C', str(ROOT), 'diff', '--quiet', 'main', '--', 'agents/builder.md'])
-        self.assertEqual(diff.returncode, 0)
+    def test_an_inline_ticket_skips_only_the_builder_setup(self):
+        iteration = prose(DISPATCH / 'iteration.md')
+        self.assertIn('An inline ticket skips only the ticket branch and worktree, their preparation, the builder '
+                      'launch with its launch decision record, and the merge', iteration)
+        self.assertIn('everything else in steps 4 and 5 applies to both modes', iteration)
+        text = prose(MODES)
+        for rule in ('Commit inline work before merging a delegated ticket',
+                     'A blocked inline ticket follows the same escalation and two-attempt rules'):
+            self.assertIn(rule, text)
+
+    def test_the_builder_still_never_works_on_main_or_outside_its_worktree(self):
+        builder = prose(ROOT / 'agents/builder.md')
+        self.assertIn('Change code only in the assigned worktree, on the assigned branch', builder)
+        self.assertIn('Never work on `main`', builder)
 
     def test_an_effort_gets_its_own_branch_unless_the_user_says_main(self):
         text = prose(MODES)
@@ -47,6 +58,11 @@ class TicketModes(unittest.TestCase):
                      'delegated tickets merge into `main` under that instruction', 'Never push'):
             self.assertIn(rule, text)
         self.assertIn('[directly on main](modes.md#directly-on-main)', prose(DISPATCH / 'iteration.md'))
+        self.assertIn('ensure the effort branch', prose(DISPATCH / 'iteration.md'))
+        for rule in ('A stale or diverged local `main` is reported and the user asked before the first commit',
+                     'On `main` the orchestrator resolves an integration conflict itself',
+                     'pass `--base <starting commit>`'):
+            self.assertIn(rule, prose(MODES))
 
     def test_an_effort_on_main_is_reviewed_from_its_starting_commit_and_has_no_pr(self):
         self.assertIn('review covers the starting commit to the current `main`', prose(MODES))

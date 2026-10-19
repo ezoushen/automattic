@@ -34,8 +34,11 @@ two-attempt rules; delegating it is one of the recovery choices.
 
 Every effort gets a dedicated branch by default. Only an explicit user instruction to
 work directly on main makes `main` the effort branch and the main checkout its worktree;
-record that instruction and the starting commit in the run report. Inline tickets commit
+record that instruction and the starting commit in the run report. A stale or diverged
+local `main` is reported and the user asked before the first commit. Inline tickets commit
 there, and delegated tickets merge into `main` under that instruction, which is the merge
-authorization. Never push. The integrated review covers the starting commit to the
-current `main`, its report records `effort_branch: main` so the delivery gate reads
+authorization. On `main` the orchestrator resolves an integration conflict itself: a
+builder never works on `main`. Never push. The integrated review covers the starting
+commit to the current `main` (pass `--base <starting commit>` to the review target), its
+report records `effort_branch: main` so the delivery gate reads
 `main`, and PR publication is reported as not applicable.

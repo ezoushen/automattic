@@ -30,8 +30,11 @@ class ChatPlanEntry(unittest.TestCase):
         rule = "Newly cut tickets wait for the user's check before any implementation"
         self.assertIn(rule, prose(REFINE / 'SKILL.md'))
         self.assertIn('approval continues this dispatch', prose(CHAT_PLAN))
+        self.assertIn("show the list and wait for the user's check", prose(CHAT_PLAN))
         dispatch = prose(DISPATCH / 'SKILL.md')
         self.assertIn('Tickets the user selected for dispatch are already checked', dispatch)
+        self.assertIn('the iteration starts once the user has checked them', dispatch)
+        self.assertIn("the new tickets wait for the user's check", prose(DISPATCH / 'iteration.md'))
         self.assertIn("wait for the user's check like any new cut", prose(DISPATCH / 'split-work.md'))
 
     def test_the_commands_and_map_advertise_the_chat_plan(self):
@@ -39,7 +42,7 @@ class ChatPlanEntry(unittest.TestCase):
             hint = next(line for line in path.read_text().splitlines() if line.startswith('argument-hint:'))
             self.assertIn('plan', hint)
         self.assertIn('or a plan agreed in chat', prose(ROOT / 'skills/brief/pipeline.md'))
-        for command in ('refine', 'dispatch'):  # Codex reads its own command metadata.
+        for command in ('refine', 'dispatch'):
             self.assertIn('a plan agreed in chat', prose(ROOT / 'skills' / command / 'agents/openai.yaml'))
 
 

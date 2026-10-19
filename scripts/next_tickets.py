@@ -111,10 +111,11 @@ def integrated(tickets, name, dependency):
         return False
     if not delivery_evidence(source):
         return False
-    prerequisite = f"refs/heads/{effort_branch(source)}"
-    target = f"refs/heads/feat/{spec_of(name)}"
-    exists = subprocess.run(["git", "-C", str(ROOT), "show-ref", "--verify", "--quiet", target])
-    bases = ["refs/heads/main"] + ([target] if exists.returncode == 0 else [])
+    prerequisite = branch_ref(effort_branch(source))
+    if prerequisite is None:
+        return False
+    target = branch_ref(effort_branch(spec_of(name)))
+    bases = ["refs/heads/main"] + ([target] if target and target != "refs/heads/main" else [])
     return all(subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", prerequisite, base],
                               capture_output=True).returncode == 0 for base in bases)
 
@@ -124,30 +125,47 @@ def review_front_matter(slug):
     return (parse_front_matter(report.read_text()) or {}) if report.is_file() else None
 
 
+def branch_ref(name):
+    """refs/heads/<name> when name is an existing local branch, else None."""
+    if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", name) or ".." in name:
+        return None
+    ref = f"refs/heads/{name}"
+    exists = subprocess.run(["git", "-C", str(ROOT), "show-ref", "--verify", "--quiet", ref])
+    return ref if exists.returncode == 0 else None
+
+
 def effort_branch(slug):
     """feat/<slug>, or main when the user had the effort work directly on main."""
     branch = (review_front_matter(slug) or {}).get('effort_branch')
-    return branch if isinstance(branch, str) and branch else f'feat/{slug}'
+    return branch if branch not in (None, '', []) else f'feat/{slug}'
 
 
 def delivery_evidence(slug):
-    """Structural delivery gate; the orchestrator must also judge the recorded evidence."""
+    """Structural delivery gate; the orchestrator must also judge the recorded evidence.
+
+    main keeps moving after an effort delivered on it, so there the reviewed head only has to stay in main.
+    """
     fm = review_front_matter(slug)
-    if fm is None:
+    ref = branch_ref(effort_branch(slug))
+    if fm is None or ref is None:
         return False
-    head = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--verify',
-                           f'refs/heads/{effort_branch(slug)}^{{commit}}'], capture_output=True, text=True)
+    head = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--verify', f'{ref}^{{commit}}'],
+                          capture_output=True, text=True)
     base = fm.get('review_base', '')
     if head.returncode or not isinstance(base, str) or not re.fullmatch('[0-9a-f]{40}', base):
         return False
     sha = head.stdout.strip()
+    reviewed = str(fm.get('review_head') or '')
+    if ref == 'refs/heads/main' and re.fullmatch('[0-9a-f]{40}', reviewed) and subprocess.run(
+            ['git', '-C', str(ROOT), 'merge-base', '--is-ancestor', reviewed, sha]).returncode == 0:
+        sha = reviewed
     merge_base = subprocess.run(['git', '-C', str(ROOT), 'merge-base', '--all', base, sha],
                                 capture_output=True, text=True)
     # The worker runs that produced the statuses; a host-written status alone is not evidence.
     producers = [str(fm.get(key) or '').strip() for key in ('review_by', 'e2e_by')]
     if any(p.lower() in ('', 'none', 'n/a', 'unknown', 'orchestrator', 'host') for p in producers):
         return False
-    return (fm.get('review_status') == 'clean' and fm.get('review_head') == sha
+    return (fm.get('review_status') == 'clean' and fm.get('review_head') == sha and sha != base
             and fm.get('documentation_status') == 'passed'
             and fm.get('e2e_status') == 'passed' and fm.get('e2e_head') == sha
             and merge_base.returncode == 0
@@ -216,24 +234,42 @@ def accept(tickets, name):
     text = report.read_text()
     problems = report_problems(text)
     base = re.search(r"^base:\s*`?([0-9a-f]{40})", text, re.M)
-    if base:
-        # An inline ticket records the effort branch it committed on; a delegated one has its own.
-        recorded = re.search(r"^branch:\s*`?([^\s`]+)", text, re.M)
-        branch = recorded.group(1) if recorded else f"feat/{slug}-{nn}"
-        count = subprocess.run(["git", "-C", str(ROOT), "rev-list", "--count", f"{base.group(1)}..{branch}"],
+    header = text.split("\n## ", 1)[0]
+    recorded = re.search(r"^branch:\s*`?([^\s`]+)`?\s*$", header, re.M)
+    branch = recorded.group(1) if recorded else f"feat/{slug}-{nn}"
+    ref = branch_ref(branch) if recorded else f"refs/heads/{branch}"
+    if base and ref is None:
+        problems.append(f"branch {branch} is not an existing branch")
+    elif base:
+        count = subprocess.run(["git", "-C", str(ROOT), "rev-list", "--count", f"{base.group(1)}..{ref}"],
                                capture_output=True, text=True)
         if count.returncode != 0:
             problems.append(f"branch {branch} or base not found: {count.stderr.strip()}")
-        elif subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", base.group(1), branch],
+        elif subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", base.group(1), ref],
                             capture_output=True).returncode != 0:
             problems.append(f"base is not an ancestor of {branch}")
         elif int(count.stdout) == 0:
             problems.append(f"no commit past base on {branch}")
+        elif recorded and not listed_commit_on(text, base.group(1), ref):
+            problems.append(f"no listed commit under ## Implemented is past base on {branch}")
     for p in problems:
         print(f"{name}: {p}", file=sys.stderr)
     if not problems:
         print(f"{name}: report and branch carry the evidence; judge the content now")
     return not problems
+
+
+def listed_commit_on(text, base, ref):
+    """A recorded branch can be shared, so the report's own commits must be on it past base."""
+    implemented = text.split("## Implemented", 1)[-1].split("\n## ", 1)[0]
+    for sha in re.findall(r"\b[0-9a-f]{7,40}\b", implemented):
+        full = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", "--quiet", f"{sha}^{{commit}}"],
+                              capture_output=True, text=True).stdout.strip()
+        if full and not full.startswith(base) and all(
+                subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", a, b]).returncode == 0
+                for a, b in ((base, full), (full, ref))):
+            return True
+    return False
 
 
 def set_field(tickets, name, assignment):
