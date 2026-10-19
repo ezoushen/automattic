@@ -6,7 +6,8 @@
           {
             "type": "command",
             "command": "python3 \"${PLUGIN_ROOT}/hooks/session_start.py\" codex",
-            "timeout": 5
+            "timeout": 5,
+            "statusMessage": "Automattic: load bootstrap and host adapter"
           }
         ]
       }
@@ -17,7 +18,8 @@
           {
             "type": "command",
             "command": "python3 \"${PLUGIN_ROOT}/hooks/yield_gate.py\" codex",
-            "timeout": 20
+            "timeout": 20,
+            "statusMessage": "Automattic: yield gate for live workers"
           }
         ]
       }
