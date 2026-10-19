@@ -1,6 +1,6 @@
 ---
 name: writing-agent-docs
-description: Checks and guides changes to the agent-facing Markdown and the module architecture in this repository (skills, flows, agents, jobs, runtime docs, hosts, scripts and hooks). Use when adding, splitting, moving or editing these docs, their links or the scripts' imports, and before committing such changes.
+description: Checks and guides changes to the agent-facing Markdown and the module architecture in this repository (skills, agents, jobs, runtime docs, hosts, scripts and hooks). Use when adding, splitting, moving or editing these docs, their links or the scripts' imports, and before committing such changes.
 ---
 
 # Writing agent docs
@@ -81,9 +81,8 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 ## Extend the architecture
 
 Layers, top first: thin skills, hooks and `bootstrap.md` (injected by path, so skills
-name it rather than link it); commands (`skills/<command>/`, in their own order); shared
-flows (`flows/<flow>/`); `agents/`; `standards/`;
-`hosts/`; `runtime/` modules; add-ons. A doc or script depends on its own module or a
+name it rather than link it); commands (`skills/<command>/`, in their own order);
+`agents/`; `standards/`; `hosts/`; `runtime/` modules; add-ons. A doc or script depends on its own module or a
 lower level, never on a sibling or a higher level: a command may read a lower command's
 procedure, and a thin skill links no other skill. No two modules depend on each other,
 directly or through others (`cycle`). **Strict:** these direction rules, the first-read budget, the host
@@ -106,10 +105,11 @@ each other, so the order grows without loosening a rule. Run the checker and
 - **Add a kind:** write `standards/kinds/<kind>.md` and link it from the agent or
   job that applies it.
 - **Add a standard:** write `standards/<name>.md`, mapped to the `standards` module,
-  and link it from the agents and flows that follow it.
-- **Add a flow:** a procedure several commands share and none owns goes in
-  `flows/<flow>/`, named with a noun (`board`, `interview`), as a module lower than
-  its users; name it in the pipeline map (`skills/brief/pipeline.md`).
+  and link it from the agents and commands that follow it.
+- **Add a runtime module:** text several commands or agents share and none owns goes in
+  `runtime/<module>/`, named with a noun (`board`, `interview`, `checks`), mapped in
+  `architecture.json` at a level below every module that reads it; a procedure commands
+  share is also named in the pipeline map (`skills/brief/pipeline.md`).
 - **Add a command:** create `skills/<command>/SKILL.md` holding its procedure, after a
   `First read:` paragraph naming the bootstrap and host session part, with its other
   docs and `jobs/` beside it. Map `skills/<command>/**/*.md` as a module at its level

@@ -49,7 +49,7 @@ Keep the explanation in chat before asking for a decision.
 
 Follow the user's question rather than a questionnaire over every field. Recommend
 the next useful topic with its tradeoff, leave room for questions, and apply the
-[question filter](../../flows/interview/question-filter.md) to material unresolved choices.
+[question filter](../../runtime/interview/question-filter.md) to material unresolved choices.
 Discover facts from configuration and installed contracts yourself. Reuse stated
 preferences; a fully specified change can proceed without a mandatory tour.
 

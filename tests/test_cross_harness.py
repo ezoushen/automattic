@@ -176,7 +176,7 @@ class CrossHarness(unittest.TestCase):
             ui = (path.parent / 'agents/openai.yaml').read_text()
             assert f'policy:\n  allow_implicit_invocation: {str(implicit).lower()}\n' in ui, path
         # Agent and job structure is checked by agent_defs (tests/test_agent_definitions.py).
-        for folder in ('skills', 'agents', 'addons', 'flows', 'standards', 'runtime', 'hosts'):
+        for folder in ('skills', 'agents', 'addons', 'standards', 'runtime', 'hosts'):
             for path in (PLUGIN / folder).rglob('*.md'):
                 for link in re.findall(r'\]\(([^)]+)\)', path.read_text()):
                     if '://' not in link and '<' not in link:
@@ -257,7 +257,7 @@ class CrossHarness(unittest.TestCase):
         split = (PLUGIN / 'skills/dispatch/split-work.md').read_text()
         assert '](../refine/SKILL.md' in split and 'too large for one worker' in split
         assert '](split-work.md' in (PLUGIN / 'skills/dispatch/SKILL.md').read_text()
-        scope = (PLUGIN / 'flows/board/scope.md').read_text()
+        scope = (PLUGIN / 'runtime/board/scope.md').read_text()
         assert "inherit the parent's selection" in scope and 'Keep the parent outstanding' in scope
 
     def test_remediate_skill_and_its_kinds(self):

@@ -12,11 +12,11 @@ Contents:
 - [Establish the design](#establish-the-design)
 - [Save the current alignment](#save-the-current-alignment)
 
-First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [question filter](../../flows/interview/question-filter.md).
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [question filter](../../runtime/interview/question-filter.md).
 
 Settle the mandate, then turn it into a plan sufficient to split and verify. Reuse
 the conversation and existing alignment; a mandate the user already stated need not
-be settled again. Apply the [question filter](../../flows/interview/question-filter.md) before
+be settled again. Apply the [question filter](../../runtime/interview/question-filter.md) before
 each question round, including requests to grill the design. Record consequential
 decisions in the same ledger. Preserve the distinction between accepted user
 decisions and reversible agent choices.
@@ -31,7 +31,7 @@ A request to settle only the goal and constraints ends with the mandate's exit b
 A mandate is the user's goal, principles, constraints and reserved decisions.
 Inside it the agent decides; a material choice outside it needs the user.
 Reuse Matt's `/mattpocock-skills:grilling` design-tree reasoning internally with
-the [question filter](../../flows/interview/question-filter.md). A request to "grill" an Automattic plan uses this
+the [question filter](../../runtime/interview/question-filter.md). A request to "grill" an Automattic plan uses this
 bounded policy. Use Matt's exhaustive interview only when the user explicitly
 requests that depth; naming grilling alone does not select it.
 At exhaustive depth, relax the round's question-count/detail limit while keeping
@@ -39,9 +39,9 @@ the same fact/engineering/material-fork filter and settled decisions. Missing
 sources remain investigation gaps; ask the human only for material choices they
 can decide from their priorities.
 
-Work in this order: [establish authority](../../flows/interview/authority.md),
-[filter questions](../../flows/interview/question-filter.md), then
-[record and continue](../../flows/interview/record.md).
+Work in this order: [establish authority](../../runtime/interview/authority.md),
+[filter questions](../../runtime/interview/question-filter.md), then
+[record and continue](../../runtime/interview/record.md).
 
 ## Establish the design
 
@@ -75,7 +75,7 @@ record the blocked criterion and next action rather than discovering it at deliv
 Point at the project's current runner contract and record only the task-specific
 gates, inputs and ownership; do not copy transport or snapshot internals into the
 plan. Refresh affected assumptions when that contract changes. For an accepted
-delivery goal, establish the repository's [approval path](../../flows/board/approval-path.md)
+delivery goal, establish the repository's [approval path](../../runtime/board/approval-path.md)
 early so an impossible self-review is not discovered only after implementation.
 
 Check the brief, and any design ruling it adopts, against the user's recorded
@@ -128,6 +128,6 @@ resources do not depend on the open decision; overall status remains incomplete.
 
 Ready for refinement when the outcomes, boundaries, approach and verification are
 clear enough for executable tickets and no unresolved decision blocks that scope.
-Close with the same exit block as the [mandate](../../flows/interview/record.md):
+Close with the same exit block as the [mandate](../../runtime/interview/record.md):
 user decisions, agent decisions open to veto, pending user actions, and any
 carried-over findings with their disposition.

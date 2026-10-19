@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
-"""Each command's procedure is its SKILL.md, in a folder that also holds its other docs and jobs; flows/
-holds only the shared procedures no command owns, below their users. Direction, size and shape are the doc
-checker's rules; this checks what lives where."""
+"""Each command's procedure is its SKILL.md, in a folder that also holds its other docs and jobs; the
+procedures no command owns (interview, board) are runtime modules below their users. Direction, size and
+shape are the doc checker's rules; this checks what lives where."""
 import re
 import unittest
 
 import support
 
 ROOT = support.ROOT
-FLOWS = ROOT / 'flows'
+RUNTIME = ROOT / 'runtime'
+SHARED = ('interview', 'board')
 SKILLS = ROOT / 'skills'
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
 COMMANDS = ('align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief')
 # a procedure each merged or moved command must still carry, by the doc that now holds it
 HOLDS = {
     'skills/align/SKILL.md': ('## Settle the mandate', '## Establish the design', '## Save the current alignment'),
-    'flows/interview/authority.md': ('A decision the user reserved is always theirs.',),
-    'flows/interview/question-filter.md': ('**Material fork:** ask only if plausible answers change the goal',),
-    'flows/interview/record.md': ('`## Standing directives` section in the ledger',),
+    'runtime/interview/authority.md': ('A decision the user reserved is always theirs.',),
+    'runtime/interview/question-filter.md': ('**Material fork:** ask only if plausible answers change the goal',),
+    'runtime/interview/record.md': ('`## Standing directives` section in the ledger',),
     'skills/refine/SKILL.md': ("Matt Pocock's `/mattpocock-skills:to-tickets` breaks a spec", '## Explicit phase composition'),
     'skills/refine/ticket-template.md': ('# NN: <title, a behaviour not a component>',),
     'skills/dispatch/SKILL.md': ('# dispatch',),
@@ -32,7 +33,7 @@ HOLDS = {
     'skills/setup/tour.md': ('## Explain the actual setup', '## Discuss one useful topic at a time'),
     'skills/brief/SKILL.md': ('## Brief the human', '## Show the pipeline map'),
     'skills/brief/pipeline.md': ('## The outer loop', '## Failure modes and where the loop catches them'),
-    'flows/board/board.md': ('## Local Markdown board',),
+    'runtime/board/board.md': ('## Local Markdown board',),
 }
 JOBS = {'diff-review': ('reviewer', 'review'), 'repair': ('builder', 'review'), 'reproduce': ('reviewer', 'review'),
         'e2e-gate': ('verifier', 'review'), 'audit': ('reviewer', 'remediate'), 'ticket': ('builder', 'dispatch'),
@@ -53,10 +54,12 @@ class Flows(unittest.TestCase):
                 declaration = re.search(r'^First read:.*?(?:\n\n|\Z)', text, re.M | re.S).group(0)
                 self.assertNotIn(f'{command}.md', declaration)
                 self.assertIn('\n## ', text)
-                self.assertFalse((FLOWS / command).exists())
+                self.assertFalse((RUNTIME / command).exists())
 
-    def test_flows_holds_only_the_shared_procedures_no_command_owns(self):
-        self.assertEqual({path.name for path in FLOWS.iterdir() if path.is_dir()}, {'interview', 'board'})
+    def test_the_shared_procedures_are_runtime_modules_and_flows_is_gone(self):
+        self.assertFalse((ROOT / 'flows').exists())
+        for name in SHARED:
+            self.assertTrue((RUNTIME / name).is_dir(), name)
 
     def test_review_reads_the_walkthrough_only_when_asked_for_one(self):
         text = (SKILLS / 'review/SKILL.md').read_text()
@@ -86,14 +89,14 @@ class Flows(unittest.TestCase):
         self.assertIn('job_file: <plugin_root>/skills/dispatch/jobs/ticket.md', (SKILLS / 'dispatch/iteration.md').read_text())
 
     def test_the_board_does_not_link_the_review_flow_or_carry_the_split_rule(self):
-        for path in (FLOWS / 'board').rglob('*.md'):
+        for path in (RUNTIME / 'board').rglob('*.md'):
             self.assertNotIn('too large for one worker', path.read_text(), path)
             for target in targets(path):
                 self.assertNotEqual(target.parts[:2], ('skills', 'review'), path)
 
     def test_the_pipeline_map_links_every_command_and_every_shared_flow(self):
-        linked = {target.parts[:2] for target in targets(SKILLS / 'brief/pipeline.md') if target.parts[0] in ('flows', 'skills')}
-        expected = {('flows', path.name) for path in FLOWS.iterdir() if path.is_dir()}
+        linked = {target.parts[:2] for target in targets(SKILLS / 'brief/pipeline.md') if target.parts[0] in ('runtime', 'skills')}
+        expected = {('runtime', name) for name in SHARED}
         expected |= {('skills', command) for command in COMMANDS if command != 'brief'}
         self.assertLessEqual(expected, linked)
 

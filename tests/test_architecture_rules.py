@@ -358,7 +358,7 @@ TARGET_DOCS = {  # doc under a target folder: is it an entry point (exempt from 
     'bootstrap.md': True,
     'skills/dispatch/handoff.md': False,
     'skills/dispatch/jobs/job.md': True,
-    'flows/board/board.md': False,
+    'runtime/board/board.md': False,
     'standards/style.md': False,
     'runtime/workers/launch.md': False,
     'hosts/claude/session.md': True,

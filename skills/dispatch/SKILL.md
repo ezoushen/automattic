@@ -20,7 +20,7 @@ One orchestrator owns scheduling, worktree integration and board updates.
 Workers receive an agent file, a job file and only that job's inputs. An effort
 has a local slug for its branch, alignment and reports; tickets live in the
 configured tracker or, only for local Markdown, `.scratch/<slug>/issues/`.
-Read [board operations](../../flows/board/board.md) and use the selected board throughout this skill.
+Read [board operations](../../runtime/board/board.md) and use the selected board throughout this skill.
 Use [reference.md](reference.md) when a rule's rationale or a known failure mode
 needs explanation.
 
@@ -33,7 +33,7 @@ review. Publication requires its own request.
 
 ## Setup
 
-1. Resolve existing project instructions using [project loop](../../flows/board/project-loop.md).
+1. Resolve existing project instructions using [project loop](../../runtime/board/project-loop.md).
    Reuse established sources; no new setup document is required. Pass the relevant
    sources and uncovered facts in assignments. The project defines required
    compile, suite and E2E gates; do not invent extra suites for every ticket.
@@ -53,7 +53,7 @@ review. Publication requires its own request.
    do not create local ticket files or call the local scheduler for them.
 
 A supplied scope is never widened, even to unblock it. Use the board's
-[overall scope](../../flows/board/scope.md) rules to preserve
+[overall scope](../../runtime/board/scope.md) rules to preserve
 backlog-wide requests across narrower batches, including selected parent/child work.
 Selected work too large for one worker follows [split oversized work](split-work.md).
 Consider other efforts' live work for capacity, area and device conflicts without modifying them through

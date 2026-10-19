@@ -21,15 +21,15 @@ HOSTS = ('claude', 'codex', 'pi', 'opencode')
 # trigger wording in the bootstrap table -> the owner document its row must name
 TRIGGERS = {
     r'creat\w+ a PR': 'standards/pr.md',
-    r'mandate/alignment questions': 'flows/interview/question-filter.md',
+    r'mandate/alignment questions': 'runtime/interview/question-filter.md',
     r'explicit phase composition': 'skills/refine/SKILL.md',
     r'before .*worker launch': 'runtime/workers/launch.md',
     r'worker blockers': 'runtime/workers/escalation.md',
     r'decisions\.enabled': 'runtime/decisions/checkpoint.md#phase-checkpoints',
     r'HERDR_ENV=1': 'hosts/herdr.md',
-    r'tracker': 'flows/board/conventions.md',
+    r'tracker': 'runtime/board/conventions.md',
     r'compaction': 'runtime/workers/long-sessions.md',
-    r'correction': 'flows/interview/record.md',
+    r'correction': 'runtime/interview/record.md',
 }
 PATH = re.compile(r'(?:[\w.-]+/)*[\w.-]+\.md(?:#[\w-]+)?')
 
@@ -69,7 +69,7 @@ class Bootstrap(unittest.TestCase):
                     self.assertTrue(has_heading(ROOT / path, anchor), (trigger, named))
 
     def test_no_lower_document_links_the_bootstrap(self):
-        for folder in ('hosts', 'agents', 'addons', 'flows', 'standards', 'runtime'):
+        for folder in ('hosts', 'agents', 'addons', 'standards', 'runtime'):
             for path in (ROOT / folder).rglob('*.md'):
                 for line in path.read_text().splitlines():
                     for _, link in check_docs.links(line):

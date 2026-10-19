@@ -48,7 +48,7 @@ recovery considers the cause before rerouting. The host accepts or overrides eac
 recommendation, reports its source and surfaces calibration warnings. Existing
 phase owners and gates remain in place; there is no second planning/review loop.
 
-Dispatch reuses [existing project execution facts](../../flows/board/project-loop.md):
+Dispatch reuses [existing project execution facts](../../runtime/board/project-loop.md):
 commands, areas/resources, verification and environment constraints. Missing
 facts go in the effort's alignment/report; no new maintained setup file is required.
 Run history stays in reports/journals. Workers call shared plugin scripts directly.
@@ -99,7 +99,7 @@ human-authorized merge by the orchestrator.
 ## Flows
 
 Each command's procedure is its `SKILL.md`, with its other docs and jobs in the same
-folder; shared flows and runtime rules sit below them.
+folder; the shared interview and board procedures and the other runtime rules sit below them.
 
 - [Align](../align/SKILL.md): the mandate, then the WHAT / WHY / HOW brief.
 - [Refine](../refine/SKILL.md): ticket slicing and the ticket template.
@@ -110,14 +110,14 @@ folder; shared flows and runtime rules sit below them.
 - [Setup](../setup/SKILL.md): the configuration procedure and its tour.
 - [Brief](SKILL.md): progress briefings and this map.
 - [Housekeeping](../housekeeping/SKILL.md): residue and documentation currency, run by dispatch and PR.
-- [Interview](../../flows/interview/question-filter.md): authority, the question filter and the ledger record, shared by the commands that ask questions.
-- [Board](../../flows/board/board.md): tracker conventions, scope and the project loop.
+- [Interview](../../runtime/interview/question-filter.md): authority, the question filter and the ledger record, shared by the commands that ask questions.
+- [Board](../../runtime/board/board.md): tracker conventions, scope and the project loop.
 
 ## Matt Pocock's skills underneath
 
 Dependency: `mattpocock-skills`. Reuse `tdd`, `research`,
 `diagnosing-bugs`, `domain-modeling`, `prototype` and `grilling` for their respective
-work. Planning uses the [question filter](../../flows/interview/question-filter.md)
+work. Planning uses the [question filter](../../runtime/interview/question-filter.md)
 with grilling's internal design-tree reasoning. The review command supplies scope,
 priority and allowed mutation
 context and its own [Standards/Spec method](../review/method.md). Simplicity is part of that review.
@@ -144,7 +144,7 @@ procedure](../review/SKILL.md); only an explicit implementation-only request
 omits review. Existing accepted alignment supplies scope, non-goals, priorities
 and test seams. Without those decisions, review records provisional priorities or
 asks for material human choices. Follow-ups never expand the current review batch;
-dispatch's [overall selection](../../flows/board/scope.md)
+dispatch's [overall selection](../../runtime/board/scope.md)
 determines whether they enter the next batch under existing authorization.
 
 `review --autofix` owns scoped repairs, local effort integration and applicable E2E

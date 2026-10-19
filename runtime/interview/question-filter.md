@@ -13,7 +13,7 @@ For each unresolved choice:
    Missing context matters only when it changes such a decision.
 
 After filtering the questions above, run the configured
-[`mandate` checkpoint](../../runtime/decisions/checkpoint-command.md)
+[`mandate` checkpoint](../decisions/checkpoint-command.md)
 before choosing among permitted investigate/decide/ask actions. Record an evidenced
 skip when the next step is settled or reserved to the user; user-reserved choices
 remain human. Check this phase record before leaving mandate.

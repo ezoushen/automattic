@@ -4,7 +4,6 @@
     "agents/*.md",
     ".agents/skills/**/*.md",
     "bootstrap.md",
-    "flows/**/*.md",
     "standards/**/*.md",
     "runtime/**/*.md",
     "hosts/**/*.md"
@@ -34,7 +33,7 @@
     "tests/test_fold_check.py",
     "tests/test_edit_check.py"
   ],
-  "code_doc_pattern": "(?<![\\w/.-])(?:(?:skills|agents|flows|standards|runtime|hosts)/[\\w/-]+|bootstrap)\\.md",
+  "code_doc_pattern": "(?<![\\w/.-])(?:(?:skills|agents|standards|runtime|hosts)/[\\w/-]+|bootstrap)\\.md",
   "entry_points": [
     "skills/*/SKILL.md",
     "agents/*.md",

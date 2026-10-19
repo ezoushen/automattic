@@ -43,7 +43,7 @@ adapts to the project's ticket convention. Create or update canonical work items
 in the configured tracker under the shared bootstrap's project-conventions rules.
 Output: canonical issue IDs/URLs for a remote tracker; otherwise local tickets
 under `.scratch/<slug>/issues/NN-<title>.md`, numbered in dependency order.
-Remote dispatch consumes those issues directly under [board operations](../../flows/board/board.md);
+Remote dispatch consumes those issues directly under [board operations](../../runtime/board/board.md);
 do not create local issue files or require local front matter for remote tickets.
 
 Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
@@ -57,7 +57,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
 
 1. **Read the brief and existing project instructions.** `alignment.md` supplies
    the goal, boundaries and observable outcomes the criteria assert. Resolve areas,
-   hot files and verification from [project execution facts](../../flows/board/project-loop.md).
+   hot files and verification from [project execution facts](../../runtime/board/project-loop.md).
    Reuse established areas; when missing, name them from modules/shared resources
    and record them in the effort alignment for dispatch. Tickets using the same
    exclusive GPU, serving lane or mutable fixture must share a reservation even
@@ -141,7 +141,7 @@ Two of `/mattpocock-skills:to-tickets`' steps change under the dispatch loop:
 6. **Present a compact breakdown:** each ticket's outcome, dependency and decisive
    verification, plus material slicing tradeoffs and consequential ledger rows.
    Explain a rejected cut only when it was a viable alternative with a different
-   outcome, risk or verification cost. Apply the [question filter](../../flows/interview/question-filter.md); routine
+   outcome, risk or verification cost. Apply the [question filter](../../runtime/interview/question-filter.md); routine
    cuts within accepted scope need no additional interview.
    Carry forward existing authorization; obtain any still-required scope or
    publication decision for the concrete breakdown. An unrelated reply or silence

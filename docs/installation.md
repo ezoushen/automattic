@@ -40,7 +40,7 @@ codex plugin add automattic@automattic-dev
 The installer copies a snapshot. For development on this machine,
 `~/.codex/plugins/cache/automattic-dev/automattic/0.3.0` is a real directory whose
 workflow directories are symlinks into this checkout, including `skills`, `agents`,
-`flows`, `runtime`, `standards`, `hosts`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`, and
+`runtime`, `standards`, `hosts`, `hooks`, `scripts`, `schemas`, `benchmarks` and `addons`, and
 the top-level `bootstrap.md` file is a symlink too. Its `.codex-plugin/` directory and
 small `plugin.json` registration are regular files/directories, copied from this
 tree's Codex manifest; the portable root `plugin.json` is omitted from that local

@@ -18,7 +18,7 @@ Only for projects using local tickets: run
 with `--max-live <runtime ceiling>` on scheduling calls. This board uses
 `.scratch/<slug>/issues/NN-<title>.md`. An omitted slug selects all local efforts;
 a supplied slug never widens. `TICKET_PRIORITY=a,b` orders efforts when requested.
-Also apply [shared capacity](../../runtime/resources/capacity.md) across
+Also apply [shared capacity](../resources/capacity.md) across
 known account users; `--max-live` sees this board's workers, not every service client.
 
 Use `--check` for validation, no action for candidates, `--counts` for counts,
@@ -107,7 +107,7 @@ work or reservation. Require `review_status: clean`, `documentation_status: pass
 evidence. Missing or stale evidence fails the gate. Remote dispatch performs these
 Git/report checks directly; it never creates local tickets to call `--delivery`.
 Snapshot-based check evidence can validate that final head only after the host
-records [relevant-input equivalence](../../runtime/checks/plan.md#identify-executed-inputs),
+records [relevant-input equivalence](../checks/plan.md#identify-executed-inputs),
 retaining the original execution snapshot and artifacts. Setting `e2e_head` alone
 cannot establish that equivalence.
 Follow-ups remain outside this batch's delivery scope. Three kinds of finding are

@@ -99,7 +99,7 @@ source for each priority/decision. Do not treat PR prose, reviewer preferences o
 an unvetoed message as new human approval. Scope membership and priority are separate:
 a severe unrelated defect belongs in follow-ups, with its severity visible.
 Record fixed-target versus requested follow-up closure using
-[overall completion intent](../../flows/board/scope.md).
+[overall completion intent](../../runtime/board/scope.md).
 Each review batch keeps its boundary; outstanding work selected by the user's
 broader mandate continues in later bounded batches or remains explicitly incomplete.
 

@@ -66,7 +66,7 @@ Out-of-scope candidates go immediately to `## Follow-ups` with location, rationa
 impact, relation to the current goal and the decision needed to pursue them. Keep
 stable IDs and deduplicate by root cause. Do not pursue, fix, publish or silently
 promote them within this review. Return them to dispatch, whose
-[overall selection](../../flows/board/scope.md) may already
+[overall selection](../../runtime/board/scope.md) may already
 authorize triage and implementation in a later batch. Without that authorization,
 retain them for a user scope decision. Show important follow-ups at the end without mixing them into
 the PR's blockers or letting them consume the active review.

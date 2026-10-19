@@ -1,6 +1,6 @@
 # Mandate and alignment question rehearsal
 
-Exercise the [shared question filter](../flows/interview/question-filter.md)
+Exercise the [shared question filter](../runtime/interview/question-filter.md)
 through the active host's planning entry point. [Alignment](../skills/align/SKILL.md)
 uses the same filter. These are behavioral acceptance cases, not evidence that a
 live orchestrator has already passed them.

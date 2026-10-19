@@ -31,12 +31,6 @@
    "setup"
   ],
   [
-   "interview"
-  ],
-  [
-   "board"
-  ],
-  [
    "agents"
   ],
   [
@@ -44,6 +38,12 @@
   ],
   [
    "hosts"
+  ],
+  [
+   "interview"
+  ],
+  [
+   "board"
   ],
   [
    "workers"
@@ -91,7 +91,7 @@
   },
   "board": {
    "docs": [
-    "flows/board/**/*.md"
+    "runtime/board/**/*.md"
    ],
    "code": [
     "scripts/next_tickets.py"
@@ -151,7 +151,7 @@
   },
   "interview": {
    "docs": [
-    "flows/interview/**/*.md"
+    "runtime/interview/**/*.md"
    ]
   },
   "agents": {

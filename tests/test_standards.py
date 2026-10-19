@@ -31,7 +31,7 @@ class Standards(unittest.TestCase):
             for target in LINK.findall(path.read_text()):
                 with self.subTest(kind=path.name, target=target):
                     resolved = (path.parent / target).resolve().relative_to(ROOT)
-                    self.assertNotIn(resolved.parts[0], {'skills', 'flows', 'agents', 'bootstrap.md'})
+                    self.assertNotIn(resolved.parts[0], {'skills', 'agents', 'bootstrap.md'})
                     self.assertNotIn('jobs', resolved.parts)
 
     def test_the_four_standards_exist(self):

@@ -61,12 +61,11 @@ model-routing. Claude Code keeps them out of its command menu; Codex and Pi list
 |---|---|
 | `skills/<command>/` | One folder per skill: a command's procedure in `SKILL.md`, its other docs and its job files (`jobs/`). The decision, routing and writing skills are thin entries over a `runtime/` or `standards/` doc |
 | `bootstrap.md` | Session rules every host reads first, with the triggers table for rules that fire outside their owner |
-| `flows/interview/`, `flows/board/` | Shared procedures no command owns: authority, the question filter and the ledger record; board operations and tracker conventions |
 | `agents/` | The builder, reviewer and verifier agents; Claude loads them natively |
 | `standards/` | What good looks like: PR descriptions, code comments, documentation and the remediation kinds |
 | `hosts/claude/`, `hosts/codex/`, `hosts/pi/`, `hosts/opencode/` | Each host's session part and worker part; OpenCode covers model settings only |
 | `hosts/herdr.md`, `hosts/executors/` | Herdr guidance; Bash, sub-agent and skill executors |
-| `runtime/workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/` | Shared runtime rules, each file small enough for one read; `config/` holds the configuration format |
+| `runtime/interview/`, `board/`, `workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/` | Shared docs commands and agents read, each small enough for one read: the interview (authority, question filter, ledger record) and board procedures no command owns, then worker, check, routing, resource and decision rules; `config/` holds the configuration format |
 | `scripts/`, `hooks/`, `schemas/` | Scheduler, resolution, checks and hooks; configuration and decision contracts |
 | `addons/show-me/`, `benchmarks/` | Shared presentation reference; synthetic decision calibration examples |
 
@@ -75,15 +74,15 @@ model-routing. Claude Code keeps them out of its command menu; Codex and Pi list
 The Markdown is layered so a reader follows links in one direction. Hooks and
 `bootstrap.md` sit on top: the session-start hook injects the bootstrap's path, so docs name
 it instead of linking it. Below them come the commands (`skills/<command>/`: brief; dispatch
-and remediate; pr; review; housekeeping; align, refine and setup), the shared `flows/`
-(interview; board), `agents/`, `standards/`, `hosts/` and the `runtime/` modules
-(workers, checks, routing, resources, decisions, config). A doc links only its own module
+and remediate; pr; review; housekeeping; align, refine and setup), `agents/`,
+`standards/`, `hosts/` and the `runtime/` modules
+(interview, board, workers, checks, routing, resources, decisions, config). A doc links only its own module
 or a lower one, so a command may read a lower command's procedure but never a sibling's
 or a higher one's, and no two modules depend on each other. A doc path named in prose or
 code counts as a dependency, and `scripts/` and `hooks/` import under the same order.
 `.agents/skills/writing-agent-docs/architecture.json` records the order; the doc checker
 enforces it on every commit and push, and in Claude Code after every edit. To add a host,
-executor, agent, job, kind, standard, flow or command, follow
+executor, agent, job, kind, standard, runtime module or command, follow
 [extend the architecture](.agents/skills/writing-agent-docs/SKILL.md#extend-the-architecture).
 
 ## Install and develop

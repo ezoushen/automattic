@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The runtime holds six modules in a fixed order; its docs link only down, and the skills over them stay thin."""
+"""The runtime holds eight modules in a fixed order; its docs link only down, and the skills over them stay thin."""
 import re
 import unittest
 
@@ -7,12 +7,12 @@ import support
 
 ROOT = support.ROOT
 RUNTIME = ROOT / 'runtime'
-ORDER = ['workers', 'checks', 'routing', 'resources', 'decisions', 'config']
+ORDER = ['interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config']
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
 
 
 class RuntimeModules(unittest.TestCase):
-    def test_the_runtime_folder_holds_exactly_the_six_modules(self):
+    def test_the_runtime_folder_holds_exactly_the_eight_modules(self):
         self.assertEqual(sorted(path.name for path in RUNTIME.iterdir()), sorted(ORDER))
 
     def test_a_runtime_doc_links_only_its_own_or_a_later_module(self):
@@ -23,7 +23,7 @@ class RuntimeModules(unittest.TestCase):
                     continue
                 with self.subTest(doc=str(path.relative_to(ROOT)), target=target):
                     resolved = (path.parent / target).resolve().relative_to(ROOT)
-                    self.assertNotIn(resolved.parts[0], {'skills', 'flows', 'agents', 'standards', 'hosts',
+                    self.assertNotIn(resolved.parts[0], {'skills', 'agents', 'standards', 'hosts',
                                                          'bootstrap.md', 'addons'})
                     if resolved.parts[0] == 'runtime':
                         self.assertGreaterEqual(ORDER.index(resolved.parts[1]), own)

@@ -44,12 +44,12 @@ Each rule below fires outside its owner's document: when the trigger occurs, rea
 | When | Read |
 |---|---|
 | Before creating a PR, editing its title or body, or pushing to a PR branch, invoked as `/automattic:pr` or not | [PR writing guide](standards/pr.md); each such push or edit is a `delivery` boundary followed by the [required-check watch](standards/pr.md#watch-the-required-checks) |
-| Before mandate/alignment questions, including a request to "grill" the plan | [question filter](flows/interview/question-filter.md): it owns question depth and continuation; the dependency's exhaustive interview requires an explicit request for that depth |
+| Before mandate/alignment questions, including a request to "grill" the plan | [question filter](runtime/interview/question-filter.md): it owns question depth and continuation; the dependency's exhaustive interview requires an explicit request for that depth |
 | Explicit phase composition, such as refinement after research | [refinement procedure](skills/refine/SKILL.md#explicit-phase-composition) |
 | Before each worker launch, including workers that dependency skills launch | [launch](runtime/workers/launch.md), [before launch](runtime/workers/before-launch.md), then the host's worker part, which its session part names |
 | Worker blockers and review/check failures, before the next attempt | [escalation checkpoints](runtime/workers/escalation.md); ordinary resumes reuse the saved choice |
 | Before the first phase checkpoint, when `decisions.enabled` has a family | [phase checkpoints](runtime/decisions/checkpoint.md#phase-checkpoints) |
 | `HERDR_ENV=1`, before cross-runtime dispatch, even when no hook supplied it | `hosts/herdr.md` |
-| Choosing or updating a tracker, board or destination; project workflow | [tracker and project conventions](flows/board/conventions.md), [board operations](flows/board/board.md) |
+| Choosing or updating a tracker, board or destination; project workflow | [tracker and project conventions](runtime/board/conventions.md), [board operations](runtime/board/board.md) |
 | After a compaction or resume | re-read this bootstrap and the host session part before the next worker launch or phase checkpoint; [long sessions](runtime/workers/long-sessions.md) |
-| A user correction to how you work | record it under the ledger's `## Standing directives` ([record and continue](flows/interview/record.md)) or the host's project memory; a compaction summary is not a durable store |
+| A user correction to how you work | record it under the ledger's `## Standing directives` ([record and continue](runtime/interview/record.md)) or the host's project memory; a compaction summary is not a durable store |

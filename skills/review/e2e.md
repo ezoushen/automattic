@@ -52,7 +52,7 @@ agent, job, plugin, repo, worktree, project-instruction and report paths, the re
 head, applicable checks, and reusable evidence. Follow the same adapter, permission
 and native capacity checks as review workers. With no worker tools, run
 locally where permitted. Reserve required devices through the configured
-[board operations](../../flows/board/board.md), or existing project resource conventions
+[board operations](../../runtime/board/board.md), or existing project resource conventions
 for standalone review. Do not create local tickets for remote boards or standalone
 reviews. Reconcile interrupted reservations and release only after actual teardown.
 Supply the expected duration and next milestone under

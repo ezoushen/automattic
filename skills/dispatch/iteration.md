@@ -9,7 +9,7 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    Refresh human changes to scope, criteria and priority before assigning work;
    materially changed active work returns for alignment. A principle the user states
    mid-dispatch is recorded verbatim and checked against the plan under
-   [authority rules](../../flows/interview/authority.md). Keep local runtime state
+   [authority rules](../../runtime/interview/authority.md). Keep local runtime state
    and canonical issue state distinct, and apply authorized tracker transitions
    at the project's actual milestones. Read pending receipts and attention items
    under [worker waits](../../runtime/workers/wait.md#wake-and-yield)

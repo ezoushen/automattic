@@ -18,7 +18,7 @@ that artefact in the report or ledger, and inline the figure in the PR body.
 
 ## Repository approval path
 
-Follow the [approval path](../../flows/board/approval-path.md).
+Follow the [approval path](../../runtime/board/approval-path.md).
 
 ## Steps
 
@@ -28,7 +28,7 @@ tracked content, return that delta to review and refresh required delivery evide
 before proceeding. Preserve artifacts used by the PR's claims.
 
 1. **Confirm delivery evidence**, from the main checkout, using the selected
-   [board's delivery gate](../../flows/board/board.md). Remote issues are checked
+   [board's delivery gate](../../runtime/board/board.md). Remote issues are checked
    directly alongside Git and reports; no local ticket mirror or scheduler call.
    For local Markdown only, run
    `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" <slug> --delivery`.
@@ -49,7 +49,7 @@ before proceeding. Preserve artifacts used by the PR's claims.
    `.scratch/<slug>/pr.md`, run its self-check, and present it as a brief. Carry forward existing
    description/publication approval; obtain only a still-required decision.
    An unrelated reply or silence is not approval.
-4. **Push and open.** Record the [approval path](../../flows/board/approval-path.md). When publication is authorized, run
+4. **Push and open.** Record the [approval path](../../runtime/board/approval-path.md). When publication is authorized, run
    `git push -u origin feat/<slug>` directly. Verify the remote branch matches the
    reviewed local tip, then run
    `gh pr create --base main --head feat/<slug> --title "<type>: <goal in one line>" --body-file .scratch/<slug>/pr.md`.

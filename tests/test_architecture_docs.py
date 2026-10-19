@@ -10,11 +10,11 @@ ROOT = support.ROOT
 README = (ROOT / 'README.md').read_text()
 SKILL = (ROOT / '.agents/skills/writing-agent-docs/SKILL.md').read_text()
 BOOTSTRAP = (ROOT / 'bootstrap.md').read_text()
-TOP = ('skills', 'flows', 'runtime', 'hosts', 'standards', 'agents', 'hooks', 'scripts', 'schemas', 'addons',
+TOP = ('skills', 'runtime', 'hosts', 'standards', 'agents', 'hooks', 'scripts', 'schemas', 'addons',
        'benchmarks', 'docs', 'bootstrap.md')
 # Codex runtime method names, not repository paths.
 CODEX_RPC = ('skills/list', 'hooks/list')
-EXTENSIONS = ('host', 'executor', 'agent', 'job', 'kind', 'standard', 'flow', 'command')
+EXTENSIONS = ('host', 'executor', 'agent', 'job', 'kind', 'standard', 'runtime module', 'command')
 
 
 class ArchitectureDocs(unittest.TestCase):
@@ -28,7 +28,7 @@ class ArchitectureDocs(unittest.TestCase):
     def test_the_readme_layout_has_a_row_for_every_top_level_folder(self):
         rows = [line.split('|')[1] for line in README.split('## Layout', 1)[1].split('\n## ', 1)[0].splitlines()
                 if line.startswith('| `')]
-        for name in ('skills/<command>/', 'flows/interview/', 'flows/board/', 'standards/', 'runtime/workers/', 'hosts/claude/',
+        for name in ('skills/<command>/', 'runtime/interview/', 'standards/', 'hosts/claude/',
                      'bootstrap.md'):
             self.assertTrue(any(f'`{name}' in row for row in rows), name)
         self.assertIn('writing-agent-docs/SKILL.md', README)
@@ -37,12 +37,12 @@ class ArchitectureDocs(unittest.TestCase):
         levels = json.loads((ROOT / '.agents/skills/writing-agent-docs/architecture.json').read_text())['levels']
         rank = {name: number for number, names in enumerate(levels) for name in names}
         section = README.split('## Architecture', 1)[1].split('\n## ', 1)[0]
-        layers = {'skills/<command>/': 'brief', 'bootstrap.md': 'bootstrap', 'flows/': 'interview', 'agents/': 'agents', 'standards/': 'standards',
-                  'hosts/': 'hosts', 'runtime/': 'workers'}
+        layers = {'skills/<command>/': 'brief', 'bootstrap.md': 'bootstrap', 'agents/': 'agents', 'standards/': 'standards',
+                  'hosts/': 'hosts', 'runtime/': 'interview'}
         self.assertEqual(sorted(layers, key=section.index), sorted(layers, key=lambda token: rank[layers[token]]))
-        runtime = ('workers', 'checks', 'routing', 'resources', 'decisions', 'config')
-        listed = section.split('(workers', 1)[1].split(')', 1)[0]
-        self.assertEqual(sorted(runtime, key=lambda name: (f'workers{listed}').index(name)),
+        runtime = ('interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config')
+        listed = section.split('(interview', 1)[1].split(')', 1)[0]
+        self.assertEqual(sorted(runtime, key=lambda name: (f'interview{listed}').index(name)),
                          sorted(runtime, key=rank.get))
 
     def test_the_readme_links_the_skill_instead_of_repeating_the_rules(self):
@@ -79,7 +79,7 @@ class ArchitectureDocs(unittest.TestCase):
         self.assertFalse({'tests/test_architecture_docs.py', 'tests/test_import_direction.py'} & set(config['exclude']))
 
     def test_a_runtime_doc_names_no_path_in_a_higher_layer_and_the_bash_contract_lives_in_runtime_config(self):
-        higher = re.compile(r'`(?:hosts|flows|skills|standards|agents)/[^`]*`')
+        higher = re.compile(r'`(?:hosts|skills|standards|agents)/[^`]*`')
         for path in sorted((ROOT / 'runtime').rglob('*.md')):
             self.assertEqual(higher.findall(path.read_text()), [], path)
         contract = ROOT / 'runtime/config/bash-executor.md'
