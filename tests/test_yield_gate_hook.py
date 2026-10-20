@@ -123,6 +123,13 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)
 
+    def bind(self, pane='w1:p1', slug='fix', **sessions):
+        """Run dispatch's binding for effort `slug` as an orchestrator in Herdr pane `pane` (None: outside Herdr) whose
+        host exports `sessions` (a SESSION_VARIABLES name to its value)."""
+        result = subprocess.run([sys.executable, '-B', str(TICKETS), '--repo', str(self.repo), slug, '--coordinate'],
+                                capture_output=True, text=True, env=self.env(pane, **sessions), timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def launch(self, command, cwd=None, pane='w1:p1', session='host-1', env=None):
         """Run the Bash PreToolUse hook as Claude or Codex does before `command`."""
         payload = {'hook_event_name': 'PreToolUse', 'tool_name': 'Bash', 'tool_input': {'command': command},
@@ -767,13 +774,6 @@ class DeliveryHold(GateRepo):
         self.report.write_text('---\n' + ''.join(f'{key}: {value}\n' for key, value in recorded.items()
                                                  if value is not None) + '---\n')
 
-    def bind(self, pane='w1:p1', **sessions):
-        """Run dispatch's binding as an orchestrator in Herdr pane `pane` (None: outside Herdr) whose host exports
-        `sessions` (a SESSION_VARIABLES name to its value)."""
-        result = subprocess.run([sys.executable, '-B', str(TICKETS), '--repo', str(self.repo), 'fix', '--coordinate'],
-                                capture_output=True, text=True, env=self.env(pane, **sessions), timeout=20)
-        self.assertEqual(result.returncode, 0, result.stderr)
-
     def gap(self):
         return (f'fix: delivery incomplete under autofix: e2e_status: not-run (needs passed); e2e_by: none names no '
                 f'worker run; review_head: {self.reviewed} is stale against feat/fix head {self.head}; e2e_head: none '
@@ -929,6 +929,20 @@ class StaleTabs(GateRepo):
         self.collect(kind='retain', reason='the repair round reuses this context', next_use='ticket-1 repair',
                      evidence=['review finding F1'])
         self.assertEqual(self.check(pane='w1:p1'), [])
+
+    def test_the_session_bound_to_coordinate_the_effort_sees_its_stale_tabs_instead(self):
+        # Rules 3 and 5: once dispatch binds a session to the effort (a dispatch resumed in pane w1:p2, Claude session
+        # host-2), that session coordinates the run: it sees the open tab, and the pane that registered the worker,
+        # or another conversation in w1:p2, does not.
+        self.register(pane='w1:p1')
+        self.collect()
+        ticket = self.repo / '.scratch/effort/issues/01-task.md'
+        ticket.parent.mkdir(parents=True)
+        ticket.write_text('---\nticket: effort/01\nstatus: done\nblocked_by: []\ntouches: [a]\ndevices: []\n---\n')
+        self.bind(pane='w1:p2', slug='effort', CLAUDE_CODE_SESSION_ID='host-2')
+        self.assertEqual(self.check(pane='w1:p2', session='host-2'), [self.gap()])
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.assertEqual(self.check(pane='w1:p2', session='host-3'), [])
 
     def test_a_herdr_that_cannot_list_tabs_is_a_named_gap_that_hides_no_other_gap(self):
         # Rule 5: when Herdr fails or does not answer, the tab check is a named gap for the coordinator, held once,

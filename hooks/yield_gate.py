@@ -80,15 +80,17 @@ def gaps(cwd, session=None):
             db.close()
     # Every session answers for its own launches; a worker (its launch set AUTOMATTIC_WORKER) not for its siblings.
     return (missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER'))
-            + stale_tabs(root, pane) + undelivered(root, pane, session))
+            + stale_tabs(root, pane, session) + undelivered(root, pane, session))
 
 
-def stale_tabs(root, pane):
-    """Name each collected attempt that is not retained whose recorded Herdr tab its session still lists, for the pane
-    that registered it, however old the run."""
+def stale_tabs(root, pane, session):
+    """Name each collected attempt that is not retained whose recorded Herdr tab its session still lists, for the
+    session bound to coordinate its effort or, with none bound, the pane that registered it, however old the run."""
     module, listed, missing = None, {}, []
     for state in sorted(root.glob('.scratch/*/reports/workers.sqlite')):
         module = module or lifecycle()
+        binding = state.with_name(BINDING)
+        bound = coordinates(json.loads(binding.read_text()), pane, session) if binding.is_file() else None
         db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
         try:
             saved_attempts = module.attempts(db)
@@ -96,8 +98,8 @@ def stale_tabs(root, pane):
             db.close()
         for saved in saved_attempts:
             herdr = saved.get('herdr') or {}
-            if not (herdr.get('tab_id') and saved.get('result') and not saved.get('retained')
-                    and pane and saved.get('coordinator') == pane):
+            mine = bound if bound is not None else bool(pane) and saved.get('coordinator') == pane
+            if not (herdr.get('tab_id') and saved.get('result') and not saved.get('retained') and mine):
                 continue
             where = (herdr['session'], herdr['workspace_id'])
             if where not in listed:
@@ -127,9 +129,7 @@ def undelivered(root, pane, session):
     for path in sorted(root.glob(f'.scratch/*/reports/{BINDING}')):
         slug = path.parent.parent.name
         try:
-            binding = json.loads(path.read_text())
-            if not any(same_coordinator({'pane': binding['pane'], 'session': known}, pane, session)
-                       for known in binding['sessions'] or [None]):
+            if not coordinates(json.loads(path.read_text()), pane, session):
                 continue
             if board is None:
                 module = script('next_tickets')
@@ -149,6 +149,13 @@ def undelivered(root, pane, session):
                            f'handoff ({HANDOFF}) until `python3 {ROOT}/scripts/next_tickets.py --repo {root} {slug} '
                            f'--delivery` passes, or record `blocker: <reason>` in {path.with_name("spec-review.md")}')
     return missing
+
+
+def coordinates(binding, pane, session):
+    """Whether a dispatch binding ({pane, sessions}) names this session: as for a launch, pane and host session must
+    both match when both sides know a session."""
+    return any(same_coordinator({'pane': binding['pane'], 'session': known}, pane, session)
+               for known in binding['sessions'] or [None])
 
 
 def herdr_agents():
