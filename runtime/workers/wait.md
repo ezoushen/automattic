@@ -66,17 +66,17 @@ and names each live worker without an armed wait that can wake you, each lost wa
 and each undelivered receipt; fix those first. On Claude Code and Codex (Stop hooks)
 and Pi (extension), the plugin also runs it when you stop, over runs active in the last
 day, and sends you back once. It holds only the Herdr pane that registered a worker
-or, outside Herdr, sessions that are not inside a worker's own worktree.
-A session that is not a worker (Herdr launched or registered its pane or, outside Herdr,
-its session is an attempt's native session), wherever its cwd, is also held for each Herdr
-launch it logged ([launch log](prepare.md)) into `.worktrees/` or a cwd Herdr did not
+or, outside Herdr, sessions without the worker marker (`AUTOMATTIC_WORKER`, set at
+launch as [prepare](prepare.md) says). A session without the marker, wherever its cwd and
+whichever its pane, is also held for each Herdr launch it logged ([launch log](prepare.md)) into `.worktrees/` or a cwd Herdr did not
 report and, inside Herdr, for each other live agent of its workspace whose cwd is in
 `.worktrees/` (none asked when the checkout has no `.worktrees/`), when no attempt names
-that pane or agent (alone or in a `<session>/<pane>/<name>` handle) and none of its
+that pane or agent (alone or in a `<session>/<pane>/<name>` handle; for a launch, an attempt
+registered from its pane, or after it when it was made outside Herdr) and none of its
 dismissals accounts for it, however old the run. A launch belongs to the pane that ran it
 and, when both sides know one, the same host session, so a pane ID that a restarted Herdr
-reuses inherits nothing. A check that cannot run (Herdr or git fails or times out) and an
-unreadable launch log line are named gaps, never a pass.
+reuses inherits nothing. A check that cannot run (Herdr or git fails or times out) and a
+launch log line that is unreadable or has malformed fields are named gaps, never a pass.
 `AUTOMATTIC_YIELD_HOOK=off` disables the hooks.
 Read every completed wait's retained log and inspect the native worker/report. When
 the opt-in [wake-triage pilot](../decisions/shadow-pilots.md#wake-triage-shadow-pilot) is enabled,

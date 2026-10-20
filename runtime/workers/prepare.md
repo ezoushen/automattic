@@ -13,8 +13,8 @@ The hooks also append each `herdr agent start` a session runs, including behind 
 `env` or a shell's `-c` string, to the main checkout's `.scratch/herdr-launches.jsonl`
 (time, agent name, pane, the session's Herdr pane and host session, and the pane's cwd
 when Herdr reports it). A launch is named at stop, even after its pane closed, until an
-attempt registered by the same coordinator, or outside Herdr after the launch, names its
-pane or agent. A launch inside a heredoc or backticks is not logged, and a pane or name
+attempt names its pane or agent: one registered from the launching Herdr pane or, for a
+launch made outside Herdr, one registered outside Herdr after it. A launch inside a heredoc or backticks is not logged, and a pane or name
 from a loop variable is logged as typed; the live-agent check still names such a worker.
 A launch or live agent that needs no attempt (it failed, its pane was closed at a trust
 dialog, a probe) is accounted for by running the command the stop message prints,
@@ -22,6 +22,12 @@ dialog, a probe) is accounted for by running the command the stop message prints
 --reason "<why>"` (or `--name <agent>`), in the checkout. The reason is required, and so is
 `--session` outside Herdr; the dismissal covers only this coordinator's launches logged
 before it.
+
+Launch every worker with `AUTOMATTIC_WORKER=<slug>/<assignment>` in its environment (in
+Herdr, `herdr tab create ... --env AUTOMATTIC_WORKER=<slug>/<assignment>`). A session is a
+worker exactly when this marker is set: the stop check then holds it neither for its own
+launches nor for live agents beside it. A session without it is a coordinator, wherever
+it runs and whichever pane it is in.
 
 The helper records attempts and durable receipts. Its `submit` operation captures
 session-bound native settings before invoking a productive prompt command. It
