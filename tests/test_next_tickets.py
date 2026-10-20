@@ -549,7 +549,10 @@ class BoardCLI(unittest.TestCase):
         for paths, touched in ((['measure.sh'], 'measure.sh'), (['tools'], 'tools/fixtures/a.txt'),
                                (['tools/'], 'tools/fixtures/a.txt'), (['tools2/b.txt'], 'tools2/b.txt'),
                                (['tools/fixtures/a.txt', 'measure.sh'], 'measure.sh, tools/fixtures/a.txt'),
-                               (['moved.sh'], 'moved.sh')):  # a rename is a change of the old path too
+                               (['moved.sh'], 'moved.sh'),  # a rename is a change of the old path too
+                               (['./measure.sh'], 'measure.sh'), (['measure.sh/.'], 'measure.sh'),
+                               (['tools//fixtures'], 'tools/fixtures/a.txt'),
+                               (['./tools/./fixtures/.'], 'tools/fixtures/a.txt')):  # git's spelling is what matches
             self.record_measurement('sh measure.sh', paths=paths)
             assert self.refusal() == refused.format(touched), (paths, self.refusal())
         for paths in ([], ['untouched.txt'], ['too'], ['tool'], ['src']):   # a prefix of a name is not the path
@@ -576,7 +579,7 @@ class BoardCLI(unittest.TestCase):
 
     def test_a_paths_list_that_could_never_match_a_changed_file_makes_the_measurements_file_unusable(self):
         self.measured_ticket('echo recall 100')
-        for value in ('measure.sh', [''], [1], ['/etc/passwd'], ['../x'], ['a/../b'], [['x']]):
+        for value in ('measure.sh', [''], [1], ['/etc/passwd'], ['../x'], ['a/../b'], [['x']], ['.'], ['./'], ['./../x'], ['tools/..']):
             self.record_measurement('echo recall 100', paths=value)
             assert self.refusal() == ("inline/01: measurements.json is unusable: entry 1 needs paths to be a list "
                                       "of relative paths inside the project\n"), (value, self.refusal())
@@ -624,6 +627,51 @@ class BoardCLI(unittest.TestCase):
         self.git('branch', '-m', 'main', 'trunk')
         assert self.refusal() == ("inline/01: no effort branch (feat/inline) or main exists to compare "
                                   "feat/inline-01 with\n"), self.refusal()
+
+    def test_a_delegated_ticket_is_not_blamed_for_an_integrated_tool_change_it_merged_in(self):
+        self.write_ticket('inline/01', 'implementing')
+        self.write_files({'measure.sh': 'echo recall 100\n', 'src.txt': 'x\n'})
+        self.commit_gitignore()
+        self.commit('base')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        fork = self.git('rev-parse', 'HEAD')
+        worktree = self.root / '.worktrees/inline-01'
+        self.git('worktree', 'add', '-q', '-b', 'feat/inline-01', str(worktree), 'feat/inline')
+        self.write_files({'measure.sh': 'echo recall 100 # an earlier ticket, allowed and integrated\n'})
+        self.commit('earlier ticket lands on the effort branch')
+        self.git('switch', '-q', 'main')
+        git = ['-C', str(worktree), '-c', 'user.name=t', '-c', 'user.email=t@t']
+        self.git(*git, 'merge', '-q', '--no-edit', 'feat/inline')   # the merge dispatch makes before a restart
+        (worktree / 'src.txt').write_text('the ticket work\n')
+        self.git(*git, 'commit', '-q', '-am', 'ticket work')
+        self.record_measurement('sh measure.sh', paths=['measure.sh'])
+        self.write_report(fork, 'feat/inline-01', [self.git('-C', str(worktree), 'rev-parse', 'HEAD')])
+        assert 'carry the evidence' in self.cli('inline', '--accept', 'inline/01').stdout
+
+    def test_a_measurement_that_leaves_the_worktree_dirty_is_refused_naming_the_files(self):
+        # The committed head scores 83; a command that rewrites score.txt to 100 measured a tree that is not the head.
+        self.ticket_worktree(83)
+        left = ("inline/01: a measurement left uncommitted changes in branch feat/inline-01 ({}); "
+                "declare its outputs in .gitignore\n")
+        for command, names in (('echo 100 > score.txt; echo recall $(cat score.txt)', 'score.txt'),
+                               ('echo out > result.txt; echo recall 100', 'result.txt'),
+                               ('echo 100 > score.txt; echo out > result.txt; echo recall 100', 'result.txt, score.txt')):
+            self.record_measurement(command)
+            refused = self.refusal()
+            assert refused == left.format(names), (command, refused)
+            self.git('-C', str(self.root / '.worktrees/inline-01'), 'checkout', '-q', '--', 'score.txt')
+            (self.root / '.worktrees/inline-01/result.txt').unlink(missing_ok=True)
+        self.record_measurement('echo out > build.log; echo recall 100')   # ignored output leaves the tree as it was
+        self.cli('inline', '--accept', 'inline/01')
+        ran = self.root / 'second-entry-ran'
+        entries = [{'name': 'first', 'command': 'echo out > result.txt; echo recall 100', 'metric': 'recall',
+                    'baseline': 100, 'direction': 'higher'},
+                   {'name': 'second', 'command': f'touch {shlex.quote(str(ran))}; echo latency 1', 'metric': 'latency',
+                    'baseline': 5, 'direction': 'lower'}]
+        (self.root / '.scratch/inline/measurements.json').write_text(json.dumps(entries))
+        refused = self.refusal()
+        assert refused == left.format('result.txt'), refused
+        assert not ran.exists(), 'a later measurement ran on the dirtied tree'
 
     def ticket_worktree(self, score):
         """inline/01 on feat/inline-01 in its own worktree; main keeps scoring 100 and the ticket branch scores `score`."""

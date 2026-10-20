@@ -55,18 +55,24 @@ the command at the effort's branch base.
 
 `command` goes to `sh -c` and prints one `<metric> <number>` line; `direction` names the
 better way, `higher` or `lower`. `timeout_seconds` (optional, default 600) bounds the run.
-`paths` (optional) lists the tool and its fixtures; a directory covers what is under it. The
-command must leave the tree clean, so declare its outputs in `.gitignore`.
+`paths` (optional) lists the tool and its fixtures as repository-relative paths, none absolute
+or containing `..`; a directory covers what is under it. The command must leave the tree
+clean, so declare its outputs in `.gitignore`.
 
 `next_tickets.py --accept` runs every command itself, through the
 [bounded runner](../checks/run.md#run-a-bounded-check), at the ticket head, in the worktree that
 has the ticket branch checked out. Each log is kept under
 `.scratch/<slug>/reports/evidence/<NN>/accept-<N>/<head>/`. It refuses:
-- a worktree with tracked changes or untracked files that are not ignored (it names them);
-- a ticket whose diff touches an entry's `paths`, from the report's base and from the merge-base
-  with the effort branch (`feat/<slug>`, or the one `spec-review.md` records; `main` when it does not exist);
-- a missing value: no such line, more than one, not a finite number, or a command that
-  exits non-zero, leaves a process behind or times out;
+- a worktree with tracked changes or untracked files that are not ignored (it names them),
+  before the commands and again after each one;
+- a ticket whose diff touches an entry's `paths`. A delegated ticket is compared with the
+  merge-base with the effort branch (`feat/<slug>`, or the one `spec-review.md` records; `main`
+  when it does not exist). An inline ticket, on the effort branch itself, has only the report's
+  `base:` line, which the orchestrator writes. A stacked ticket accepted before its base ticket
+  is integrated is blamed for that ticket's tool change;
+- a missing value: no such line, more than one, not a finite number, or a command that exits
+  non-zero or times out. The runner also stops processes left in the command's process group and
+  returns 125, which is refused; a child that starts its own session is not caught;
 - a value worse than its baseline.
 
 A ticket may excuse one metric with front matter `allows: <metric> <bound>` (the worst value

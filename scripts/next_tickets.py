@@ -20,6 +20,7 @@ from graphlib import CycleError, TopologicalSorter
 import json
 import math
 import os
+import posixpath
 import re
 import sys
 import subprocess
@@ -291,13 +292,9 @@ def measurement_results(fm, ref, base):
     checkout = checkout_of(ref)
     if checkout is None:
         return [f"branch {branch} is checked out in no worktree; its head cannot be measured"], []
-    try:
-        changed = uncommitted(checkout)
-    except ValueError as error:
-        return [f"branch {branch} has a worktree whose git status cannot be read: {error}"], []
-    if changed:
-        return [f"branch {branch} has uncommitted changes ({', '.join(changed)}); "
-                "a measurement of it would not be of the ticket head"], []
+    problem = not_the_head(branch, checkout)
+    if problem:
+        return [problem], []
     problem = allowance_problem(fm, slug)
     if problem:
         return [problem], []
@@ -313,6 +310,10 @@ def measurement_results(fm, ref, base):
         return [f"cannot keep the measurement evidence: {error}"], []
     for number, entry in enumerate(entries, 1):
         value, text = measure(entry, checkout, evidence / f"{number}.log")
+        problem = not_the_head(branch, checkout, after=True)
+        if problem:
+            problems.append(problem)
+            break
         label = f"measurement {entry['name']!r}: {entry['metric']}"
         if value is None:
             problems.append(f"{label} {text}; baseline {entry['baseline']}")
@@ -334,23 +335,25 @@ def measurement_results(fm, ref, base):
 def tool_changes(fm, entries, allowed, ref, base):
     """(problems, notes) for tickets that changed files an entry lists in `paths`.
 
-    The change is what the diff shows from the report's base and from the merge-base with the effort branch (main when
-    the effort has none), so a builder cannot hide an edit by moving `base:`. Only `allows: <metric> tool` with its
-    ledger citation excuses an entry; the file names go in the problem or note.
+    A delegated ticket is compared with the merge-base with its effort branch (main when the effort has none): that
+    excludes what it merged in from the effort, and a builder cannot hide an edit by moving `base:`. A ticket on the
+    effort branch itself (inline) has only the report's `base:`. Only `allows: <metric> tool` with its ledger citation
+    excuses an entry; the file names go in the problem or note.
     """
     slug = spec_of(fm["ticket"])
     effort = branch_ref(effort_branch(slug)) or "refs/heads/main"
-    fork = subprocess.run(["git", "-C", str(ROOT), "merge-base", effort, ref], capture_output=True, text=True)
-    if fork.returncode:
-        return [f"no effort branch ({effort_branch(slug)}) or main exists to compare "
-                f"{ref.removeprefix('refs/heads/')} with"], []
-    changed = {name for start in (base, fork.stdout.strip()) for name in subprocess.run(
-        ["git", "-C", str(ROOT), "diff", "--name-only", "--no-renames", "-z", start, ref],
-        capture_output=True, text=True, check=True).stdout.split("\0")}
+    start = base
+    if ref != effort:
+        fork = subprocess.run(["git", "-C", str(ROOT), "merge-base", effort, ref], capture_output=True, text=True)
+        if fork.returncode:
+            return [f"no effort branch ({effort_branch(slug)}) or main exists to compare "
+                    f"{ref.removeprefix('refs/heads/')} with"], []
+        start = fork.stdout.strip()
+    changed = set(subprocess.run(["git", "-C", str(ROOT), "diff", "--name-only", "--no-renames", "-z", start, ref],
+                                 capture_output=True, text=True, check=True).stdout.split("\0"))
     problems, notes = [], []
     for entry in entries:
-        touched = sorted({f for f in changed for p in entry.get("paths", [])
-                          if f == p.rstrip("/") or f.startswith(p.rstrip("/") + "/")})
+        touched = sorted({f for f in changed for p in entry.get("paths", []) if f == p or f.startswith(p + "/")})
         label = f"measurement {entry['name']!r}"
         if touched and allowed == [entry["metric"], "tool"]:
             notes.append(f"{label}: tool change ({', '.join(touched)}) allowed by ledger row {fm['allows_source']}")
@@ -439,8 +442,10 @@ def read_measurements(path):
             raise ValueError(f"entry {number} needs timeout_seconds to be a positive number")
         paths = entry.get("paths", [])
         if not isinstance(paths, list) or not all(
-                isinstance(p, str) and p and not p.startswith("/") and ".." not in p.split("/") for p in paths):
+                isinstance(p, str) and p and not p.startswith("/") and ".." not in p.split("/")
+                and posixpath.normpath(p) != "." for p in paths):
             raise ValueError(f"entry {number} needs paths to be a list of relative paths inside the project")
+        entry["paths"] = [posixpath.normpath(p) for p in paths]  # git's spelling, so a path can match
     return entries
 
 
@@ -451,6 +456,20 @@ def finite_number(text):
     except ValueError:
         return None
     return number if math.isfinite(number) else None
+
+
+def not_the_head(branch, checkout, after=False):
+    """Why the checkout is not exactly the branch head, else None; `after` is a check made once a measurement ran."""
+    try:
+        changed = uncommitted(checkout)
+    except ValueError as error:
+        return f"branch {branch} has a worktree whose git status cannot be read: {error}"
+    if changed and after:
+        return (f"a measurement left uncommitted changes in branch {branch} ({', '.join(changed)}); "
+                "declare its outputs in .gitignore")
+    if changed:
+        return (f"branch {branch} has uncommitted changes ({', '.join(changed)}); "
+                "a measurement of it would not be of the ticket head")
 
 
 def uncommitted(checkout):

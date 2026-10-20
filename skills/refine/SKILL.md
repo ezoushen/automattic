@@ -57,7 +57,7 @@ do not create local issue files or require local front matter for remote tickets
    project's branch convention; preserve an existing branch's work.
    When the project has standing measurements, record them in `.scratch/<slug>/measurements.json`
    ([format](../../runtime/board/project-loop.md#standing-measurements)), each baseline measured
-   by running its command at that branch base.
+   by running its command at that branch base and each entry's tool and fixtures listed in `paths`.
 2. **Slice** by the [slicing rules](../../runtime/board/slicing.md). Preserve existing
    issue identities and scope. Before adopting the split/grouping, run the configured
    [`refinement` checkpoint](../../runtime/decisions/checkpoint-command.md)
