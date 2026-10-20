@@ -25,7 +25,7 @@ dialog, a probe) is accounted for by running the command the stop message prints
 before it.
 
 Launch every worker with `AUTOMATTIC_WORKER=<slug>/<assignment>` in its environment (in
-Herdr, `herdr tab create ... --env AUTOMATTIC_WORKER=<slug>/<assignment>`). For the Herdr
+Herdr, the Herdr guide's tab recipe sets it). For the Herdr
 checks a session is a worker exactly when this marker is set: the stop check still holds it
 for its own launches, but not for live agents beside it. A session without it is a
 coordinator, wherever it runs and whichever pane it is in.
