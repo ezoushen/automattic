@@ -51,8 +51,7 @@ def gaps(cwd, session=None):
     root = main_checkout(cwd)
     if root is None:
         return []
-    # A session is a worker exactly when its launch set AUTOMATTIC_WORKER; any other session is a coordinator.
-    pane, worker = os.environ.get('HERDR_PANE_ID'), bool(os.environ.get('AUTOMATTIC_WORKER'))
+    cwd, pane = Path(cwd).resolve(), os.environ.get('HERDR_PANE_ID')
     module, missing = None, []
     for state in sorted(root.glob('.scratch/*/reports/workers.sqlite')):
         if time.time() - state.stat().st_mtime > RECENT_SECONDS:
@@ -60,6 +59,10 @@ def gaps(cwd, session=None):
         module = module or lifecycle()
         db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
         try:
+            # A session inside a worker's own worktree is that worker, not its coordinator.
+            worker = any(Path(saved['worktree']) != root and cwd.is_relative_to(saved['worktree'])
+                         for saved in module.attempts(db))
+
             def coordinated(saved):
                 if pane and saved.get('coordinator'):
                     return saved['coordinator'] == pane
@@ -67,8 +70,8 @@ def gaps(cwd, session=None):
             missing += [f'{state}: {gap}' for gap in module.yield_gaps(db, coordinated)]
         finally:
             db.close()
-    # Only a coordinator answers for its launches and the live agents in its workspace's worktrees.
-    return missing + ([] if worker else unregistered(root, pane, session))
+    # For the Herdr checks a session is a worker exactly when its launch set AUTOMATTIC_WORKER.
+    return missing + ([] if os.environ.get('AUTOMATTIC_WORKER') else unregistered(root, pane, session))
 
 
 def herdr_agents():

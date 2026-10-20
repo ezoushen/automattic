@@ -185,9 +185,7 @@ class YieldGateHook(GateRepo):
                        worktree=str(worktree), head='head-1', execution=str(execution), runtime='claude',
                        worker='pane-2', native_session='native-2', owned=True,
                        packet=str(support.assignment_file(execution.parent, 'ticket')))
-        # A session is a worker exactly when its launch marked it, not because of its cwd.
-        self.assertIsNone(self.stop(cwd=worktree, pane=None, env={'AUTOMATTIC_WORKER': 'effort/ticket-2'}))
-        self.assertEqual(self.stop(cwd=worktree, pane=None)['decision'], 'block')
+        self.assertIsNone(self.stop(cwd=worktree, pane=None))
         self.assertEqual(self.stop(pane=None)['decision'], 'block')
 
     def test_runs_idle_for_a_day_and_other_directories_are_not_checked(self):
@@ -244,11 +242,11 @@ class UnregisteredWorkers(GateRepo):
         self.worktree.mkdir(parents=True)
         self.serve(panes={'default': {'w1:p5': {'pane_id': 'w1:p5', 'cwd': str(self.worktree)}}})
 
-    def register(self, worker, attempt, native_session=None, pane='w1:p1'):
+    def register(self, worker, attempt, native_session=None, pane='w1:p1', worktree=None):
         """Register `worker` for an attempt in the run's workers.sqlite, as prepare.md has the coordinator in
         Herdr pane `pane` (None: outside Herdr) do."""
         self.lifecycle('register', attempt, pane, assignment=attempt.split('/')[0], repo=str(self.repo),
-                       worktree=str(self.worktree), head='head-1', execution=str(self.execution), runtime='claude',
+                       worktree=str(worktree or self.worktree), head='head-1', execution=str(self.execution), runtime='claude',
                        worker=worker, native_session=native_session or f'native-{attempt}', owned=True,
                        packet=str(support.assignment_file(self.execution.parent, 'ticket')))
 
@@ -551,6 +549,20 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
                            self.agent('builder-1', 'w1:p5', self.worktree)])
         self.assertEqual(self.check(), [self.gap('builder-1', 'w1:p5')])
         self.assertEqual(self.check(pane=None, session='host-1'), [])
+
+    def test_an_unmarked_worker_in_its_registered_worktree_is_not_held_for_the_runs_lifecycle_gaps(self):
+        # Re-review 3 (main's rule, restored for the lifecycle gaps): a session whose cwd is inside a worktree an
+        # attempt registered is that worker, marked or not. Probe: a native worker outside Herdr, unmarked.
+        sibling = self.repo / '.worktrees/ticket-2'
+        sibling.mkdir()
+        for attempt, worktree in (('ticket-1/1', self.worktree), ('ticket-2/1', sibling)):
+            self.register(f'builder-{attempt[7]}', attempt, worktree=worktree)
+            self.lifecycle('startup', attempt, observed={'runtime': 'claude', 'model': 'sonnet'},
+                           evidence=['native.jsonl:1'])
+            self.lifecycle('submitted', attempt, evidence=['native.jsonl:2:accepted prompt'])
+        self.assertEqual(self.check(cwd=self.worktree, pane=None, session='native-child'), [])
+        self.assertEqual(self.check(pane=None, session='host-1'),
+                         [f'{self.state}: ticket-1/1: no armed wait', f'{self.state}: ticket-2/1: no armed wait'])
 
     def test_a_marked_worker_is_held_neither_for_itself_nor_its_siblings_wherever_it_runs(self):
         # Rule 4: a session is a worker exactly when AUTOMATTIC_WORKER is set; its launches and siblings hold only
