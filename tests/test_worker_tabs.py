@@ -90,6 +90,33 @@ class HerdrTabs(WorkerLifecycleCase):
                 self.assertIn('herdr tab create --workspace <coordinator workspace> --cwd <worktree>', error)
                 self.assertEqual(self.cli('status')['attempts'], [])
 
+    def test_retirement_records_closure_only_once_the_workers_tab_is_gone(self):
+        # Rule: after the pane is confirmed gone, retire asks Herdr for the worker's tab and records closure only
+        # on tab_not_found; a tab that survives (another pane joined it) is reported and closure is not recorded.
+        self.herdr_route()
+        self.herdr_fixture()
+        self.register(worker='builder-1', herdr={'session': 'fixture-session'})
+        self.ready()
+        self.collect()
+        self.acknowledge()
+        request = self.root / 'retire.json'
+        request.write_text(json.dumps({'session': 'fixture-session', 'pane': 'pane-1',
+                                       'jobs_evidence': ['owned jobs stopped'],
+                                       'acceptance': {'decision': 'deferred', 'reason': 'acceptance checks pending'}}))
+        for answer, panes in (('"pane_count": 1', 1), ('"code": "server_unavailable"', None)):
+            with self.subTest(answer=answer):
+                self.herdr_fixture(tab_survives=True, tab_panes=panes)
+                error = self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
+                self.assertIn('Tab tab-1 is not confirmed closed after its worker pane closed', error)
+                self.assertIn(answer, error)
+                attempt = self.cli('status')['attempts'][0]
+                self.assertNotIn('closed', attempt)
+                self.assertIn('reconcile native retirement', attempt['attention'])
+        self.herdr_fixture()
+        self.assertTrue(self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request))['closed'])
+        self.assertIn('closed', self.cli('status')['attempts'][0])
+        self.assertEqual((self.root / 'native-closed').read_text(), 'closed\n')
+
 
 if __name__ == '__main__':
     unittest.main()

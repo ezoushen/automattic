@@ -142,7 +142,7 @@ class WorkerLifecycleCase(unittest.TestCase):
         return self.cli('escalate', '--attempt', attempt, '--input', str(request))
 
     def herdr_fixture(self, native_session='native-1', verify_error='pane_not_found', caller=None, tab_panes=1,
-                      caller_tab='caller-tab'):
+                      caller_tab='caller-tab', tab_survives=False):
         directory = self.root / 'bin'
         directory.mkdir(exist_ok=True)
         executable = directory / 'herdr'
@@ -163,6 +163,8 @@ elif args[2:4]==['agent','get']:
         'workspace_id':'ws-1','agent_status':'idle','agent_session':{{'kind':'id','value':{native_session!r}}}}}}}}}))
 elif args[2:]==['tab','get','tab-1']:
     panes={tab_panes!r}
+    if marker.exists() and not {tab_survives!r}:
+        print(json.dumps({{'error':{{'code':'tab_not_found'}}}}),file=sys.stderr);sys.exit(1)
     if panes is None:
         print(json.dumps({{'error':{{'code':'server_unavailable'}}}}),file=sys.stderr);sys.exit(1)
     print(json.dumps({{'result':{{'tab':{{'tab_id':'tab-1','workspace_id':'ws-1','pane_count':panes}}}}}}))

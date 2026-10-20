@@ -999,7 +999,7 @@ def caller_pane(session, purpose):
 
 
 def retire(db, state, attempt, request):
-    """Close the bound owned Herdr pane only after collection, then confirm it is absent."""
+    """Close the bound owned Herdr pane only after collection, then confirm it and its tab are absent."""
     saved = get(db, attempt)
     require(saved['owned'], 'Existing user worker is not a cleanup target')
     require(saved.get('result') and not watching(saved) and not pending(db, attempt)
@@ -1045,8 +1045,8 @@ def retire(db, state, attempt, request):
                     'Retirement already owned by a live process')
             stamp = process_stamp(os.getpid())
             require(stamp, 'Cannot establish retirement process identity')
-            saved['retirement_requested'] = dict(session=session, pane=pane, pid=os.getpid(),
-                                                  stamp=stamp, native_identity=identity)
+            saved['retirement_requested'] = dict(session=session, pane=pane, pid=os.getpid(), stamp=stamp,
+                                                  native_identity=identity, tab_id=agent.get('tab_id'))
             save(db, saved)
             event(db, attempt, 'retirement-started', saved['retirement_requested'])
         code, response = herdr(session, 'pane', 'close', pane)
@@ -1057,11 +1057,17 @@ def retire(db, state, attempt, request):
     code, response = herdr(session, 'pane', 'get', pane)
     require(code != 0 and response.get('error', {}).get('code') == 'pane_not_found',
             'Native closure is not confirmed; preserve the original retirement target')
+    # Closing a tab's only pane closes the tab; a tab that survives still holds another pane.
+    tab = get(db, attempt)['retirement_requested']['tab_id']
+    code, tab_response = herdr(session, 'tab', 'get', tab)
+    require(code != 0 and tab_response.get('error', {}).get('code') == 'tab_not_found',
+            f'Tab {tab} is not confirmed closed after its worker pane closed: {json.dumps(tab_response)}; '
+            'inspect it, closure is not recorded')
     directory = state.parent / (state.name + '.native')
     directory.mkdir(mode=0o700, exist_ok=True)
     proof = directory / (uuid.uuid4().hex + '.json')
-    proof.write_text(json.dumps(dict(session=session, pane=pane, confirmation=response,
-                                     jobs_evidence=evidence), indent=2) + '\n')
+    proof.write_text(json.dumps(dict(session=session, pane=pane, confirmation=response, tab=tab,
+                                     tab_confirmation=tab_response, jobs_evidence=evidence), indent=2) + '\n')
     record(db, dict(kind='closed', attempt=attempt, evidence=[str(proof), *evidence],
                     **({'acceptance': request['acceptance']} if 'acceptance' in request else {})))
     return {'attempt': attempt, 'closed': True, 'evidence': str(proof)}
