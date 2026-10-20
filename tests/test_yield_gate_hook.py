@@ -41,7 +41,8 @@ class GateRepo(unittest.TestCase):
         self.bin.mkdir()
         self.served = self.bin / 'herdr.json'
         self.serve()
-        # `agent list` answers with the served agents; `pane get` with the served panes of the `--session` server.
+        # `agent list` and `agent get` answer with the served agents; `pane get` with the served panes and `tab list`
+        # and `tab get` with the served tabs of the `--session` server; `pane current` finds no pane there.
         stub = self.bin / 'herdr'
         stub.write_text(f'#!{sys.executable}\n' + f'''
 import json, sys, time
@@ -58,17 +59,26 @@ if args == ['agent', 'list']:
     print(json.dumps({{'result': {{'agents': served['agents'], 'type': 'agent_list'}}}}))
 elif args[:2] == ['pane', 'get'] and args[2] in served['panes'].get(session, {{}}):
     print(json.dumps({{'result': {{'pane': served['panes'][session][args[2]], 'type': 'pane_info'}}}}))
-elif args[:2] == ['pane', 'get']:
+elif args[:2] in (['pane', 'get'], ['pane', 'current']):
     print(json.dumps({{'error': {{'code': 'pane_not_found'}}}}), file=sys.stderr)
     sys.exit(1)
+elif args[:2] == ['agent', 'get'] and any(args[2] in (a['name'], a['pane_id']) for a in served['agents']):
+    agent = next(a for a in served['agents'] if args[2] in (a['name'], a['pane_id']))
+    print(json.dumps({{'result': {{'agent': agent, 'type': 'agent_info'}}}}))
+elif args[:3] == ['tab', 'list', '--workspace']:
+    tabs = [tab for tab in served['tabs'].get(session, []) if tab['workspace_id'] == args[3]]
+    print(json.dumps({{'result': {{'tabs': tabs, 'type': 'tab_list'}}}}))
+elif args[:2] == ['tab', 'get'] and any(tab['tab_id'] == args[2] for tab in served['tabs'].get(session, [])):
+    print(json.dumps({{'result': {{'tab': {{'tab_id': args[2], 'pane_count': 1}}, 'type': 'tab_info'}}}}))
 else:
     sys.exit(3)
 ''')
         stub.chmod(0o700)
 
-    def serve(self, agents=(), panes=None, fail=None, hang=False):
-        """What the stub Herdr server reports: live agents, panes by server, or a failure."""
-        self.served.write_text(json.dumps({'agents': list(agents), 'panes': panes or {}, 'fail': fail, 'hang': hang}))
+    def serve(self, agents=(), panes=None, fail=None, hang=False, tabs=None):
+        """What the stub Herdr server reports: live agents, panes and tabs by server, or a failure."""
+        self.served.write_text(json.dumps({'agents': list(agents), 'panes': panes or {}, 'tabs': tabs or {},
+                                           'fail': fail, 'hang': hang}))
 
     def env(self, pane='w1:p1', **values):
         """The environment of a session in Herdr pane `pane` of workspace w1, or outside Herdr when None."""
@@ -870,6 +880,77 @@ console.log(JSON.stringify([first, repeated,
                         first['entries'][0]['content'])
         self.assertIsNone(repeated)
         self.assertIsNone(other)
+
+
+class StaleTabs(GateRepo):
+    """A Herdr worker's tab outlives collection only when its attempt is retained; otherwise it is a gap at stop."""
+
+    def setUp(self):
+        super().setUp()
+        self.tab = {'tab_id': 'w1:t5', 'workspace_id': 'w1', 'label': 'effort/ticket-1 builder', 'pane_count': 1}
+        self.serve(agents=[{'agent': 'claude', 'agent_status': 'idle', 'name': 'builder-1', 'pane_id': 'w1:p5',
+                            'tab_id': 'w1:t5', 'workspace_id': 'w1'}], tabs={'default': [self.tab]})
+        self.report = self.state.parent / 'ticket-1.md'
+        self.report.write_text('## Implemented\n')
+
+    def register(self, pane='w1:p1'):
+        """Register builder-1 as Herdr places it (tab w1:t5 of session `default`) from Herdr pane `pane`."""
+        self.lifecycle('register', pane=pane, assignment='ticket-1', repo=str(self.repo), worktree=str(self.repo),
+                       head='head-1', execution=str(self.execution), runtime='claude', worker='builder-1',
+                       native_session='native-1', owned=True, herdr={'session': 'default'},
+                       packet=str(support.assignment_file(self.execution.parent, 'ticket')))
+
+    def collect(self, **disposition):
+        """Collect the attempt's result; with a `disposition`, through `collect` (which records it)."""
+        result = dict(status='failed', head='head-1', report=str(self.report), evidence=['worker.log'])
+        if not disposition:
+            return self.lifecycle('result', **result)
+        request = self.state.parent / 'collect.json'
+        request.write_text(json.dumps(dict(result, disposition=disposition)))
+        subprocess.run([sys.executable, '-B', str(LIFECYCLE), 'collect', '--state', str(self.state), '--attempt',
+                        'ticket-1/1', '--input', str(request)], check=True, capture_output=True, env=self.env())
+
+    def gap(self):
+        return (f'{self.state}: ticket-1/1: Herdr tab w1:t5 is still open after collection; retire the worker or '
+                f'record its retention ({ROOT}/runtime/workers/collect.md)')
+
+    def test_a_collected_attempt_whose_tab_is_still_open_is_a_gap_for_its_coordinator_until_retained(self):
+        # Rule 5: collected (it has a result), not retained, and its recorded tab still listed by its Herdr session: a
+        # gap for the pane that registered it alone. A closed tab, or recorded retention, is none.
+        self.register()
+        self.collect()
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        self.assertIn(f'- {self.gap()}\n', self.stop(pane='w1:p1')['reason'])
+        self.assertEqual(self.check(pane='w1:p9'), [])
+        self.assertEqual(self.check(pane=None, session='host-1'), [])
+        self.serve(tabs={'default': [dict(self.tab, tab_id='w1:t6')]})
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.serve(tabs={'default': [self.tab]})
+        self.collect(kind='retain', reason='the repair round reuses this context', next_use='ticket-1 repair',
+                     evidence=['review finding F1'])
+        self.assertEqual(self.check(pane='w1:p1'), [])
+
+    def test_a_herdr_that_cannot_list_tabs_is_a_named_gap_that_hides_no_other_gap(self):
+        # Rule 5: when Herdr fails or does not answer, the tab check is a named gap for the coordinator, held once,
+        # and the run's other gaps (here a live worker with no wait) still show.
+        self.register()
+        self.collect()
+        self.lifecycle('register', 'ticket-2/1', assignment='ticket-2', repo=str(self.repo), worktree=str(self.repo),
+                       head='head-1', execution=str(self.execution), runtime='claude', worker='pane-2',
+                       native_session='native-2', owned=True,
+                       packet=str(support.assignment_file(self.execution.parent, 'ticket')))
+        self.lifecycle('startup', 'ticket-2/1', observed={'runtime': 'claude', 'model': 'sonnet'},
+                       evidence=['native.jsonl:1'])
+        self.lifecycle('submitted', 'ticket-2/1', evidence=['native.jsonl:2:accepted prompt'])
+        self.serve(fail='connection refused')
+        gap = ('could not check worker tabs: herdr tab list exited 1: '
+               '{"error": {"code": "server_unavailable", "message": "connection refused"}}')
+        self.assertEqual(self.check(pane='w1:p1'), [f'{self.state}: ticket-2/1: no armed wait', gap])
+        self.assertIn(f'- {gap}\n', self.stop(pane='w1:p1')['reason'])
+        self.assertIsNone(self.stop(pane='w1:p1', active=True))
+        self.serve(hang=True)
+        self.assertRegex(self.check(pane='w1:p1')[-1],
+                         r"^could not check worker tabs: .*'tab', 'list'.* timed out after 5 seconds$")
 
 
 if __name__ == '__main__':

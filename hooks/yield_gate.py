@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RECENT_SECONDS = 24 * 3600
 GUIDE = ROOT / 'runtime/workers/wait.md'
 PREPARE = ROOT / 'runtime/workers/prepare.md'
+COLLECT = ROOT / 'runtime/workers/collect.md'
 HANDOFF = ROOT / 'skills/dispatch/handoff.md'
 # hooks/herdr_launch.py appends each `herdr agent start` here, one JSON object per line.
 LAUNCHES = '.scratch/herdr-launches.jsonl'
@@ -79,7 +80,45 @@ def gaps(cwd, session=None):
             db.close()
     # Every session answers for its own launches; a worker (its launch set AUTOMATTIC_WORKER) not for its siblings.
     return (missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER'))
-            + undelivered(root, pane, session))
+            + stale_tabs(root, pane) + undelivered(root, pane, session))
+
+
+def stale_tabs(root, pane):
+    """Name each collected attempt that is not retained whose recorded Herdr tab its session still lists, for the pane
+    that registered it, however old the run."""
+    module, listed, missing = None, {}, []
+    for state in sorted(root.glob('.scratch/*/reports/workers.sqlite')):
+        module = module or lifecycle()
+        db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
+        try:
+            saved_attempts = module.attempts(db)
+        finally:
+            db.close()
+        for saved in saved_attempts:
+            herdr = saved.get('herdr') or {}
+            if not (herdr.get('tab_id') and saved.get('result') and not saved.get('retained')
+                    and pane and saved.get('coordinator') == pane):
+                continue
+            where = (herdr['session'], herdr['workspace_id'])
+            if where not in listed:
+                try:
+                    listed[where] = herdr_tabs(*where)
+                except Exception as error:  # A check that cannot run is a named gap, never a pass.
+                    listed[where] = set()
+                    missing.append(f'could not check worker tabs: {error}')
+            if herdr['tab_id'] in listed[where]:
+                missing.append(f"{state}: {saved['attempt']}: Herdr tab {herdr['tab_id']} is still open after "
+                               f'collection; retire the worker or record its retention ({COLLECT})')
+    return missing
+
+
+def herdr_tabs(session, workspace):
+    """The IDs of the tabs a Herdr session lists in a workspace."""
+    result = subprocess.run(['herdr', '--session', session, 'tab', 'list', '--workspace', workspace],
+                            capture_output=True, text=True, timeout=5)
+    if result.returncode:
+        raise RuntimeError(f'herdr tab list exited {result.returncode}: {(result.stderr or result.stdout).strip()}')
+    return {tab['tab_id'] for tab in json.loads(result.stdout)['result']['tabs']}
 
 
 def undelivered(root, pane, session):
