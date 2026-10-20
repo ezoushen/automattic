@@ -7,7 +7,7 @@ No action: JSON candidates. No slug: all efforts. Other efforts still hold locks
 Actions: --board, --counts, --check, --accept TICKET,
          --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID).
 Only --set may be combined with --counts. --accept also runs the effort's standing measurements
-(.scratch/<slug>/measurements.json) at the ticket head and refuses a missing or worse value.
+(.scratch/<slug>/measurements.json) at the ticket head, in a clean checkout, and refuses a missing or worse value.
 
 Tickets: .scratch/<slug>/issues/NN-title.md, with restricted YAML front matter
 (key: scalar and key: [a, b]). Only the orchestrator changes machine state.
@@ -21,6 +21,7 @@ import json
 import math
 import os
 import re
+import signal
 import sys
 import subprocess
 from pathlib import Path
@@ -37,6 +38,7 @@ except (ValueError, AssertionError):
     sys.exit(f"MAX_LIVE must be a positive integer, got {os.environ.get('MAX_LIVE')!r}")
 # Critical path first. TICKET_PRIORITY=spec-a,spec-b names the specs to drain first; default is name order.
 PRIORITY = [s for s in os.environ.get("TICKET_PRIORITY", "").split(",") if s]
+MEASURE_TIMEOUT = 600  # seconds a measurement command may run unless its entry sets timeout_seconds
 
 
 def parse_front_matter(text):
@@ -285,10 +287,17 @@ def measurement_results(fm, ref):
         entries = read_measurements(path)
     except ValueError as error:
         return [f"measurements.json is unusable: {error}"], []
+    branch = ref.removeprefix("refs/heads/")
     checkout = checkout_of(ref)
     if checkout is None:
-        return [f"branch {ref.removeprefix('refs/heads/')} is checked out in no worktree; "
-                "its head cannot be measured"], []
+        return [f"branch {branch} is checked out in no worktree; its head cannot be measured"], []
+    try:
+        changed = uncommitted(checkout)
+    except ValueError as error:
+        return [f"branch {branch} has a worktree whose git status cannot be read: {error}"], []
+    if changed:
+        return [f"branch {branch} has uncommitted changes ({', '.join(changed)}); "
+                "a measurement of it would not be of the ticket head"], []
     problem = allowance_problem(fm, slug)
     if problem:
         return [problem], []
@@ -316,10 +325,18 @@ def measurement_results(fm, ref):
 
 def measure(entry, checkout):
     """Run one measurement command in checkout: (number, text as printed), or (None, why it has no value)."""
-    result = subprocess.run(entry["command"], shell=True, cwd=checkout, capture_output=True, text=True)
-    words = next((l.split() for l in result.stdout.splitlines() if l.split()[:1] == [entry["metric"]]), None)
-    if result.returncode:
-        return None, f"has no value (its command exited {result.returncode})"
+    timeout = entry.get("timeout_seconds", MEASURE_TIMEOUT)
+    process = subprocess.Popen(entry["command"], shell=True, cwd=checkout, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, text=True, start_new_session=True)
+    try:
+        stdout, _ = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.communicate()
+        return None, f"has no value (its command timed out after {timeout:g} s)"
+    words = next((l.split() for l in stdout.splitlines() if l.split()[:1] == [entry["metric"]]), None)
+    if process.returncode:
+        return None, f"has no value (its command exited {process.returncode})"
     if words is None:
         return None, f"has no value (no `{entry['metric']} <number>` line in its output)"
     value = finite_number(words[1]) if len(words) == 2 else None
@@ -363,6 +380,9 @@ def read_measurements(path):
                 and math.isfinite(entry["baseline"]) and entry.get("direction") in ("higher", "lower")):
             raise ValueError(f"entry {number} needs a name, command, metric without spaces, "
                              "numeric baseline and a direction of higher or lower")
+        timeout = entry.get("timeout_seconds", 1)
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout < math.inf:
+            raise ValueError(f"entry {number} needs timeout_seconds to be a positive number")
     return entries
 
 
@@ -373,6 +393,18 @@ def finite_number(text):
     except ValueError:
         return None
     return number if math.isfinite(number) else None
+
+
+def uncommitted(checkout):
+    """Sorted paths with tracked changes, staged or not, or untracked and not ignored, in a checkout.
+
+    ValueError carries git's message when the status cannot be read.
+    """
+    status = subprocess.run(["git", "-C", checkout, "status", "--porcelain", "--untracked-files=all"],
+                            capture_output=True, text=True)
+    if status.returncode:
+        raise ValueError(status.stderr.strip())
+    return sorted(line[3:] for line in status.stdout.splitlines())
 
 
 def checkout_of(ref):

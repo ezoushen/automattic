@@ -43,13 +43,15 @@ is recorded in `.scratch/<slug>/measurements.json`, next to the alignment, as a 
 ```
 
 `command` goes to the shell and prints `<metric> <number>` lines; `direction` names the
-better way, `higher` or `lower`. `next_tickets.py --accept` runs every command itself at the
-ticket head, in the worktree that has the ticket branch checked out, and refuses a missing
-value (no such line, not a finite number, a command that exits non-zero) or one worse than
-its baseline. A ticket may lower a metric only with front matter `allows: <metric> <bound>`
-(the worst value it tolerates) and `allows_source: <row id>`, such as `U3`, a row of
-`.scratch/<slug>/ledger.md` where that decision is recorded. An effort without the file is
-accepted without measuring.
+better way, `higher` or `lower`. `timeout_seconds` (optional, default 600) bounds the run;
+at expiry the command's process group is killed. `next_tickets.py --accept` runs every command
+itself at the ticket head, in the worktree that has the ticket branch checked out, and
+refuses a worktree with tracked changes or untracked files that are not ignored (it names
+them), a missing value (no such line, not a finite number, a command that exits non-zero
+or times out) and one worse than its baseline. A ticket may lower a metric only with front
+matter `allows: <metric> <bound>` (the worst value it tolerates) and `allows_source: <row id>`,
+such as `U3`, a row of `.scratch/<slug>/ledger.md` where that decision is recorded. An
+effort without the file is accepted without measuring.
 
 ## E2E steps
 

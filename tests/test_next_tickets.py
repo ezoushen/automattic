@@ -2,9 +2,13 @@
 """The local board's scheduling rules and its command line."""
 import os
 import json
+import shlex
+import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -200,14 +204,20 @@ class BoardCLI(unittest.TestCase):
             self.write_report(other, 'feat/inline', [sha])
             assert 'no listed commit' in self.cli('inline', '--accept', 'inline/01', code=1).stderr, sha
 
-    def record_measurement(self, command, baseline=100, direction='higher', metric='recall'):
+    def commit_gitignore(self):
+        # The dispatch convention: `.scratch/` and `.worktrees/` are ignored; `build.log` stands for build output.
+        (self.root / '.gitignore').write_text('.scratch/\n.worktrees/\nbuild.log\n')
+        self.git('add', '.gitignore')
+
+    def record_measurement(self, command, baseline=100, direction='higher', metric='recall', **extra):
         entry = {'name': 'recall tool', 'command': command, 'metric': metric,
-                 'baseline': baseline, 'direction': direction}
+                 'baseline': baseline, 'direction': direction, **extra}
         (self.root / '.scratch/inline/measurements.json').write_text(json.dumps([entry]))
 
     def measured_ticket(self, command, extra='', **entry):
         """inline/01 is finished on feat/inline, checked out in the main checkout, and its effort records one measurement."""
         self.write_ticket('inline/01', 'implementing', extra=extra)
+        self.commit_gitignore()
         base = self.commit('base')
         self.git('switch', '-q', '-c', 'feat/inline')
         self.record_measurement(command, **entry)
@@ -361,11 +371,78 @@ class BoardCLI(unittest.TestCase):
         accepted = self.cli('inline', '--accept', 'inline/01').stdout
         assert accepted == "inline/01: report and branch carry the evidence; judge the content now\n", accepted
 
+    def test_a_measurement_that_outruns_its_timeout_is_killed_with_its_children_and_refused(self):
+        # The shell is not the only process to stop: a child it started must not outlive the refusal.
+        scratch = Path(tempfile.mkdtemp(prefix='automattic-pid-'))
+        self.addCleanup(shutil.rmtree, scratch, True)
+        pidfile = scratch / 'pid'
+        self.measured_ticket(f'sleep 15 >/dev/null 2>&1 & echo $! > {shlex.quote(str(pidfile))}; wait', timeout_seconds=1)
+        started = time.monotonic()
+        refused = self.refusal()
+        assert time.monotonic() - started < 10, 'acceptance waited for the command'
+        assert refused == ("inline/01: measurement 'recall tool': recall has no value "
+                           "(its command timed out after 1 s); baseline 100\n"), refused
+        child = int(pidfile.read_text())
+        for _ in range(50):
+            try:
+                os.kill(child, 0)
+            except ProcessLookupError:
+                return
+            time.sleep(0.1)
+        os.kill(child, signal.SIGKILL)
+        self.fail(f'the timed-out measurement left its child {child} running')
+
+    def test_a_timeout_that_is_not_a_positive_number_makes_the_measurements_file_unusable(self):
+        self.measured_ticket('echo recall 100')
+        for value in (0, -1, '5', True, float('nan'), float('inf')):
+            self.record_measurement('echo recall 100', timeout_seconds=value)
+            assert self.refusal() == ("inline/01: measurements.json is unusable: "
+                                      "entry 1 needs timeout_seconds to be a positive number\n"), (value, self.refusal())
+        self.record_measurement('echo recall 100', timeout_seconds=0.5)
+        self.cli('inline', '--accept', 'inline/01')
+
+    def test_a_measurement_without_timeout_seconds_is_not_cut_short(self):
+        self.measured_ticket('sleep 2; echo recall 100')
+        self.cli('inline', '--accept', 'inline/01')
+
+    def test_a_ticket_worktree_with_uncommitted_changes_is_refused_naming_them(self):
+        # The committed head regresses (83); an uncommitted edit would hide that, so the measurement would not be of the head.
+        self.ticket_worktree(83)
+        worktree = self.root / '.worktrees/inline-01'
+        dirty = "inline/01: branch feat/inline-01 has uncommitted changes ({}); a measurement of it would not be of the ticket head\n"
+        (worktree / 'score.txt').write_text('100\n')
+        assert self.refusal() == dirty.format('score.txt'), self.refusal()
+        self.git('-C', str(worktree), 'add', 'score.txt')
+        assert self.refusal() == dirty.format('score.txt'), self.refusal()
+        (worktree / 'notes.txt').write_text('scratch\n')
+        assert self.refusal() == dirty.format('notes.txt, score.txt'), self.refusal()
+        self.git('-C', str(worktree), 'reset', '-q', '--hard')
+        assert self.refusal() == dirty.format('notes.txt'), self.refusal()
+        (worktree / 'notes.txt').unlink()
+        (worktree / 'build.log').write_text('ignored build output\n')
+        assert self.refusal() == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100 "
+                                  "(higher is better)\n"), self.refusal()
+
+    def test_a_main_checkout_holding_the_ticket_branch_with_a_stray_file_is_refused(self):
+        self.measured_ticket('echo recall 100')
+        self.cli('inline', '--accept', 'inline/01')
+        (self.root / 'stray.txt').write_text('left behind\n')
+        assert self.refusal() == ("inline/01: branch feat/inline has uncommitted changes (stray.txt); "
+                                  "a measurement of it would not be of the ticket head\n"), self.refusal()
+
+    def test_a_worktree_whose_git_status_cannot_be_read_is_refused(self):
+        self.ticket_worktree(100)
+        self.cli('inline', '--accept', 'inline/01')
+        (self.root / '.worktrees/inline-01/.git').write_text('gitdir: /nonexistent\n')
+        refused = self.refusal()
+        assert refused.startswith("inline/01: branch feat/inline-01 has a worktree whose git status cannot be read: "), refused
+
     def ticket_worktree(self, score):
         """inline/01 on feat/inline-01 in its own worktree; main keeps scoring 100 and the ticket branch scores `score`."""
         self.write_ticket('inline/01', 'implementing')
         (self.root / 'score.txt').write_text('100\n')
         self.git('add', 'score.txt')
+        self.commit_gitignore()
         base = self.commit('base with the recall score')
         worktree = self.root / '.worktrees/inline-01'
         self.git('worktree', 'add', '-q', '-b', 'feat/inline-01', str(worktree), base)
