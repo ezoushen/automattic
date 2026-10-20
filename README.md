@@ -20,9 +20,16 @@ Typed as `/automattic:<name>` in Claude Code, `$automattic:<name>` in Codex and
 | `setup` | Explain or change worker, routing and decision settings |
 | `brief` | Report progress; `brief map` shows which command fits |
 | `huh` | Back up to what lost you and re-pitch it plainly |
+| `diagnose` | Find the cause of a bug or failing check and return a reproducer |
+| `research` | Answer a question from primary sources, citing every claim |
+| `prototype` | Settle one design question with throwaway code and report the verdict |
+| `explain` | Explain code, a change or the current state in layers |
+| `tdd` | Build or fix test-first, one business rule at a time |
 
-The agent loads one more skill itself, housekeeping, to keep the repository clean at any
-time. Claude Code keeps it out of its command menu; Codex and Pi list it.
+The last five can be typed, and the agent also loads them itself when a request matches
+their description. It loads one more skill only by itself, housekeeping, to keep the
+repository clean at any time; Claude Code keeps that one out of its command menu, and
+Codex and Pi list it.
 
 ## Concepts
 
@@ -74,12 +81,14 @@ time. Claude Code keeps it out of its command menu; Codex and Pi list it.
 
 The Markdown is layered so a reader follows links in one direction. Hooks and
 `bootstrap.md` sit on top: the session-start hook injects the bootstrap's path, so docs name
-it instead of linking it. Below them come the commands (`skills/<command>/`: brief and huh; dispatch
-and remediate; pr; review; housekeeping; align, refine and setup), `agents/`,
-`standards/`, `hosts/` and the `runtime/` modules
-(interview, board, workers, checks, routing, resources, decisions, config, ask, domain). A doc links only its own module
-or a lower one, so a command may read a lower command's procedure but never a sibling's
-or a higher one's, and no two modules depend on each other. A doc path named in prose or
+it instead of linking it. Below them come the skills, what the user types or the agent loads
+(`skills/<command>/`: brief and huh; dispatch and remediate; pr; review; housekeeping; align,
+refine and setup; diagnose, research, prototype, explain and tdd). Under them sit the internal
+layers, `agents/`, `standards/`, `hosts/` and the `runtime/` modules
+(interview, board, workers, checks, routing, resources, decisions, config, ask, domain), and
+nothing below the skills links one. A doc links only its own module or a lower one, so a
+skill may read a lower skill's procedure but never a sibling's or a higher one's, and no two
+modules depend on each other. A doc path named in prose or
 code counts as a dependency, and `scripts/` and `hooks/` import under the same order.
 `.agents/skills/writing-agent-docs/architecture.json` records the order; the doc checker
 enforces it on every commit and push, and in Claude Code after every edit. To add a host,

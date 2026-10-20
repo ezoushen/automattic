@@ -238,7 +238,7 @@ class CrossHarness(unittest.TestCase):
         import re
         skills = {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')}
         commands = {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')
-                    if 'disable-model-invocation: true' in path.read_text()}
+                    if 'user-invocable: false' not in path.read_text()}
         tracked = run('git', '-C', str(PLUGIN), 'ls-files', '-z').stdout.split('\0')
         for name in filter(None, tracked):
             path = PLUGIN / name
@@ -247,7 +247,7 @@ class CrossHarness(unittest.TestCase):
             if path.suffix not in {'.md', '.py', '.json', '.yaml', '.mjs', '.ts'}:
                 continue
             text = path.read_text()
-            # Codex lists every skill; the typed Claude and Pi forms name only the commands.
+            # Codex lists every skill; the typed Claude and Pi forms name only the skills the user can type.
             for command in re.findall(r'\$automattic:([a-z][a-z0-9-]*)', text):
                 assert command in skills, (name, command)
             for command in re.findall(r'(?:/automattic:|/skill:)([a-z][a-z0-9-]*)', text):

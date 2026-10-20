@@ -69,7 +69,7 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
 | `first-read` | Bootstrap, host session, skill and the docs its `First read:` paragraph links, over the budget | Move detail out of those docs or the bootstrap |
 | `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add a paragraph starting `First read:` that links the docs the skill reads before acting |
-| `entry-doc` | A skill's folder is not its own module, or its `First read:` paragraph links a `<skill>.md` instead of the skill holding its procedure | Put the procedure in its `SKILL.md` and map `skills/<skill>/` as a module; a doc agents need without a trigger belongs in `runtime/` or `standards/`, not in a wrapper skill |
+| `entry-doc` | A skill's folder is not its own module, or its `First read:` paragraph links a `<skill>.md` in that module instead of the skill holding its procedure; a same-named doc in a lower module, such as `standards/tdd.md`, is a dependency | Put the procedure in its `SKILL.md` and map `skills/<skill>/` as a module; a doc agents need without a trigger belongs in `runtime/` or `standards/`, not in a wrapper skill |
 | `host-shape` | A folder under `hosts/` that does not hold exactly `session.md` and `workers.md` | Move other text to the runtime doc that owns it |
 | `shared-section` | A section, other than a file's title or only section, linked from 3+ files in other modules | Make it its own file, or link the whole file |
 | `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |
@@ -83,9 +83,10 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 Layers, top first: this repository's project skills (`.agents/skills/`), hooks and
 `bootstrap.md` (injected by path, so skills name it rather than link it); skills
 (`skills/<skill>/`, in their own order);
-`agents/`; `standards/`; `hosts/`; `runtime/` modules. A doc or script depends on its own module or a
-lower level, never on a sibling or a higher level: a command may read a lower command's
-procedure, and a project skill links no other skill. No two modules depend on each other,
+`agents/`; `standards/`; `hosts/`; `runtime/` modules. Skills are what the user types or the
+agent loads; the layers under them are internal, and nothing below the skills links one. A doc
+or script depends on its own module or a lower level, never on a sibling or a higher level: a
+skill may read a lower skill's procedure, and a project skill links no other skill. No two modules depend on each other,
 directly or through others (`cycle`). **Strict:** these direction rules, the first-read budget, the host
 shape, shared sections and unmapped docs are errors with no recorded debt. **Room:** a new module
 joins `architecture.json` in a level of its own or beside siblings that need not link
@@ -117,7 +118,11 @@ each other, so the order grows without loosening a rule. Run the checker and
   (`entry-doc`), name it in the pipeline map and add it to the README's command table.
   A skill the agent loads itself by its trigger does the same and sets
   `user-invocable: false`; add one only when its trigger must fire outside the commands
-  (as `housekeeping` does). Text that agents or commands read by link is a `runtime/`
-  module or a standard, named in an agent's `core_skills` when every job needs it.
+  (as `housekeeping` does). A skill both the user types and the agent loads by its trigger
+  (`diagnose`, `research`, `prototype`, `explain`, `tdd`) sets neither that nor
+  `disable-model-invocation`, and `allow_implicit_invocation: true` in `agents/openai.yaml`;
+  its description is its trigger. Text agents read by link, or a runtime doc needs, is a
+  `runtime/` module or a standard, named in an agent's `core_skills` when every job needs it;
+  a procedure the user may also run alone is a skill below the skills that read it.
   A command that only re-pitches the conversation and launches nothing (`huh`) skips
   the bootstrap and the procedure size floor; keep its trigger short.

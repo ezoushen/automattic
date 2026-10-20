@@ -40,10 +40,22 @@ class ArchitectureDocs(unittest.TestCase):
         layers = {'skills/<command>/': 'brief', 'bootstrap.md': 'bootstrap', 'agents/': 'agents', 'standards/': 'standards',
                   'hosts/': 'hosts', 'runtime/': 'interview'}
         self.assertEqual(sorted(layers, key=section.index), sorted(layers, key=lambda token: rank[layers[token]]))
-        runtime = ('interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config', 'explain')
+        runtime = ('interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config', 'ask')
         listed = section.split('(interview', 1)[1].split(')', 1)[0]
         self.assertEqual(sorted(runtime, key=lambda name: (f'interview{listed}').index(name)),
                          sorted(runtime, key=rank.get))
+
+    def test_the_readme_says_only_skills_face_the_user_and_nothing_below_them_links_one(self):
+        section = ' '.join(README.split('## Architecture', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('diagnose, research, prototype, explain and tdd', section)
+        self.assertIn('nothing below the skills links one', section)
+
+    def test_the_readme_command_table_lists_every_skill_the_user_types(self):
+        typed = {path.parent.name for path in (ROOT / 'skills').glob('*/SKILL.md')
+                 if 'user-invocable: false' not in path.read_text()}
+        table = README.split('## Commands', 1)[1].split('\n## ', 1)[0]
+        self.assertEqual(set(re.findall(r'^\| `([a-z-]+)` \|', table, re.M)), typed)
+        self.assertIn('the agent also loads them itself', ' '.join(table.split()))
 
     def test_the_readme_links_the_skill_instead_of_repeating_the_rules(self):
         self.assertIn('](.agents/skills/writing-agent-docs/SKILL.md#extend-the-architecture)', README)
@@ -55,6 +67,9 @@ class ArchitectureDocs(unittest.TestCase):
             self.assertRegex(section, r'(?i)\badd an? %s\b' % kind)
         for word in ('strict', 'room', 'architecture.json'):
             self.assertIn(word, section.lower())
+        flat = ' '.join(section.split())
+        self.assertIn('A skill both the user types and the agent loads by its trigger', flat)
+        self.assertIn('nothing below the skills links one', flat)
 
     def test_the_skill_contents_list_the_new_section(self):
         self.assertIn('- [Extend the architecture](#extend-the-architecture)', SKILL)

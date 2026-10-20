@@ -99,6 +99,7 @@ class Flows(unittest.TestCase):
         linked = {target.parts[:2] for target in targets(SKILLS / 'brief/pipeline.md') if target.parts[0] in ('runtime', 'skills')}
         expected = {('runtime', name) for name in SHARED}
         expected |= {('skills', command) for command in COMMANDS if command != 'brief'}
+        expected |= {('skills', skill) for skill in ('diagnose', 'research', 'prototype', 'explain', 'tdd')}
         self.assertLessEqual(expected, linked)
 
 if __name__ == '__main__':

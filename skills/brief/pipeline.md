@@ -11,7 +11,9 @@ Contents:
 - [Delivery composition](#delivery-composition)
 
 The automattic plugin: nine commands, five of them in loop order (align, refine,
-dispatch, review, pr) plus remediate, setup, brief and huh; one artefact directory
+dispatch, review, pr) plus remediate, setup, brief and huh, and five skills the user
+types or the agent loads when a request matches (diagnose, research, prototype,
+explain, tdd); one artefact directory
 `.scratch/<slug>/`; one principle: the
 principal answers **steering** questions (goal, principles, constraints) and
 **context** questions (what the machine cannot know); the agent decides everything
@@ -113,13 +115,17 @@ folder; commands read the shared interview and board procedures and the other ru
 - [Housekeeping](../housekeeping/SKILL.md): residue and documentation currency, run by dispatch and PR.
 - [Interview](../../runtime/interview/question-filter.md): authority, [grilling](../../runtime/interview/grilling.md), the question filter and the ledger record, shared by the commands that ask questions.
 - [Board](../../runtime/board/board.md): tracker conventions, scope, ticket slicing and the project loop.
+- [Diagnose](../diagnose/SKILL.md): a defect's cause and reproducer, for the user, review's reproduce job and blocked tickets.
+- [Research](../research/SKILL.md): cited facts from primary sources, for the user, align, review and blocked tickets.
+- [Prototype](../prototype/SKILL.md): a verdict from throwaway code, for the user and align's prototype job.
+- [TDD](../tdd/SKILL.md): test-first work with the user in place of a ticket.
 - [Explain](../explain/SKILL.md): telling in layers and the views, shared by briefings, the walkthrough, the setup tour and `/automattic:huh`, a sibling command this map names without a link.
 - [Ask with context](../../runtime/ask/ask.md): the context and the re-pitch every question to the user carries.
 
 ## Our methods underneath
 
 Every method the phases use ships in this plugin: test-first work from the
-[TDD standard](../../standards/tdd.md), module design from the
+[TDD standard](../../standards/tdd.md), which the [tdd](../tdd/SKILL.md) skill works with the user, module design from the
 [design standard](../../standards/design.md), ticket slicing from
 [slicing](../../runtime/board/slicing.md), missing facts from
 [research](../research/SKILL.md), defects from
