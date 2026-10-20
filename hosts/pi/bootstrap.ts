@@ -23,8 +23,8 @@ export default function (pi) {
     return { systemPrompt: `${event.systemPrompt}\n\n${hint}` };
   });
 
-  // Keep working while a lifecycle worker could finish without waking this host:
-  // at most once per run, so a gap the host cannot fix never loops.
+  // Keep working while a lifecycle worker could finish without waking this host, or a worker this session
+  // launched is unregistered: at most once per run, so a gap the host cannot fix never loops.
   let continued = false;
   pi.on("agent_settled", () => {
     continued = false;
@@ -33,7 +33,8 @@ export default function (pi) {
     if (continued || event.outcome !== "completed" || process.env.AUTOMATTIC_YIELD_HOOK === "off") return undefined;
     let missing;
     try {
-      const output = execFileSync("python3", [`${root}/hooks/yield_gate.py`, "check", ctx.cwd],
+      const session = ctx.sessionManager.getSessionId();
+      const output = execFileSync("python3", [`${root}/hooks/yield_gate.py`, "check", ctx.cwd, session],
         { encoding: "utf8", timeout: 20000 });
       missing = JSON.parse(output).missing;
     } catch {
@@ -41,10 +42,11 @@ export default function (pi) {
     }
     if (!missing.length) return undefined;
     continued = true;
-    const content = "These lifecycle workers could finish without waking you:\n"
+    const content = "These workers could finish or run without waking you:\n"
       + missing.map((gap) => `- ${gap}\n`).join("")
-      + "Arm a notified wait, recover the receipt or collect the result (for a worker that is gone, "
-      + `a failed or cancelled result whose report says what was lost) before stopping (${root}/runtime/workers/wait.md).`;
+      + `Register each launched worker (${root}/runtime/workers/prepare.md). Arm a notified wait, recover the receipt `
+      + "or collect the result (for a worker that is gone, a failed or cancelled result whose report says what was lost) "
+      + `before stopping (${root}/runtime/workers/wait.md).`;
     return { entries: [{ type: "custom_message", customType: "automattic_yield_gate", content, display: true }], continue: true };
   });
 

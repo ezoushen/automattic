@@ -79,12 +79,20 @@ else:
         subprocess.run([sys.executable, '-B', str(LIFECYCLE), 'record', '--state', str(self.state),
                         '--input', str(event)], check=True, capture_output=True, env=self.env(pane))
 
-    def stop(self, cwd=None, active=False, env=None, pane='w1:p1', host='claude'):
-        payload = {'hook_event_name': 'Stop', 'cwd': str(cwd or self.repo), 'stop_hook_active': active}
+    def stop(self, cwd=None, active=False, env=None, pane='w1:p1', host='claude', session=None):
+        payload = {'hook_event_name': 'Stop', 'cwd': str(cwd or self.repo), 'stop_hook_active': active,
+                   **({'session_id': session} if session else {})}
         result = subprocess.run([sys.executable, str(HOOK), host], input=json.dumps(payload),
                                 capture_output=True, text=True, env=self.env(pane, **(env or {})), timeout=20)
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout) if result.stdout.strip() else None
+
+    def check(self, cwd=None, pane='w1:p1', session=None, env=None):
+        """The gaps `yield_gate.py check <cwd> [session]` reports, as Pi's extension runs it."""
+        result = subprocess.run([sys.executable, str(HOOK), 'check', str(cwd or self.repo), *filter(None, [session])],
+                                capture_output=True, text=True, timeout=20, env=self.env(pane, **(env or {})))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)['missing']
 
 
 class YieldGateHook(GateRepo):
@@ -151,7 +159,8 @@ const bootstrap = await import({json.dumps((ROOT / 'hosts/pi/bootstrap.ts').as_u
 const handlers = {{}};
 bootstrap.default({{ on: (event, handler) => {{ handlers[event] = handler; }} }});
 const settle = (outcome) => handlers.agent_before_settle(
-  {{ type: 'agent_before_settle', outcome, entries: [], continue: false }}, {{ cwd: {json.dumps(str(self.repo))} }});
+  {{ type: 'agent_before_settle', outcome, entries: [], continue: false }},
+  {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionId: () => 'pi-1' }} }});
 const first = await settle('completed');
 const repeated = await settle('completed');
 handlers.agent_settled({{ type: 'agent_settled', aborted: false }});
@@ -191,6 +200,16 @@ class UnregisteredWorkers(GateRepo):
     def logged(self):
         log = self.repo / '.scratch/herdr-launches.jsonl'
         return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+
+    def register(self, worker, attempt):
+        """Register `worker` for an attempt in the run's workers.sqlite, as prepare.md has the coordinator do."""
+        self.lifecycle('register', attempt, assignment=attempt.split('/')[0], repo=str(self.repo),
+                       worktree=str(self.worktree), head='head-1', execution=str(self.execution), runtime='claude',
+                       worker=worker, native_session=f'native-{attempt}', owned=True,
+                       packet=str(support.assignment_file(self.execution.parent, 'ticket')))
+
+    def gap(self, agent, pane):
+        return f"{self.repo / '.scratch/herdr-launches.jsonl'}: {agent} (pane {pane}): launched without a registered attempt"
 
     def pi(self, body, pane=None, env=None):
         """Run `body` with Pi's extension `handlers` (the last of each event) and a `ctx` for session pi-1 here."""
@@ -249,6 +268,72 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual([{key: value for key, value in record.items() if key != 'time'} for record in self.logged()], [
             {'agent': 'builder-1', 'pane': 'w1:p5', 'coordinator': 'pi-1', 'cwd': str(self.worktree)},
             {'agent': 'builder-2', 'pane': 'w1:p6', 'coordinator': 'pi-1'}])
+
+    def test_an_unregistered_launch_into_a_worktree_holds_its_coordinator_after_the_pane_closed(self):
+        # Rule 2: the log outlives the panes; an attempt whose worker is the pane or the agent name clears the gap.
+        self.serve(panes={'default': {pane: {'pane_id': pane, 'cwd': str(self.worktree)} for pane in ('w1:p5', 'w1:p6')}})
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p6', pane=None)
+        self.serve()  # Both panes closed: Herdr no longer reports them.
+        missing = [self.gap('builder-1', 'w1:p5'), self.gap('builder-2', 'w1:p6')]
+        self.assertEqual(self.check(pane=None, session='host-1'), missing)
+        for host in ('claude', 'codex'):
+            decision = self.stop(pane=None, session='host-1', host=host)
+            self.assertEqual(decision['decision'], 'block')
+            self.assertIn(''.join(f'- {gap}\n' for gap in missing), decision['reason'])
+            self.assertIn('workers/prepare.md', decision['reason'])
+        self.register('w1:p5', 'ticket-1/1')
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p6')])
+        self.register('builder-2', 'ticket-2/1')
+        self.assertEqual(self.check(pane=None, session='host-1'), [])
+        self.assertIsNone(self.stop(pane=None, session='host-1'))
+
+    def test_launches_outside_worktrees_are_not_gaps_but_an_unknown_cwd_is(self):
+        # Rule 2: E2E subjects and demos run in panes outside .worktrees/; a cwd Herdr did not report still counts.
+        demo = Path(self.tmp.name) / 'demo'
+        demo.mkdir()
+        cwds = {'w1:p5': demo, 'w1:p6': self.repo, 'w1:p8': self.repo / '.worktrees-archive/ticket-1'}
+        self.serve(panes={'default': {pane: {'pane_id': pane, 'cwd': str(cwd)} for pane, cwd in cwds.items()}})
+        for agent, pane in (('demo-1', 'w1:p5'), ('e2e-1', 'w1:p6'), ('helper-1', 'w1:p7'), ('old-1', 'w1:p8')):
+            self.launch(f'herdr agent start {agent} --kind codex --pane {pane}', pane=None)
+        self.serve()
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('helper-1', 'w1:p7')])
+
+    def test_only_the_coordinator_that_launched_a_worker_is_held_for_it(self):
+        # Rule 2: a launch belongs to the Herdr pane that ran it, else to the host session; no identity, no owner.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane='w1:p1', session='host-1')
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p5', pane=None, session='host-1')
+        self.launch('herdr agent start builder-3 --kind codex --pane w1:p5', pane=None, session=None)
+        self.serve()
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap('builder-1', 'w1:p5')])
+        self.assertEqual(self.check(pane='w1:p9', session='host-1'), [])
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p5')])
+        self.assertEqual(self.check(pane=None, session='host-2'), [])
+        self.assertEqual(self.check(pane=None), [])
+
+    def test_launches_and_registrations_count_however_long_ago_their_run_was_active(self):
+        # Rule 2: neither the launch log nor a run's registrations age out with the gate's one-day filter.
+        log, stale = self.repo / '.scratch/herdr-launches.jsonl', time.time() - 2 * 24 * 3600
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
+        self.register('builder-1', 'ticket-1/1')
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p6', pane=None)
+        self.serve()
+        for path in (self.state, log):
+            os.utime(path, (stale, stale))
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p6')])
+
+    @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
+    def test_pi_holds_the_run_that_launched_an_unregistered_worker(self):
+        # Rule 2 on Pi: the settle check runs as this Pi session, so the launch its tool_call logged is named.
+        settled = self.pi("""
+await handlers.tool_call({ type: 'tool_call', toolCallId: '1', toolName: 'bash',
+  input: { command: 'herdr agent start builder-1 --kind codex --pane w1:p5' } }, ctx);
+console.log(JSON.stringify(await handlers.agent_before_settle(
+  { type: 'agent_before_settle', outcome: 'completed', entries: [], continue: false }, ctx) ?? null));
+""")
+        self.assertTrue(settled['continue'])
+        self.assertIn(f"- {self.gap('builder-1', 'w1:p5')}\n", settled['entries'][0]['content'])
+        self.assertIn('workers/prepare.md', settled['entries'][0]['content'])
 
 
 if __name__ == '__main__':
