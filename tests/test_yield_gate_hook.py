@@ -123,10 +123,11 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)
 
-    def bind(self, pane='w1:p1', slug='fix', **sessions):
-        """Run dispatch's binding for effort `slug` as an orchestrator in Herdr pane `pane` (None: outside Herdr) whose
-        host exports `sessions` (a SESSION_VARIABLES name to its value)."""
-        result = subprocess.run([sys.executable, '-B', str(TICKETS), '--repo', str(self.repo), slug, '--coordinate'],
+    def bind(self, pane='w1:p1', slug='fix', autofix=False, **sessions):
+        """Run dispatch's binding for effort `slug`, with `--autofix` when `autofix`, as an orchestrator in Herdr pane
+        `pane` (None: outside Herdr) whose host exports `sessions` (a SESSION_VARIABLES name to its value)."""
+        result = subprocess.run([sys.executable, '-B', str(TICKETS), '--repo', str(self.repo), slug, '--coordinate',
+                                 *(['--autofix'] if autofix else [])],
                                 capture_output=True, text=True, env=self.env(pane, **sessions), timeout=20)
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -840,6 +841,23 @@ class DeliveryHold(GateRepo):
         self.report.unlink()
         self.assertEqual(self.check(pane='w1:p1'), [])
 
+    def test_autofix_recorded_at_dispatch_start_holds_until_the_review_report_records_its_own(self):
+        # Decision 2: `--coordinate --autofix` records the authorization at dispatch start, so the window between the
+        # last ticket done and the review report is held; once the report records `autofix`, its field wins.
+        self.report.unlink()
+        self.bind(pane='w1:p1', autofix=True)
+        self.assertEqual(self.check(pane='w1:p1'), [
+            f'fix: delivery incomplete under autofix: no review report at {self.report}. Continue the autofix handoff '
+            f'({ROOT}/skills/dispatch/handoff.md) until `python3 {ROOT}/scripts/next_tickets.py --repo {self.repo} fix '
+            f'--delivery` passes, or record `blocker: <reason>` in {self.report}'])
+        self.review(autofix=None)
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        self.review(autofix='false')
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.bind(pane='w1:p1')
+        self.review(autofix='true')
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+
     def test_while_a_ticket_is_not_done_the_coordinator_is_not_held_for_delivery(self):
         # Rule 4: the hold covers delivery once every ticket is done; an unfinished or blocked ticket is still
         # implementation, which the board and the worker gates answer for.
@@ -929,6 +947,22 @@ class StaleTabs(GateRepo):
         self.serve(tabs={'default': [self.tab]})
         self.collect(kind='retain', reason='the repair round reuses this context', next_use='ticket-1 repair',
                      evidence=['review finding F1'])
+        self.assertEqual(self.check(pane='w1:p1'), [])
+
+    def test_a_retired_attempt_is_not_checked_for_an_open_tab(self):
+        # Decision 4: retirement recorded closure only once Herdr reported its tab gone (`tab_not_found`), so a tab
+        # Herdr lists under that ID later (an ID reused after a restart) is not this worker's: no gap, no Herdr call.
+        self.register()
+        self.collect()
+        status = subprocess.run([sys.executable, '-B', str(LIFECYCLE), 'status', '--state', str(self.state)],
+                                check=True, capture_output=True, text=True, env=self.env())
+        for receipt in json.loads(status.stdout)['pending']:
+            subprocess.run([sys.executable, '-B', str(LIFECYCLE), 'ack', '--state', str(self.state), '--event-id',
+                            str(receipt['id'])], check=True, capture_output=True, env=self.env())
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        self.lifecycle('closed', evidence=['retirement proof: pane_not_found, tab_not_found'])
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.serve(fail='connection refused')
         self.assertEqual(self.check(pane='w1:p1'), [])
 
     def test_the_session_bound_to_coordinate_the_effort_sees_its_stale_tabs_instead(self):

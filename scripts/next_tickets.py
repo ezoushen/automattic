@@ -8,8 +8,8 @@ Actions: --board, --counts, --check, --accept TICKET,
          --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID), --coordinate.
 Only --set may be combined with --counts. --accept also runs the effort's standing measurements
 (.scratch/<slug>/measurements.json) at the ticket head, in a clean checkout, and refuses a missing or worse value.
---delivery names each failing field. --coordinate records the calling session (its Herdr pane and host session IDs)
-in .scratch/<slug>/reports/coordinator.json for the stop hooks.
+--delivery names each failing field. --coordinate [--autofix] records the calling session (its Herdr pane and host
+session IDs) and the repair authorization in .scratch/<slug>/reports/coordinator.json for the stop hooks.
 
 Tickets: .scratch/<slug>/issues/NN-title.md, with restricted YAML front matter
 (key: scalar and key: [a, b]). Only the orchestrator changes machine state.
@@ -547,15 +547,17 @@ def set_field(tickets, name, assignment):
     print(f"{name}: {key} = {value}")
 
 
-def coordinate(slug):
-    """Record the session running this command as the effort's coordinator, which the stop hooks hold: its Herdr pane
-    and the session IDs its hosts export (a host started inside another's shell inherits the outer one's)."""
+def coordinate(slug, autofix):
+    """Record the session running this command as the effort's coordinator, which the stop hooks hold: its Herdr pane,
+    the session IDs its hosts export (a host started inside another's shell inherits the outer one's), and whether
+    repairs are authorized until the review report records its own `autofix`."""
     binding = {"pane": os.environ.get("HERDR_PANE_ID"),
-               "sessions": [os.environ[name] for name in SESSION_VARIABLES if os.environ.get(name)]}
+               "sessions": [os.environ[name] for name in SESSION_VARIABLES if os.environ.get(name)], "autofix": autofix}
     path = ISSUES / slug / "reports" / "coordinator.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(binding) + "\n")
-    print(f"{slug}: coordinated by Herdr pane {binding['pane']}, host sessions {binding['sessions']}")
+    print(f"{slug}: coordinated by Herdr pane {binding['pane']}, host sessions {binding['sessions']}, "
+          f"autofix {str(autofix).lower()}")
 
 
 def counts(tickets):
@@ -580,6 +582,7 @@ def main(argv):
     actions.add_argument("--set", nargs=2, metavar=("TICKET", "ASSIGNMENT"))
     actions.add_argument("--coordinate", action="store_true", help="bind this session as the efforts' coordinator")
     parser.add_argument("--counts", action="store_true")
+    parser.add_argument("--autofix", action="store_true", help="with --coordinate: repairs are authorized")
     args = parser.parse_args(argv)
     if args.counts and any((args.check, args.board, args.accept, args.can_verify, args.delivery, args.coordinate)):
         parser.error("--counts may only be combined with --set")
@@ -607,7 +610,7 @@ def main(argv):
         return
     if args.coordinate:
         for slug in sorted({spec_of(t) for t in selected}):
-            coordinate(slug)
+            coordinate(slug, args.autofix)
         return
     if args.set:
         set_field(tickets, *args.set)

@@ -8,8 +8,9 @@ into a ticket worktree that no attempt accounts for and it did not dismiss; one 
 AUTOMATTIC_WORKER, the marker every worker is launched with, also for each other such live
 agent of its Herdr workspace. The session bound to coordinate an effort (next_tickets.py
 --coordinate; without one, the pane that registered the attempt) is held for each collected
-attempt that is not retained whose Herdr tab is still open, and for an effort whose review
-report records autofix: true and no blocker, with every ticket done and delivery failing. A
+attempt, neither retained nor retired, whose Herdr tab is still open, and for an effort whose
+review report (before it records one, the binding) records autofix: true and no blocker, with
+every ticket done and delivery failing. A
 check that cannot run, and a launch log line that is unreadable or malformed, are named gaps,
 never a pass. `claude` and `codex` speak their shared Stop
 hook protocol; `check <cwd> [session]` prints the gaps as JSON for other hosts. Set
@@ -88,8 +89,8 @@ def gaps(cwd, session=None):
 
 
 def stale_tabs(root, pane, session):
-    """Name each collected attempt that is not retained whose recorded Herdr tab its session still lists, for the
-    session bound to coordinate its effort or, with none bound, the pane that registered it, however old the run."""
+    """Name each collected attempt, neither retained nor retired, whose recorded Herdr tab its session still lists, for
+    the session bound to coordinate its effort or, with none bound, the pane that registered it, however old the run."""
     module, listed, missing = None, {}, []
     for state in sorted(root.glob('.scratch/*/reports/workers.sqlite')):
         module = module or lifecycle()
@@ -103,7 +104,9 @@ def stale_tabs(root, pane, session):
         for saved in saved_attempts:
             herdr = saved.get('herdr') or {}
             mine = bound if bound is not None else bool(pane) and saved.get('coordinator') == pane
-            if not (herdr.get('tab_id') and saved.get('result') and not saved.get('retained') and mine):
+            # A retired attempt's tab was confirmed gone before its closure was recorded.
+            if not (herdr.get('tab_id') and saved.get('result') and not saved.get('retained')
+                    and not saved.get('closed') and mine):
                 continue
             where = (herdr['session'], herdr['workspace_id'])
             if where not in listed:
@@ -133,7 +136,8 @@ def undelivered(root, pane, session):
     for path in sorted(root.glob(f'.scratch/*/reports/{BINDING}')):
         slug = path.parent.parent.name
         try:
-            if not coordinates(json.loads(path.read_text()), pane, session):
+            binding = json.loads(path.read_text())
+            if not coordinates(binding, pane, session):
                 continue
             if board is None:
                 module = script('next_tickets')
@@ -141,7 +145,9 @@ def undelivered(root, pane, session):
                 board, tickets = module, module.load()  # load() exits on a board it refuses.
             review = board.review_front_matter(slug) or {}
             # Only authorized repairs owe delivery, once every ticket is done; a recorded blocker is why it stops here.
-            if (review.get('autofix') != 'true' or str(review.get('blocker') or 'none') != 'none'
+            # Dispatch start records the authorization until the review report records its own.
+            autofix = review.get('autofix', 'true' if binding.get('autofix') else 'false')
+            if (autofix != 'true' or str(review.get('blocker') or 'none') != 'none'
                     or any(fm['status'] != 'done' for name, fm in tickets.items() if board.spec_of(name) == slug)):
                 continue
             problems = board.delivery_problems(slug)

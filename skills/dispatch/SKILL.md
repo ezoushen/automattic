@@ -56,9 +56,10 @@ review. Publication requires its own request.
    selected for dispatch are already checked.
 5. On a local board, bind this session as the coordinator before the first launch, and
    again when another session resumes the dispatch:
-   `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" [slug] --coordinate`.
-   Run it through the host's shell: it records the Herdr pane and the host session ID
-   there, and the stop hooks hold that session alone ([handoff](handoff.md)).
+   `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" [slug] --coordinate`,
+   adding `--autofix` when repairs are authorized. Run it through the host's shell: it
+   records the Herdr pane and the host session ID there, and the stop hooks hold that
+   session alone ([handoff](handoff.md)).
 
 A supplied scope is never widened, even to unblock it. Use the board's
 [overall scope](../../runtime/board/scope.md) rules to preserve

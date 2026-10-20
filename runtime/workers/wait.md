@@ -79,9 +79,10 @@ and, when both sides know one, the same host session, so a pane ID that a restar
 reuses inherits nothing. A check that cannot run (Herdr or git fails or times out) and a
 launch log line that is unreadable or has malformed fields are named gaps, never a pass.
 The session dispatch bound to coordinate an effort (`next_tickets.py --coordinate`) is also
-held for each collected attempt that is not retained whose recorded tab Herdr still lists
+held for each collected attempt, neither retained nor retired, whose recorded tab Herdr still lists
 (with no binding, the Herdr pane that registered it is), and for an effort whose review
-report records `autofix: true` and no `blocker`, with every ticket done and `--delivery` failing.
+report records `autofix: true` (before it does, the binding's `--autofix`) and no `blocker`, with
+every ticket done and `--delivery` failing.
 `AUTOMATTIC_YIELD_HOOK=off` disables the hooks.
 Read every completed wait's retained log and inspect the native worker/report. When
 the opt-in [wake-triage pilot](../decisions/shadow-pilots.md#wake-triage-shadow-pilot) is enabled,
