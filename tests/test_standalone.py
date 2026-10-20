@@ -18,9 +18,11 @@ SKILLS = ('ask-matt', 'chief-of-staff', 'claude-handoff', 'codebase-design', 'di
           'scaffold-exercises', 'setup-pre-commit', 'setup-ts-deep-modules', 'to-prd', 'to-questionnaire', 'to-spec',
           'to-tickets', 'wait-what', 'wayfinder', 'writing-beats', 'writing-for-agents', 'writing-fragments',
           'writing-shape')
+# The files its setup skill writes into a project.
+SETUP = ('docs/agents/issue-tracker.md', 'docs/agents/triage-labels.md', 'docs/agents/domain.md')
 NAME = r'(?-i:(?<![A-Za-z])[Mm]atts?(?![a-z])|(?<=[a-z])Matts?(?![a-z])|(?<![A-Z])MATTS?(?![A-Za-z]))'
-EXTERNAL = re.compile(r'mattpocock|%s|pocock|(?<![\w-])(?:%s)(?![\w-])' % (NAME, '|'.join(map(re.escape, SKILLS))),
-                      re.IGNORECASE)
+DISTINCT = '|'.join(map(re.escape, SKILLS + SETUP))
+EXTERNAL = re.compile(r'mattpocock|%s|pocock|(?<![\w-])(?:%s)(?![\w-])' % (NAME, DISTINCT), re.IGNORECASE)
 
 
 def prose(path):
@@ -56,6 +58,12 @@ class Standalone(unittest.TestCase):
             with self.subTest(word=word):
                 self.assertIsNone(EXTERNAL.search(word))
         self.assertIsNone(EXTERNAL.search('the output format matters'))
+
+    def test_the_guard_catches_the_files_the_package_setup_writes(self):
+        for path in ('docs/agents/issue-tracker.md', 'docs/agents/triage-labels.md', 'docs/agents/domain.md'):
+            with self.subTest(path=path):
+                self.assertIsNotNone(EXTERNAL.search(f'and any existing `{path}`;'))
+        self.assertIsNone(EXTERNAL.search('An existing `docs/agents/implementation-loop.md` is one possible source'))
 
     def test_the_manifests_declare_no_dependency(self):
         claude = json.loads((ROOT / '.claude-plugin/plugin.json').read_text())

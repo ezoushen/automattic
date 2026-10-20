@@ -5,8 +5,8 @@ Read before choosing a tracker, board or destination, and before updating one.
 ## Project conventions
 
 Follow current user direction, then the project's established workflow. Read its
-`AGENTS.md`/`CLAUDE.md`, relevant project docs and any existing
-`docs/agents/issue-tracker.md`; that filename is not a prerequisite.
+`AGENTS.md`/`CLAUDE.md` and relevant project docs, including any tracker doc
+they name.
 Use the configured tracker and destination (for example Linear team/project or
 GitHub repository/project), issue templates, labels, priority rules and status
 transitions. No fixed list of trackers limits the choice. A Git remote or
