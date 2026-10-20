@@ -122,12 +122,23 @@ def stale_tabs(root, pane, session):
 
 
 def herdr_tabs(session, workspace):
-    """The IDs of the tabs a Herdr session lists in a workspace."""
+    """The IDs of the tabs a Herdr session lists in a workspace; none when the workspace is closed or the session
+    stopped, which close its tabs."""
     result = subprocess.run(['herdr', '--session', session, 'tab', 'list', '--workspace', workspace],
                             capture_output=True, text=True, timeout=5)
+    if result.returncode and herdr_error(result) in ('workspace_not_found', 'server_not_running'):
+        return set()
     if result.returncode:
         raise RuntimeError(f'herdr tab list exited {result.returncode}: {(result.stderr or result.stdout).strip()}')
     return {tab['tab_id'] for tab in json.loads(result.stdout)['result']['tabs']}
+
+
+def herdr_error(result):
+    """The error code a failed Herdr command reported, else None."""
+    try:
+        return json.loads(result.stderr or result.stdout)['error']['code']
+    except (ValueError, TypeError, KeyError):
+        return None
 
 
 def undelivered(root, pane, session):
@@ -148,7 +159,8 @@ def undelivered(root, pane, session):
             # Dispatch start records the authorization until the review report records its own.
             autofix = review.get('autofix', 'true' if binding.get('autofix') else 'false')
             if (autofix != 'true' or str(review.get('blocker') or 'none') != 'none'
-                    or any(fm['status'] != 'done' for name, fm in tickets.items() if board.spec_of(name) == slug)):
+                    or any(fm['status'] != 'done' for name, fm in tickets.items() if board.spec_of(name) == slug)
+                    or board.merged_and_deleted(slug)):
                 continue
             problems = board.delivery_problems(slug)
         except (Exception, SystemExit) as error:  # A check that cannot run is a named gap, never a pass.

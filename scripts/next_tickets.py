@@ -159,6 +159,14 @@ def delivery_evidence(slug):
     return not delivery_problems(slug)
 
 
+def merged_and_deleted(slug):
+    """Whether an effort's branch is gone and its reviewed head is in main: integrated, with nothing left to deliver."""
+    head = str((review_front_matter(slug) or {}).get('review_head') or '')
+    return (branch_ref(effort_branch(slug)) is None and bool(re.fullmatch('[0-9a-f]{40}', head))
+            and subprocess.run(['git', '-C', str(ROOT), 'merge-base', '--is-ancestor', head, 'refs/heads/main'],
+                               capture_output=True).returncode == 0)
+
+
 def delivery_problems(slug):
     """Structural delivery gate: each recorded field that fails it, [] when none does. The orchestrator must also
     judge the recorded evidence.
@@ -609,7 +617,14 @@ def main(argv):
             print(f"{fm.get('status', '<missing>'):<12} {name:<52} touches={','.join(fm.get('touches', []))} blocked_by={deps}")
         return
     if args.coordinate:
-        for slug in sorted({spec_of(t) for t in selected}):
+        slugs = sorted({spec_of(t) for t in selected})
+        if not args.slug:  # Only efforts with work left: a ticket not done, or delivery incomplete on a live branch.
+            slugs = [slug for slug in slugs
+                     if any(fm['status'] != 'done' for t, fm in selected.items() if spec_of(t) == slug)
+                     or branch_ref(effort_branch(slug)) and delivery_problems(slug)]
+            if not slugs:
+                sys.exit('no selected effort has work left to coordinate')
+        for slug in slugs:
             coordinate(slug, args.autofix)
         return
     if args.set:

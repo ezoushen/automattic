@@ -42,7 +42,9 @@ class GateRepo(unittest.TestCase):
         self.served = self.bin / 'herdr.json'
         self.serve()
         # `agent list` and `agent get` answer with the served agents; `pane get` with the served panes and `tab list`
-        # and `tab get` with the served tabs of the `--session` server; `pane current` finds no pane there.
+        # and `tab get` with the served tabs of the `--session` server; `pane current` finds no pane there. As real
+        # Herdr does, `tab list` answers server_not_running for a session that serves no tabs, and workspace_not_found
+        # for a workspace with none.
         stub = self.bin / 'herdr'
         stub.write_text(f'#!{sys.executable}\n' + f'''
 import json, sys, time
@@ -65,8 +67,15 @@ elif args[:2] in (['pane', 'get'], ['pane', 'current']):
 elif args[:2] == ['agent', 'get'] and any(args[2] in (a['name'], a['pane_id']) for a in served['agents']):
     agent = next(a for a in served['agents'] if args[2] in (a['name'], a['pane_id']))
     print(json.dumps({{'result': {{'agent': agent, 'type': 'agent_info'}}}}))
+elif args[:2] == ['tab', 'list'] and session not in served['tabs']:
+    print(json.dumps({{'error': {{'code': 'server_not_running', 'message': 'no server for ' + session}}}}), file=sys.stderr)
+    sys.exit(1)
+elif args[:3] == ['tab', 'list', '--workspace'] and not any(tab['workspace_id'] == args[3]
+                                                            for tab in served['tabs'][session]):
+    print(json.dumps({{'error': {{'code': 'workspace_not_found', 'message': args[3]}}}}), file=sys.stderr)
+    sys.exit(1)
 elif args[:3] == ['tab', 'list', '--workspace']:
-    tabs = [tab for tab in served['tabs'].get(session, []) if tab['workspace_id'] == args[3]]
+    tabs = [tab for tab in served['tabs'][session] if tab['workspace_id'] == args[3]]
     print(json.dumps({{'result': {{'tabs': tabs, 'type': 'tab_list'}}}}))
 elif args[:2] == ['tab', 'get'] and any(tab['tab_id'] == args[2] for tab in served['tabs'].get(session, [])):
     print(json.dumps({{'result': {{'tab': {{'tab_id': args[2], 'pane_count': 1}}, 'type': 'tab_info'}}}}))
@@ -123,13 +132,15 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)
 
-    def bind(self, pane='w1:p1', slug='fix', autofix=False, **sessions):
-        """Run dispatch's binding for effort `slug`, with `--autofix` when `autofix`, as an orchestrator in Herdr pane
-        `pane` (None: outside Herdr) whose host exports `sessions` (a SESSION_VARIABLES name to its value)."""
-        result = subprocess.run([sys.executable, '-B', str(TICKETS), '--repo', str(self.repo), slug, '--coordinate',
-                                 *(['--autofix'] if autofix else [])],
+    def bind(self, pane='w1:p1', slug='fix', autofix=False, code=0, **sessions):
+        """Run dispatch's binding for effort `slug` (None: every effort), with `--autofix` when `autofix`, as an
+        orchestrator in Herdr pane `pane` (None: outside Herdr) whose host exports `sessions` (a SESSION_VARIABLES name
+        to its value); the finished process, which must exit `code`."""
+        result = subprocess.run([sys.executable, '-B', str(TICKETS), '--repo', str(self.repo), *filter(None, [slug]),
+                                 '--coordinate', *(['--autofix'] if autofix else [])],
                                 capture_output=True, text=True, env=self.env(pane, **sessions), timeout=20)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, code, result.stdout + result.stderr)
+        return result
 
     def launch(self, command, cwd=None, pane='w1:p1', session='host-1', env=None):
         """Run the Bash PreToolUse hook as Claude or Codex does before `command`."""
@@ -858,6 +869,45 @@ class DeliveryHold(GateRepo):
         self.review(autofix='true')
         self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
 
+    def test_an_effort_merged_into_main_with_its_branch_deleted_is_finished_and_not_held(self):
+        # Review 1 (11 of 11 real reviewed efforts): after delivery the effort branch is merged and deleted. Every ticket
+        # done and the reviewed head in main is what the board records of that, so nothing is held. A branch deleted
+        # while its reviewed head is not in main is still unfinished.
+        self.bind(pane='w1:p1')
+        self.git('update-ref', 'refs/heads/main', self.head)
+        self.git('branch', '-D', 'feat/fix')
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.git('update-ref', 'refs/heads/main', self.start)
+        self.assertEqual(self.check(pane='w1:p1'), [
+            'fix: delivery incomplete under autofix: e2e_status: not-run (needs passed); e2e_by: none names no worker '
+            'run; effort branch feat/fix is not an existing branch. Continue the autofix handoff '
+            f'({ROOT}/skills/dispatch/handoff.md) until `python3 {ROOT}/scripts/next_tickets.py --repo {self.repo} fix '
+            f'--delivery` passes, or record `blocker: <reason>` in {self.report}'])
+
+    def test_coordinating_every_effort_binds_only_those_with_work_left_and_refuses_when_none_has(self):
+        # Review 1: with no slug, --coordinate binds an effort with a ticket not done, or with delivery incomplete and
+        # its branch present; never a finished one (merged into main, branch deleted). With none left it refuses.
+        for slug, status in (('wip', 'implementing'), ('old', 'done')):
+            path = self.repo / f'.scratch/{slug}/issues/01-task.md'
+            path.parent.mkdir(parents=True)
+            path.write_text(f'---\nticket: {slug}/01\nstatus: {status}\nblocked_by: []\ntouches: [{slug}]\n'
+                            'devices: []\n---\n')
+        old = self.repo / '.scratch/old/reports/spec-review.md'
+        old.parent.mkdir(parents=True)
+        old.write_text(self.report.read_text())
+        bound = self.bind(slug=None).stdout
+        self.assertEqual(sorted(line.split(':')[0] for line in bound.splitlines()), ['fix', 'wip'], bound)
+        self.assertFalse((self.repo / '.scratch/old/reports/coordinator.json').exists())
+        for slug in ('fix', 'wip'):
+            (self.repo / f'.scratch/{slug}/reports/coordinator.json').unlink(missing_ok=True)
+        self.ticket('01', 'done')
+        (self.repo / '.scratch/wip/issues/01-task.md').unlink()
+        self.git('update-ref', 'refs/heads/main', self.head)
+        self.git('branch', '-D', 'feat/fix')
+        refused = self.bind(slug=None, code=1)
+        self.assertEqual(refused.stderr, 'no selected effort has work left to coordinate\n')
+        self.assertEqual(sorted(self.repo.glob('.scratch/*/reports/coordinator.json')), [])
+
     def test_while_a_ticket_is_not_done_the_coordinator_is_not_held_for_delivery(self):
         # Rule 4: the hold covers delivery once every ticket is done; an unfinished or blocked ticket is still
         # implementation, which the board and the worker gates answer for.
@@ -978,6 +1028,20 @@ class StaleTabs(GateRepo):
         self.assertEqual(self.check(pane='w1:p2', session='host-2'), [self.gap()])
         self.assertEqual(self.check(pane='w1:p1'), [])
         self.assertEqual(self.check(pane='w1:p2', session='host-3'), [])
+
+    def test_a_closed_workspace_or_stopped_herdr_session_means_the_tab_is_gone(self):
+        # Review 2: real Herdr answers workspace_not_found for a closed workspace and server_not_running for a stopped
+        # session; either way the tab is gone, so neither is a gap. Any other failure stays a named gap.
+        self.register()
+        self.collect()
+        self.serve(tabs={'default': [dict(self.tab, tab_id='w2:t1', workspace_id='w2')]})
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.serve(tabs={'other': [self.tab]})
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.serve(tabs={'default': [self.tab]}, fail='connection refused')
+        self.assertEqual(self.check(pane='w1:p1'), [
+            'could not check worker tabs: herdr tab list exited 1: '
+            '{"error": {"code": "server_unavailable", "message": "connection refused"}}'])
 
     def test_a_herdr_that_cannot_list_tabs_is_a_named_gap_that_hides_no_other_gap(self):
         # Rule 5: when Herdr fails or does not answer, the tab check is a named gap for the coordinator, held once,
