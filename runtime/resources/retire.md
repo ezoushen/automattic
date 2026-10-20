@@ -15,9 +15,10 @@ creation ownership are still host-verified assertions; the helper cannot inspect
 all native worker jobs or authenticate ownership claims.
 
 Closure is recorded only after `pane get` returns the native `pane_not_found`
-error and `tab get` returns `tab_not_found` for the tab Herdr reported for that
-pane. A tab that survives, because another pane joined it, is reported and closure
-is not recorded. A transport error or replaced conversation never counts as closure. If a
+error and, for an attempt that recorded its Herdr tab at registration, `tab get`
+returns `tab_not_found` for that tab. A tab that survives, because another pane
+joined it, holds closure: close the remaining panes or the tab, then retire again.
+A transport error or replaced conversation never counts as closure. If a
 pane disappeared before any retirement intent, the host must inspect its native
 closure and reconcile owned jobs, then use the evidence-backed `record closed`
 path; absence alone does not establish ownership or safe cleanup. A

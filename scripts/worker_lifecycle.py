@@ -29,6 +29,7 @@ DEFINITIONS = agent_defs.load()
 TAB_RECIPE = ('start the worker in a tab of its own: `herdr tab create --workspace <coordinator workspace> '
               '--cwd <worktree> --label "<slug>/<assignment> <role>" --no-focus`, then `herdr agent start <name> '
               '--kind <kind> --pane <returned root pane> -- <launch args>`, then register it')
+LOOKUP_SECONDS = 5  # Registration's wait on each Herdr call.
 
 
 def require(value, message):
@@ -456,6 +457,12 @@ def record(db, data, refuse_changes=False):
     require(text(attempt), 'Event requires attempt')
     # A read-only worktree is read before the write lock is taken; the result check and any refusal use that one read.
     now = observed_state(get(db, attempt)) if kind == 'result' and data.get('status') == 'completed' else None
+    # Herdr is asked before the write lock is taken too, so a Herdr that does not answer holds no lock.
+    placed = None
+    if kind == 'register':
+        route = read_object(data['execution']) if text(data.get('execution')) else {}
+        if route.get('executor_config', {}).get('skill') == 'herdr' or 'herdr' in data:
+            placed = herdr_placement(data.get('herdr'), data.get('worker'))
     db.execute('BEGIN IMMEDIATE')
     with db:
         if kind == 'register':
@@ -505,8 +512,8 @@ def record(db, data, refuse_changes=False):
                             'Same-assignment reuse requires collected result, explicit retention and no live wait')
             saved = dict(data, agent=execution['agent'], job=execution['job'], execution_snapshot=execution,
                          requested=dict(settings, runtime=data['runtime']), verified=False)
-            if execution.get('executor_config', {}).get('skill') == 'herdr' or 'herdr' in data:
-                saved['herdr'] = herdr_placement(data.get('herdr'), data['worker'])
+            if placed:
+                saved['herdr'] = placed
             if DEFINITIONS['agents'][execution['agent']]['writes'] == 'none':
                 saved['worktree_baseline'] = worktree_state(data['worktree'])  # Not in the event: it can be large.
             decision = linked_decision(execution)
@@ -954,9 +961,12 @@ def submit(db, state, attempt, request):
     return watch(db, state, attempt, request, productive=True)
 
 
-def herdr(session, *args):
-    process = subprocess.run(['herdr', '--session', session, *args], capture_output=True,
-                             text=True, timeout=15)
+def herdr(session, *args, timeout=15):
+    try:
+        process = subprocess.run(['herdr', '--session', session, *args], capture_output=True,
+                                 text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise ValueError(f'Herdr did not answer {" ".join(args)} within {timeout} s') from None
     response = json.loads(process.stdout if process.stdout.strip() else process.stderr)
     require(isinstance(response, dict), 'Invalid native lifecycle response')
     return process.returncode, response
@@ -964,32 +974,38 @@ def herdr(session, *args):
 
 def herdr_placement(claimed, worker):
     """Where Herdr itself places a worker launched through it, which must be a tab of its own."""
-    require(isinstance(claimed, dict) and text(claimed.get('session')),
-            'A Herdr worker registers with herdr.session, the Herdr session it runs in')
+    require(text(worker), 'Registration requires worker')
+    claimed = dict(claimed) if isinstance(claimed, dict) else {}
+    if worker.count('/') == 2:
+        # A cross-session handle names its session, pane and agent: ask that session for the pane, confirm the rest.
+        claimed.update(zip(('session', 'pane_id', 'name'), worker.split('/')))
+        worker = claimed['pane_id']
+    require(text(claimed.get('session')), 'A Herdr worker registers with herdr.session, the Herdr session it runs in')
     session = claimed['session']
-    code, response = herdr(session, 'agent', 'get', worker)
+    code, response = herdr(session, 'agent', 'get', worker, timeout=LOOKUP_SECONDS)
     require(code == 0, f'Herdr cannot confirm worker {worker} in session {session}: '
                        f'{response.get("error", {}).get("code")}')
     agent = response['result']['agent']
     placed = dict(session=session, **{key: agent.get(key) for key in ('workspace_id', 'tab_id', 'pane_id', 'name')})
-    for key in ('tab_id', 'pane_id'):
+    for key in ('tab_id', 'pane_id', 'name'):
         require(claimed.get(key, placed[key]) == placed[key],
                 f'Registration names {key} {claimed.get(key)}, but Herdr reports {placed[key]} for {worker}')
-    code, response = herdr(session, 'tab', 'get', placed['tab_id'])
+    code, response = herdr(session, 'tab', 'get', placed['tab_id'], timeout=LOOKUP_SECONDS)
     require(code == 0, f'Herdr cannot confirm tab {placed["tab_id"]}: {response.get("error", {}).get("code")}')
     panes = response['result']['tab']['pane_count']
     require(panes <= 1, f'One worker per tab: {placed["tab_id"]} holds {panes} panes; {TAB_RECIPE}')
-    coordinator = {os.environ.get('HERDR_TAB_ID'), (caller_pane(session, 'registration') or {}).get('tab_id')}
+    caller = caller_pane(session, 'registration', LOOKUP_SECONDS) or {}
+    coordinator = {os.environ.get('HERDR_TAB_ID'), caller.get('tab_id')}
     require(placed['tab_id'] not in coordinator,
             f"One worker per tab: {placed['tab_id']} is the coordinator's own tab; {TAB_RECIPE}")
     return placed
 
 
-def caller_pane(session, purpose):
+def caller_pane(session, purpose, timeout=15):
     """The calling pane where Herdr has it now, which follows a move; None outside Herdr or that session."""
     if not os.environ.get('HERDR_PANE_ID'):
         return None
-    code, response = herdr(session, 'pane', 'current', '--current')
+    code, response = herdr(session, 'pane', 'current', '--current', timeout=timeout)
     if code == 0:
         return response['result']['pane']
     error = response.get('error')
@@ -1045,8 +1061,8 @@ def retire(db, state, attempt, request):
                     'Retirement already owned by a live process')
             stamp = process_stamp(os.getpid())
             require(stamp, 'Cannot establish retirement process identity')
-            saved['retirement_requested'] = dict(session=session, pane=pane, pid=os.getpid(), stamp=stamp,
-                                                  native_identity=identity, tab_id=agent.get('tab_id'))
+            saved['retirement_requested'] = dict(session=session, pane=pane, pid=os.getpid(),
+                                                  stamp=stamp, native_identity=identity)
             save(db, saved)
             event(db, attempt, 'retirement-started', saved['retirement_requested'])
         code, response = herdr(session, 'pane', 'close', pane)
@@ -1057,12 +1073,14 @@ def retire(db, state, attempt, request):
     code, response = herdr(session, 'pane', 'get', pane)
     require(code != 0 and response.get('error', {}).get('code') == 'pane_not_found',
             'Native closure is not confirmed; preserve the original retirement target')
-    # Closing a tab's only pane closes the tab; a tab that survives still holds another pane.
-    tab = get(db, attempt)['retirement_requested']['tab_id']
-    code, tab_response = herdr(session, 'tab', 'get', tab)
-    require(code != 0 and tab_response.get('error', {}).get('code') == 'tab_not_found',
-            f'Tab {tab} is not confirmed closed after its worker pane closed: {json.dumps(tab_response)}; '
-            'inspect it, closure is not recorded')
+    # Closing a tab's only pane closes the tab; a tab that survives still holds another pane. An attempt
+    # registered without a Herdr identity has no recorded tab and keeps the pane rule alone.
+    tab, tab_response = saved.get('herdr', {}).get('tab_id'), None
+    if tab:
+        code, tab_response = herdr(session, 'tab', 'get', tab)
+        require(code != 0 and tab_response.get('error', {}).get('code') == 'tab_not_found',
+                f'Tab {tab} is not confirmed closed after its worker pane closed: {json.dumps(tab_response)}; '
+                'closure is not recorded: close the remaining panes or the tab, then retire again')
     directory = state.parent / (state.name + '.native')
     directory.mkdir(mode=0o700, exist_ok=True)
     proof = directory / (uuid.uuid4().hex + '.json')
