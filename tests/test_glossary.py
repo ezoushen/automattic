@@ -47,6 +47,10 @@ class Glossary(unittest.TestCase):
         for skill in ('skills/align/SKILL.md', 'skills/refine/SKILL.md'):
             self.assertIn('](../../runtime/domain/glossary.md)', prose(skill))
 
+    def test_refine_tells_the_reader_to_take_ticket_words_from_the_glossary(self):
+        self.assertIn("Use the project's [glossary](../../runtime/domain/glossary.md) for the words.",
+                      prose('skills/refine/SKILL.md'))
+
     def test_no_doc_names_the_old_glossary_file(self):
         found = subprocess.run(
             ['git', 'grep', '-n', '-I', '-E', r'CONTEXT\.md',

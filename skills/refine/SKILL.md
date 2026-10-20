@@ -49,7 +49,7 @@ do not create local issue files or require local front matter for remote tickets
    the goal, boundaries and observable outcomes the criteria assert. Resolve areas,
    hot files and verification from [project execution facts](../../runtime/board/project-loop.md).
    Reuse established areas; when missing, name them from modules/shared resources
-   and record them in the effort alignment for dispatch. The project's [glossary](../../runtime/domain/glossary.md) for the words. Read the
+   and record them in the effort alignment for dispatch. Use the project's [glossary](../../runtime/domain/glossary.md) for the words. Read the
    configured tracker and relevant existing issues; preserve their destination,
    identity, scope and priority.
    Record the effort's intended branch base and any unmerged prerequisites before

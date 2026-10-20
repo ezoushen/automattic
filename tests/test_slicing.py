@@ -93,5 +93,10 @@ class Slicing(unittest.TestCase):
             with self.subTest(rule=rule):
                 self.assertIn(rule, text)
 
+    def test_a_split_reuses_an_existing_breakdown_instead_of_refining_it_again(self):
+        text = re.sub(r'<!--.*?-->', '', prose(ROOT / 'skills/dispatch/split-work.md'))
+        self.assertIn('Reuse existing child issues and dependencies; dispatch ready children rather than refining an '
+                      'already executable breakdown again.', text)
+
 if __name__ == '__main__':
     unittest.main()
