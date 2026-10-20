@@ -74,9 +74,11 @@ agent of its workspace whose cwd is in `.worktrees/` (none asked when the checko
 `.worktrees/`), when no attempt names that pane or agent (alone or in a
 `<session>/<pane>/<name>` handle; for a launch, an attempt registered from its pane, or
 after it when it was made outside Herdr) and none of its
-dismissals accounts for it, however old the run. A launch belongs to the pane that ran it
-and, when both sides know one, the same host session, so a pane ID that a restarted Herdr
-reuses inherits nothing. A check that cannot run (Herdr or git fails or times out) and a
+dismissals accounts for it, however old the run. A launch, like the dispatch binding
+(`--coordinate`), belongs to the host session that ran it when both sides know one, whatever
+pane either reports (a Codex session's `HERDR_PANE_ID` can come from another pane, through its
+shared app-server, and a restarted Herdr reuses pane IDs); only without a host session does the
+pane decide. A check that cannot run (Herdr or git fails or times out) and a
 launch log line that is unreadable or has malformed fields are named gaps, never a pass.
 The session dispatch bound to coordinate an effort (`next_tickets.py --coordinate`) is also
 held for each collected attempt, neither retained nor retired, whose recorded tab Herdr still lists

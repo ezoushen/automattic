@@ -482,9 +482,10 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.state = run('other-run')
         self.register('builder-4', 'other-4/1', native_session='other-native', pane=None)
         self.serve()
-        self.assertEqual(self.check(session='host-1'), [self.gap(f'builder-{index}', f'w1:p{index + 4}')
-                                                        for index in (1, 2, 4)])
-        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-6', 'w1:p10')])
+        # Every launch here is host-1's, whose session alone names it, in whatever pane it stops.
+        missing = [self.gap(f'builder-{index}', f'w1:p{index + 4}') for index in (1, 2, 4, 6)]
+        self.assertEqual(self.check(session='host-1'), missing)
+        self.assertEqual(self.check(pane=None, session='host-1'), missing)
 
     def test_a_session_pane_name_handle_clears_a_launch_matching_its_pane_or_its_name(self):
         # Decision 2: the lifecycle also accepts `<session>/<pane>/<name>` as a worker handle.
@@ -510,20 +511,22 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('helper-1', 'w1:p7')])
 
     def test_only_the_coordinator_that_launched_a_worker_is_held_for_it(self):
-        # Rule 2: a launch belongs to the Herdr pane that ran it, else to the host session; no identity, no owner.
+        # Rule 2: a launch belongs to the host session that ran it, else to its Herdr pane; no identity, no owner.
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane='w1:p1', session='host-1')
         self.launch('herdr agent start builder-2 --kind codex --pane w1:p5', pane=None, session='host-1')
         self.launch('herdr agent start builder-3 --kind codex --pane w1:p5', pane=None, session=None)
         self.serve()
+        both = [self.gap('builder-1', 'w1:p5'), self.gap('builder-2', 'w1:p5')]
         self.assertEqual(self.check(pane='w1:p1'), [self.gap('builder-1', 'w1:p5')])
-        self.assertEqual(self.check(pane='w1:p9', session='host-1'), [])
-        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p5')])
+        self.assertEqual(self.check(pane='w1:p9', session='host-1'), both)
+        self.assertEqual(self.check(pane=None, session='host-1'), both)
         self.assertEqual(self.check(pane=None, session='host-2'), [])
         self.assertEqual(self.check(pane=None), [])
 
     def test_a_reused_pane_with_another_host_session_inherits_no_launches(self):
-        # Decision 4: when the launch and the stopping session both carry a host session, pane and session must both
-        # match; the pane alone decides only when one side has no session (a restarted Herdr may reuse pane ids).
+        # When the launch and the stopping session both carry a host session, it alone decides (T10, replacing
+        # pane and session both); the pane decides only when one side has no session (a restarted Herdr may reuse
+        # pane ids, so another session in the reused pane inherits nothing).
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane='w1:p1', session='old-1')
         self.launch('herdr agent start builder-2 --kind codex --pane w1:p5', pane='w1:p1', session=None)
         self.serve()
@@ -531,7 +534,18 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual(self.check(pane='w1:p1', session='new-1'), [self.gap('builder-2', 'w1:p5')])
         self.assertEqual(self.check(pane='w1:p1', session='old-1'), both)
         self.assertEqual(self.check(pane='w1:p1'), both)
-        self.assertEqual(self.check(pane='w1:p2', session='old-1'), [])
+        self.assertEqual(self.check(pane='w1:p2', session='old-1'), [self.gap('builder-1', 'w1:p5')])
+
+    def test_a_codex_launch_under_a_stale_herdr_pane_holds_the_session_that_made_it(self):
+        # Rule (E4 codex): Codex runs commands through a shared app-server whose HERDR_PANE_ID came from another pane,
+        # so where a host session ID is known it alone decides whose launch it is; the stale pane decides nothing.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane='w1:p17', session='codex-1')
+        self.serve()
+        self.assertEqual(self.check(pane='w2:p1', session='codex-1'), [self.gap('builder-1', 'w1:p5')])
+        self.assertEqual(self.check(pane=None, session='codex-1'), [self.gap('builder-1', 'w1:p5')])
+        self.assertEqual(self.check(pane='w1:p17', session='codex-2'), [])
+        for host in ('codex', 'claude'):
+            self.assertEqual(self.stop(pane='w2:p1', session='codex-1', host=host)['decision'], 'block', host)
 
     def test_launches_and_registrations_count_however_long_ago_their_run_was_active(self):
         # Rule 2: neither the launch log nor a run's registrations age out with the gate's one-day filter.
@@ -581,7 +595,8 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
                            self.agent('e2e-1', 'w1:p7', self.repo),
                            self.agent('builder-1', 'w1:p5', self.worktree)])
         self.assertEqual(self.check(), [self.gap('builder-1', 'w1:p5')])
-        self.assertEqual(self.check(pane=None, session='host-1'), [])
+        # Outside Herdr only the launch host-1 logged is named, not the workspace's live agents.
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-1', 'w1:p5')])
 
     def test_an_unmarked_worker_in_its_registered_worktree_is_not_held_for_the_runs_lifecycle_gaps(self):
         # Re-review 3 (main's rule, restored for the lifecycle gaps): a session whose cwd is inside a worktree an
@@ -836,6 +851,16 @@ class DeliveryHold(GateRepo):
                 self.assertEqual(self.stop(pane=None, session=f'{variable}-1', host=host)['decision'], 'block')
                 self.assertIsNone(self.stop(pane=None, session='other-1', host=host))
 
+    def test_a_codex_coordinator_bound_under_a_stale_herdr_pane_is_held_by_its_session(self):
+        # Rule (E4 codex): the binding recorded the app-server's stale pane w1:p17 beside the right CODEX_SESSION_ID;
+        # the stop check holds that session in whatever pane it reports, and no other session in the stale pane.
+        self.bind(pane='w1:p17', CODEX_SESSION_ID='codex-1')
+        self.assertEqual(self.check(pane='w2:p1', session='codex-1'), [self.gap()])
+        self.assertEqual(self.check(pane=None, session='codex-1'), [self.gap()])
+        self.assertEqual(self.stop(pane='w2:p1', session='codex-1', host='codex')['decision'], 'block')
+        self.assertEqual(self.check(pane='w1:p17', session='codex-2'), [])
+        self.assertIsNone(self.stop(pane='w1:p17', session='codex-2', host='codex'))
+
     def test_a_coordinator_with_no_identity_is_refused(self):
         # Review 4: outside Herdr, on a host that exports no session ID, nothing could match a stopping session, so the
         # binding refuses, saying the stop hold cannot bind, and records nothing.
@@ -846,13 +871,13 @@ class DeliveryHold(GateRepo):
         self.assertFalse((self.repo / '.scratch/fix/reports/coordinator.json').exists())
 
     def test_no_other_session_is_held(self):
-        # Rule 4: when the binding and the stopping session both know a host session, pane and session must both match,
-        # so the bound pane now running another conversation (or a restarted Herdr's reused pane ID) is not held, nor
-        # is the same host session in another pane; with no session on one side the pane decides.
+        # Rule 4: when the binding and the stopping session both know a host session, it alone decides (T10), so the
+        # bound pane now running another conversation (or a restarted Herdr's reused pane ID) is not held, while the
+        # same host session in another pane is; with no session on one side the pane decides.
         self.bind(pane='w1:p1', CLAUDE_CODE_SESSION_ID='host-1')
-        self.assertEqual(self.check(pane='w1:p1', session='host-1'), [self.gap()])
-        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
-        for pane, session in (('w1:p1', 'host-2'), ('w1:p9', 'host-1'), ('w1:p9', None), (None, 'host-2')):
+        for pane, session in (('w1:p1', 'host-1'), ('w1:p1', None), ('w1:p9', 'host-1')):
+            self.assertEqual(self.check(pane=pane, session=session), [self.gap()], (pane, session))
+        for pane, session in (('w1:p1', 'host-2'), ('w1:p9', None), (None, 'host-2')):
             self.assertEqual(self.check(pane=pane, session=session), [], (pane, session))
 
     def test_a_recorded_blocker_lets_the_coordinator_stop(self):

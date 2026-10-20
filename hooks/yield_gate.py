@@ -205,8 +205,8 @@ def read_binding(path, pane, session):
 
 
 def coordinates(binding, pane, session):
-    """Whether a dispatch binding ({pane, sessions}) names this session: as for a launch, pane and host session must
-    both match when both sides know a session."""
+    """Whether a dispatch binding ({pane, sessions}) names this session: as for a launch, by host session alone when
+    both sides know one."""
     return any(same_coordinator({'pane': binding['pane'], 'session': known}, pane, session)
                for known in binding['sessions'] or [None])
 
@@ -220,10 +220,11 @@ def herdr_agents():
 
 
 def same_coordinator(theirs, pane, session):
-    """Whether a recorded coordinator ({pane, session}) is this session: pane and host session must both match when
-    both sides know the session, so a pane ID that a restarted Herdr reuses inherits nothing; else the pane decides."""
+    """Whether a recorded coordinator ({pane, session}) is this session: by host session alone when both sides know
+    one, since a Codex session's HERDR_PANE_ID can come from another pane (its shared app-server's) and a restarted
+    Herdr may reuse a pane ID; else the pane decides."""
     if theirs['session'] and session:
-        return theirs == {'pane': pane, 'session': session}
+        return theirs['session'] == session
     return bool(pane) and theirs['pane'] == pane
 
 
