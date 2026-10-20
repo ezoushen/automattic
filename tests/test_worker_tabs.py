@@ -52,10 +52,45 @@ class HerdrTabs(WorkerLifecycleCase):
                          {'session': 'fixture-session', 'workspace_id': 'ws-1', 'tab_id': 'tab-1',
                           'pane_id': 'pane-1', 'name': 'builder-1'})
 
+    def test_registration_refuses_a_runtime_that_herdr_contradicts(self):
+        # Rule: the agent kind Herdr reports must be the registration's runtime; the refusal names both.
+        self.herdr_route()
+        self.herdr_fixture(agent_kind='codex')
+        error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
+        self.assertIn('runtime claude', error)
+        self.assertIn('Herdr reports codex', error)
+        self.assertEqual(self.cli('status')['attempts'], [])
+
+    def test_registration_refuses_a_native_session_that_herdr_contradicts(self):
+        # Rule: a conversation ID Herdr reports as the agent's session must be the registration's native_session.
+        self.herdr_route()
+        self.herdr_fixture(native_session='native-9')
+        error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
+        self.assertIn('native_session native-1', error)
+        self.assertIn('Herdr reports native-9', error)
+        self.assertEqual(self.cli('status')['attempts'], [])
+
+    def test_a_session_herdr_reports_as_a_path_is_not_compared_with_native_session(self):
+        # Rule: a path-kind agent_session is not a conversation ID, so it is not compared (only both IDs are).
+        self.herdr_route()
+        self.herdr_fixture(native_session='/sessions/native.jsonl', session_kind='path')
+        self.register(worker='builder-1', herdr={'session': 'fixture-session'})
+        self.assertEqual(self.cli('status')['attempts'][0]['native_session'], 'native-1')
+
+    def test_a_handle_whose_session_differs_from_herdr_session_is_refused(self):
+        # Rule: the parts of a `session/pane/name` handle are claims like any other; a herdr.session that differs
+        # from the handle's is refused, naming both sessions.
+        self.herdr_route()
+        self.herdr_fixture()
+        error = self.register(worker='fixture-session/pane-1/builder-1', herdr={'session': 'other-session'}, code=2)
+        self.assertIn('session other-session', error)
+        self.assertIn('names fixture-session', error)
+        self.assertEqual(self.cli('status')['attempts'], [])
+
     def test_a_herdr_that_does_not_answer_holds_no_state_lock_and_is_refused_within_five_seconds(self):
         # Rule: Herdr is asked before the state's write lock is taken and waited on about 5 s per call, so a hung
         # Herdr blocks no other writer, and the registration still fails closed with a named reason.
-        self.herdr_fixture(hang=True)
+        self.herdr_fixture(agent_delay=30)
         started, outcome = time.monotonic(), {}
 
         def register():
@@ -63,7 +98,7 @@ class HerdrTabs(WorkerLifecycleCase):
             outcome['seconds'] = time.monotonic() - started
         waiting = threading.Thread(target=register)
         waiting.start()
-        while not (self.root / 'herdr-hung').exists() and time.monotonic() - started < 5:
+        while not (self.root / 'herdr-waiting').exists() and time.monotonic() - started < 5:
             time.sleep(0.05)
         before = time.monotonic()
         self.register('native/1', 'native', 'native-0', worker='ghost')
@@ -72,6 +107,34 @@ class HerdrTabs(WorkerLifecycleCase):
         self.assertIn('Herdr did not answer agent get builder-1 within 5 s', outcome['error'])
         self.assertLess(outcome['seconds'], 9)
         self.assertEqual([row['attempt'] for row in self.cli('status')['attempts']], ['native/1'])
+
+    def test_a_tab_get_that_does_not_answer_is_refused_within_five_seconds(self):
+        # Rule: every registration lookup waits about 5 s, the tab lookup too; then it fails closed, naming the call.
+        self.herdr_route()
+        self.herdr_fixture(tab_delay=30)
+        started = time.monotonic()
+        error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
+        self.assertLess(time.monotonic() - started, 9)
+        self.assertIn('Herdr did not answer tab get tab-1 within 5 s', error)
+        self.assertEqual(self.cli('status')['attempts'], [])
+
+    def test_registration_keeps_the_execution_it_read_before_asking_herdr(self):
+        # Rule: the resolved execution is read once, before Herdr is asked; a change to its file while Herdr
+        # answers does not reach the attempt.
+        self.herdr_fixture(agent_delay=2)
+        started, outcome = time.monotonic(), {}
+
+        def register():
+            outcome['result'] = self.register(worker='builder-1', herdr={'session': 'fixture-session'})
+        waiting = threading.Thread(target=register)
+        waiting.start()
+        while not (self.root / 'herdr-waiting').exists() and time.monotonic() - started < 5:
+            time.sleep(0.05)
+        self.execution.write_text(json.dumps(dict(json.loads(self.execution.read_text()),
+                                                  settings={'model': 'opus', 'effort': 'low'})))
+        waiting.join(30)
+        self.assertEqual(self.cli('status')['attempts'][0]['requested'],
+                         {'model': 'sonnet', 'effort': 'high', 'runtime': 'claude'})
 
     def test_registration_refuses_a_tab_or_pane_that_herdr_contradicts(self):
         # Rule: a tab_id or pane_id the registration supplies must be Herdr's; the refusal names both values.
@@ -98,6 +161,19 @@ class HerdrTabs(WorkerLifecycleCase):
         error = self.register(worker=None, herdr={'session': 'fixture-session'}, code=2)
         self.assertIn('Registration requires worker', error)
         self.assertEqual([row['attempt'] for row in self.cli('status')['attempts']], ['native/1'])
+
+    def test_every_herdr_route_is_looked_up_whatever_names_its_skill(self):
+        # Rule: a route is a Herdr route when the resolver's executor context is herdr, or when its skill is the
+        # Herdr skill, plain or under a plugin prefix; such a worker never registers without asking Herdr.
+        self.herdr_fixture()
+        plain = json.loads(self.execution.read_text())
+        for case, route in (('herdr context', {'executor_context': 'herdr', 'executor_config': {'skill': 'launch'}}),
+                            ('prefixed skill', {'executor_config': {'skill': 'herdr:herdr'}})):
+            with self.subTest(case=case):
+                self.execution.write_text(json.dumps(dict(plain, executor='skill', **route)))
+                error = self.register(worker='builder-1', code=2)
+                self.assertIn('A Herdr worker registers with herdr.session', error)
+                self.assertEqual(self.cli('status')['attempts'], [])
 
     def test_a_registration_that_names_a_herdr_session_is_checked_whatever_its_route(self):
         # Rule: a recorded Herdr identity always comes from Herdr, so a claimed one is checked even when the
@@ -127,19 +203,33 @@ class HerdrTabs(WorkerLifecycleCase):
         self.assertIn('Herdr cannot confirm tab tab-1: server_unavailable', error)
         self.assertEqual(self.cli('status')['attempts'], [])
 
-    def test_registration_refuses_a_worker_in_the_coordinators_own_tab(self):
-        # Rule: one worker per tab, and never the coordinator's: the tab Herdr gave the coordinator (HERDR_TAB_ID)
-        # or the tab its pane is in now. Each refusal names the rule and the recipe.
+    def coordinator_tab_refusal(self, caller):
+        """Register builder-1, alone in tab-1, while Herdr places the coordinator's pane `caller` in tab-1."""
         self.herdr_route()
-        for case, caller in (('HERDR_TAB_ID', None), ('pane moved since', 'caller-pane')):
-            with self.subTest(case=case):
-                self.herdr_fixture(caller=caller, caller_tab='tab-1')
-                if caller is None:
-                    self.native_env['HERDR_TAB_ID'] = 'tab-1'
-                error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
-                self.assertIn("One worker per tab: tab-1 is the coordinator's own tab", error)
-                self.assertIn('herdr tab create --workspace <coordinator workspace> --cwd <worktree>', error)
-                self.assertEqual(self.cli('status')['attempts'], [])
+        self.herdr_fixture(caller=caller, caller_tab='tab-1')
+        error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
+        self.assertIn("One worker per tab: tab-1 is the coordinator's own tab", error)
+        self.assertIn('herdr tab create --workspace <coordinator workspace> --cwd <worktree>', error)
+        self.assertEqual(self.cli('status')['attempts'], [])
+
+    def test_registration_refuses_a_worker_in_the_coordinators_own_tab(self):
+        # Rule: one worker per tab, and never the coordinator's: the tab Herdr reports now for the coordinator's
+        # pane (`pane current --current` in the worker's session). The refusal names the rule and the recipe.
+        self.coordinator_tab_refusal('caller-pane')
+
+    def test_registration_refuses_a_worker_that_is_the_coordinators_own_pane(self):
+        # Rule: the same check refuses a worker whose pane is the coordinator's own, alone in its tab, so the
+        # one-pane rule cannot catch it.
+        self.coordinator_tab_refusal('pane-1')
+
+    def test_a_stale_herdr_tab_id_or_a_coordinator_in_another_session_refuses_nothing(self):
+        # Rule: HERDR_TAB_ID can be stale, so it does not name the coordinator's tab; a coordinator Herdr does not
+        # find in the worker's session (pane_not_found) skips the coordinator check instead of refusing.
+        self.herdr_route()
+        self.herdr_fixture()
+        self.native_env['HERDR_TAB_ID'] = 'tab-1'
+        self.register(worker='builder-1', herdr={'session': 'fixture-session'})
+        self.assertEqual(self.cli('status')['attempts'][0]['herdr']['tab_id'], 'tab-1')
 
     def test_retirement_records_closure_only_once_the_workers_tab_is_gone(self):
         # Rule: after the pane is confirmed gone, retire asks Herdr for the worker's tab and records closure only
@@ -201,8 +291,9 @@ class HerdrTabs(WorkerLifecycleCase):
 class TabRecipe(unittest.TestCase):
     def test_the_herdr_guide_starts_each_worker_in_a_tab_of_its_own_then_registers_it(self):
         # Rule: the Herdr guide holds the recipe (tab create with the AUTOMATTIC_WORKER marker, agent start in its
-        # root pane, register) instead of a split of the caller's pane; the shared attempt doc names the
-        # registration field but not the Herdr recipe.
+        # root pane, register) instead of a split of the caller's pane, and how to find the session; the shared
+        # attempt doc names the registration field, how to find its session and the lookup's wait, but not the
+        # Herdr recipe.
         guide = ' '.join((support.ROOT / 'hosts/herdr.md').read_text().split())
         position = 0
         for step in ('never as a split of your pane',
@@ -212,8 +303,12 @@ class TabRecipe(unittest.TestCase):
                      'register it', 'Retirement closes the pane, which closes the tab'):
             position = guide.find(step, position)
             self.assertNotEqual(position, -1, f'{step!r} in order in hosts/herdr.md')
-        shared = (support.ROOT / 'runtime/workers/prepare.md').read_text()
+        self.assertIn('herdr session list', guide)
+        self.assertIn("how Automattic's stop check tells a worker from its coordinator", guide)
+        shared = ' '.join((support.ROOT / 'runtime/workers/prepare.md').read_text().split())
         self.assertIn('"herdr": {"session"', shared)
+        self.assertIn('herdr session list', shared)
+        self.assertIn('up to 5 s', shared)
         self.assertNotIn('herdr tab create', shared)
         for text in (guide, shared):
             self.assertNotIn('pane split', text)

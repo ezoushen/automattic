@@ -71,13 +71,13 @@ Start every worker in a tab of its own in your workspace, never as a split of yo
 pane, whatever placement the installed skill defaults to:
 
 1. `herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label "<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> --no-focus`,
-   with your `HERDR_WORKSPACE_ID` as the workspace. `AUTOMATTIC_WORKER` marks the
-   session as a worker, so the stop check does not hold it as a coordinator.
+   with your `HERDR_WORKSPACE_ID` as the workspace. `AUTOMATTIC_WORKER` is how
+   Automattic's stop check tells a worker from its coordinator.
 2. `herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>`,
    with the `.result.root_pane.pane_id` that step 1 returned.
-3. Then register it, adding `"herdr": {"session": "<session>"}`. Registration reads the
-   worker's pane, tab, workspace and name from `herdr agent get` and refuses a tab that
-   holds another pane or is your own.
+3. Then register it, adding `"herdr": {"session": "<session>"}`; `herdr session list`
+   names the session. Registration reads the worker's pane, tab, workspace and name
+   from `herdr agent get` and refuses a tab that holds another pane or is your own.
 
 Retirement closes the pane, which closes the tab; closure is recorded only once
 `herdr tab get` answers `tab_not_found`.

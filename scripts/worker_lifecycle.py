@@ -458,12 +458,16 @@ def record(db, data, refuse_changes=False):
     require(text(attempt), 'Event requires attempt')
     # A read-only worktree is read before the write lock is taken; the result check and any refusal use that one read.
     now = observed_state(get(db, attempt)) if kind == 'result' and data.get('status') == 'completed' else None
-    # Herdr is asked before the write lock is taken too, so a Herdr that does not answer holds no lock.
-    placed = None
+    # Herdr is asked before the write lock is taken too, so a Herdr that does not answer holds no lock. The
+    # execution is read once, here, so the attempt keeps the route that decided whether to ask.
+    placed = execution = None
     if kind == 'register':
-        route = read_object(data['execution']) if text(data.get('execution')) else {}
-        if route.get('executor_config', {}).get('skill') == 'herdr' or 'herdr' in data:
-            placed = herdr_placement(data.get('herdr'), data.get('worker'))
+        execution = read_object(data['execution']) if text(data.get('execution')) else None
+        route = execution or {}
+        # The resolver marks a Herdr route by its context; a skill route may name the Herdr skill with a plugin prefix.
+        skill = str(route.get('executor_config', {}).get('skill', ''))
+        if route.get('executor_context') == 'herdr' or skill.rpartition(':')[2] == 'herdr' or 'herdr' in data:
+            placed = herdr_placement(data)
     db.execute('BEGIN IMMEDIATE')
     with db:
         if kind == 'register':
@@ -475,7 +479,7 @@ def record(db, data, refuse_changes=False):
                         f'{key} must be an existing absolute directory')
                 data[key] = str(Path(data[key]).resolve())
             require(type(data.get('owned')) is bool, 'Registration requires explicit owned boolean')
-            execution = read_object(data['execution'])
+            require(execution, 'Registration requires execution, the resolved execution file')
             settings = execution.get('settings')
             require(isinstance(settings, dict) and not set(settings) - {'model', 'effort'}
                     and all(text(value) for value in settings.values()), 'Invalid resolved settings')
@@ -973,13 +977,17 @@ def herdr(session, *args, timeout=15):
     return process.returncode, response
 
 
-def herdr_placement(claimed, worker):
-    """Where Herdr itself places a worker launched through it, which must be a tab of its own."""
+def herdr_placement(data):
+    """Where Herdr itself places a registration's worker, which must be a tab of its own."""
+    worker = data.get('worker')
     require(text(worker), 'Registration requires worker')
-    claimed = dict(claimed) if isinstance(claimed, dict) else {}
+    claimed = dict(data['herdr']) if isinstance(data.get('herdr'), dict) else {}
+    claimed.update({key: data[key] for key in ('runtime', 'native_session') if text(data.get(key))})
     if worker.count('/') == 2:
         # A cross-session handle names its session, pane and agent: ask that session for the pane, confirm the rest.
-        claimed.update(zip(('session', 'pane_id', 'name'), worker.split('/')))
+        for key, value in zip(('session', 'pane_id', 'name'), worker.split('/')):
+            require(claimed.setdefault(key, value) == value,
+                    f'Registration names {key} {claimed[key]}, but its worker handle {worker} names {value}')
         worker = claimed['pane_id']
     require(text(claimed.get('session')), 'A Herdr worker registers with herdr.session, the Herdr session it runs in')
     session = claimed['session']
@@ -988,16 +996,21 @@ def herdr_placement(claimed, worker):
                        f'{response.get("error", {}).get("code")}')
     agent = response['result']['agent']
     placed = dict(session=session, **{key: agent.get(key) for key in ('workspace_id', 'tab_id', 'pane_id', 'name')})
-    for key in ('tab_id', 'pane_id', 'name'):
-        require(claimed.get(key, placed[key]) == placed[key],
-                f'Registration names {key} {claimed.get(key)}, but Herdr reports {placed[key]} for {worker}')
+    # Herdr's agent kind is the runtime; only a session it reports as an ID is a native conversation ID.
+    identity = agent.get('agent_session') or {}
+    reported = dict(placed, runtime=agent.get('agent'),
+                    native_session=identity.get('value') if identity.get('kind') == 'id' else None)
+    for key in ('tab_id', 'pane_id', 'name', 'runtime', 'native_session'):
+        require(key not in claimed or reported[key] is None or claimed[key] == reported[key],
+                f'Registration names {key} {claimed.get(key)}, but Herdr reports {reported[key]} for {worker}')
     code, response = herdr(session, 'tab', 'get', placed['tab_id'], timeout=LOOKUP_SECONDS)
     require(code == 0, f'Herdr cannot confirm tab {placed["tab_id"]}: {response.get("error", {}).get("code")}')
     panes = response['result']['tab']['pane_count']
     require(panes <= 1, f'One worker per tab: {placed["tab_id"]} holds {panes} panes; {TAB_RECIPE}')
+    # HERDR_TAB_ID can be stale; Herdr places the coordinator's pane now, and a coordinator outside this session
+    # has no tab here to share.
     caller = caller_pane(session, 'registration', LOOKUP_SECONDS) or {}
-    coordinator = {os.environ.get('HERDR_TAB_ID'), caller.get('tab_id')}
-    require(placed['tab_id'] not in coordinator,
+    require(caller.get('tab_id') != placed['tab_id'],
             f"One worker per tab: {placed['tab_id']} is the coordinator's own tab; {TAB_RECIPE}")
     return placed
 

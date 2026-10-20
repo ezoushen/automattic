@@ -74,9 +74,10 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    inputs as `name: value`. A repair attempt adds `repairs`, naming the collected
    attempt whose work it fixes. When `wake-triage` is enabled, add `journal`, the
    absolute session decisions journal. A worker started through Herdr adds
-   `"herdr": {"session": "<herdr session>"}`, unless its `worker` is a
-   `session/pane/name` handle; registration reads its pane, tab, workspace and name
-   from Herdr (about 5 s per call), refuses a `tab_id`, `pane_id` or name that Herdr
+   `"herdr": {"session": "<herdr session>"}` (`herdr session list` names it), unless
+   its `worker` is a `session/pane/name` handle; registration reads its pane, tab,
+   workspace and name from Herdr, waiting up to 5 s per call, refuses a session,
+   `tab_id`, `pane_id`, name, `runtime` or `native_session` that Herdr or the handle
    contradicts, and refuses a tab the worker shares or the coordinator's.
 
    When the snapshot applied a decision-model recommendation, the helper records

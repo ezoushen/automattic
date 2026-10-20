@@ -142,8 +142,9 @@ class WorkerLifecycleCase(unittest.TestCase):
         return self.cli('escalate', '--attempt', attempt, '--input', str(request))
 
     def herdr_fixture(self, native_session='native-1', verify_error='pane_not_found', caller=None, tab_panes=1,
-                      caller_tab='caller-tab', tab_survives=False, hang=False,
-                      agent_tab='tab-1'):
+                      caller_tab='caller-tab', tab_survives=False, agent_tab='tab-1',
+                      agent_delay=0, tab_delay=0,
+                      agent_kind='claude', session_kind='id'):
         directory = self.root / 'bin'
         directory.mkdir(exist_ok=True)
         executable = directory / 'herdr'
@@ -153,17 +154,19 @@ from pathlib import Path
 marker=Path({str(self.root / 'native-closed')!r})
 args=sys.argv[1:]
 assert args[:2]==['--session','fixture-session']
+for command,delay in ((['agent','get'],{agent_delay!r}),(['tab','get'],{tab_delay!r})):
+    if args[2:4]==command and delay:
+        Path({str(self.root / 'herdr-waiting')!r}).touch();time.sleep(delay)
 if args[2:]==['pane','current','--current']:
     if {caller!r} is None:
         print(json.dumps({{'error':{{'code':'pane_not_found'}}}}),file=sys.stderr);sys.exit(1)
     print(json.dumps({{'result':{{'pane':{{'pane_id':{caller!r},'tab_id':{caller_tab!r}}}}}}}))
-elif args[2:4]==['agent','get'] and {hang!r}:
-    Path({str(self.root / 'herdr-hung')!r}).touch();time.sleep(30)
 elif args[2:4]==['agent','get']:
     if marker.exists() or args[4:] not in (['pane-1'],['builder-1']):
         print(json.dumps({{'error':{{'code':'agent_not_found'}}}}),file=sys.stderr);sys.exit(1)
-    print(json.dumps({{'result':{{'agent':{{'agent':'claude','name':'builder-1','pane_id':'pane-1','tab_id':{agent_tab!r},
-        'workspace_id':'ws-1','agent_status':'idle','agent_session':{{'kind':'id','value':{native_session!r}}}}}}}}}))
+    print(json.dumps({{'result':{{'agent':{{'agent':{agent_kind!r},'name':'builder-1','pane_id':'pane-1',
+        'tab_id':{agent_tab!r},'workspace_id':'ws-1','agent_status':'idle',
+        'agent_session':{{'kind':{session_kind!r},'value':{native_session!r}}}}}}}}}))
 elif args[2:]==['tab','get','tab-1']:
     panes={tab_panes!r}
     if marker.exists() and not {tab_survives!r}:
