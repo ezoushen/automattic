@@ -18,6 +18,8 @@ import time
 ROOT = Path(__file__).resolve().parent.parent
 RECENT_SECONDS = 24 * 3600
 GUIDE = ROOT / 'runtime/workers/wait.md'
+# hooks/herdr_launch.py appends each `herdr agent start` here, one JSON object per line.
+LAUNCHES = '.scratch/herdr-launches.jsonl'
 
 
 def lifecycle():

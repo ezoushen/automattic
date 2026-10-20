@@ -76,4 +76,20 @@ export default function (pi) {
       : { call, output, streak: 1, blocked: 0 };
     return undefined;
   });
+
+  // Log each Herdr agent launch for the yield gate, as the Bash PreToolUse hook does on Claude and Codex.
+  // A failing tool_call handler blocks the tool, so logging catches everything and never blocks.
+  pi.on("tool_call", (event, ctx) => {
+    const command = event.input?.command;
+    if (!["bash", "bg_run"].includes(event.toolName) || !/herdr[\s\S]*agent\s+start/.test(command)) return undefined;
+    try {
+      execFileSync("python3", [`${root}/hooks/herdr_launch.py`], {
+        input: JSON.stringify({ tool_input: { command }, cwd: ctx.cwd, session_id: ctx.sessionManager.getSessionId() }),
+        timeout: 10000,
+      });
+    } catch {
+      // The launch goes unlogged; the stop check still lists live agents nobody registered.
+    }
+    return undefined;
+  });
 }

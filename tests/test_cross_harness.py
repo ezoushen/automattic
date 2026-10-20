@@ -197,14 +197,15 @@ class CrossHarness(unittest.TestCase):
                         assert (path.parent / link.split('#')[0]).exists(), (path, link)
         for harness, relative in (('claude', 'hooks/hooks.json'), ('codex', 'hosts/codex/hooks.json')):
             config = json.loads((PLUGIN / relative).read_text())['hooks']
-            expected = {'SessionStart', 'PreToolUse', 'Stop'} if harness == 'claude' else {'SessionStart', 'Stop'}
-            assert set(config) == expected, (harness, config)
+            assert set(config) == {'SessionStart', 'PreToolUse', 'Stop'}, (harness, config)
             assert config['Stop'][0]['hooks'][0]['command'].endswith(f'hooks/yield_gate.py" {harness}'), config
+            guards = {entry['matcher']: [hook['command'] for hook in entry['hooks']] for entry in config['PreToolUse']}
+            # Both hosts log each Herdr launch before Bash runs it, so the yield gate can name unregistered workers.
+            assert any(command.endswith('hooks/herdr_launch.py"') for command in guards.get('Bash', [])), guards
             if harness == 'claude':
                 guard = config['PreToolUse'][0]
                 assert guard['matcher'] == 'Agent|Task' and guard['hooks'][0]['command'].endswith('hooks/agent_model.py"')
-                guards = {entry['matcher']: entry['hooks'][0]['command'] for entry in config['PreToolUse']}
-                assert guards.get('Bash', '').endswith('hooks/pr_body.py"'), guards
+                assert guards['Bash'][0].endswith('hooks/pr_body.py"'), guards
             hook = config['SessionStart'][0]['hooks'][0]
             command = hook['command'].replace('${CLAUDE_PLUGIN_ROOT}', str(PLUGIN)).replace('${PLUGIN_ROOT}', str(PLUGIN))
             import shlex
