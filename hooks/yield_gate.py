@@ -68,10 +68,7 @@ def gaps(cwd, session=None):
             missing += [f'{state}: {gap}' for gap in module.yield_gaps(db, coordinated)]
         finally:
             db.close()
-    # A session inside a ticket worktree is a worker: only its coordinator answers for unregistered workers.
-    if not cwd.is_relative_to((root / '.worktrees').resolve()):
-        missing += unregistered(root, pane, session)
-    return missing
+    return missing + unregistered(root, pane, session)
 
 
 def herdr_agents():
@@ -97,20 +94,33 @@ def handles(worker):
     return {worker, *parts[1:]} if len(parts) == 3 else {worker}
 
 
+def is_worker(pane, session, attempts, records):
+    """Whether this session is a worker, wherever its cwd: Herdr launched or registered its pane or, outside Herdr,
+    its session is an attempt's native session."""
+    if pane:
+        return (any(record.get('pane') == pane for record in records if 'dismissed' not in record)
+                or any(pane in handles(saved['worker']) for saved in attempts))
+    return any(saved['native_session'] == session for saved in attempts)
+
+
 def unregistered(root, pane, session):
     """Name each Herdr worker that no attempt in any run registers: each launch this coordinator logged into a
     ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its Herdr workspace."""
-    module, workers = None, set()
+    module, attempts = None, []
     for state in root.glob('.scratch/*/reports/workers.sqlite'):
         module = module or lifecycle()
         db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
         try:
-            workers |= {handle for saved in module.attempts(db) for handle in handles(saved['worker'])}
+            attempts += module.attempts(db)
         finally:
             db.close()
+    workers = {handle for saved in attempts for handle in handles(saved['worker'])}
     log, worktrees = root / LAUNCHES, (root / '.worktrees').resolve()
+    records = [json.loads(line) for line in log.read_text().splitlines()] if log.is_file() else []
+    if is_worker(pane, session, attempts, records):
+        return []  # Only its coordinator answers for its own launches and its siblings.
     launches = []
-    for record in [json.loads(line) for line in log.read_text().splitlines()] if log.is_file() else []:
+    for record in records:
         if 'dismissed' in record:  # Accounts for the launches of that pane or agent name logged before it.
             launches = [launch for launch in launches
                         if any(launch.get(key) != value for key, value in record['dismissed'].items())]

@@ -201,11 +201,12 @@ class UnregisteredWorkers(GateRepo):
         log = self.repo / '.scratch/herdr-launches.jsonl'
         return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
 
-    def register(self, worker, attempt):
-        """Register `worker` for an attempt in the run's workers.sqlite, as prepare.md has the coordinator do."""
-        self.lifecycle('register', attempt, assignment=attempt.split('/')[0], repo=str(self.repo),
+    def register(self, worker, attempt, native_session=None, pane='w1:p1'):
+        """Register `worker` for an attempt in the run's workers.sqlite, as prepare.md has the coordinator in
+        Herdr pane `pane` (None: outside Herdr) do."""
+        self.lifecycle('register', attempt, pane, assignment=attempt.split('/')[0], repo=str(self.repo),
                        worktree=str(self.worktree), head='head-1', execution=str(self.execution), runtime='claude',
-                       worker=worker, native_session=f'native-{attempt}', owned=True,
+                       worker=worker, native_session=native_session or f'native-{attempt}', owned=True,
                        packet=str(support.assignment_file(self.execution.parent, 'ticket')))
 
     @staticmethod
@@ -428,17 +429,33 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertEqual(self.check(pane=None, session='host-1'), [])
 
     def test_a_worker_session_is_held_neither_for_itself_nor_its_siblings(self):
-        # Rule 4: a session inside .worktrees/ is a worker; its own launches and live siblings hold only its coordinator.
+        # Rule 4: a session is a worker by identity, wherever its cwd: Herdr launched or registered its pane or,
+        # outside Herdr, its session is an attempt's native session. Its launches and siblings hold its coordinator.
         sibling = self.repo / '.worktrees/ticket-2'
-        self.launch('herdr agent start helper-1 --kind codex --pane w1:p8', cwd=self.worktree, pane='w1:p5')
-        self.launch('herdr agent start helper-2 --kind codex --pane w1:p9', cwd=self.worktree, pane=None,
-                    session='worker-1')
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', session='coord-1')
+        self.register('w1:p7', 'ticket-3/1')
+        self.register('reviewer-1', 'ticket-4/1', native_session='worker-1')
+        workers = (('w1:p5', 'builder-session', self.worktree), ('w1:p7', 'other-session', self.repo),
+                   (None, 'worker-1', self.worktree))
+        for pane, session, cwd in workers:
+            self.launch('herdr agent start helper-1 --kind codex --pane w1:p8', cwd=cwd, pane=pane, session=session)
         self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', sibling)])
-        self.assertEqual(self.check(cwd=self.worktree, pane='w1:p5'), [])
-        self.assertIsNone(self.stop(cwd=self.worktree, pane='w1:p5'))
-        self.assertIsNone(self.stop(cwd=self.worktree, pane=None, session='worker-1'))
-        self.assertEqual(self.check(), [self.live('builder-1', 'w1:p5', self.worktree),
-                                        self.live('builder-2', 'w1:p6', sibling)])
+        for pane, session, cwd in workers:
+            self.assertEqual(self.check(cwd=cwd, pane=pane, session=session), [], (pane, session))
+            self.assertIsNone(self.stop(cwd=cwd, pane=pane, session=session))
+        self.assertEqual(self.check(session='coord-1'), [self.gap('builder-1', 'w1:p5'),
+                                                         self.live('builder-2', 'w1:p6', sibling)])
+
+    def test_a_coordinator_inside_a_worktree_is_still_held(self):
+        # Rule 4 by identity: a coordinator that works in .worktrees/, or cd's there, keeps both checks.
+        inside = self.repo / '.worktrees/coord'
+        inside.mkdir()
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', cwd=inside)
+        self.launch('herdr agent start builder-3 --kind codex --pane w1:p9', cwd=inside, pane=None, session='host-2')
+        self.serve(agents=[self.agent('builder-2', 'w1:p6', self.worktree)])
+        self.assertEqual(self.check(cwd=inside, session='host-1'), [self.gap('builder-1', 'w1:p5'),
+                                                                    self.live('builder-2', 'w1:p6', self.worktree)])
+        self.assertEqual(self.check(cwd=inside, pane=None, session='host-2'), [self.gap('builder-3', 'w1:p9')])
 
     def test_a_herdr_failure_or_timeout_is_a_named_gap_that_holds_once(self):
         # Rule 5: a check that cannot run is a named gap, never a pass, and Stop is still held only once.
