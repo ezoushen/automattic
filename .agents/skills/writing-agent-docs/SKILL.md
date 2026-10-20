@@ -123,6 +123,6 @@ each other, so the order grows without loosening a rule. Run the checker and
   `disable-model-invocation`, and `allow_implicit_invocation: true` in `agents/openai.yaml`;
   its description is its trigger. Text agents read by link, or a runtime doc needs, is a
   `runtime/` module or a standard, named in an agent's `core_skills` when every job needs it;
-  a procedure the user may also run alone is a skill below the skills that read it.
+  a procedure the user may also run alone is a skill at a lower level than those that read it.
   A command that only re-pitches the conversation and launches nothing (`huh`) skips
   the bootstrap and the procedure size floor; keep its trigger short.
