@@ -146,6 +146,23 @@ class YieldGateHook(GateRepo):
                                         f'{log}: launch log line 2 is unreadable; fix or remove it',
                                         f'{log}: launch log line 3 is unreadable; fix or remove it'])
 
+    def test_a_line_with_malformed_fields_is_named_like_an_unreadable_one(self):
+        # Re-review 3: valid JSON whose fields have the wrong shape (the probe's empty coordinator, a bad time, a
+        # number for a name or cwd, a dismissal without its host session) is named and ignored for matching.
+        log = self.repo / '.scratch/herdr-launches.jsonl'
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5')
+        at, coordinator = '2026-10-20T10:00:00Z', {'pane': 'w1:p1', 'session': None}
+        bad = [{'time': 'x', 'agent': 'b', 'pane': 'w1:p9', 'coordinator': {}},
+               {'time': 'yesterday', 'agent': 'b', 'pane': 'w1:p9', 'coordinator': coordinator},
+               {'time': at, 'agent': 7, 'pane': 'w1:p9', 'coordinator': coordinator},
+               {'time': at, 'agent': 'b', 'pane': 'w1:p9', 'coordinator': coordinator, 'cwd': 5},
+               {'time': at, 'dismissed': {'pane': 'w1:p5'}, 'by': {'pane': 'w1:p1'}, 'reason': 'probe'}]
+        with log.open('a') as stream:
+            stream.writelines(json.dumps(record) + '\n' for record in bad)
+        self.assertEqual(self.check(session='host-1'), [
+            f'{self.state}: ticket-1/1: no armed wait', self.gap('builder-1', 'w1:p5'),
+            *(f'{log}: launch log line {number} is unreadable; fix or remove it' for number in range(2, 7))])
+
     def test_a_checkout_without_worktrees_never_asks_herdr(self):
         # Review 4: a Herdr session in a repository with no .worktrees/ has no ticket worker to look for, so a broken
         # Herdr neither slows nor holds it; its lifecycle gaps still show.

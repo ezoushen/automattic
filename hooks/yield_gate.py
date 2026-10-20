@@ -105,12 +105,24 @@ def clears(saved, launch):
 
 
 def readable(record):
-    """Whether a launch log line holds a launch or a dismissal the gate can match."""
+    """Whether a launch log line is a well-formed launch or dismissal; any other line is named, never matched."""
+    def text(value, optional=True):
+        return isinstance(value, str) or optional and value is None
+
+    def identity(value):
+        return isinstance(value, dict) and set(value) == {'pane', 'session'} and all(map(text, value.values()))
     if not isinstance(record, dict):
         return False
     if 'dismissed' in record:
-        return isinstance(record['dismissed'], dict) and isinstance(record.get('by'), dict)
-    return isinstance(record.get('coordinator'), dict) and {'time', 'agent', 'pane'} <= record.keys()
+        target = record['dismissed']
+        return (isinstance(target, dict) and len(target) == 1 and set(target) <= {'pane', 'agent'}
+                and all(text(value, False) for value in target.values()) and identity(record.get('by')))
+    try:
+        time.strptime(record.get('time'), '%Y-%m-%dT%H:%M:%SZ')
+    except (TypeError, ValueError):
+        return False
+    return ({'agent', 'pane'} <= set(record) and text(record['agent']) and text(record['pane'])
+            and identity(record.get('coordinator')) and text(record.get('cwd')))
 
 
 def unregistered(root, pane, session):
