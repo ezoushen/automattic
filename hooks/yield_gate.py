@@ -94,12 +94,13 @@ def handles(worker):
 
 
 def clears(saved, launch):
-    """Whether an attempt accounts for a logged launch: it names the launch's pane or agent, and its coordinator
-    recorded at registration is the launch's pane or, with none recorded, it was registered no earlier."""
+    """Whether an attempt accounts for a logged launch: it names the launch's pane or agent, and the coordinator
+    recorded at registration is the pane that launched it; only a launch made outside Herdr can instead be cleared by
+    an attempt with no recorded coordinator, registered no earlier."""
     if not handles(saved['worker']) & {launch['agent'], launch['pane']}:
         return False
-    if saved.get('coordinator'):
-        return saved['coordinator'] == launch['coordinator']['pane']
+    if saved.get('coordinator') or launch['coordinator']['pane']:
+        return saved.get('coordinator') == launch['coordinator']['pane']
     return (saved['registered_at'] or 0) >= calendar.timegm(time.strptime(launch['time'], '%Y-%m-%dT%H:%M:%SZ'))
 
 

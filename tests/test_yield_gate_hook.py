@@ -412,18 +412,31 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual(self.logged(), logged)
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-1', 'w1:p5')])
 
-    def test_only_a_registration_by_the_launching_coordinator_or_after_the_launch_clears_it(self):
-        # Review 2: an attempt recorded with another coordinator's pane, or registered outside Herdr before the
-        # launch, belongs to another run whose worker shares the name.
-        self.register('builder-1', 'old-1/1', pane=None)
+    def test_only_the_launching_pane_clears_a_herdr_launch_and_a_later_registration_only_one_outside_herdr(self):
+        # Re-review 2: a launch made inside Herdr is cleared only by an attempt whose recorded coordinator is that
+        # pane; an attempt with no recorded coordinator, registered at or after it, clears only a launch made outside
+        # Herdr. Review probes: another run's old registration, and an unrelated later one outside Herdr.
+        def run(slug):
+            (self.repo / f'.scratch/{slug}/reports').mkdir(parents=True, exist_ok=True)
+            return self.repo / f'.scratch/{slug}/reports/workers.sqlite'
+        self.state = run('old-run')
+        self.register('builder-1', 'old-1/1', pane='w1:p9')
+        self.register('builder-6', 'old-6/1', pane=None)
         time.sleep(1.1)  # The log keeps whole seconds: the next launches come strictly later.
         for index in range(1, 5):
             self.launch(f'herdr agent start builder-{index} --kind codex --pane w1:p{index + 4}')
-        self.register('builder-2', 'other-1/1', pane='w1:p9')
+        for index in (5, 6):
+            self.launch(f'herdr agent start builder-{index} --kind codex --pane w1:p{index + 4}', pane=None)
+        self.state = run('effort')
+        self.register('builder-2', 'ticket-2/1', pane='w1:p9')
         self.register('builder-3', 'ticket-3/1', pane='w1:p1')
-        self.register('builder-4', 'ticket-4/1', pane=None)
+        self.register('builder-5', 'ticket-5/1', pane=None)
+        self.state = run('other-run')
+        self.register('builder-4', 'other-4/1', native_session='other-native', pane=None)
         self.serve()
-        self.assertEqual(self.check(session='host-1'), [self.gap('builder-1', 'w1:p5'), self.gap('builder-2', 'w1:p6')])
+        self.assertEqual(self.check(session='host-1'), [self.gap(f'builder-{index}', f'w1:p{index + 4}')
+                                                        for index in (1, 2, 4)])
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-6', 'w1:p10')])
 
     def test_a_session_pane_name_handle_clears_a_launch_matching_its_pane_or_its_name(self):
         # Decision 2: the lifecycle also accepts `<session>/<pane>/<name>` as a worker handle.
