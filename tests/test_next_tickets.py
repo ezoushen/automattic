@@ -153,6 +153,21 @@ class BoardCLI(unittest.TestCase):
         history.write_text('---\nstatus: implementing\ntouches: [runtime]\n---\n')
         assert 'missing ticket' in cli('active', '--board', code=1).stderr
 
+    def test_blocking_a_ticket_needs_a_reason_recorded_on_the_ticket(self):
+        # Rule (E4 pi): `status=blocked` is refused without `blocker=<reason>`, leaving the ticket as it was; with one,
+        # the ticket's front matter keeps the status and the reason, which the board then reads.
+        path = self.write_ticket('active/01', 'implementing')
+        before = path.read_text()
+        refused = self.cli('active', '--set', 'active/01', 'status=blocked', code=1)
+        assert refused.stderr == ('active/01: status=blocked needs the reason too: '
+                                  '--set active/01 status=blocked blocker=<reason>\n'), refused.stderr
+        assert path.read_text() == before
+        self.cli('active', '--set', 'active/01', 'status=blocked', 'blocker=  ', code=1)
+        assert path.read_text() == before
+        self.cli('active', '--set', 'active/01', 'status=blocked', 'blocker=recall is 50, worse than baseline 100')
+        fm = nt.parse_front_matter(path.read_text())
+        assert (fm['status'], fm['blocker']) == ('blocked', 'recall is 50, worse than baseline 100'), fm
+
     def git(self, *args):
         return subprocess.run(['git', '-C', str(self.root), *args], check=True,
                               capture_output=True, text=True).stdout.strip()

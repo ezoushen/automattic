@@ -6,6 +6,7 @@
 No action: JSON candidates. No slug: all efforts. Other efforts still hold locks.
 Actions: --board, --counts, --check, --accept TICKET,
          --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID), --coordinate.
+--set TICKET status=blocked also needs blocker=REASON, which the ticket's front matter keeps.
 Only --set may be combined with --counts. --accept also runs the effort's standing measurements
 (.scratch/<slug>/measurements.json) at the ticket head, in a clean checkout, and refuses a missing or worse value.
 --delivery names each failing field. --coordinate [--autofix] records the calling session (its Herdr pane and host
@@ -541,25 +542,32 @@ def listed_commit_on(text, base, ref):
     return False
 
 
-def set_field(tickets, name, assignment):
-    key, equals, value = assignment.partition("=")
-    if not equals or key not in {"status", "worker"} or any(c in value for c in "\r\n"):
-        sys.exit(f"{name}: --set accepts one-line status= or worker= only")
-    if key == "status" and value not in STATUSES:
-        sys.exit(f"{name}: status {value!r} is not one of {sorted(STATUSES)}")
+def set_field(tickets, name, assignments):
+    """Write each `key=value` to the ticket's front matter; a blocked ticket keeps its reason as `blocker`."""
+    fields = {}
+    for assignment in assignments:
+        key, equals, value = assignment.partition("=")
+        if not equals or key not in {"status", "worker", "blocker"} or any(c in value for c in "\r\n"):
+            sys.exit(f"{name}: --set accepts one-line status=, worker= or blocker= only")
+        fields[key] = value.strip() if key == "blocker" else value
+    if "status" in fields and fields["status"] not in STATUSES:
+        sys.exit(f"{name}: status {fields['status']!r} is not one of {sorted(STATUSES)}")
+    if fields.get("status") == "blocked" and not fields.get("blocker"):
+        sys.exit(f"{name}: status=blocked needs the reason too: --set {name} status=blocked blocker=<reason>")
     fm = tickets[name]
     path = ROOT / fm["path"]
-    text = path.read_text()
-    pattern = re.compile(rf"^({re.escape(key)}:).*$", re.M)
-    head, sep, body = text.partition("\n---\n")
-    if pattern.search(head):
-        head = pattern.sub(lambda match: f"{match[1]} {value}", head, count=1)
-    elif key == 'status':
-        head += f'\nstatus: {value}'
-    else:
-        sys.exit(f"{name}: no front-matter key {key!r}")
+    head, sep, body = path.read_text().partition("\n---\n")
+    for key, value in fields.items():
+        pattern = re.compile(rf"^({re.escape(key)}:).*$", re.M)
+        if pattern.search(head):
+            head = pattern.sub(lambda match: f"{match[1]} {value}", head, count=1)
+        elif key in ('status', 'blocker'):
+            head += f'\n{key}: {value}'
+        else:
+            sys.exit(f"{name}: no front-matter key {key!r}")
     path.write_text(head + sep + body)
-    print(f"{name}: {key} = {value}")
+    for key, value in fields.items():
+        print(f"{name}: {key} = {value}")
 
 
 def coordinate(slug, autofix):
@@ -594,7 +602,7 @@ def main(argv):
     actions.add_argument("--accept", metavar="TICKET")
     actions.add_argument("--can-verify", metavar="TICKET")
     actions.add_argument("--delivery", action="store_true", help="require done tickets and current review/E2E evidence")
-    actions.add_argument("--set", nargs=2, metavar=("TICKET", "ASSIGNMENT"))
+    actions.add_argument("--set", nargs="+", metavar=("TICKET", "ASSIGNMENT"))
     actions.add_argument("--coordinate", action="store_true", help="bind this session as the efforts' coordinator")
     parser.add_argument("--counts", action="store_true")
     parser.add_argument("--autofix", action="store_true", help="with --coordinate: repairs are authorized")
@@ -637,7 +645,9 @@ def main(argv):
             coordinate(slug, args.autofix)
         return
     if args.set:
-        set_field(tickets, *args.set)
+        if len(args.set) < 2:
+            parser.error("--set needs a ticket and at least one assignment")
+        set_field(tickets, args.set[0], args.set[1:])
         if args.counts:
             print(counts({t: fm for t, fm in load().items() if t in selected}))
         return
