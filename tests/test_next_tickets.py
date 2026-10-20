@@ -2,6 +2,7 @@
 """The local board's scheduling rules and its command line."""
 import os
 import json
+import re
 import shlex
 import shutil
 import signal
@@ -106,9 +107,9 @@ class BoardCLI(unittest.TestCase):
                         f'blocked_by: [{blocked}]\ntouches: [{touches}]\ndevices: [{devices}]\n{extra}---\n')
         return path
 
-    def cli(self, *args, code=0):
+    def cli(self, *args, code=0, input=None):
         result = subprocess.run([sys.executable, '-B', str(SCRIPT), '--repo', str(self.root), *args],
-                                capture_output=True, text=True)
+                                capture_output=True, text=True, input=input)
         assert result.returncode == code, result.stdout + result.stderr
         return result
 
@@ -214,15 +215,29 @@ class BoardCLI(unittest.TestCase):
                  'baseline': baseline, 'direction': direction, **extra}
         (self.root / '.scratch/inline/measurements.json').write_text(json.dumps([entry]))
 
-    def measured_ticket(self, command, extra='', **entry):
-        """inline/01 is finished on feat/inline, checked out in the main checkout, and its effort records one measurement."""
+    def measured_ticket(self, command, extra='', tracked=None, edits=None, **entry):
+        """inline/01 is finished on feat/inline, checked out in the main checkout, and its effort records one measurement.
+
+        `tracked` files are committed at the base; the ticket commit edits `edits`.
+        """
         self.write_ticket('inline/01', 'implementing', extra=extra)
+        self.write_files(tracked)
         self.commit_gitignore()
         base = self.commit('base')
         self.git('switch', '-q', '-c', 'feat/inline')
         self.record_measurement(command, **entry)
+        self.write_files(edits)
         self.write_report(base, 'feat/inline', [self.commit('ticket work')])
         return base
+
+    def write_files(self, files):
+        for name, text in (files or {}).items():
+            if text is None:
+                self.git('rm', '-q', name)
+                continue
+            (self.root / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / name).write_text(text)
+            self.git('add', name)
 
     def test_a_metric_worse_than_its_baseline_refuses_acceptance_and_names_it(self):
         # A measured regression is a refusal even when the report and branch are structurally fine.
@@ -248,7 +263,7 @@ class BoardCLI(unittest.TestCase):
         self.measured_ticket('true')
         for command in ('true', 'echo recall_t4 100', 'echo "# recall 100"'):
             self.record_measurement(command)
-            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+            refused = self.logless(self.refusal())
             assert refused == ("inline/01: measurement 'recall tool': recall has no value "
                                "(no `recall <number>` line in its output); baseline 100\n"), (command, refused)
 
@@ -257,15 +272,15 @@ class BoardCLI(unittest.TestCase):
         self.measured_ticket('true')
         for text in ('high', 'nan', 'inf', '83%', '83 percent', ''):
             self.record_measurement(f'echo recall {text}')
-            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
-            assert refused == (f"inline/01: measurement 'recall tool': recall is {text!r}, not a number; "
+            refused = self.logless(self.refusal())
+            assert refused == (f"inline/01: measurement 'recall tool': recall is {text!r} (not a number); "
                                "baseline 100\n"), (text, refused)
 
     def test_a_measurement_command_that_fails_refuses_acceptance_even_after_printing_a_good_value(self):
         self.measured_ticket('true')
         for command, status in (('echo recall 100; exit 3', 3), ('no-such-measurement-tool-4f2a', 127)):
             self.record_measurement(command)
-            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+            refused = self.logless(self.refusal())
             assert refused == (f"inline/01: measurement 'recall tool': recall has no value "
                                f"(its command exited {status}); baseline 100\n"), (command, refused)
 
@@ -328,6 +343,12 @@ class BoardCLI(unittest.TestCase):
     def refusal(self, ticket='inline/01'):
         return self.cli('inline', '--accept', ticket, code=1).stderr
 
+    def logless(self, refused):
+        """A refusal without its `; log <path>)` pointer, after checking that the log it points to exists."""
+        pointer = re.search(r'; log (\S+)\)', refused)
+        assert pointer and Path(pointer[1]).is_file(), refused
+        return refused.replace(pointer[0], ')')
+
     def test_an_allowance_without_a_citation_is_refused(self):
         # The ticket author cannot excuse a regression alone; the authority is a recorded ledger row.
         self.write_ledger()
@@ -357,7 +378,7 @@ class BoardCLI(unittest.TestCase):
         self.measured_ticket('echo recall 100')
         for value in ('recall', 'recall high', 'recall 80 90', 'recall nan', ''):
             self.write_ticket('inline/01', 'implementing', extra=f'allows: {value}\nallows_source: U3\n')
-            assert self.refusal() == (f"inline/01: allows {value!r} must read `<metric> <bound>` with a numeric bound\n"), \
+            assert self.refusal() == (f"inline/01: allows {value!r} must read `<metric> <number>` or `<metric> tool`\n"), \
                 (value, self.refusal())
 
     def test_an_effort_without_a_measurements_file_accepts_exactly_as_before(self):
@@ -378,7 +399,7 @@ class BoardCLI(unittest.TestCase):
         pidfile = scratch / 'pid'
         self.measured_ticket(f'sleep 15 >/dev/null 2>&1 & echo $! > {shlex.quote(str(pidfile))}; wait', timeout_seconds=1)
         started = time.monotonic()
-        refused = self.refusal()
+        refused = self.logless(self.refusal())
         assert time.monotonic() - started < 10, 'acceptance waited for the command'
         assert refused == ("inline/01: measurement 'recall tool': recall has no value "
                            "(its command timed out after 1 s); baseline 100\n"), refused
@@ -436,6 +457,131 @@ class BoardCLI(unittest.TestCase):
         (self.root / '.worktrees/inline-01/.git').write_text('gitdir: /nonexistent\n')
         refused = self.refusal()
         assert refused.startswith("inline/01: branch feat/inline-01 has a worktree whose git status cannot be read: "), refused
+
+    def test_a_metric_printed_on_more_than_one_line_is_refused_naming_it(self):
+        # A later line must not quietly override or hide an earlier one.
+        self.measured_ticket('true')
+        for command in ("printf 'recall 100\\nrecall 83\\n'", "printf 'recall 100\\nrecall 100\\n'"):
+            self.record_measurement(command)
+            refused = self.logless(self.refusal())
+            assert refused == ("inline/01: measurement 'recall tool': recall has no single value "
+                               "(printed on 2 lines); baseline 100\n"), (command, refused)
+        self.record_measurement("printf 'latency 5\\nlatency 6\\nrecall 100\\n'")
+        self.cli('inline', '--accept', 'inline/01')
+
+    def test_a_refusal_points_to_a_retained_log_holding_both_streams_and_each_run_keeps_its_own(self):
+        self.measured_ticket('echo recall 100; echo diagnostic >&2; exit 3')
+        head = self.git('rev-parse', 'feat/inline')
+        evidence = Path(self.root).resolve() / '.scratch/inline/reports/evidence/01'
+        refused = self.refusal()
+        assert refused == (f"inline/01: measurement 'recall tool': recall has no value (its command exited 3; "
+                           f"log {evidence}/accept-1/{head}/1.log); baseline 100\n"), refused
+        assert (evidence / f'accept-1/{head}/1.log').read_text() == 'recall 100\ndiagnostic\n'
+        self.refusal()
+        assert (evidence / f'accept-1/{head}/1.log').is_file() and (evidence / f'accept-2/{head}/1.log').is_file()
+
+    def test_a_measurement_cannot_read_the_callers_input(self):
+        # The command would read 83 from the caller's stdin and report a regression; it must see no input.
+        self.measured_ticket('read x; echo recall ${x:-100}')
+        accepted = self.cli('inline', '--accept', 'inline/01', input='83\n').stdout
+        assert 'carry the evidence' in accepted, accepted
+
+    def test_output_that_is_not_utf8_cannot_crash_acceptance(self):
+        self.measured_ticket("printf '\\377\\376 noise\\nrecall 100\\n'")
+        self.cli('inline', '--accept', 'inline/01')
+        self.record_measurement("printf '\\377\\376 noise\\nrecall 83\\n'")
+        assert 'recall is 83, worse than baseline 100' in self.refusal()
+
+    def test_a_child_that_escapes_the_process_group_and_holds_stdout_cannot_stall_acceptance(self):
+        scratch = Path(tempfile.mkdtemp(prefix='automattic-pid-'))
+        self.addCleanup(shutil.rmtree, scratch, True)
+        pidfile = scratch / 'pid'
+        child = ('import subprocess, sys; from pathlib import Path; '
+                 'p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(20)"], start_new_session=True); '
+                 f'Path({str(pidfile)!r}).write_text(str(p.pid))')
+        spawn = f'{shlex.quote(sys.executable)} -c {shlex.quote(child)}'
+
+        def stop_child():
+            if pidfile.exists():
+                try:
+                    os.kill(int(pidfile.read_text()), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+        self.addCleanup(stop_child)
+        self.measured_ticket(f'{spawn}; sleep 30', timeout_seconds=1)
+        started = time.monotonic()
+        refused = self.refusal()
+        assert time.monotonic() - started < 8, 'acceptance waited for the escaped child'
+        assert self.logless(refused) == ("inline/01: measurement 'recall tool': recall has no value "
+                                         "(its command timed out after 1 s); baseline 100\n"), refused
+        stop_child()
+        pidfile.unlink()
+        self.record_measurement(f'{spawn}; echo recall 100')  # exits at once, its child still holds stdout
+        started = time.monotonic()
+        self.cli('inline', '--accept', 'inline/01')
+        assert time.monotonic() - started < 8, 'acceptance waited for the escaped child'
+
+    def test_a_command_that_leaves_a_process_behind_is_refused(self):
+        self.measured_ticket('sleep 12 >/dev/null 2>&1 & echo recall 100')
+        started = time.monotonic()
+        refused = self.logless(self.refusal())
+        assert time.monotonic() - started < 8, 'acceptance waited for the leftover process'
+        assert refused == ("inline/01: measurement 'recall tool': recall has no value "
+                           "(its command exited 125); baseline 100\n"), refused
+
+    def test_evidence_that_cannot_be_kept_refuses_acceptance(self):
+        self.measured_ticket('echo recall 100')
+        reports = self.root / '.scratch/inline/reports'
+        (reports / 'evidence').write_text('a file where the evidence directory goes\n')
+        refused = self.refusal()
+        assert refused.startswith("inline/01: cannot keep the measurement evidence: "), refused
+
+    def test_a_ticket_that_changes_the_paths_its_measurement_lists_is_refused_naming_them(self):
+        # A builder must not edit measure.sh or its fixtures to print the baseline; only files in base..head count.
+        others = ['tools/fixtures/a.txt', 'tools2/b.txt', 'src.txt']
+        self.measured_ticket('sh measure.sh', paths=['measure.sh'],
+                             tracked={'measure.sh': 'echo recall 100\n', 'untouched.txt': 'x\n', 'moved.sh': 'same\n',
+                                      **{n: 'x\n' for n in others}},
+                             edits={'measure.sh': 'echo recall 100 # edited\n', 'moved.sh': None, 'elsewhere.sh': 'same\n',
+                                    **{n: 'edited\n' for n in others}})
+        refused = ("inline/01: measurement 'recall tool': the ticket changed what measures recall ({}); "
+                   "that needs allows: recall tool citing a ledger row\n")
+        for paths, touched in ((['measure.sh'], 'measure.sh'), (['tools'], 'tools/fixtures/a.txt'),
+                               (['tools/'], 'tools/fixtures/a.txt'), (['tools2/b.txt'], 'tools2/b.txt'),
+                               (['tools/fixtures/a.txt', 'measure.sh'], 'measure.sh, tools/fixtures/a.txt'),
+                               (['moved.sh'], 'moved.sh')):  # a rename is a change of the old path too
+            self.record_measurement('sh measure.sh', paths=paths)
+            assert self.refusal() == refused.format(touched), (paths, self.refusal())
+        for paths in ([], ['untouched.txt'], ['too'], ['tool'], ['src']):   # a prefix of a name is not the path
+            self.record_measurement('sh measure.sh', paths=paths)
+            self.cli('inline', '--accept', 'inline/01')
+
+    def test_a_cited_tool_allowance_lets_the_ticket_change_the_paths_of_its_metric_only(self):
+        self.write_ledger()
+        edits = {'measure.sh': 'echo recall 100 # edited\n'}
+        self.measured_ticket('sh measure.sh', paths=['measure.sh'], tracked={'measure.sh': 'echo recall 100\n'}, edits=edits,
+                             extra='allows: recall tool\nallows_source: U3\n')
+        accepted = self.cli('inline', '--accept', 'inline/01').stdout
+        assert accepted == ("inline/01: measurement 'recall tool': tool change (measure.sh) allowed by ledger row U3\n"
+                            "inline/01: report and branch carry the evidence; judge the content now\n"), accepted
+        refused = ("inline/01: measurement 'recall tool': the ticket changed what measures recall (measure.sh); "
+                   "that needs allows: recall tool citing a ledger row\n")
+        for allows in ('latency tool', 'recall 80'):   # another metric, or a value bound: neither covers the tool
+            self.write_ticket('inline/01', 'implementing', extra=f'allows: {allows}\nallows_source: U3\n')
+            assert self.refusal() == refused, (allows, self.refusal())
+        self.write_ticket('inline/01', 'implementing', extra='allows: recall tool\n')
+        assert 'needs allows_source' in self.refusal()
+        self.write_ticket('inline/01', 'implementing', extra='allows: recall tool\nallows_source: U9\n')
+        assert 'U9 is not a row' in self.refusal()
+
+    def test_a_paths_list_that_could_never_match_a_changed_file_makes_the_measurements_file_unusable(self):
+        self.measured_ticket('echo recall 100')
+        for value in ('measure.sh', [''], [1], ['/etc/passwd'], ['../x'], ['a/../b'], [['x']]):
+            self.record_measurement('echo recall 100', paths=value)
+            assert self.refusal() == ("inline/01: measurements.json is unusable: entry 1 needs paths to be a list "
+                                      "of relative paths inside the project\n"), (value, self.refusal())
+        self.record_measurement('echo recall 100', paths=['tools/', 'measure.sh'])
+        self.cli('inline', '--accept', 'inline/01')
 
     def ticket_worktree(self, score):
         """inline/01 on feat/inline-01 in its own worktree; main keeps scoring 100 and the ticket branch scores `score`."""

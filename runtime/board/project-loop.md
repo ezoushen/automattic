@@ -1,5 +1,14 @@
 # Project execution facts
 
+Contents:
+- [Check execution and resources](#check-execution-and-resources)
+- [Hot files and areas](#hot-files-and-areas)
+- [Standing measurements](#standing-measurements)
+- [E2E steps](#e2e-steps)
+- [External reviewer](#external-reviewer)
+- [Environment gotchas the tools do not confess](#environment-gotchas-the-tools-do-not-confess)
+- [Run evidence](#run-evidence)
+
 Resolve these facts from existing project instructions, build configuration, CI,
 and accepted alignment. An existing `docs/agents/implementation-loop.md` is one
 possible source, not required setup. Pass applicable sources and verified gaps
@@ -35,23 +44,36 @@ buys nothing.
 ## Standing measurements
 
 A metric a ticket could narrow without a test noticing (a recall rate, a size, a latency)
-is recorded in `.scratch/<slug>/measurements.json`, next to the alignment, as a JSON array:
+is recorded in `.scratch/<slug>/measurements.json`, next to the alignment, as a JSON array.
+Refine or the orchestrator writes it, never a builder, and measures each baseline by running
+the command at the effort's branch base.
 
 ```json
 [{"name": "recall tool", "command": "node tools/measure-recall.mjs", "metric": "recall_t4",
-  "baseline": 100, "direction": "higher"}]
+  "baseline": 100, "direction": "higher", "paths": ["tools/measure-recall.mjs", "tools/fixtures"]}]
 ```
 
-`command` goes to the shell and prints `<metric> <number>` lines; `direction` names the
-better way, `higher` or `lower`. `timeout_seconds` (optional, default 600) bounds the run;
-at expiry the command's process group is killed. `next_tickets.py --accept` runs every command
-itself at the ticket head, in the worktree that has the ticket branch checked out, and
-refuses a worktree with tracked changes or untracked files that are not ignored (it names
-them), a missing value (no such line, not a finite number, a command that exits non-zero
-or times out) and one worse than its baseline. A ticket may lower a metric only with front
-matter `allows: <metric> <bound>` (the worst value it tolerates) and `allows_source: <row id>`,
-such as `U3`, a row of `.scratch/<slug>/ledger.md` where that decision is recorded. An
-effort without the file is accepted without measuring.
+`command` goes to `sh -c` and prints one `<metric> <number>` line; `direction` names the
+better way, `higher` or `lower`. `timeout_seconds` (optional, default 600) bounds the run.
+`paths` (optional) lists the tool and its fixtures; a directory covers what is under it. The
+command must leave the tree clean, so declare its outputs in `.gitignore`.
+
+`next_tickets.py --accept` runs every command itself, through the
+[bounded runner](../checks/run.md#run-a-bounded-check), at the ticket head, in the worktree that
+has the ticket branch checked out. Each log is kept under
+`.scratch/<slug>/reports/evidence/<NN>/accept-<N>/<head>/`. It refuses:
+- a worktree with tracked changes or untracked files that are not ignored (it names them);
+- a ticket whose base..head diff touches an entry's `paths`;
+- a missing value: no such line, more than one, not a finite number, or a command that
+  exits non-zero, leaves a process behind or times out;
+- a value worse than its baseline.
+
+A ticket may excuse one metric with front matter `allows: <metric> <bound>` (the worst value
+it tolerates) or `allows: <metric> tool` (it may change that entry's `paths`), plus
+`allows_source: <row id>`, such as `U3`, a row of `.scratch/<slug>/ledger.md`. The row must
+record the user's decision, and the orchestrator judging acceptance checks that it does. When a
+ticket with an allowed drop is integrated, the orchestrator sets that entry's baseline to the
+new value and cites the same row. An effort without the file is accepted without measuring.
 
 ## E2E steps
 

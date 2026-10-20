@@ -91,7 +91,8 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
 5. When a worker finishes, perform the selected board's acceptance checks for report
    structure and branch ancestry; they also run the effort's
    [standing measurements](../../runtime/board/project-loop.md#standing-measurements) at the
-   ticket head and refuse a missing or worse value, which only a ledger-cited `allows` excuses.
+   ticket head and refuse a missing or worse value or a changed measurement tool, which only a
+   ledger-cited `allows` excuses.
    Then judge assigned implementation criteria and recorded checks in `## Implemented`.
    Account for every ticket criterion, retaining later-phase obligations for their named
    owners. Those pending gates do not block implementation acceptance/integration; they

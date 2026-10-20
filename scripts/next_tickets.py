@@ -21,7 +21,6 @@ import json
 import math
 import os
 import re
-import signal
 import sys
 import subprocess
 from pathlib import Path
@@ -264,7 +263,7 @@ def accept(tickets, name):
             problems.append(f"no listed commit under ## Implemented is past base on {branch}")
     notes = []
     if not problems:
-        problems, notes = measurement_results(tickets[name], ref)
+        problems, notes = measurement_results(tickets[name], ref, base.group(1))
     for p in problems:
         print(f"{name}: {p}", file=sys.stderr)
     if not problems:
@@ -274,10 +273,11 @@ def accept(tickets, name):
     return not problems
 
 
-def measurement_results(fm, ref):
-    """Run the effort's standing measurements at the ticket head; (problems, notes on allowed regressions).
+def measurement_results(fm, ref, base):
+    """Run the effort's standing measurements at the ticket head; (problems, notes on what the ticket's `allows` excused).
 
-    Each metric may not be worse than its baseline, unless the ticket's `allows` covers it.
+    A ticket may not change what measures a metric (its entry's `paths`) nor make a metric worse than its baseline,
+    unless its `allows` covers that metric.
     """
     slug = spec_of(fm["ticket"])
     path = ISSUES / slug / "measurements.json"
@@ -302,9 +302,17 @@ def measurement_results(fm, ref):
     if problem:
         return [problem], []
     allowed = str(fm.get("allows", "")).split()
-    problems, notes = [], []
-    for entry in entries:
-        value, text = measure(entry, checkout)
+    problems, notes = tool_changes(fm, entries, allowed, ref, base)
+    if problems:
+        return problems, notes
+    head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", f"{ref}^{{commit}}"],
+                          capture_output=True, text=True).stdout.strip()
+    try:
+        evidence = evidence_dir(slug, fm["ticket"].split("/")[1], head)
+    except OSError as error:
+        return [f"cannot keep the measurement evidence: {error}"], []
+    for number, entry in enumerate(entries, 1):
+        value, text = measure(entry, checkout, evidence / f"{number}.log")
         label = f"measurement {entry['name']!r}: {entry['metric']}"
         if value is None:
             problems.append(f"{label} {text}; baseline {entry['baseline']}")
@@ -323,24 +331,61 @@ def measurement_results(fm, ref):
     return problems, notes
 
 
-def measure(entry, checkout):
-    """Run one measurement command in checkout: (number, text as printed), or (None, why it has no value)."""
+def tool_changes(fm, entries, allowed, ref, base):
+    """(problems, notes) for tickets that changed files an entry lists in `paths`, between the report's base and ref.
+
+    Only `allows: <metric> tool` with its ledger citation excuses that entry; the file names go in the problem or note.
+    """
+    changed = subprocess.run(["git", "-C", str(ROOT), "diff", "--name-only", "--no-renames", "-z", base, ref],
+                             capture_output=True, text=True, check=True).stdout.split("\0")
+    problems, notes = [], []
+    for entry in entries:
+        touched = sorted({f for f in changed for p in entry.get("paths", [])
+                          if f == p.rstrip("/") or f.startswith(p.rstrip("/") + "/")})
+        label = f"measurement {entry['name']!r}"
+        if touched and allowed == [entry["metric"], "tool"]:
+            notes.append(f"{label}: tool change ({', '.join(touched)}) allowed by ledger row {fm['allows_source']}")
+        elif touched:
+            problems.append(f"{label}: the ticket changed what measures {entry['metric']} ({', '.join(touched)}); "
+                            f"that needs allows: {entry['metric']} tool citing a ledger row")
+    return problems, notes
+
+
+def evidence_dir(slug, ticket_number, head):
+    """A new `reports/evidence/<NN>/accept-<N>/<head>/` directory, as the evidence contract lays it out."""
+    attempts = ISSUES / slug / "reports" / "evidence" / ticket_number
+    path = attempts / f"accept-{len(list(attempts.glob('accept-*'))) + 1}" / head
+    path.mkdir(parents=True)
+    return path
+
+
+def measure(entry, checkout, log):
+    """Run one measurement command in checkout through the bounded runner, which keeps both streams in log.
+
+    (number, text as printed), or (None, why it has no value).
+    """
     timeout = entry.get("timeout_seconds", MEASURE_TIMEOUT)
-    process = subprocess.Popen(entry["command"], shell=True, cwd=checkout, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, text=True, start_new_session=True)
+    runner = Path(__file__).resolve().with_name("run_check.py")
     try:
-        stdout, _ = process.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGKILL)
-        process.communicate()
-        return None, f"has no value (its command timed out after {timeout:g} s)"
-    words = next((l.split() for l in stdout.splitlines() if l.split()[:1] == [entry["metric"]]), None)
-    if process.returncode:
-        return None, f"has no value (its command exited {process.returncode})"
-    if words is None:
-        return None, f"has no value (no `{entry['metric']} <number>` line in its output)"
-    value = finite_number(words[1]) if len(words) == 2 else None
-    return (value, words[1]) if value is not None else (None, f"is {' '.join(words[1:])!r}, not a number")
+        run = subprocess.run([sys.executable, "-B", str(runner), "--timeout", str(timeout), "--log", str(log),
+                              "--", "sh", "-c", entry["command"]],
+                             cwd=checkout, capture_output=True, text=True)
+        summary = json.loads(run.stdout)
+    except (OSError, ValueError) as error:
+        return None, f"has no value (the check runner failed: {error}; log {log})"
+    if summary["timed_out"]:
+        return None, f"has no value (its command timed out after {timeout:g} s; log {log})"
+    if summary["exit_code"]:
+        return None, f"has no value (its command exited {summary['exit_code']}; log {log})"
+    lines = [l.split() for l in log.read_bytes().decode(errors="replace").splitlines()
+             if l.split()[:1] == [entry["metric"]]]
+    if not lines:
+        return None, f"has no value (no `{entry['metric']} <number>` line in its output; log {log})"
+    if len(lines) > 1:
+        return None, f"has no single value (printed on {len(lines)} lines; log {log})"
+    value = finite_number(lines[0][1]) if len(lines[0]) == 2 else None
+    return (value, lines[0][1]) if value is not None else (
+        None, f"is {' '.join(lines[0][1:])!r} (not a number; log {log})")
 
 
 def allowance_problem(fm, slug):
@@ -353,8 +398,8 @@ def allowance_problem(fm, slug):
         return f"allows: {fm['allows']} needs allows_source naming a row of {ledger}"
     if not ledger_row(slug, str(fm["allows_source"])):
         return f"allows_source {fm['allows_source']} is not a row of {ledger}"
-    if len(words) != 2 or finite_number(words[1]) is None:
-        return f"allows {fm['allows']!r} must read `<metric> <bound>` with a numeric bound"
+    if len(words) != 2 or (words[1] != "tool" and finite_number(words[1]) is None):
+        return f"allows {fm['allows']!r} must read `<metric> <number>` or `<metric> tool`"
 
 
 def ledger_row(slug, row):
@@ -383,6 +428,10 @@ def read_measurements(path):
         timeout = entry.get("timeout_seconds", 1)
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout < math.inf:
             raise ValueError(f"entry {number} needs timeout_seconds to be a positive number")
+        paths = entry.get("paths", [])
+        if not isinstance(paths, list) or not all(
+                isinstance(p, str) and p and not p.startswith("/") and ".." not in p.split("/") for p in paths):
+            raise ValueError(f"entry {number} needs paths to be a list of relative paths inside the project")
     return entries
 
 
