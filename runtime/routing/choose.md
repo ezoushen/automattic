@@ -84,6 +84,13 @@ orchestrator to bypass configured bounds. Reserve `--route-choice` for an explic
 user-requested complete instance outside saved policy. Within a pool, `--model`
 may only confirm the selected candidate's registered ID.
 
+A user's model pin (an exclusion or restriction the user gave, such as "only local
+models") can leave an agent's pool with no eligible candidate. Do not widen the pool,
+drop the pin or use `--route-choice` on your own. Ask the user, naming the pool, the
+pin and the candidates it excludes. Or, only when the pin itself names the model or
+models to use, treat it as the explicit request `--route-choice` needs. Either way,
+record the pin and where the user gave it in the [decision report](report.md).
+
 The [selection contract](../../schemas/selection.schema.json) is `candidate`, optional
 `thinking`, and a nonempty `reason`. Omitted thinking preserves the candidate's
 baseline unless the profile supplies it. `candidate: null` means no suitable worker
