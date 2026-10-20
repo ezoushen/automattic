@@ -13,7 +13,7 @@ def prose(path):
 
 
 class Adrs(unittest.TestCase):
-    def test_the_adr_doc_states_matts_format_and_process(self):
+    def test_the_adr_doc_states_its_format_and_process(self):
         text = prose(ADR)
         for rule in ('`docs/adr/NNNN-slug.md`', 'the highest existing number plus one',
                      'Create `docs/adr/` lazily', 'a title and one to three sentences',

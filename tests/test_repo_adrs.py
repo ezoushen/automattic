@@ -68,11 +68,13 @@ class RepoAdrs(unittest.TestCase):
 
     def test_every_accepted_adr_has_a_one_line_rule_in_the_development_doc(self):
         text = (ROOT / 'docs/development.md').read_text()
+        rules = {link: ' '.join(rule.split()) for rule, link in
+                 re.findall(r'(?m)^- ((?:[^\n]|\n  )*?)\(\[ADR \d{4}\]\(adr/([^)]+)\)\)\.$', text)}
         index = (ROOT / 'docs/adr/README.md').read_text()
         accepted = index[index.index('## Accepted'):index.index('## Superseded')]
         for name in re.findall(r'^- \[\d{4}\]\((\d{4}-[^)]+\.md)\)', accepted, re.M):
             with self.subTest(adr=name):
-                self.assertRegex(text, r'(?m)^- .+\n?.*\]\(adr/%s\)\)\.$' % re.escape(name))
+                self.assertGreaterEqual(len(rules.get(name, '').split()), 4, rules.get(name))
 
     def test_the_development_rules_point_to_the_standalone_framework_adrs(self):
         text = ' '.join((ROOT / 'docs/development.md').read_text().split())
