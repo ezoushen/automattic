@@ -141,7 +141,8 @@ class WorkerLifecycleCase(unittest.TestCase):
             brief=str(brief), criteria=str(criteria), evidence=['native blocker report'], **fields)))
         return self.cli('escalate', '--attempt', attempt, '--input', str(request))
 
-    def herdr_fixture(self, native_session='native-1', verify_error='pane_not_found', caller=None):
+    def herdr_fixture(self, native_session='native-1', verify_error='pane_not_found', caller=None, tab_panes=1,
+                      caller_tab='caller-tab'):
         directory = self.root / 'bin'
         directory.mkdir(exist_ok=True)
         executable = directory / 'herdr'
@@ -154,12 +155,17 @@ assert args[:2]==['--session','fixture-session']
 if args[2:]==['pane','current','--current']:
     if {caller!r} is None:
         print(json.dumps({{'error':{{'code':'pane_not_found'}}}}),file=sys.stderr);sys.exit(1)
-    print(json.dumps({{'result':{{'pane':{{'pane_id':{caller!r}}}}}}}))
-elif args[2:]==['agent','get','pane-1']:
-    if marker.exists():
+    print(json.dumps({{'result':{{'pane':{{'pane_id':{caller!r},'tab_id':{caller_tab!r}}}}}}}))
+elif args[2:4]==['agent','get']:
+    if marker.exists() or args[4:] not in (['pane-1'],['builder-1']):
         print(json.dumps({{'error':{{'code':'agent_not_found'}}}}),file=sys.stderr);sys.exit(1)
-    print(json.dumps({{'result':{{'agent':{{'agent':'claude','pane_id':'pane-1','agent_status':'idle',
-        'agent_session':{{'kind':'id','value':{native_session!r}}}}}}}}}))
+    print(json.dumps({{'result':{{'agent':{{'agent':'claude','name':'builder-1','pane_id':'pane-1','tab_id':'tab-1',
+        'workspace_id':'ws-1','agent_status':'idle','agent_session':{{'kind':'id','value':{native_session!r}}}}}}}}}))
+elif args[2:]==['tab','get','tab-1']:
+    panes={tab_panes!r}
+    if panes is None:
+        print(json.dumps({{'error':{{'code':'server_unavailable'}}}}),file=sys.stderr);sys.exit(1)
+    print(json.dumps({{'result':{{'tab':{{'tab_id':'tab-1','workspace_id':'ws-1','pane_count':panes}}}}}}))
 elif args[2:]==['pane','close','pane-1']:
     marker.write_text(marker.read_text()+'closed'+chr(10) if marker.exists() else 'closed'+chr(10))
     print(json.dumps({{'result':{{'type':'ok'}}}}))
@@ -171,7 +177,7 @@ else: sys.exit(3)
 ''')
         executable.chmod(0o700)
         self.native_env = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ['PATH'],
-                               HERDR_PANE_ID='caller-pane')
+                               HERDR_PANE_ID='caller-pane', HERDR_TAB_ID='caller-tab')
 
     def opencode_v2_export(self, *content, directory=None, session='native-1'):
         """An `opencode session export` document as OpenCode 2 writes it."""

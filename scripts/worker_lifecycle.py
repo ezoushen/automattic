@@ -26,6 +26,9 @@ import native_settings  # noqa: E402
 import outcomes  # noqa: E402
 
 DEFINITIONS = agent_defs.load()
+TAB_RECIPE = ('start the worker in a tab of its own: `herdr tab create --workspace <coordinator workspace> '
+              '--cwd <worktree> --label "<slug>/<assignment> <role>" --no-focus`, then `herdr agent start <name> '
+              '--kind <kind> --pane <returned root pane> -- <launch args>`, then register it')
 
 
 def require(value, message):
@@ -502,6 +505,8 @@ def record(db, data, refuse_changes=False):
                             'Same-assignment reuse requires collected result, explicit retention and no live wait')
             saved = dict(data, agent=execution['agent'], job=execution['job'], execution_snapshot=execution,
                          requested=dict(settings, runtime=data['runtime']), verified=False)
+            if execution.get('executor_config', {}).get('skill') == 'herdr' or 'herdr' in data:
+                saved['herdr'] = herdr_placement(data.get('herdr'), data['worker'])
             if DEFINITIONS['agents'][execution['agent']]['writes'] == 'none':
                 saved['worktree_baseline'] = worktree_state(data['worktree'])  # Not in the event: it can be large.
             decision = linked_decision(execution)
@@ -957,6 +962,42 @@ def herdr(session, *args):
     return process.returncode, response
 
 
+def herdr_placement(claimed, worker):
+    """Where Herdr itself places a worker launched through it, which must be a tab of its own."""
+    require(isinstance(claimed, dict) and text(claimed.get('session')),
+            'A Herdr worker registers with herdr.session, the Herdr session it runs in')
+    session = claimed['session']
+    code, response = herdr(session, 'agent', 'get', worker)
+    require(code == 0, f'Herdr cannot confirm worker {worker} in session {session}: '
+                       f'{response.get("error", {}).get("code")}')
+    agent = response['result']['agent']
+    placed = dict(session=session, **{key: agent.get(key) for key in ('workspace_id', 'tab_id', 'pane_id', 'name')})
+    for key in ('tab_id', 'pane_id'):
+        require(claimed.get(key, placed[key]) == placed[key],
+                f'Registration names {key} {claimed.get(key)}, but Herdr reports {placed[key]} for {worker}')
+    code, response = herdr(session, 'tab', 'get', placed['tab_id'])
+    require(code == 0, f'Herdr cannot confirm tab {placed["tab_id"]}: {response.get("error", {}).get("code")}')
+    panes = response['result']['tab']['pane_count']
+    require(panes <= 1, f'One worker per tab: {placed["tab_id"]} holds {panes} panes; {TAB_RECIPE}')
+    coordinator = {os.environ.get('HERDR_TAB_ID'), (caller_pane(session, 'registration') or {}).get('tab_id')}
+    require(placed['tab_id'] not in coordinator,
+            f"One worker per tab: {placed['tab_id']} is the coordinator's own tab; {TAB_RECIPE}")
+    return placed
+
+
+def caller_pane(session, purpose):
+    """The calling pane where Herdr has it now, which follows a move; None outside Herdr or that session."""
+    if not os.environ.get('HERDR_PANE_ID'):
+        return None
+    code, response = herdr(session, 'pane', 'current', '--current')
+    if code == 0:
+        return response['result']['pane']
+    error = response.get('error')
+    require(isinstance(error, dict) and error.get('code') == 'pane_not_found',
+            f'Cannot resolve caller identity before {purpose}')
+    return None
+
+
 def retire(db, state, attempt, request):
     """Close the bound owned Herdr pane only after collection, then confirm it is absent."""
     saved = get(db, attempt)
@@ -967,14 +1008,7 @@ def retire(db, state, attempt, request):
     session, pane = request.get('session'), request.get('pane')
     require(text(session) and text(pane), 'Retirement requires explicit Herdr session and pane')
     require(pane != os.environ.get('HERDR_PANE_ID'), 'Caller pane is not a cleanup target')
-    if os.environ.get('HERDR_PANE_ID'):
-        code, response = herdr(session, 'pane', 'current', '--current')
-        if code == 0:
-            require(response['result']['pane']['pane_id'] != pane, 'Caller pane is not a cleanup target')
-        else:
-            error = response.get('error')
-            require(isinstance(error, dict) and error.get('code') == 'pane_not_found',
-                    'Cannot resolve caller identity before retirement')
+    require((caller_pane(session, 'retirement') or {}).get('pane_id') != pane, 'Caller pane is not a cleanup target')
     evidence = request.get('jobs_evidence')
     require(isinstance(evidence, list) and evidence and all(text(x) for x in evidence),
             'Retirement requires reconciled owned-job evidence')
@@ -1092,7 +1126,7 @@ def status(db, attempt=None):
                for row in pending(db, saved['attempt'])):
             attention.append('inspect parent and recover pending notification')
         summary = {key: saved[key] for key in ('attempt', 'assignment', 'agent', 'job', 'worker', 'native_session',
-                   'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'accepted', 'declined',
+                   'herdr', 'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'accepted', 'declined',
                    'acceptance_deferred', 'retained', 'closed',
                    'retirement_requested') if key in saved}
         result.append(dict(summary, attention=attention,
