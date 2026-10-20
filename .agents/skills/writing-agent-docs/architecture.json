@@ -33,7 +33,8 @@
   ],
   [
    "diagnose",
-   "research"
+   "research",
+   "prototype"
   ],
   [
    "agents"
@@ -266,6 +267,11 @@
    ],
    "code": [
     "scripts/adr_numbers.py"
+   ]
+  },
+  "prototype": {
+   "docs": [
+    "skills/prototype/**/*.md"
    ]
   }
  },

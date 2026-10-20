@@ -92,8 +92,8 @@ human-authorized merge by the orchestrator.
   priorities and record the deciding source; unresolved conflicts return for human
   alignment while independent work continues, not a retrospective rewrite of criteria; a **wrong
   design** → `/automattic:align` at the affected level, then `/automattic:refine` re-cuts.
-- A question no level can settle on paper → align's [prototype](../align/jobs/prototype.md) job; its
-  verdict returns as a ledger row.
+- A question no level can settle on paper → a [prototype](../prototype/SKILL.md), which align assigns
+  through its prototype job; its verdict returns as a ledger row.
 - A veto or a steering answer is recorded where `/automattic:align` settles the mandate, so the
   same question is decided, not asked, next time.
 
@@ -123,7 +123,7 @@ Every method the phases use ships in this plugin: test-first work from the
 [slicing](../../runtime/board/slicing.md), missing facts from
 [research](../research/SKILL.md), defects from
 [diagnosis](../diagnose/SKILL.md), and a question paper cannot settle
-from align's [prototype](../align/jobs/prototype.md) job. The review command supplies
+from a [prototype](../prototype/SKILL.md). The review command supplies
 scope, priority and allowed mutation context and its own
 [Standards/Spec method](../review/method.md). Simplicity is part of that review.
 For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,

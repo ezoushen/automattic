@@ -1,0 +1,5 @@
+interface:
+  short_description: "Settle one design question with throwaway code"
+  default_prompt: "Use $automattic:prototype <question> to build a throwaway prototype on its own branch and report the verdict."
+policy:
+  allow_implicit_invocation: true

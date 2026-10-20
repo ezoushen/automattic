@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""A throwaway prototype answers one design question and records its verdict, under align's own job."""
+"""A throwaway prototype answers one design question and records its verdict: the user types the skill or the agent
+loads it, and align assigns it to a builder through its own job."""
 import re
 import unittest
 
@@ -7,6 +8,7 @@ import support
 import agent_defs
 
 ROOT = support.ROOT
+SKILL = 'skills/prototype/SKILL.md'
 JOB = 'skills/align/jobs/prototype.md'
 
 
@@ -23,40 +25,52 @@ class Prototype(unittest.TestCase):
         text = prose(JOB)
         for heading in ('## Inputs', '## Finish line', '## Return'):
             self.assertIn(heading, text)
+        self.assertIn('](../../prototype/SKILL.md)', text)
 
-    def test_the_job_states_each_rule(self):
-        text = prose(JOB).lower()
+    def test_the_skill_states_each_rule(self):
+        text = prose(SKILL).lower()
         for rule in ('throwaway code that answers one question',
                      'does the logic hold, or what should it look like',
                      'clearly marked as a prototype',
                      'trivial to run',
                      'no persistence',
-                     'commit it only to the throwaway branch',
-                     'the verdict and the question it settled go to the ledger',
-                     'when it qualifies, an adr'):
+                     'commit it only to the throwaway branch'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, text)
 
-    def test_the_job_keeps_the_builders_core_gates(self):
-        self.assertNotRegex(prose(JOB).lower(), r'test-first|mutation|failing test|waive|exempt|gates? (do|does) not')
-
-    def test_the_job_is_language_neutral(self):
-        body = (ROOT / JOB).read_text().split('---', 2)[2]
-        self.assertNotIn('```', body)
-        self.assertEqual(set(re.findall(r'`([^`]+)`', body)),
-                         {'question', 'branch', 'worktree', 'report', 'main', '## Verdict'})
+    def test_align_records_the_verdict_from_its_job(self):
         text = prose(JOB).lower()
-        for tool in ('pnpm', 'npm', 'yarn', 'bun ', 'node', 'python', 'cargo', 'go run', 'gradle', 'dotnet',
-                     'swift run', 'html file', 'url search param'):
-            with self.subTest(tool=tool):
-                self.assertNotIn(tool, text)
+        for rule in ('the verdict and the question it settled go to the ledger', 'when it qualifies, an adr'):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, text)
 
-    def test_align_and_the_pipeline_map_use_the_job(self):
-        for path, link in (('skills/align/SKILL.md', 'jobs/prototype.md'),
-                           ('skills/brief/pipeline.md', '../align/jobs/prototype.md')):
+    def test_invoked_directly_it_builds_in_its_own_worktree_and_answers_the_user(self):
+        section = prose(SKILL).split('## Invoked directly', 1)[1]
+        for rule in ('throwaway branch in its own worktree', 'the verdict in the conversation', 'offer'):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, section)
+        self.assertIn('runtime bootstrap', prose(SKILL))
+
+    def test_neither_keeps_less_than_the_builders_core_gates(self):
+        for path in (SKILL, JOB):
             with self.subTest(path=path):
-                text = prose(path)
-                self.assertIn(f']({link})', text)
+                self.assertNotRegex(prose(path).lower(), r'test-first|mutation|failing test|waive|exempt|gates? (do|does) not')
+
+    def test_both_are_language_neutral(self):
+        spans = {SKILL: {'../../bootstrap.md', 'main'}, JOB: {'question', 'branch', 'worktree', 'report', '## Verdict'}}
+        for path, allowed in spans.items():
+            with self.subTest(path=path):
+                body = (ROOT / path).read_text().split('---', 2)[2]
+                self.assertNotIn('```', body)
+                self.assertEqual(set(re.findall(r'`([^`]+)`', body)), allowed)
+                text = prose(path).lower()
+                for tool in ('pnpm', 'npm', 'yarn', 'bun ', 'node', 'python', 'cargo', 'go run', 'gradle', 'dotnet',
+                             'swift run', 'html file', 'url search param'):
+                    self.assertNotIn(tool, text)
+
+    def test_align_uses_the_job_and_the_pipeline_map_names_the_skill(self):
+        self.assertIn('](jobs/prototype.md)', prose('skills/align/SKILL.md'))
+        self.assertIn('](../prototype/SKILL.md)', prose('skills/brief/pipeline.md'))
 
 
 if __name__ == '__main__':

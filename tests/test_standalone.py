@@ -98,7 +98,7 @@ class Standalone(unittest.TestCase):
         section = re.search(r'^## Our methods underneath\n(.+?)^## ', text, re.M | re.S).group(1)
         for link in ('../../standards/tdd.md', '../../standards/design.md', '../../runtime/board/slicing.md',
                      '../research/SKILL.md', '../diagnose/SKILL.md',
-                     '../align/jobs/prototype.md', '../review/method.md'):
+                     '../prototype/SKILL.md', '../review/method.md'):
             with self.subTest(link=link):
                 self.assertIn(f']({link})', section)
         self.assertIn('- [Our methods underneath](#our-methods-underneath)', text)
