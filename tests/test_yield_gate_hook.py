@@ -712,6 +712,20 @@ console.log(JSON.stringify((await handlers.agent_before_settle(
         [gap] = self.check()
         self.assertRegex(gap, r"^could not check Herdr workers: .*'herdr', 'agent', 'list'.* timed out after 5 seconds$")
 
+    def test_a_check_that_could_not_run_advises_a_retry_not_registering_or_dismissing(self):
+        # Registering or dismissing cannot clear an unreachable Herdr; a retry or the hook switch can.
+        self.serve(fail='connection refused')
+        reason = self.stop()['reason']
+        self.assertIn('retry', reason)
+        self.assertIn('AUTOMATTIC_YIELD_HOOK=off', reason)
+        self.assertNotIn('Register each launched worker', reason)
+        self.assertNotIn('herdr_launch.py dismiss', reason)
+        # With a real worker gap beside it, the worker advice stays.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5')
+        reason = self.stop(active=False)['reason']
+        self.assertIn('Register each launched worker', reason)
+        self.assertIn('AUTOMATTIC_YIELD_HOOK=off', reason)
+
     def test_a_git_failure_is_a_named_gap_not_a_pass(self):
         # Rule 5: when git cannot name the session's checkout the gate says so; outside any repository is no checkout.
         broken = Path(self.tmp.name) / 'broken-git'

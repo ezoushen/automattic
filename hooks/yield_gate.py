@@ -330,17 +330,22 @@ def checked(cwd, session=None):
 
 
 def reason(workers, own, session=None):
-    """The hold's message: every gap, and the worker advice only when a worker gap is among them."""
+    """The hold's message: every gap, the worker advice only for a worker gap that is not a failed check, and the retry
+    advice for a failed check, which registering or dismissing cannot clear."""
     message = 'Stopping now leaves these gaps:\n' + ''.join(f'- {gap}\n' for gap in workers + own)
-    if not workers:
-        return message
-    dismiss = f"python3 {ROOT}/hooks/herdr_launch.py dismiss --pane <pane>{f' --session {session}' if session else ''}"
-    return (message
-            + f'Register each launched worker, or dismiss a launch that needs none with `{dismiss} --reason <why>` '
-            + f'({PREPARE}). '
-            + 'Arm a notified wait, recover the receipt or collect the '
-            + 'result (for a worker that is gone, a failed or cancelled result whose report says what was lost) '
-            + f'before stopping ({GUIDE}).')
+    failed = [gap for gap in workers + own if gap.startswith('could not check')]
+    advice = []
+    if [gap for gap in workers if gap not in failed]:
+        dismiss = f"python3 {ROOT}/hooks/herdr_launch.py dismiss --pane <pane>{f' --session {session}' if session else ''}"
+        advice.append(f'Register each launched worker, or dismiss a launch that needs none with `{dismiss} --reason <why>` '
+                      + f'({PREPARE}). '
+                      + 'Arm a notified wait, recover the receipt or collect the '
+                      + 'result (for a worker that is gone, a failed or cancelled result whose report says what was lost) '
+                      + f'before stopping ({GUIDE}).')
+    if failed:
+        advice.append('A check that could not run clears when it runs again: retry the stop once Herdr (or git) is '
+                      'reachable, or run with `AUTOMATTIC_YIELD_HOOK=off` for this stop.')
+    return message + ' '.join(advice)
 
 
 def main():
