@@ -94,8 +94,9 @@ def stale_tabs(root, pane, session):
     module, listed, missing = None, {}, []
     for state in sorted(root.glob('.scratch/*/reports/workers.sqlite')):
         module = module or lifecycle()
-        binding = state.with_name(BINDING)
-        bound = coordinates(json.loads(binding.read_text()), pane, session) if binding.is_file() else None
+        # An unreadable binding decides nothing here (undelivered names it); the registering pane does.
+        binding, mine = read_binding(state.with_name(BINDING), pane, session)
+        bound = mine if binding else None
         db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
         try:
             saved_attempts = module.attempts(db)
@@ -146,18 +147,24 @@ def undelivered(root, pane, session):
     board, tickets, missing = None, None, []
     for path in sorted(root.glob(f'.scratch/*/reports/{BINDING}')):
         slug = path.parent.parent.name
+        binding, mine = read_binding(path, pane, session)
+        if not mine:
+            continue
+        if binding is None:
+            missing.append(f'{path}: the coordinator binding cannot be read; rebind with '
+                           f'`python3 {ROOT}/scripts/next_tickets.py --repo {root} {slug} --coordinate`')
+            continue
         try:
-            binding = json.loads(path.read_text())
-            if not coordinates(binding, pane, session):
-                continue
             if board is None:
                 module = script('next_tickets')
                 module.ROOT, module.ISSUES = root, root / '.scratch'
                 board, tickets = module, module.load()  # load() exits on a board it refuses.
             review = board.review_front_matter(slug) or {}
             # Only authorized repairs owe delivery, once every ticket is done; a recorded blocker is why it stops here.
-            # Dispatch start records the authorization until the review report records its own.
-            autofix = review.get('autofix', 'true' if binding.get('autofix') else 'false')
+            # Dispatch start records the authorization until the review report records its own (not a placeholder).
+            autofix = review.get('autofix')
+            if autofix not in ('true', 'false'):
+                autofix = 'true' if binding.get('autofix') else 'false'
             if (autofix != 'true' or str(review.get('blocker') or 'none') != 'none'
                     or any(fm['status'] != 'done' for name, fm in tickets.items() if board.spec_of(name) == slug)
                     or board.merged_and_deleted(slug)):
@@ -171,6 +178,24 @@ def undelivered(root, pane, session):
                            f'handoff ({HANDOFF}) until `python3 {ROOT}/scripts/next_tickets.py --repo {root} {slug} '
                            f'--delivery` passes, or record `blocker: <reason>` in {path.with_name("spec-review.md")}')
     return missing
+
+
+def read_binding(path, pane, session):
+    """(binding, mine) for a dispatch binding file: the binding, or None when it is missing or cannot be read, and
+    whether it names this session. An unreadable one names it only when its raw text holds this pane or host session,
+    since only such a session could be its coordinator."""
+    try:
+        text = path.read_text(errors='replace')
+    except OSError:  # Missing, or not a file.
+        return None, False
+    try:
+        binding = json.loads(text)
+    except ValueError:
+        binding = None
+    if (isinstance(binding, dict) and (binding.get('pane') is None or isinstance(binding['pane'], str))
+            and isinstance(binding.get('sessions'), list) and all(isinstance(known, str) for known in binding['sessions'])):
+        return binding, coordinates(binding, pane, session)
+    return None, any(value and value in text for value in (pane, session))
 
 
 def coordinates(binding, pane, session):

@@ -821,6 +821,14 @@ class DeliveryHold(GateRepo):
                 self.assertEqual(self.stop(pane=None, session=f'{variable}-1', host=host)['decision'], 'block')
                 self.assertIsNone(self.stop(pane=None, session='other-1', host=host))
 
+    def test_a_coordinator_with_no_identity_is_refused(self):
+        # Review 4: outside Herdr, on a host that exports no session ID, nothing could match a stopping session, so the
+        # binding refuses, saying the stop hold cannot bind, and records nothing.
+        refused = self.bind(pane=None, code=1)
+        self.assertEqual(refused.stderr, 'no Herdr pane (HERDR_PANE_ID) or host session ID (CLAUDE_CODE_SESSION_ID, '
+                                         'CODEX_SESSION_ID, PI_SESSION_ID) here: the stop hold cannot bind this session\n')
+        self.assertFalse((self.repo / '.scratch/fix/reports/coordinator.json').exists())
+
     def test_no_other_session_is_held(self):
         # Rule 4: when the binding and the stopping session both know a host session, pane and session must both match,
         # so the bound pane now running another conversation (or a restarted Herdr's reused pane ID) is not held, nor
@@ -868,6 +876,15 @@ class DeliveryHold(GateRepo):
         self.bind(pane='w1:p1')
         self.review(autofix='true')
         self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+
+    def test_the_templates_autofix_placeholder_is_unset_so_dispatch_starts_value_counts(self):
+        # Review 5: the report template seeds `autofix: <true|false>`; a report copied with the placeholder left in
+        # must not override `--autofix` from dispatch start, either way.
+        self.review(autofix='<true|false>')
+        self.bind(pane='w1:p1', autofix=True)
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        self.bind(pane='w1:p1')
+        self.assertEqual(self.check(pane='w1:p1'), [])
 
     def test_an_effort_merged_into_main_with_its_branch_deleted_is_finished_and_not_held(self):
         # Review 1 (11 of 11 real reviewed efforts): after delivery the effort branch is merged and deleted. Every ticket
@@ -1028,6 +1045,23 @@ class StaleTabs(GateRepo):
         self.assertEqual(self.check(pane='w1:p2', session='host-2'), [self.gap()])
         self.assertEqual(self.check(pane='w1:p1'), [])
         self.assertEqual(self.check(pane='w1:p2', session='host-3'), [])
+
+    def test_a_malformed_binding_is_one_gap_for_a_session_it_names_and_hides_no_other_gap(self):
+        # Review 3: whether a session is bound is decided before anything else can fail. A binding that cannot be read
+        # (torn JSON, or the wrong shape) is one named gap for a session whose pane or host session its raw text
+        # names, and skipped for every other; the open tab of the run is still reported (by its registering pane).
+        self.register()
+        self.collect()
+        binding = self.state.with_name('coordinator.json')
+        rebind = f'python3 {ROOT}/scripts/next_tickets.py --repo {self.repo} effort --coordinate'
+        gap = f'{binding}: the coordinator binding cannot be read; rebind with `{rebind}`'
+        binding.write_text('{"pane": "w1:p1", "sessions": ["host-1"')
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap(), gap])
+        self.assertEqual(self.check(pane=None, session='host-1'), [gap])
+        self.assertEqual(self.check(pane='w1:p9', session='host-9'), [])
+        binding.write_text('["w1:p9"]')
+        self.assertEqual(self.check(pane='w1:p9'), [gap])
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
 
     def test_a_closed_workspace_or_stopped_herdr_session_means_the_tab_is_gone(self):
         # Review 2: real Herdr answers workspace_not_found for a closed workspace and server_not_running for a stopped

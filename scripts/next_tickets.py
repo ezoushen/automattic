@@ -617,6 +617,9 @@ def main(argv):
             print(f"{fm.get('status', '<missing>'):<12} {name:<52} touches={','.join(fm.get('touches', []))} blocked_by={deps}")
         return
     if args.coordinate:
+        if not os.environ.get("HERDR_PANE_ID") and not any(os.environ.get(name) for name in SESSION_VARIABLES):
+            sys.exit(f"no Herdr pane (HERDR_PANE_ID) or host session ID ({', '.join(SESSION_VARIABLES)}) here: "
+                     "the stop hold cannot bind this session")
         slugs = sorted({spec_of(t) for t in selected})
         if not args.slug:  # Only efforts with work left: a ticket not done, or delivery incomplete on a live branch.
             slugs = [slug for slug in slugs

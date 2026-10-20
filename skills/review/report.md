@@ -8,12 +8,13 @@ IDs) that produced the statuses at those heads. When the orchestrator runs check
 permitted, it names the run log instead. A status with no run behind it is not
 evidence, and the delivery gate rejects a bare `orchestrator` or `host`. An effort the
 user ran directly on main adds `effort_branch: main`; the gate reads `feat/<slug>` otherwise.
-`autofix` is `true` only when repairs are authorized. `blocker` names the concrete blocker
+`autofix` is `true` only when repairs are authorized; while it is unset, dispatch's
+`--autofix` counts. `blocker` names the concrete blocker
 that stops delivery, and is `none` once nothing does. The stop hooks read both fields:
 
 ```markdown
 ---
-autofix: false
+autofix: <true|false>
 blocker: none
 review_status: incomplete
 documentation_status: incomplete
