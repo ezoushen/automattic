@@ -49,8 +49,10 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    controls. A model name or “think hard” in the prompt cannot set them.
 2. Create a fresh worker/conversation for a new ticket or agent. Obtain its native
    session identity as well as the transport handle. A fresh pane or a worker's
-   claim of fresh context does not establish a new conversation. Register before
-   submitting productive work, using the following illustrative input shape:
+   claim of fresh context does not establish a new conversation. Give each worker a
+   tab or window of its own, as the host's guidance describes, never a split of the
+   coordinator's. Register before submitting productive work, using the following
+   illustrative input shape:
 
    ```json
    {
@@ -71,7 +73,10 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    `adapter`, `agent_file`, `job_file`, `plugin_root`, `repo` or any of the job's
    inputs as `name: value`. A repair attempt adds `repairs`, naming the collected
    attempt whose work it fixes. When `wake-triage` is enabled, add `journal`, the
-   absolute session decisions journal.
+   absolute session decisions journal. A worker started through Herdr adds
+   `"herdr": {"session": "<herdr session>"}`; registration reads its pane, tab,
+   workspace and name from Herdr, refuses a `tab_id` or `pane_id` in that object
+   that Herdr contradicts, and refuses a tab the worker shares or the coordinator's.
 
    When the snapshot applied a decision-model recommendation, the helper records
    that decision for you: its action at registration, its execution at verified

@@ -5,6 +5,7 @@ import json
 import unittest
 
 from lifecycle_case import WorkerLifecycleCase
+import support
 
 
 class HerdrTabs(WorkerLifecycleCase):
@@ -116,6 +117,26 @@ class HerdrTabs(WorkerLifecycleCase):
         self.assertTrue(self.cli('retire', '--attempt', 'ticket-1/1', '--input', str(request))['closed'])
         self.assertIn('closed', self.cli('status')['attempts'][0])
         self.assertEqual((self.root / 'native-closed').read_text(), 'closed\n')
+
+
+class TabRecipe(unittest.TestCase):
+    def test_the_herdr_guide_starts_each_worker_in_a_tab_of_its_own_then_registers_it(self):
+        # Rule: the Herdr guide holds the recipe (tab create, agent start in its root pane, register) instead of a
+        # split of the caller's pane; the shared attempt doc names the registration field but not the Herdr recipe.
+        guide = ' '.join((support.ROOT / 'hosts/herdr.md').read_text().split())
+        position = 0
+        for step in ('never as a split of your pane',
+                     'herdr tab create --workspace <coordinator workspace> --cwd <worktree> '
+                     '--label "<slug>/<assignment> <role>" --no-focus',
+                     'herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>',
+                     'register it', 'Retirement closes the pane, which closes the tab'):
+            position = guide.find(step, position)
+            self.assertNotEqual(position, -1, f'{step!r} in order in hosts/herdr.md')
+        shared = (support.ROOT / 'runtime/workers/prepare.md').read_text()
+        self.assertIn('"herdr": {"session"', shared)
+        self.assertNotIn('herdr tab create', shared)
+        for text in (guide, shared):
+            self.assertNotIn('pane split', text)
 
 
 if __name__ == '__main__':

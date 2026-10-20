@@ -2,6 +2,7 @@
 
 Contents:
 - [Route before launching](#route-before-launching)
+- [Start each worker in a tab of its own](#start-each-worker-in-a-tab-of-its-own)
 - [Wait and recover](#wait-and-recover)
 - [Close owned workers after their final use](#close-owned-workers-after-their-final-use)
 - [Hand off to another machine](#hand-off-to-another-machine)
@@ -63,6 +64,22 @@ have completed; an early READY sentence or transient settled status is insuffici
 Parse the complete retained native export before collection. If the installed
 OpenCode CLI truncates exports captured through a pipe, redirect stdout directly
 to a file and validate that artifact; exit zero alone does not establish integrity.
+
+## Start each worker in a tab of its own
+
+Start every worker in a tab of its own in your workspace, never as a split of your
+pane, whatever placement the installed skill defaults to:
+
+1. `herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label "<slug>/<assignment> <role>" --no-focus`,
+   with your `HERDR_WORKSPACE_ID` as the workspace.
+2. `herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>`,
+   with the `.result.root_pane.pane_id` that step 1 returned.
+3. Then register it, adding `"herdr": {"session": "<session>"}`. Registration reads the
+   worker's pane, tab, workspace and name from `herdr agent get` and refuses a tab that
+   holds another pane or is your own.
+
+Retirement closes the pane, which closes the tab; closure is recorded only once
+`herdr tab get` answers `tab_not_found`.
 
 ## Wait and recover
 
