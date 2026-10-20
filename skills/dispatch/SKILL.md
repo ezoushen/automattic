@@ -59,7 +59,8 @@ review. Publication requires its own request.
    `python3 "<plugin_root>/scripts/next_tickets.py" --repo "<repo>" [slug] --coordinate`,
    adding `--autofix` when repairs are authorized. Run it through the host's shell: it
    records the Herdr pane and the host session ID there, and the stop hooks hold that
-   session alone ([handoff](handoff.md)).
+   session alone ([handoff](handoff.md)). With no slug it binds only efforts with work
+   left. It refuses, binding nothing, where it finds neither.
 
 A supplied scope is never widened, even to unblock it. Use the board's
 [overall scope](../../runtime/board/scope.md) rules to preserve

@@ -82,7 +82,8 @@ The session dispatch bound to coordinate an effort (`next_tickets.py --coordinat
 held for each collected attempt, neither retained nor retired, whose recorded tab Herdr still lists
 (with no binding, the Herdr pane that registered it is), and for an effort whose review
 report records `autofix: true` (before it does, the binding's `--autofix`) and no `blocker`, with
-every ticket done and `--delivery` failing.
+every ticket done and `--delivery` failing, unless it was merged into main and its branch deleted.
+A closed workspace or stopped Herdr session means the tab is gone.
 `AUTOMATTIC_YIELD_HOOK=off` disables the hooks.
 Read every completed wait's retained log and inspect the native worker/report. When
 the opt-in [wake-triage pilot](../decisions/shadow-pilots.md#wake-triage-shadow-pilot) is enabled,

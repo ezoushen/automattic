@@ -9,7 +9,8 @@ Actions: --board, --counts, --check, --accept TICKET,
 Only --set may be combined with --counts. --accept also runs the effort's standing measurements
 (.scratch/<slug>/measurements.json) at the ticket head, in a clean checkout, and refuses a missing or worse value.
 --delivery names each failing field. --coordinate [--autofix] records the calling session (its Herdr pane and host
-session IDs) and the repair authorization in .scratch/<slug>/reports/coordinator.json for the stop hooks.
+session IDs) and the repair authorization in .scratch/<slug>/reports/coordinator.json for the stop hooks; with no slug
+only efforts with work left, and it refuses a session it cannot identify.
 
 Tickets: .scratch/<slug>/issues/NN-title.md, with restricted YAML front matter
 (key: scalar and key: [a, b]). Only the orchestrator changes machine state.

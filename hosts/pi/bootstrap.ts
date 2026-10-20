@@ -35,18 +35,18 @@ export default function (pi) {
     // pi-subagents hosts background children, which load this extension, in a runner it marks PI_SUBAGENT_CHILD=1;
     // a child must not stop for its coordinator's gaps. (A /fork sets the header's parentSession too: no signal.)
     if (process.env.PI_SUBAGENT_CHILD === "1") return undefined;
-    let missing, session;
+    let missing, session, content;
     try {
       session = ctx.sessionManager.getSessionId();
       const output = execFileSync("python3", [`${root}/hooks/yield_gate.py`, "check", ctx.cwd, session],
         { encoding: "utf8", timeout: 20000 });
-      missing = JSON.parse(output).missing;
+      ({ missing, reason: content } = JSON.parse(output));  // The check words the hold as the Stop hooks do.
     } catch (error) {
       missing = [`could not check workers: ${error.message.trim()}`];  // A broken check never passes silently.
     }
     if (!missing.length) return undefined;
     continued = true;
-    const content = "Stopping now leaves these gaps:\n"
+    content ??= "Stopping now leaves these gaps:\n"
       + missing.map((gap) => `- ${gap}\n`).join("")
       + "Register each launched worker, or dismiss a launch that needs none with "
       + `\`python3 ${root}/hooks/herdr_launch.py dismiss --pane <pane> --session ${session} --reason <why>\` `

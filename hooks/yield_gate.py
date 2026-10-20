@@ -10,10 +10,10 @@ agent of its Herdr workspace. The session bound to coordinate an effort (next_ti
 --coordinate; without one, the pane that registered the attempt) is held for each collected
 attempt, neither retained nor retired, whose Herdr tab is still open, and for an effort whose
 review report (before it records one, the binding) records autofix: true and no blocker, with
-every ticket done and delivery failing. A
+every ticket done and delivery failing, unless it was merged into main and its branch deleted. A
 check that cannot run, and a launch log line that is unreadable or malformed, are named gaps,
 never a pass. `claude` and `codex` speak their shared Stop
-hook protocol; `check <cwd> [session]` prints the gaps as JSON for other hosts. Set
+hook protocol; `check <cwd> [session]` prints the gaps and the hold's message as JSON for other hosts. Set
 AUTOMATTIC_YIELD_HOOK=off to disable the check.
 """
 import calendar
@@ -61,9 +61,10 @@ def main_checkout(cwd):
 
 
 def gaps(cwd, session=None):
+    """(worker gaps, the coordinator's own gaps: stale tabs and undelivered efforts, each saying how to clear it)."""
     root = main_checkout(cwd)
     if root is None:
-        return []
+        return [], []
     cwd, pane = Path(cwd).resolve(), os.environ.get('HERDR_PANE_ID')
     module, missing = None, []
     for state in sorted(root.glob('.scratch/*/reports/workers.sqlite')):
@@ -84,8 +85,8 @@ def gaps(cwd, session=None):
         finally:
             db.close()
     # Every session answers for its own launches; a worker (its launch set AUTOMATTIC_WORKER) not for its siblings.
-    return (missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER'))
-            + stale_tabs(root, pane, session) + undelivered(root, pane, session))
+    return (missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER')),
+            stale_tabs(root, pane, session) + undelivered(root, pane, session))
 
 
 def stale_tabs(root, pane, session):
@@ -193,7 +194,8 @@ def read_binding(path, pane, session):
     except ValueError:
         binding = None
     if (isinstance(binding, dict) and (binding.get('pane') is None or isinstance(binding['pane'], str))
-            and isinstance(binding.get('sessions'), list) and all(isinstance(known, str) for known in binding['sessions'])):
+            and isinstance(binding.get('sessions'), list)
+            and all(isinstance(known, str) for known in binding['sessions'])):
         return binding, coordinates(binding, pane, session)
     return None, any(value and value in text for value in (pane, session))
 
@@ -315,17 +317,21 @@ def unregistered(root, pane, session, siblings=True):
 
 
 def checked(cwd, session=None):
-    """The gaps, or one naming why the check could not run: a broken check never passes silently."""
+    """The gaps as gaps() splits them, or a worker gap naming why the check could not run: a broken check never passes
+    silently."""
     try:
         return gaps(cwd, session)
     except Exception as error:
-        return [f'could not check workers: {error}']
+        return [f'could not check workers: {error}'], []
 
 
-def reason(missing, session=None):
+def reason(workers, own, session=None):
+    """The hold's message: every gap, and the worker advice only when a worker gap is among them."""
+    message = 'Stopping now leaves these gaps:\n' + ''.join(f'- {gap}\n' for gap in workers + own)
+    if not workers:
+        return message
     dismiss = f"python3 {ROOT}/hooks/herdr_launch.py dismiss --pane <pane>{f' --session {session}' if session else ''}"
-    return ('Stopping now leaves these gaps:\n'
-            + ''.join(f'- {gap}\n' for gap in missing)
+    return (message
             + f'Register each launched worker, or dismiss a launch that needs none with `{dismiss} --reason <why>` '
             + f'({PREPARE}). '
             + 'Arm a notified wait, recover the receipt or collect the '
@@ -337,16 +343,17 @@ def main():
     if os.environ.get('AUTOMATTIC_YIELD_HOOK') == 'off':
         return 0
     if sys.argv[1:2] == ['check'] and len(sys.argv) in (3, 4):
-        print(json.dumps({'missing': checked(Path(sys.argv[2]), *sys.argv[3:])}))
+        workers, own = checked(Path(sys.argv[2]), *sys.argv[3:])
+        print(json.dumps({'missing': workers + own, 'reason': reason(workers, own, *sys.argv[3:])}))
         return 0
     if sys.argv[1:] not in (['claude'], ['codex']):
         sys.exit('usage: yield_gate.py claude|codex < stop-hook-input, or yield_gate.py check <cwd> [session]')
     payload = json.load(sys.stdin)
     if payload.get('stop_hook_active'):
         return 0
-    missing = checked(Path(payload.get('cwd') or os.getcwd()), payload.get('session_id'))
-    if missing:
-        print(json.dumps({'decision': 'block', 'reason': reason(missing, payload.get('session_id'))}))
+    workers, own = checked(Path(payload.get('cwd') or os.getcwd()), payload.get('session_id'))
+    if workers or own:
+        print(json.dumps({'decision': 'block', 'reason': reason(workers, own, payload.get('session_id'))}))
     return 0
 
 

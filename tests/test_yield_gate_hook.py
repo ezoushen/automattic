@@ -802,8 +802,8 @@ class DeliveryHold(GateRepo):
         for host in ('claude', 'codex'):
             decision = self.stop(pane='w1:p1', host=host)
             self.assertEqual(decision['decision'], 'block')
-            self.assertTrue(decision['reason'].startswith(f'Stopping now leaves these gaps:\n- {self.gap()}\n'),
-                            decision['reason'])
+            # Review 6: a delivery-only hold carries its gap and command, without the worker-registration advice.
+            self.assertEqual(decision['reason'], f'Stopping now leaves these gaps:\n- {self.gap()}\n')
             self.assertIsNone(self.stop(pane='w1:p1', host=host, active=True))
         self.assertIsNone(self.stop(pane='w1:p1', env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
         self.review(delivered=True)
@@ -962,8 +962,7 @@ console.log(JSON.stringify([first, repeated,
   await settle({ ...ctx, sessionManager: { getSessionId: () => 'pi-2' } })]));
 """)
         self.assertTrue(first['continue'])
-        self.assertTrue(first['entries'][0]['content'].startswith(f'Stopping now leaves these gaps:\n- {self.gap()}\n'),
-                        first['entries'][0]['content'])
+        self.assertEqual(first['entries'][0]['content'], f'Stopping now leaves these gaps:\n- {self.gap()}\n')
         self.assertIsNone(repeated)
         self.assertIsNone(other)
 
