@@ -84,7 +84,7 @@ class Standalone(unittest.TestCase):
                 self.assertNotRegex(text, r'(?i)dependency identity|dependency skills|resolve [^.]{0,40}dependenc'
                                           r'|plugin dependency|skill dependency|installed dependenc')
 
-    def test_a_herdr_worker_keeps_the_plugins_its_assignment_invokes(self):
+    def test_a_herdr_worker_keeps_the_plugins_its_assignment_invokes_and_the_herdr_identity_hook(self):
         self.assertIn('Session-local settings isolation must keep the plugins the assignment invokes, such as '
                       "Automattic for its slash commands, and Herdr's native identity hook; verify both before "
                       'accepting the launch.', prose('hosts/herdr.md'))
