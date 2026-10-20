@@ -756,6 +756,9 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
     if selected in (eligible_thinking or {}) and settings.get('effort') not in eligible_thinking[selected]:
         raise ValueError(f'candidate {selected!r} thinking {settings.get("effort")!r} failed runtime preflight; '
                          'choose an eligible setting or verify registration before retrying')
+    # A native child takes no flags; a worker started as its own runtime process gets them explicitly.
+    runtime = metadata.get('target_runtime')
+    launch = launch_controls(runtime, agent, settings) if not native and runtime in HARNESSES else None
     # Named delegates and skills can forward to another runtime; the host is not the destination.
     return {'harness': host if native else None, 'host_harness': host, 'agent': agent, 'job': job,
             'settings': settings, 'sources': sources, 'files': [],
@@ -764,9 +767,57 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
             'allow_thinking_override': allow_thinking_override,
             'thinking_baseline': thinking['default'] if bounded else thinking,
             **({'thinking_allowed': thinking['allowed']} if bounded else {}),
-            'route_source': source, **metadata,
+            'route_source': source, **metadata, **({'launch': launch} if launch else {}),
             'executor_guide': str(ROOT / ('runtime/config/bash-executor.md' if kind == 'bash'
                                            else f'hosts/executors/{kind}.md'))}
+
+
+EDIT_TOOLS = ('Edit', 'Write', 'NotebookEdit')  # Claude's file-editing tools.
+PI_TOOLS = {'none': ('read', 'grep', 'find', 'ls'), 'worktree': ('read', 'bash', 'edit', 'write', 'grep', 'find', 'ls')}
+OPENCODE_DENY = {'none': ('edit', 'shell', 'subagent'), 'worktree': ('subagent',)}
+
+
+def launch_controls(runtime, agent, settings):
+    """Flags for a worker started as its own runtime process: the agent's write scope and the resolved model and
+    effort, each passed explicitly because every user default allows full writes. `verify` holds the native
+    record's values that the worker lifecycle's submit compares."""
+    definition = DEFINITIONS['agents'][agent]
+    writes = definition['writes']
+    model, effort = settings.get('model'), settings.get('effort')
+    if runtime == 'claude':
+        # dontAsk denies whatever the allowlist leaves out; a read-only shell may not edit the worktree it starts in.
+        denied = set(agent_defs.tool_set(definition.get('disallowedTools')))
+        if writes == 'none':
+            denied |= set(EDIT_TOOLS)
+        tools = [tool.strip() for tool in definition['tools'].split(',') if tool.strip() not in denied]
+        argv = ['--permission-mode', 'dontAsk', '--allowedTools', ','.join(tools)]
+        if writes == 'none':
+            argv += ['--disallowedTools', ','.join(EDIT_TOOLS)]
+            if 'Bash' in tools:
+                argv += ['--settings', json.dumps({'permissions': {'deny': ['Edit(./**)']}}, separators=(',', ':'))]
+        argv += (['--model', model] if model else []) + (['--effort', effort] if effort else [])
+        return {'writes': writes, 'argv': argv, 'verify': {'permission_mode': 'dontAsk'}}
+    if runtime == 'pi':
+        # An allowlist: an exclude list leaves extension shells such as bg_run.
+        tools = PI_TOOLS[writes]
+        provider, _, name = model.partition('/') if model and '/' in model else ('', '', model)
+        argv = ['--tools', ','.join(tools)] + (['--provider', provider] if provider else []) + (
+            ['--model', name] if name else []) + (['--thinking', effort] if effort else [])
+        return {'writes': writes, 'argv': argv, 'verify': {'tools': sorted(tools)}}
+    if runtime == 'opencode':
+        # The TUI has no --agent or -m: the session is created with them. A denied agent still writes through the
+        # general subagent unless subagent is denied too.
+        rules = [{'action': action, 'resource': '*', 'effect': 'deny'} for action in OPENCODE_DENY[writes]]
+        body = {'agent': 'build', 'permissions': rules}
+        if model:
+            provider, _, name = model.partition('/')
+            body['model'] = dict(providerID=provider, id=name, **({'variant': effort} if effort else {}))
+        return {'writes': writes, 'api': {'method': 'POST', 'path': '/api/session', 'body': body},
+                'verify': {'permissions': rules}}
+    sandbox = 'read-only' if writes == 'none' else 'workspace-write'
+    argv = ['-s', sandbox, '-a', 'never'] + (['-m', model] if model else []) + (
+        ['-c', f'model_reasoning_effort={json.dumps(effort)}'] if effort else [])
+    return {'writes': writes, 'argv': argv, 'verify': {'sandbox': sandbox, 'approval': 'never'}}
 
 
 def read_config(path):
