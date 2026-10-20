@@ -59,12 +59,21 @@ def gaps(cwd, session=None):
             missing += [f'{state}: {gap}' for gap in module.yield_gaps(db, coordinated)]
         finally:
             db.close()
-    return missing + unregistered(root, pane or session)
+    # A session inside a ticket worktree is a worker: only its coordinator answers for unregistered workers.
+    if not cwd.is_relative_to((root / '.worktrees').resolve()):
+        missing += unregistered(root, pane or session, pane)
+    return missing
 
 
-def unregistered(root, coordinator):
-    """Name each Herdr launch this coordinator logged into a ticket worktree, or an unknown cwd, that no attempt
-    in any run registers."""
+def herdr_agents():
+    """The live agents the session's Herdr server reports."""
+    result = subprocess.run(['herdr', 'agent', 'list'], capture_output=True, text=True, timeout=5)
+    return json.loads(result.stdout)['result']['agents']
+
+
+def unregistered(root, coordinator, pane):
+    """Name each Herdr worker that no attempt in any run registers: each launch this coordinator logged into a
+    ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its Herdr workspace."""
     module, workers = None, set()
     for state in root.glob('.scratch/*/reports/workers.sqlite'):
         module = module or lifecycle()
@@ -75,10 +84,19 @@ def unregistered(root, coordinator):
             db.close()
     log, worktrees = root / LAUNCHES, (root / '.worktrees').resolve()
     launches = [json.loads(line) for line in log.read_text().splitlines()] if log.is_file() else []
-    return [f"{log}: {launch['agent']} (pane {launch['pane']}): launched without a registered attempt"
-            for launch in launches if coordinator and launch['coordinator'] == coordinator
-            and not workers & {launch['agent'], launch['pane']}
-            and ('cwd' not in launch or Path(launch['cwd']).resolve().is_relative_to(worktrees))]
+    launches = [launch for launch in launches if coordinator and launch['coordinator'] == coordinator
+                and not workers & {launch['agent'], launch['pane']}
+                and ('cwd' not in launch or Path(launch['cwd']).resolve().is_relative_to(worktrees))]
+    workers |= {handle for launch in launches for handle in (launch['agent'], launch['pane'])}  # Named once.
+    workspace = os.environ.get('HERDR_WORKSPACE_ID')
+    live = [agent for agent in (herdr_agents() if workspace else [])
+            if agent.get('workspace_id') == workspace and agent['pane_id'] != pane and agent.get('cwd')
+            and Path(agent['cwd']).resolve().is_relative_to(worktrees)
+            and not workers & {agent.get('name'), agent['pane_id']}]
+    return ([f"{log}: {launch['agent']} (pane {launch['pane']}): launched without a registered attempt"
+             for launch in launches]
+            + [f"Herdr agent {agent.get('name')} (pane {agent['pane_id']}) runs in {agent['cwd']} "
+               'without a registered attempt' for agent in live])
 
 
 def reason(missing):

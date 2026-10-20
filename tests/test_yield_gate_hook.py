@@ -208,6 +208,16 @@ class UnregisteredWorkers(GateRepo):
                        worker=worker, native_session=f'native-{attempt}', owned=True,
                        packet=str(support.assignment_file(self.execution.parent, 'ticket')))
 
+    @staticmethod
+    def agent(name, pane, cwd, workspace='w1'):
+        """A live agent as `herdr agent list` reports it."""
+        return {'agent': 'codex', 'agent_status': 'idle', 'name': name, 'pane_id': pane, 'tab_id': f'{workspace}:t9',
+                'workspace_id': workspace, 'cwd': str(cwd)}
+
+    @staticmethod
+    def live(name, pane, cwd):
+        return f'Herdr agent {name} (pane {pane}) runs in {cwd} without a registered attempt'
+
     def gap(self, agent, pane):
         return f"{self.repo / '.scratch/herdr-launches.jsonl'}: {agent} (pane {pane}): launched without a registered attempt"
 
@@ -334,6 +344,43 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertTrue(settled['continue'])
         self.assertIn(f"- {self.gap('builder-1', 'w1:p5')}\n", settled['entries'][0]['content'])
         self.assertIn('workers/prepare.md', settled['entries'][0]['content'])
+
+    def test_a_live_agent_in_a_worktree_is_a_gap_until_an_attempt_registers_it(self):
+        # Rule 3: an agent nobody logged (started by hand, or before the hook) still holds its workspace's coordinator.
+        other = self.repo / '.worktrees/ticket-2'
+        self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', other)])
+        self.assertEqual(self.check(), [self.live('builder-1', 'w1:p5', self.worktree),
+                                        self.live('builder-2', 'w1:p6', other)])
+        decision = self.stop()
+        self.assertEqual(decision['decision'], 'block')
+        self.assertIn(f"- {self.live('builder-1', 'w1:p5', self.worktree)}\n", decision['reason'])
+        self.register('w1:p5', 'ticket-1/1')
+        self.register('builder-2', 'ticket-2/1')
+        self.assertEqual(self.check(), [])
+
+    def test_only_other_live_agents_in_the_coordinators_workspace_and_worktrees_count(self):
+        # Rule 3: other workspaces, the coordinator's own pane and agents outside .worktrees/ are not its workers; a
+        # session outside Herdr has no workspace to check; a logged launch that is still live is named once.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5')
+        self.serve(agents=[self.agent('elsewhere-1', 'w2:p5', self.worktree, workspace='w2'),
+                           self.agent('coordinator', 'w1:p1', self.worktree),
+                           self.agent('e2e-1', 'w1:p7', self.repo),
+                           self.agent('builder-1', 'w1:p5', self.worktree)])
+        self.assertEqual(self.check(), [self.gap('builder-1', 'w1:p5')])
+        self.assertEqual(self.check(pane=None, session='host-1'), [])
+
+    def test_a_worker_session_is_held_neither_for_itself_nor_its_siblings(self):
+        # Rule 4: a session inside .worktrees/ is a worker; its own launches and live siblings hold only its coordinator.
+        sibling = self.repo / '.worktrees/ticket-2'
+        self.launch('herdr agent start helper-1 --kind codex --pane w1:p8', cwd=self.worktree, pane='w1:p5')
+        self.launch('herdr agent start helper-2 --kind codex --pane w1:p9', cwd=self.worktree, pane=None,
+                    session='worker-1')
+        self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', sibling)])
+        self.assertEqual(self.check(cwd=self.worktree, pane='w1:p5'), [])
+        self.assertIsNone(self.stop(cwd=self.worktree, pane='w1:p5'))
+        self.assertIsNone(self.stop(cwd=self.worktree, pane=None, session='worker-1'))
+        self.assertEqual(self.check(), [self.live('builder-1', 'w1:p5', self.worktree),
+                                        self.live('builder-2', 'w1:p6', sibling)])
 
 
 if __name__ == '__main__':
