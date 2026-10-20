@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import random
 import sqlite3
+import subprocess
 import time
 import agent_defs
 import allowance
@@ -777,6 +778,15 @@ PI_TOOLS = {'none': ('read', 'grep', 'find', 'ls', 'bash'), 'worktree': ('read',
 OPENCODE_DENY = {'none': ('edit', 'subagent'), 'worktree': ('subagent',)}  # `none` keeps the shell for checks.
 
 
+def git_common_dir(repo):
+    """The git directory a checkout's linked worktrees share, also when `repo` is itself a linked worktree."""
+    process = subprocess.run(['git', '-C', str(repo), 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+                             capture_output=True, text=True)
+    if process.returncode:
+        raise ValueError(f'{repo} is not a git checkout: {process.stderr.strip()}')
+    return str(Path(process.stdout.strip()).resolve())
+
+
 def launch_controls(runtime, agent, settings, repo, worktree=None, reports=None):
     """Flags for a worker started as its own runtime process: the agent's write scope and the resolved model and
     effort, each passed explicitly because every user default allows full writes. `verify` holds the native
@@ -799,6 +809,10 @@ def launch_controls(runtime, agent, settings, repo, worktree=None, reports=None)
         tools = [tool.strip() for tool in definition['tools'].split(',') if tool.strip() not in denied]
         argv = ['--permission-mode', 'dontAsk', '--allowedTools', ','.join(tools)]
         if writes == 'none':
+            if reports == worktree or worktree in reports.parents:
+                raise ValueError('A read-only Claude worker could never write its report: the reports directory is '
+                                 'inside the worktree, whose edit deny beats the reports allow; review from a separate '
+                                 'worktree, such as .worktrees/review-<slug>, with the reports outside it')
             rules = {'deny': [f'Edit(/{worktree}/**)'], 'allow': [f'Edit(/{reports}/**)']}
             argv += ['--settings', json.dumps({'permissions': rules}, separators=(',', ':'))]
         argv += (['--model', model] if model else []) + (['--effort', effort] if effort else [])
@@ -824,7 +838,7 @@ def launch_controls(runtime, agent, settings, repo, worktree=None, reports=None)
     # A permissions profile given with -c applies over the user's sandbox_mode and is recorded as a workspace-write
     # policy with its entries. Both scopes read everything and write temporary files and the reports; `worktree` also
     # writes the worktree and the main checkout's .git, where a linked worktree's commits land.
-    writable = [':tmpdir', str(reports)] + ([str(worktree), str(repo / '.git')] if writes == 'worktree' else [])
+    writable = [':tmpdir', str(reports)] + ([str(worktree), git_common_dir(repo)] if writes == 'worktree' else [])
     profile = f'automattic_{writes}'
     table = ','.join(['":root"="read"'] + [f'{json.dumps(path)}="write"' for path in writable])
     argv = ['-c', f'default_permissions="{profile}"', '-c', f'permissions.{profile}.filesystem={{{table}}}',

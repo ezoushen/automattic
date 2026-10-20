@@ -59,6 +59,7 @@ class LaunchControls(unittest.TestCase):
         # Rule: a profile reads everything; `none` writes only $TMPDIR and the reports directory, so checks still run;
         # `worktree` also writes the worktree and the main checkout's .git, where a linked worktree commits.
         # Approval never, model and effort explicit.
+        subprocess.run(['git', 'init', '-q', str(self.root)], check=True)
         options, worktree, reports, git = self.places()
         tail = ['-a', 'never', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"']
         self.assertEqual(self.route('sol', 'diff-review', 'claude', *options)['launch'], {
@@ -97,6 +98,26 @@ class LaunchControls(unittest.TestCase):
                      '--allowedTools', 'Read,Edit,Write,Bash,Grep,Glob,Skill,SendMessage,Monitor,TaskStop',
                      '--model', 'claude-opus-5-5', '--effort', 'high'],
             'verify': {'permission_mode': 'dontAsk'}})
+
+    def test_claude_refuses_a_read_only_worker_whose_reports_sit_inside_its_worktree(self):
+        # Rule: the worktree deny beats the reports allow, so such a worker could never write its report.
+        worktree = self.root / 'wt'
+        error = self.route('opus', 'diff-review', 'pi', '--worktree', str(worktree),
+                           '--reports', str(worktree / '.scratch' / 'reports'), code=2)
+        self.assertIn('the reports directory is inside the worktree, whose edit deny beats the reports allow', error)
+        self.assertIn('review from a separate worktree, such as .worktrees/review-<slug>', error)
+
+    def test_codex_builder_writes_the_shared_git_directory_of_a_linked_worktree_repo(self):
+        # Rule: a linked worktree's commits land in the main checkout's git directory, which git reports as the
+        # common dir; a --repo that is itself a linked worktree must still name it.
+        main, linked = self.root / 'main', self.root / 'linked'
+        for args in (['init', '-q', str(main)], ['-C', str(main), 'commit', '-q', '--allow-empty', '-m', 'init'],
+                     ['-C', str(main), 'worktree', 'add', '-q', str(linked)]):
+            subprocess.run(['git', *args], check=True, capture_output=True)
+        options, worktree, reports, _ = self.places()
+        launch = self.route('sol', 'ticket', 'claude', '--repo', str(linked), *options)['launch']
+        self.assertIn(f'write {main.resolve() / ".git"}', launch['verify']['filesystem'])
+        self.assertNotIn(f'write {linked.resolve() / ".git"}', launch['verify']['filesystem'])
 
     def test_a_route_whose_launch_needs_its_worktree_or_reports_is_refused_without_them(self):
         # Rule: Codex needs --reports for every scope and --worktree for `worktree`; Claude `none` needs both.

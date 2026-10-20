@@ -95,7 +95,8 @@ route's `launch.argv` after `--`; every restriction is in it, since the user's d
 `writes: worktree` also `--worktree <abs worktree>`; the resolver refuses without them. The launch
 is a permissions profile (`-c default_permissions=...` and its `filesystem` table) that reads
 everything and writes `$TMPDIR` and the reports directory; `worktree` also writes the worktree
-and the main checkout's `.git`, where a linked worktree's commits land. Then `-a never`, `-m`
+and the shared git directory (`git rev-parse --git-common-dir` of `--repo`), where a linked
+worktree's commits land. Then `-a never`, `-m`
 and `-c model_reasoning_effort="<effort>"`, each value one argument. In logged-out `codex exec`
 probes a profile given with `-c` applied over a config `sandbox_mode`, and the rollout recorded
 exactly these entries; the TUI with a profile is unprobed, and whether `git commit` succeeds

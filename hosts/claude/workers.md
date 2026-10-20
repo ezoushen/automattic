@@ -128,7 +128,8 @@ rules that deny edits under the worktree and allow them under the reports direct
 --settings '{"permissions":{"deny":["Edit(//<worktree>/**)"],"allow":["Edit(//<reports>/**)"]}}'
 ```
 
-A deny of this kind was probed against the Edit tool, the Write tool and a shell redirect; it
+The resolver refuses a reports directory inside the worktree, since the deny would beat the
+allow; review from a separate worktree, such as `.worktrees/review-<slug>`. A deny of this kind was probed against the Edit tool, the Write tool and a shell redirect; it
 does not stop a script that opens files itself, and MCP tools the user's settings allow stay
 callable. Start the worker only in a worktree of a checkout the user already trusts: anywhere
 else the trust dialog blocks the start (Herdr: `agent_not_ready`, agent `blocked`). Report that
