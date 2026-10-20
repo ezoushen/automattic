@@ -12,6 +12,42 @@ class Jobs(WorkerLifecycleCase):
         self.execution.write_text(json.dumps({'harness': 'claude', 'agent': agent, 'job': job,
                                              'settings': {'model': 'sonnet', 'effort': 'high'}}))
 
+    def checkout(self, files=None):
+        """A Git checkout of one commit, kept apart from the files the fixture writes under the root."""
+        self.worktree = self.root / 'checkout'
+        self.worktree.mkdir()
+        self.git('init', '-q')
+        return self.commit('base', files or {'code.py': 'x = 1\n'})
+
+    def git(self, *args):
+        return subprocess.run(['git', '-C', str(self.worktree), *args], check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    def commit(self, message, files):
+        for name, content in files.items():
+            (self.worktree / name).write_text(content)
+        self.git('add', '-A')
+        self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', message)
+        return self.git('rev-parse', 'HEAD')
+
+    def review(self, head, attempt='review-1/1', session='native-1'):
+        """Register and ready a read-only reviewer attempt in the checkout, and write its report."""
+        self.use('reviewer', 'diff-review')
+        self.record('register', attempt, assignment=attempt.split('/')[0], repo=str(self.worktree),
+                    worktree=str(self.worktree), head=head, execution=str(self.execution), runtime='claude',
+                    worker='pane-' + session, native_session=session, owned=True, packet=str(self.packet()))
+        self.ready(attempt)
+        report = self.root / 'review.md'
+        report.write_text('## Coverage\n\n## Review round 1\n')
+        return report
+
+    def collect_request(self, head, report):
+        request = self.root / 'collect.json'
+        request.write_text(json.dumps({
+            'status': 'completed', 'head': head, 'report': str(report), 'evidence': ['review.md'],
+            'disposition': {'kind': 'retain', 'reason': 'recheck', 'next_use': 'recheck', 'evidence': ['review.md']}}))
+        return str(request)
+
     def test_registration_needs_a_known_job_done_by_its_agent(self):
         self.execution.write_text(json.dumps({'harness': 'claude', 'agent': 'builder',
                                              'settings': {'model': 'sonnet', 'effort': 'high'}}))
@@ -87,39 +123,106 @@ class Jobs(WorkerLifecycleCase):
                 self.cli('gate', '--attempt', attempt, '--stage', 'accept', '--revision', 'head-1', code=0 if ok else 1)
 
     def test_a_read_only_agent_must_leave_tracked_files_and_head_unchanged(self):
-        git = lambda *args: subprocess.run(['git', '-C', str(self.root), *args], check=True,
-                                           capture_output=True, text=True).stdout.strip()
-        git('init', '-q')
-        (self.root / 'code.py').write_text('x = 1\n')
-        git('add', 'code.py')
-        git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'base')
-        head = git('rev-parse', 'HEAD')
-        report = self.root / 'review.md'
-        report.write_text('## Coverage\n\n## Review round 1\n')
-        self.use('reviewer', 'diff-review')
+        head = self.checkout()
         for attempt, session, edit in (('review-1/1', 'native-1', 'edit'), ('review-2/1', 'native-2', 'commit'),
                                        ('review-3/1', 'native-3', None), ('review-4/1', 'native-4', 'dirty'),
                                        ('review-5/1', 'native-5', 'dirty-edit')):
             if edit in ('dirty', 'dirty-edit'):
                 # A snapshot check can start from a dirty tree; only the worker's own changes count.
-                (self.root / 'code.py').write_text('x = 3\n')
-            self.record('register', attempt, assignment=attempt.split('/')[0], repo=str(self.root),
-                        worktree=str(self.root), head=head, execution=str(self.execution), runtime='claude',
-                        worker='pane-' + session, native_session=session, owned=True, packet=str(self.packet()))
-            self.ready(attempt)
+                (self.worktree / 'code.py').write_text('x = 3\n')
+            report = self.review(head, attempt, session)
             if edit in ('edit', 'commit', 'dirty-edit'):
-                (self.root / 'code.py').write_text('x = 2\n')
+                (self.worktree / 'code.py').write_text('x = 2\n')
             if edit == 'commit':
-                git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qam', 'reviewer edit')
+                self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qam', 'reviewer edit')
             self.record('result', attempt, status='completed', head=head, report=str(report), evidence=['review.md'])
             changed = edit in ('edit', 'commit', 'dirty-edit')
             gate = self.cli('gate', '--attempt', attempt, '--stage', 'accept', '--revision', head, code=1 if changed else 0)
             if changed:
-                self.assertEqual(gate['missing'], ['unchanged worktree for a read-only agent'])
-                git('reset', '-q', '--hard', head)
+                reason = (f'HEAD moved from {head} to {self.git("rev-parse", "HEAD")}' if edit == 'commit'
+                          else 'tracked files differ from their state at registration')
+                self.assertEqual(gate['missing'], [f'unchanged worktree for a read-only agent ({reason})'])
+                self.git('reset', '-q', '--hard', head)
             else:
                 self.assertTrue(gate['complete'])
 
+    def test_an_untracked_file_a_read_only_agent_adds_fails_the_accept_gate(self):
+        head = self.checkout()
+        report = self.review(head)
+        (self.worktree / 'notes.txt').write_text('scratch\n')
+        self.record('result', 'review-1/1', status='completed', head=head, report=str(report), evidence=['review.md'])
+        gate = self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', head, code=1)
+        self.assertEqual(gate['missing'],
+                         ['unchanged worktree for a read-only agent (an untracked file appeared: notes.txt)'])
+
+    def test_a_gitignored_file_created_after_registration_is_not_a_change(self):
+        head = self.checkout({'code.py': 'x = 1\n', '.gitignore': '*.log\n'})
+        report = self.review(head)
+        (self.worktree / 'run.log').write_text('output\n')
+        self.record('result', 'review-1/1', status='completed', head=head, report=str(report), evidence=['review.md'])
+        gate = self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', head)
+        self.assertTrue(gate['complete'])
+
+    def test_untracked_files_present_at_registration_are_not_a_change(self):
+        head = self.checkout()
+        (self.worktree / 'before.txt').write_text('there before the agent started\n')
+        for attempt, session, added in (('review-1/1', 'native-1', None), ('review-2/1', 'native-2', 'notes.txt')):
+            report = self.review(head, attempt, session)
+            if added:
+                (self.worktree / added).write_text('scratch\n')
+            self.record('result', attempt, status='completed', head=head, report=str(report), evidence=['review.md'])
+            gate = self.cli('gate', '--attempt', attempt, '--stage', 'accept', '--revision', head,
+                            code=1 if added else 0)
+            if added:
+                self.assertEqual(gate['missing'],
+                                 [f'unchanged worktree for a read-only agent (an untracked file appeared: {added})'])
+            else:
+                self.assertTrue(gate['complete'])
+
+    def test_collect_refuses_a_read_only_attempt_whose_worktree_changed(self):
+        head = self.checkout()
+        for number, change in enumerate(('commit', 'edit', 'untracked'), 1):
+            with self.subTest(change=change):
+                attempt = f'review-{number}/1'
+                report = self.review(head, attempt, f'native-{number}')
+                if change == 'untracked':
+                    (self.worktree / 'notes.txt').write_text('scratch\n')
+                else:
+                    (self.worktree / 'code.py').write_text('x = 2\n')
+                if change == 'commit':
+                    self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qam', 'reviewer edit')
+                reason = {'commit': f'HEAD moved from {head} to {self.git("rev-parse", "HEAD")}',
+                          'edit': 'tracked files differ from their state at registration',
+                          'untracked': 'an untracked file appeared: notes.txt'}[change]
+                request = self.collect_request(head, report)
+                error = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
+                self.assertIn(f'Collection requires an unchanged worktree for a read-only agent ({reason})', error)
+                self.assertNotIn('result', self.cli('status', '--attempt', attempt)['attempts'][0])
+                # Once the worktree is as registered, the same result collects.
+                self.git('reset', '-q', '--hard', head)
+                self.git('clean', '-fdq')
+                self.cli('collect', '--attempt', attempt, '--input', request)
+                self.assertTrue(self.cli('gate', '--attempt', attempt, '--stage', 'accept', '--revision', head)['complete'])
+
+    def test_collect_accepts_a_read_only_attempt_whose_worktree_is_as_registered(self):
+        head = self.checkout({'code.py': 'x = 1\n', '.gitignore': '*.log\n'})
+        # Dirty and untracked at registration, and an ignored file made later: none of it is the agent's change.
+        (self.worktree / 'code.py').write_text('x = 3\n')
+        (self.worktree / 'before.txt').write_text('there before the agent started\n')
+        report = self.review(head)
+        (self.worktree / 'run.log').write_text('output\n')
+        self.cli('collect', '--attempt', 'review-1/1', '--input', self.collect_request(head, report))
+        self.assertTrue(self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', head)['complete'])
+
+    def test_collect_refuses_a_read_only_attempt_it_cannot_verify(self):
+        self.use('reviewer', 'diff-review')
+        self.register('review-1/1', 'review-1')
+        self.ready('review-1/1')
+        report = self.root / 'review.md'
+        report.write_text('## Coverage\n\n## Review round 1\n')
+        error = self.cli('collect', '--attempt', 'review-1/1', '--input', self.collect_request('head-1', report), code=2)
+        self.assertIn('Collection requires an unchanged worktree for a read-only agent (not a readable Git checkout '
+                      'at registration; read-only work cannot be verified)', error)
 
     def test_a_read_only_agent_outside_a_git_checkout_cannot_be_verified(self):
         self.use('reviewer', 'diff-review')
@@ -129,7 +232,8 @@ class Jobs(WorkerLifecycleCase):
         report.write_text('## Coverage\n\n## Review round 1\n')
         self.record('result', 'review-1/1', status='completed', head='head-1', report=str(report), evidence=['r'])
         gate = self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', 'head-1', code=1)
-        self.assertEqual(gate['missing'], ['unchanged worktree for a read-only agent'])
+        self.assertEqual(gate['missing'], ['unchanged worktree for a read-only agent (not a readable Git checkout '
+                                           'at registration; read-only work cannot be verified)'])
 
 
 if __name__ == '__main__':

@@ -150,7 +150,7 @@ def gaps(db, data, stage, revision=None):
         if result.get('missing_returns'):
             missing.append('job report sections ' + ', '.join(result['missing_returns']))
         if result.get('read_only_changes'):
-            missing.append('unchanged worktree for a read-only agent')
+            missing.append(f'unchanged worktree for a read-only agent ({result["read_only_changes"]})')
     return missing
 
 
@@ -341,29 +341,38 @@ def return_check(saved, report):
     # A heading names the section exactly, or continues it after a space, as in `## Fixed round 2`.
     missing = [heading for heading in DEFINITIONS['jobs'][saved['job']]['returns']
                if not any(line == heading or line.startswith(heading + ' ') for line in lines)]
-    changed = None
+    return missing, read_only_change(saved)
+
+
+def read_only_change(saved):
+    """How a read-only agent's worktree differs from its registration, or None when it is as it was."""
     baseline = saved.get('worktree_baseline', False)
     if baseline is None:
-        changed = 'not a readable Git checkout at registration; read-only work cannot be verified'
-    elif baseline:
-        now = worktree_state(saved['worktree'])
-        if now is None:
-            changed = 'worktree state unreadable at collection'
-        elif now['head'] != baseline['head']:
-            changed = f'HEAD moved from {baseline["head"]} to {now["head"]}'
-        elif now['changes'] != baseline['changes']:
-            changed = 'tracked files differ from their state at registration'
-    return missing, changed
+        return 'not a readable Git checkout at registration; read-only work cannot be verified'
+    if not baseline:
+        return None
+    now = worktree_state(saved['worktree'])
+    if now is None:
+        return 'worktree state unreadable at collection'
+    if now['head'] != baseline['head']:
+        return f'HEAD moved from {baseline["head"]} to {now["head"]}'
+    if now['changes'] != baseline['changes']:
+        return 'tracked files differ from their state at registration'
+    if appeared := sorted(set(now['untracked']) - set(baseline['untracked'])):
+        return f'an untracked file appeared: {appeared[0]}'
 
 
 def worktree_state(worktree):
-    """HEAD and a digest of tracked changes against it, or None outside a readable Git checkout. A snapshot
-    check may start from a dirty tree, so a read-only agent is held to the state it was given."""
+    """HEAD, a digest of tracked changes against it and the untracked files the ignore rules leave visible, or
+    None outside a readable Git checkout. A snapshot check may start from a dirty tree, so a read-only agent
+    is held to the state it was given."""
     run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL)
     head, diff = run('rev-parse', 'HEAD'), run('diff', '--no-ext-diff', '--no-textconv', '--no-color', '--binary', 'HEAD')
-    if head.returncode or diff.returncode:
+    untracked = run('ls-files', '--others', '--exclude-standard', '-z')
+    if head.returncode or diff.returncode or untracked.returncode:
         return None
-    return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest()}
+    return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
+            'untracked': sorted(filter(None, untracked.stdout.decode().split('\0')))}
 
 
 def require_returned(saved):
@@ -1000,6 +1009,9 @@ def collect(db, state, attempt, request):
                 and report_intact(saved), 'Resume collection with the same intact report and checked result')
         result = {'attempt': attempt, 'already_collected': True}
     else:
+        changed = request.get('status') == 'completed' and read_only_change(saved)
+        require(not changed, f'Collection requires an unchanged worktree for a read-only agent ({changed}); '
+                             'restore it and collect again')
         result = record(db, dict(request, kind='result', attempt=attempt))
     with db:
         db.execute("UPDATE events SET acknowledged = 1 WHERE attempt = ? AND kind IN ('wait-finished', 'result')", (attempt,))

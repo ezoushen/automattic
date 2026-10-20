@@ -12,9 +12,11 @@ immutable; snapshot a canonical report before its next authorized append. Later
 attempts retain their own report snapshots. Other evidence links and live runtime
 gates remain under the shared acceptance contract.
 A `completed` result also owes its job's `returns` report sections (real headings,
-outside code blocks) and, for a `writes: none` agent, the same HEAD and tracked
-changes it was registered with. Collection records any gap on the result; then
-`gate --stage accept` fails and recording acceptance is refused.
+outside code blocks) and, for a `writes: none` agent, the same HEAD, tracked changes
+and untracked files it was registered with; a gitignored file is not a change.
+`collect` refuses a worktree that differs and names the change; restore it and
+collect again. Any other gap, and a difference recorded through `result`, goes on the
+result; then `gate --stage accept` fails and recording acceptance is refused.
 
 For a checked result, use `collect --state ... --attempt ... --input
 /absolute/result.json` after native inspection and wait reconciliation. The input
