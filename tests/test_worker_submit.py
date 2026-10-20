@@ -258,6 +258,35 @@ class Submission(WorkerLifecycleCase):
         self.assertEqual(self.cli('status')['attempts'][0]['observed'], {
             'runtime': 'pi', 'model': 'dgx/glm-5.3-flash', 'effort': 'high', 'tools': ['bash', 'find', 'grep', 'ls', 'read']})
 
+    def test_a_refused_submit_names_each_mismatched_control_with_its_requested_and_observed_value(self):
+        # Rule: an unverified worker's refusal says which requested control the native record contradicts and what
+        # each side was, and names nothing that matched; a control the record lacks is observed as none.
+        self.execution.write_text(json.dumps({'target_runtime': 'codex', 'agent': 'builder', 'job': 'ticket',
+            'settings': {'model': 'gpt-6.1-sol', 'effort': 'high'},
+            'launch': {'writes': 'worktree', 'verify': {'sandbox': 'workspace-write', 'approval': 'never'}}}))
+        self.register(runtime='codex')
+        (self.root / 'native.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in (
+            {'type': 'session_meta', 'payload': {'id': 'native-1', 'cwd': str(self.root)}},
+            {'type': 'turn_context', 'payload': {'model': 'gpt-6.1-sol', 'effort': 'medium', 'cwd': str(self.root),
+                                                 'sandbox_policy': {'type': 'read-only'}}})))
+        error = self.submit_scoped(2)
+        self.assertIn('Wait requires a verified, unfinished worker: the native record differs from the launch: '
+                      'sandbox requested workspace-write, observed read-only; approval requested never, observed none; '
+                      'effort requested high, observed medium', error)
+        self.assertNotIn('model requested', error)
+        self.assertFalse((self.root / 'productive-work').exists())
+
+    def test_a_refused_pi_submit_names_the_requested_and_offered_tools(self):
+        # Rule: a tool allowlist mismatch names both tool lists.
+        self.execution.write_text(json.dumps({'target_runtime': 'pi', 'agent': 'reviewer', 'job': 'diff-review',
+            'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'},
+            'launch': {'writes': 'none', 'verify': {'tools': ['bash', 'find', 'grep', 'ls', 'read']}}}))
+        self.register(runtime='pi')
+        self.pi_session((['read', 'grep', 'find', 'ls', 'bash', 'bg_run'], []))
+        error = self.submit_scoped(2)
+        self.assertIn("tools requested ['bash', 'find', 'grep', 'ls', 'read'], "
+                      "observed ['bash', 'bg_run', 'find', 'grep', 'ls', 'read']", error)
+
     def test_submit_reads_pi_tools_from_the_latest_compaction_checkpoint(self):
         # Rule (boundary): a compaction stores a complete tool checkpoint, so the tools offered after it replace
         # whatever earlier system messages declared.

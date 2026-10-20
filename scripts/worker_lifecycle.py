@@ -565,10 +565,8 @@ def record(db, data, refuse_changes=False):
                 require(isinstance(aliases, list) and all(text(x) for x in aliases), 'Invalid alias evidence')
                 require(not aliases or text(observed.get('model')) and text(saved['requested'].get('model')),
                         'Alias evidence requires requested and observed model IDs')
-                saved['observed'] = observed
-                saved['verified'] = all(observed.get(key) == value or key == 'model' and aliases
-                                        for key, value in saved['requested'].items())
-                saved['startup_evidence'] = data
+                saved['observed'], saved['startup_evidence'] = observed, data
+                saved['verified'] = not mismatched(saved)
             elif kind == 'submitted':
                 require(not gaps(db, saved, 'work'), 'Verify runtime settings and resolve design hold before work')
                 require(not saved.get('submitted') and not saved.get('result'),
@@ -874,10 +872,21 @@ def check_channel(db, state, saved, notify):
                        "accepts the message, without waiting for the parent's turn. Fix it before arming this wait.")
 
 
+def mismatched(saved):
+    """The requested controls that the observed native record contradicts, each with both values."""
+    observed = saved.get('observed', {})
+    aliases = saved.get('startup_evidence', {}).get('model_alias_evidence')
+    return [(key, value, observed.get(key)) for key, value in saved['requested'].items()
+            if observed.get(key) != value and not (key == 'model' and aliases)]
+
+
 def wait_preconditions(db, saved, productive):
+    differs = '; '.join(f'{key} requested {value}, observed {"none" if seen is None else seen}'
+                        for key, value, seen in mismatched(saved)) if 'observed' in saved else ''
     require(saved.get('verified') and not saved.get('result')
             and (saved['runtime'], saved['native_session']) not in closed_sessions(db),
-            'Wait requires a verified, unfinished worker')
+            'Wait requires a verified, unfinished worker'
+            + (f': the native record differs from the launch: {differs}' if differs else ''))
     require(saved.get('monitor', {}).get('state') in (None, 'reconciled'),
             'Wait already owned or awaits reconciliation')
     if productive:
