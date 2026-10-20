@@ -605,6 +605,33 @@ console.log(JSON.stringify((await handlers.agent_before_settle(
         self.assertEqual(self.check(session='host-1'), [self.gap('builder-1', 'w1:p5'), live])
         self.assertEqual(self.check(pane='w1:p7', session='coord-7'), [self.gap('builder-3', 'w1:p9'), live])
 
+    @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
+    def test_a_pi_subagents_child_skips_the_settle_check_but_a_forked_coordinator_does_not(self):
+        # Third review 1 (probe G): pi-subagents hosts background children in a runner process marked
+        # PI_SUBAGENT_CHILD=1, where they load ambient extensions such as this one; a child does not stop for its
+        # coordinator's gaps, and its own launches stay its own. /fork also sets the header's parentSession, so a
+        # forked coordinator, without the runner's marker, is still checked.
+        sibling = self.repo / '.worktrees/ticket-2'
+        sibling.mkdir()
+        self.register('builder-1', 'ticket-1/1')
+        self.lifecycle('startup', observed={'runtime': 'claude', 'model': 'sonnet'}, evidence=['native.jsonl:1'])
+        self.lifecycle('submitted', evidence=['native.jsonl:2:accepted prompt'])
+        self.serve(agents=[self.agent('builder-2', 'w1:p6', sibling)])
+        settle = """
+const forked = { ...ctx, sessionManager: { getSessionId: () => 'pi-2', getHeader: () => ({ parentSession: '/s.jsonl' }) } };
+const child = { ...forked, cwd: %s, sessionManager: { getSessionId: () => 'child-1' } };
+const use = process.env.PI_SUBAGENT_CHILD === '1' ? child : forked;
+await handlers.tool_call({ type: 'tool_call', toolCallId: '1', toolName: 'bash',
+  input: { command: 'herdr agent start helper-9 --kind codex --pane w1:p9' } }, use);
+console.log(JSON.stringify((await handlers.agent_before_settle(
+  { type: 'agent_before_settle', outcome: 'completed', entries: [], continue: false }, use)) ?? null));
+""" % json.dumps(str(self.worktree))
+        self.assertIsNone(self.pi(settle, pane='w1:p1', env={'PI_SUBAGENT_CHILD': '1', 'PI_SUBAGENT_RUNNER_PID': '1'}))
+        self.assertEqual(self.logged()[-1]['coordinator'], {'pane': 'w1:p1', 'session': 'child-1'})
+        forked = self.pi(settle, pane='w1:p1')
+        self.assertTrue(forked['continue'])
+        self.assertIn(f'{self.state}: ticket-1/1: no armed wait', forked['entries'][0]['content'])
+
     def test_a_marked_worker_of_a_coordinator_in_another_checkout_is_not_held(self):
         # Rule 4 (review probe): the coordinator in this checkout launched and registered both workers in another
         # checkout's worktrees; neither worker has a launch or attempt there, but the marker exempts them.

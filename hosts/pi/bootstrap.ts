@@ -31,6 +31,9 @@ export default function (pi) {
   });
   pi.on("agent_before_settle", (event, ctx) => {
     if (continued || event.outcome !== "completed" || process.env.AUTOMATTIC_YIELD_HOOK === "off") return undefined;
+    // pi-subagents hosts background children, which load this extension, in a runner it marks PI_SUBAGENT_CHILD=1;
+    // a child must not stop for its coordinator's gaps. (A /fork sets the header's parentSession too: no signal.)
+    if (process.env.PI_SUBAGENT_CHILD === "1") return undefined;
     let missing, session;
     try {
       session = ctx.sessionManager.getSessionId();
