@@ -136,16 +136,9 @@ def observe(path, runtime, session, worktree):
         raise ValueError('Native evidence does not belong to the registered session')
     if not isinstance(latest.get('cwd'), str):
         raise ValueError('Native evidence worktree does not match the assignment')
-    current, assigned = Path(latest['cwd']).resolve(), Path(worktree).resolve()
-    if current != assigned:
-        if runtime != 'claude' or assigned not in current.parents or not current.is_dir():
-            raise ValueError('Native evidence worktree does not match the assignment')
-        # Claude updates cwd while navigating; a nested checkout is a different assignment.
-        for directory in (current, *current.parents):
-            if directory == assigned:
-                break
-            if (directory / '.git').exists():
-                raise ValueError('Native evidence belongs to a nested repository')
+    problem = outside(latest['cwd'], worktree, runtime)
+    if problem:
+        raise ValueError(problem)
     if header and (not isinstance(header.get('cwd'), str)
                    or Path(header['cwd']).resolve() != Path(worktree).resolve()):
         raise ValueError('Native evidence session worktree does not match the assignment')
@@ -173,3 +166,49 @@ def observe(path, runtime, session, worktree):
                 if isinstance(value, str) and value.strip() or isinstance(value, list) and value}
     return {'observed': settings, 'session': session, 'worktree': str(Path(worktree).resolve()),
             'source': str(path), 'source_bytes': size, 'source_sha256': digest.hexdigest()}
+
+
+def outside(cwd, worktree, runtime):
+    """Why a worker working in `cwd` is not in its assigned worktree, or None when it is. Claude updates cwd while
+    navigating, so a Claude worker may be in a subdirectory, but a nested checkout is a different assignment."""
+    current, assigned = Path(cwd).resolve(), Path(worktree).resolve()
+    if current == assigned:
+        return None
+    if runtime != 'claude' or assigned not in current.parents or not current.is_dir():
+        return 'Native evidence worktree does not match the assignment'
+    for directory in (current, *current.parents):
+        if directory == assigned:
+            return None
+        if (directory / '.git').exists():
+            return 'Native evidence belongs to a nested repository'
+
+
+def working_directory(path, runtime, session):
+    """The working directory a native child's own record gives it, or None when the record names none: the latest
+    `cwd` of a Claude transcript's rows for the session (a subagent's rows name it as `agentId`), the latest
+    `turn_context` cwd of a Codex rollout (its `id`, or a native child's `agent_path`), a Pi session header's cwd."""
+    path = Path(path)
+    if not path.is_absolute():
+        raise ValueError('Native evidence path must be absolute')
+    if runtime not in ('claude', 'codex', 'pi'):
+        raise ValueError('Unsupported native evidence runtime')
+    found, cwd = False, None
+    with path.open('rb') as stream:
+        for line in stream:
+            if not line.endswith(b'\n'):
+                raise ValueError('Native evidence has an incomplete record; retry observation before work')
+            row = json.loads(line)
+            if not isinstance(row, dict):
+                raise ValueError('Native evidence record must be an object')
+            payload = row.get('payload') if isinstance(row.get('payload'), dict) else {}
+            if runtime == 'claude' and session in (row.get('agentId'), row.get('sessionId')):
+                found, cwd = True, row.get('cwd', cwd)
+            elif runtime == 'codex' and row.get('type') == 'session_meta':
+                found = session in (payload.get('id'), payload.get('agent_path'))
+            elif runtime == 'codex' and row.get('type') == 'turn_context':
+                cwd = payload.get('cwd', cwd)
+            elif runtime == 'pi' and row.get('type') == 'session':
+                found, cwd = row.get('id') == session, row.get('cwd')
+    if not found:
+        raise ValueError('Native evidence does not belong to the registered session')
+    return cwd if isinstance(cwd, str) and cwd.strip() else None

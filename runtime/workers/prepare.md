@@ -1,7 +1,7 @@
 # Prepare a worker attempt
 
-Use this protocol for delegated assignments, including review, and on resume or
-compaction. The coordinator owns its state; workers return evidence through their
+Use this protocol for delegated work, review included, and on resume or compaction.
+The coordinator owns its state; workers return evidence through their
 assigned channel. Keep one absolute `workers.sqlite` path per orchestration run in
 the main checkout's retained reports directory, `.scratch/<slug>/reports/workers.sqlite`;
 the yield hooks read only that location. Use the maintained
@@ -30,7 +30,7 @@ checks a session is a worker exactly when this marker is set: the stop check sti
 for its own launches, but not for live agents beside it. A session without it is a
 coordinator, wherever it runs and whichever pane it is in.
 
-The helper records attempts and durable receipts. Its `submit` operation captures
+The helper records attempts and durable receipts. Its `submit` captures
 session-bound native settings before invoking a productive prompt command. It
 neither launches workers nor parses assignment output or approves a design.
 Its wait can deliver durable receipts through a declared native parent callback;
@@ -38,8 +38,8 @@ it cannot wake a sleeping host. `collect` requires retirement or explicit retent
 uses Herdr's native lifecycle interface and confirms the bound pane is absent.
 Native tools own those operations. Their callbacks are useful delivery signals;
 the retained state remains the collection source after a callback or context is lost.
-The wait wrapper requires a POSIX host with `ps` and process-group controls; use
-the supported native wait/collection path when those controls are unavailable.
+The wait wrapper needs a POSIX host with `ps` and process-group controls; without
+them use the native wait/collection path.
 
 After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](../resources/retire.md).
 
@@ -52,7 +52,7 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    claim of fresh context does not establish a new conversation. Give each worker a
    tab or window of its own, as the host's guidance describes, never a split of the
    coordinator's. Register before submitting productive work, using the following
-   illustrative input shape:
+   input shape:
 
    ```json
    {
@@ -87,10 +87,12 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    so record an override yourself. An unbound forwarding executor needs an explicitly verified
    destination; a known destination must agree with the resolver.
 3. Use `submit` below to capture settings automatically from native evidence for
-   Claude, Codex, Pi and OpenCode. Other native formats use `record startup` with
-   `attempt`, native `observed` runtime/model/effort and an
-   `evidence` array of native metadata references. Verify every new attempt;
-   cached executor availability does not prove a new worker's settings. Inherited
+   Claude, Codex, Pi and OpenCode. Native children (they skip `submit`) and other formats
+   use `record startup` with `attempt`, native `observed` runtime/model/effort and an
+   `evidence` array of native metadata references. A Claude, Codex or Pi child adds `native`,
+   its record; one placing it outside the registered worktree is refused, naming both
+   paths; none leaves it unverified. Verify each new attempt;
+   cached executor availability does not prove its settings. Inherited
    controls remain omitted from `requested`; record actual controls when available.
    A legitimate model alias needs `model_alias_evidence` from the installed binding,
    not a similarity guess. Missing or conflicting requested controls leave work

@@ -10,8 +10,10 @@ disallowedTools: Write
 # reviewer
 
 Read the absolute `adapter` and `job_file` in your assignment before acting; the job
-says what to judge, what you receive and what you return. If either is missing,
-request it from the orchestrator. Links below are relative to `agent_file`.
+says what to judge, what you receive and what you return. If either is missing, request
+it from the orchestrator. Your first action is `cd <worktree>`, the assigned worktree,
+confirmed by `git rev-parse --show-toplevel`; where the shell starts each command
+afresh, begin every command with that `cd`. Links below are relative to `agent_file`.
 
 ## Permissions
 

@@ -216,6 +216,23 @@ class Definitions(unittest.TestCase):
         self.assertIn('restore the tracked files you changed and remove the temporary untracked files you made', text)
         self.assertIn('the worktree must match its state at registration, untracked files included', text)
 
+    def test_every_agent_first_moves_into_its_assigned_worktree(self):
+        # E4: a native worker starts in its coordinator's directory, and startup binds it by that record, so each
+        # agent's first action is to change into the assigned worktree and confirm it.
+        for agent in ('builder', 'reviewer', 'verifier'):
+            text = ' '.join((support.ROOT / f'agents/{agent}.md').read_text().split())
+            self.assertIn('Your first action is `cd <worktree>`, the assigned worktree, confirmed by '
+                          '`git rev-parse --show-toplevel`; where the shell starts each command afresh, '
+                          'begin every command with that `cd`.', text, agent)
+
+    def test_the_builder_writes_the_report_file_acceptance_reads(self):
+        # E4 D5: `--accept` reads `.scratch/<slug>/reports/<NN>.md`, so the builder writes it, whatever a host says
+        # about returning reports as a message.
+        text = ' '.join((support.ROOT / 'agents/builder.md').read_text().split())
+        self.assertIn('Write the job\'s report to the assigned `report` file (`.scratch/<slug>/reports/<NN>.md`), '
+                      'which `--accept` reads; a host instruction to return reports only as a message does not '
+                      'replace it: write the file, then return the status the job asks for.', text)
+
     def test_the_plugin_definitions_are_valid(self):
         self.assertEqual(agent_defs.problems(support.ROOT), [])
         loaded = agent_defs.load(support.ROOT)

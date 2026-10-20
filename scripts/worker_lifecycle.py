@@ -137,6 +137,8 @@ def gaps(db, data, stage, revision=None):
     missing = []
     if not data.get('verified'):
         missing.append('runtime settings verification')
+    if 'observed' in data and unbound(data):
+        missing.append("the worker's working directory from its native record")
     if hold(db, data['assignment']):
         missing.append('design ruling and updated criteria')
     row = db.execute('SELECT data FROM criteria WHERE assignment = ?', (data['assignment'],)).fetchone()
@@ -461,6 +463,11 @@ def record(db, data, refuse_changes=False):
     require(text(attempt), 'Event requires attempt')
     # A read-only worktree is read before the write lock is taken; the result check and any refusal use that one read.
     now = observed_state(get(db, attempt)) if kind == 'result' and data.get('status') == 'completed' else None
+    located = None
+    if kind == 'startup' and text(data.get('native')):
+        # A native record is read before the write lock is taken too.
+        target = get(db, attempt)
+        located = native_settings.working_directory(data['native'], target['runtime'], target['native_session'])
     # Herdr is asked before the write lock is taken too, so a Herdr that does not answer holds no lock. The
     # execution is read once, here, so the attempt keeps the route that decided whether to ask.
     placed = execution = None
@@ -566,7 +573,12 @@ def record(db, data, refuse_changes=False):
                 require(not aliases or text(observed.get('model')) and text(saved['requested'].get('model')),
                         'Alias evidence requires requested and observed model IDs')
                 saved['observed'], saved['startup_evidence'] = observed, data
-                saved['verified'] = not mismatched(saved)
+                if located:
+                    require(not native_settings.outside(located, saved['worktree'], saved['runtime']),
+                            f'The native record puts the worker in {Path(located).resolve()}, outside its assigned '
+                            f'worktree {saved["worktree"]}; the attempt stays unverified')
+                saved['working_directory'] = located
+                saved['verified'] = not mismatched(saved) and not unbound(saved)
             elif kind == 'submitted':
                 require(not gaps(db, saved, 'work'), 'Verify runtime settings and resolve design hold before work')
                 require(not saved.get('submitted') and not saved.get('result'),
@@ -870,6 +882,13 @@ def check_channel(db, state, saved, notify):
                                                 finished_at=time.time())))
     require(code == 0, f'Wake channel failed its check (exit {code}; log {log}). It must return once the parent '
                        "accepts the message, without waiting for the parent's turn. Fix it before arming this wait.")
+
+
+def unbound(saved):
+    """Whether a native child (a route with `native_dispatch`) of Claude, Codex or Pi lacks the working directory its
+    own native record gives it: it skips `submit`, whose native read binds the worktree, so startup must."""
+    return (saved['execution_snapshot'].get('native_dispatch') is True
+            and saved['runtime'] in ('claude', 'codex', 'pi') and not saved.get('working_directory'))
 
 
 def mismatched(saved):

@@ -38,6 +38,9 @@ Do not launch a child first and discover this limitation during collection.
 Supply absolute `adapter`, `agent_file`, `job_file`, `plugin_root`, `repo`, the job's inputs, relevant
 user decisions and exact failure evidence. Children read the adapter, agent file and job
 file, then verify worktree and branch. Pass paths instead of copied conversations.
+Record a child's startup with `native`, its rollout (its `session_meta` names the child's
+`agent_path`): a child inherits its parent's `turn_context.cwd`, so startup verifies it only
+when that directory is inside the child's assigned worktree.
 After session loss, inspect saved IDs; reconstruct absent agents from surviving
 files/worktrees and record replacement IDs.
 

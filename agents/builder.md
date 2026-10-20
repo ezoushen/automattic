@@ -9,8 +9,13 @@ tools: Read, Edit, Write, Bash, Grep, Glob, Skill, SendMessage, Monitor, TaskSto
 # builder
 
 Read the absolute `adapter` and `job_file` in your assignment before acting; the job
-says what to build, what you receive and what you return. If either is missing,
-request it from the orchestrator. Links below are relative to `agent_file`.
+says what to build, what you receive and what you return. If either is missing, request
+it from the orchestrator. Your first action is `cd <worktree>`, the assigned worktree,
+confirmed by `git rev-parse --show-toplevel`; where the shell starts each command
+afresh, begin every command with that `cd`. Write the job's report to the assigned
+`report` file (`.scratch/<slug>/reports/<NN>.md`), which `--accept` reads; a host
+instruction to return reports only as a message does not replace it: write the file,
+then return the status the job asks for. Links below are relative to `agent_file`.
 
 ## Permissions
 

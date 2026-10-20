@@ -121,6 +121,10 @@ From a Claude coordinator, `agent_models.py --harness claude --route` resolves a
 worker as a native subagent: `native_dispatch` is true and there is no `launch`. Start it with the
 `Agent` tool; its restrictions are the agent profile's tools, which Claude enforces, plus
 the read-only worktree check at collection. It is not launched through Herdr.
+Register it with its `agentId` as `native_session` and record startup with `native`, its
+transcript (`subagents/agent-<agentId>.jsonl` in the session's directory). Every row there
+carries the coordinator's session directory, not the subagent's own `cd`, so startup verifies a
+subagent only when that directory is inside its assigned worktree.
 
 A Claude worker started as its own process takes a route's `launch.argv` after `--`, and only a
 non-Claude coordinator (Codex, Pi or OpenCode, resolving with its own `--harness` and
