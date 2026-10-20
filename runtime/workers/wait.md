@@ -66,13 +66,14 @@ and names each live worker without an armed wait that can wake you, each lost wa
 and each undelivered receipt; fix those first. On Claude Code and Codex (Stop hooks)
 and Pi (extension), the plugin also runs it when you stop, over runs active in the last
 day, and sends you back once. It holds only the Herdr pane that registered a worker
-or, outside Herdr, sessions without the worker marker (`AUTOMATTIC_WORKER`, set at
-launch as [prepare](prepare.md) says). A session without the marker, wherever its cwd and
-whichever its pane, is also held for each Herdr launch it logged ([launch log](prepare.md)) into `.worktrees/` or a cwd Herdr did not
-report and, inside Herdr, for each other live agent of its workspace whose cwd is in
-`.worktrees/` (none asked when the checkout has no `.worktrees/`), when no attempt names
-that pane or agent (alone or in a `<session>/<pane>/<name>` handle; for a launch, an attempt
-registered from its pane, or after it when it was made outside Herdr) and none of its
+or, outside Herdr, sessions that are not inside a worker's own worktree.
+Every session is also held for each Herdr launch it logged ([launch log](prepare.md)) into
+`.worktrees/` or a cwd Herdr did not report and, unless its launch marked it a worker
+(`AUTOMATTIC_WORKER`, as [prepare](prepare.md) says) and inside Herdr, for each other live
+agent of its workspace whose cwd is in `.worktrees/` (none asked when the checkout has no
+`.worktrees/`), when no attempt names that pane or agent (alone or in a
+`<session>/<pane>/<name>` handle; for a launch, an attempt registered from its pane, or
+after it when it was made outside Herdr) and none of its
 dismissals accounts for it, however old the run. A launch belongs to the pane that ran it
 and, when both sides know one, the same host session, so a pane ID that a restarted Herdr
 reuses inherits nothing. A check that cannot run (Herdr or git fails or times out) and a

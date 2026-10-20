@@ -53,7 +53,10 @@ or sleep to keep the parent alive. Follow runtime wait instructions for work tha
 lacks native notifications. Workers registered in the worker lifecycle (such as
 Herdr panes) need a passing `gate --stage yield` before you yield. The extension logs
 each `herdr agent start` run through `bash` or `bg_run`, and its settle check also names
-Herdr workers you launched but did not register, or says why it could not check.
+Herdr workers you launched but did not register, or says why it could not check. A
+pi-subagents child in the background runner (`PI_SUBAGENT_CHILD=1`) skips that check; a
+foreground child carries no such marker, so do not list this extension in a child agent's
+`extensions`.
 
 Use `action: "steer"` for a running child. For completed work, inspect
 `action: "children.list"` and use `action: "resume", id: <resumable-id>, message: ...`.
