@@ -9,7 +9,7 @@ import support
 
 ROOT = support.ROOT
 RUNTIME = ROOT / 'runtime'
-SHARED = ('interview', 'board', 'explain')
+SHARED = ('interview', 'board', 'ask')
 SKILLS = ROOT / 'skills'
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
 COMMANDS = ('align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief')

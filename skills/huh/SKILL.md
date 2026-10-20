@@ -7,10 +7,10 @@ argument-hint: "[what lost you] — defaults to the latest explanation"
 
 # huh
 
-First read: [explain](../../runtime/explain/explain.md). Skip the runtime bootstrap and the host
+First read: [explain](../explain/SKILL.md). Skip the runtime bootstrap and the host
 session part: this command launches nothing.
 
 Wait, you lost me. Back up to where I stopped following and re-pitch it by
-[re-pitch what lost the reader](../../runtime/explain/explain.md#re-pitch-what-lost-the-reader):
+[re-pitch what lost the reader](../../runtime/ask/ask.md#re-pitch-what-lost-the-reader):
 the missing context first, then the point in plain words. Show it with the smallest view
 only when the shape is what confused me. Change nothing else: no new work, no files.

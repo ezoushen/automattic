@@ -24,7 +24,7 @@ the caller decides what to do with it.
   find all its callers, readers, inputs or users in scope and check each; a single
   sample shows only that one case. Name the ones that could not be checked.
 - Settle every available fact before asking the user to choose. A question to the
-  user carries only what the evidence cannot decide, [with context](../../runtime/explain/ask.md).
+  user carries only what the evidence cannot decide, [with context](../../runtime/ask/ask.md).
 - No separate fact-checker is mandatory. The researcher's citations are the check;
   the caller adds an independent verification only where a wrong fact would be costly.
 

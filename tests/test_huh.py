@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""huh re-pitches what lost the user; the shared explain doc replaces the show-me addon."""
+"""huh re-pitches what lost the user; the explain skill replaces the show-me addon, and the re-pitch it uses lives
+with asking in runtime, where every question to the user applies it."""
 import subprocess
 import unittest
 
@@ -7,7 +8,8 @@ import support
 
 ROOT = support.ROOT
 HUH = ROOT / 'skills/huh/SKILL.md'
-EXPLAIN = ROOT / 'runtime/explain/explain.md'
+EXPLAIN = ROOT / 'skills/explain/SKILL.md'
+ASK = ROOT / 'runtime/ask/ask.md'
 
 
 def prose(path):
@@ -15,21 +17,22 @@ def prose(path):
 
 
 class Huh(unittest.TestCase):
-    def test_huh_is_a_short_manual_command_over_the_explain_doc(self):
+    def test_huh_is_a_short_manual_command_over_the_explain_skill(self):
         text = prose(HUH)
         self.assertIn('disable-model-invocation: true', text)
         first_read = next(line for line in HUH.read_text().splitlines() if line.startswith('First read:'))
-        self.assertIn('](../../runtime/explain/explain.md)', first_read)
+        self.assertIn('](../explain/SKILL.md)', first_read)
+        self.assertIn('](../../runtime/ask/ask.md#re-pitch-what-lost-the-reader)', text)
         # A re-pitch launches nothing, so it overrides the session hook's read-the-bootstrap hint, and a short
         # trigger keeps the answer short.
         self.assertIn('Skip the runtime bootstrap and the host session part', text)
         self.assertLess(len(text.encode()), 1500)
 
-    def test_the_explain_doc_starts_from_what_the_reader_missed(self):
-        text = prose(EXPLAIN)
-        for phrase in ('missing context first', 'no longer than the message it replaces', 'ticket or decision ID',
-                       'only when the user asks'):
+    def test_the_re_pitch_starts_from_what_the_reader_missed(self):
+        text = prose(ASK)
+        for phrase in ('missing context first', 'no longer than the message it replaces', 'ticket or decision ID'):
             self.assertIn(phrase, text)
+        self.assertIn('only when the user asks', prose(EXPLAIN))
 
     def test_the_explain_doc_keeps_every_view_and_draws_text_where_diagrams_do_not_render(self):
         text = prose(EXPLAIN)
@@ -47,8 +50,9 @@ class Huh(unittest.TestCase):
                      'leave room for questions', 'before any decision', 'an artifact link alone cannot establish it',
                      'what is settled, what remains uncertain', 'return to the remaining decision'):
             self.assertIn(rule, section)
-        repitch = prose(EXPLAIN).split('## Re-pitch what lost the reader', 1)[1]
+        repitch = prose(ASK).split('## Re-pitch what lost the reader', 1)[1]
         self.assertIn('replaces telling in layers', repitch)
+        self.assertIn('](../../runtime/ask/ask.md#re-pitch-what-lost-the-reader)', prose(EXPLAIN))
 
     def test_the_callers_tell_by_the_explain_doc_instead_of_restating_it(self):
         restated = {'skills/brief/SKILL.md': 'Lead with the goal',
@@ -57,7 +61,7 @@ class Huh(unittest.TestCase):
         for name, phrase in restated.items():
             text = prose(ROOT / name)
             with self.subTest(doc=name):
-                self.assertIn('in layers, as [explain](../../runtime/explain/explain.md) says', text)
+                self.assertIn('in layers, as [explain](../explain/SKILL.md) says', text)
                 self.assertNotIn(phrase, text)
         # what each caller still covers itself
         kept = {'skills/brief/SKILL.md': ('What is complete, with its meaningful result', 'no invented percentages',
@@ -72,9 +76,17 @@ class Huh(unittest.TestCase):
     def test_the_pipeline_map_names_huh(self):
         self.assertIn('`/automattic:huh`', (ROOT / 'skills/brief/pipeline.md').read_text())
 
-    def test_every_explaining_command_reads_the_explain_doc(self):
+    def test_every_explaining_command_reads_the_explain_skill(self):
         for name in ('skills/brief/SKILL.md', 'skills/review/walkthrough.md', 'skills/setup/tour.md'):
-            self.assertIn('../../runtime/explain/explain.md', (ROOT / name).read_text(), name)
+            self.assertIn('](../explain/SKILL.md', (ROOT / name).read_text(), name)
+
+    def test_invoked_directly_explain_reads_what_the_question_concerns_first(self):
+        section = prose(EXPLAIN).split('## Invoked directly', 1)[1]
+        for rule in ("the user's question sets the scope", 'read-only', 'mark a claim you have not checked as unchecked'):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, section)
+        self.assertIn('Skip the runtime bootstrap and the host session part', prose(EXPLAIN))
+        self.assertFalse((ROOT / 'runtime/explain').exists())
 
     def test_no_show_me_dependency_remains(self):
         self.assertFalse((ROOT / 'addons').exists())

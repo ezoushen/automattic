@@ -41,12 +41,12 @@ before field names, using one representative agent from the actual configuration
 Tailor this map to the request. An unconfigured project can use native defaults;
 do not fill every field or recommend every optional feature. Distinguish a possible
 route from a selected assignment and requested settings from runtime-confirmed ones.
-Tell it in layers, as [explain](../../runtime/explain/explain.md) says, with
+Tell it in layers, as [explain](../explain/SKILL.md) says, with
 a small text picture or before/after view when it helps; no extra command.
 
 ## Discuss one useful topic at a time
 
-Go deeper one topic at a time, as [explain](../../runtime/explain/explain.md) says,
+Go deeper one topic at a time, as [explain](../explain/SKILL.md) says,
 rather than over every field. Give the next useful topic its tradeoff, and apply the
 [question filter](../../runtime/interview/question-filter.md) to material unresolved choices.
 Discover facts from configuration and installed contracts yourself. Reuse stated

@@ -1,15 +1,25 @@
+---
+name: explain
+description: "Explain code, a change, a design or the current state so the user follows it: the headline first, then the story in layers, with one small text picture (call tree, file tree, sequence, diff, table) where a shape helps. Use when the user asks to explain, walk through or show how something works."
+argument-hint: "[what to explain] [depth or focus]"
+---
+
 # Explain
 
+First read: this procedure alone. Skip the runtime bootstrap and the host session part:
+explaining launches nothing.
+
 How to explain something so the user follows it: tell it in layers, re-pitch when they
-are lost, and show a shape with the smallest view. Briefings, walkthroughs, the setup
-tour and `huh` use it; each caller supplies what to cover. Questions to the user
-[ask with context](ask.md).
+are lost, and show a shape with the smallest view. The user's request, briefings,
+walkthroughs, the setup tour and `huh` use it; each caller supplies what to cover.
+Questions to the user [ask with context](../../runtime/ask/ask.md).
 
 Contents:
 - [Tell it in layers](#tell-it-in-layers)
 - [Re-pitch what lost the reader](#re-pitch-what-lost-the-reader)
 - [Choose the smallest view](#choose-the-smallest-view)
 - [Keep to the caller's scope](#keep-to-the-callers-scope)
+- [Invoked directly](#invoked-directly)
 
 ## Tell it in layers
 
@@ -22,7 +32,7 @@ Contents:
 3. Introduce a technical name when its responsibility becomes relevant. Explain
    mechanisms or tradeoffs only when they help the user steer, and surface the
    consequential ones the user may not know to ask about. Use the glossary's terms and
-   avoid its `_Avoid_` words ([glossary](../domain/glossary.md)).
+   avoid its `_Avoid_` words ([glossary](../../runtime/domain/glossary.md)).
 4. Go deeper on request, one topic at a time: follow the user's question rather than a
    questionnaire, answer at the depth it needs, and match an explicitly requested depth
    or focus. Recommend a useful next topic and leave room for questions.
@@ -34,25 +44,10 @@ Contents:
 
 ## Re-pitch what lost the reader
 
-A user who says they are lost is reporting their state, not asking for fewer words.
-Clipping the same message loses them further. A re-pitch replaces telling in layers: no
-new headline and no closing summary, only these steps.
-
-1. Find where they lost it: usually the first premise, term or step they could not have
-   known, which can be earlier than the last message.
-2. Restart there. Give the missing context first, in one or two sentences: the problem,
-   the earlier decision or the fact the point depends on.
-3. Then give the point, in plain sentences, the way one person explains it to another.
-   One term per concept, with the user's own words and the project's own names, and
-   the glossary's term in place of an `_Avoid_` word.
-4. Define an internal name, such as a component, mode or file, where it first appears,
-   or leave it out. Never use a ticket or decision ID in place of what it stands for.
-5. Add a view below only when the shape is what confuses them.
-
-Keep the re-pitch no longer than the message it replaces: pay for the added context by
-dropping detail the point does not need, not by clipping sentences. A view replaces the
-prose for the same steps; never say them twice. Asked twice, go further back rather than
-further down.
+When the user says they are lost, re-pitch by
+[re-pitch what lost the reader](../../runtime/ask/ask.md#re-pitch-what-lost-the-reader)
+instead of telling it in layers again, with a view from
+[the smallest view](#choose-the-smallest-view) only when the shape is what confuses them.
 
 ## Choose the smallest view
 
@@ -92,8 +87,8 @@ sometimes right; all of them never are.
 - **What lives where:** a shallow file tree with one comment per entry.
 
   ```text
-  skills/     commands the user types
-  runtime/    shared rules the commands read
+  skills/     what the user types or the agent loads
+  runtime/    shared rules the skills read
   hooks/      checks the host runs on events
   ```
 
@@ -119,3 +114,11 @@ The calling procedure decides what is in scope. An explanation stays in the
 conversation; create or export a file only when the user asks. Explaining runs no
 investigation of its own: re-read facts already established, and mark a claim you have
 not checked as unchecked.
+
+## Invoked directly
+
+When the user asks for an explanation, the user's question sets the scope and this
+session is the caller. Read the code, documents or state the question concerns first,
+read-only, so each fact comes from its source; changing anything is outside an
+explanation. Then explain by this procedure, and mark a claim you have not checked as
+unchecked.

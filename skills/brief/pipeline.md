@@ -113,7 +113,8 @@ folder; commands read the shared interview and board procedures and the other ru
 - [Housekeeping](../housekeeping/SKILL.md): residue and documentation currency, run by dispatch and PR.
 - [Interview](../../runtime/interview/question-filter.md): authority, [grilling](../../runtime/interview/grilling.md), the question filter and the ledger record, shared by the commands that ask questions.
 - [Board](../../runtime/board/board.md): tracker conventions, scope, ticket slicing and the project loop.
-- [Explain](../../runtime/explain/explain.md): the re-pitch and the views, shared by briefings, the walkthrough, the setup tour and `/automattic:huh`, a sibling command this map names without a link.
+- [Explain](../explain/SKILL.md): telling in layers and the views, shared by briefings, the walkthrough, the setup tour and `/automattic:huh`, a sibling command this map names without a link.
+- [Ask with context](../../runtime/ask/ask.md): the context and the re-pitch every question to the user carries.
 
 ## Our methods underneath
 

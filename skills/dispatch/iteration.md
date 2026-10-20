@@ -114,7 +114,7 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    review/repair and applicable E2E; integration alone does not retire it.
    Once an integrated build allows checks that only the user can observe
    (`Verify (user)`), send the user one request covering all of them,
-   [with context](../../runtime/explain/ask.md).
+   [with context](../../runtime/ask/ask.md).
    On conflict, assign a builder the `merge-conflict` job and its inputs in the spec
    worktree, except on `main` ([directly on main](modes.md#directly-on-main)).
    No other worker may use that worktree then; the orchestrator completes the merge.
@@ -126,7 +126,7 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    Read scoped source/diffs when needed to resolve
    the block. Before asking the user to provide or start a resource, check what is already
    available yourself, and name what you checked when you
-   [ask with context](../../runtime/explain/ask.md). Ask the user only for missing
+   [ask with context](../../runtime/ask/ask.md). Ask the user only for missing
    context, product choices or actual permission boundaries. Replacing a criterion's
    `Verify` method with a weaker one is the user's decision. Record failed commands
    verbatim. Resolve → ready.

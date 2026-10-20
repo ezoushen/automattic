@@ -7,7 +7,7 @@ import support
 
 ROOT = support.ROOT
 RUNTIME = ROOT / 'runtime'
-ORDER = ['interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config', 'explain', 'domain']
+ORDER = ['interview', 'board', 'workers', 'checks', 'routing', 'resources', 'decisions', 'config', 'ask', 'domain']
 LINK = re.compile(r'\]\(([^)\s#]+)(?:#[^)\s]*)?\)')
 
 

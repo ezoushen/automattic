@@ -40,7 +40,7 @@ establish completed work. Do not wait for workers to finish just to give a brief
 
 ## Brief the human
 
-Tell it in layers, as [explain](../../runtime/explain/explain.md) says: the
+Tell it in layers, as [explain](../explain/SKILL.md) says: the
 headline is the goal and the most consequential current fact. Then cover:
 
 - What is complete, with its meaningful result.
@@ -61,7 +61,7 @@ without inventing a baseline. Match an explicitly requested depth or focus.
 
 ## Present it
 
-Read [explain](../../runtime/explain/explain.md) and use it to present this snapshot in
+Read [explain](../explain/SKILL.md) and use it to present this snapshot in
 the same response. Select the smallest view that clarifies current state or
 dependencies; plain prose is sufficient for a simple status. No second command is
 needed. Default to in-chat presentation; exports or file creation require the user's

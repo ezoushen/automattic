@@ -160,7 +160,7 @@ class CrossHarness(unittest.TestCase):
         # skills both can start.
         commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief', 'huh'}
         implicit_skills = {'housekeeping'}
-        both = {'diagnose', 'research', 'prototype'}
+        both = {'diagnose', 'research', 'prototype', 'explain'}
         assert {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')} == commands | implicit_skills | both
         for path in (PLUGIN / 'skills').glob('*/SKILL.md'):
             name = path.parent.name

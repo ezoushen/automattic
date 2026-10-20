@@ -81,5 +81,5 @@ Some findings stay in scope and cannot be deferred by the agent alone:
 - a finding that narrows a user decision.
 
 Repair these, or ask the user to defer each one as a numbered decision
-[with its context](../../runtime/explain/ask.md). "Logged,
+[with its context](../../runtime/ask/ask.md). "Logged,
 not scheduled" in a status message is not a decision.

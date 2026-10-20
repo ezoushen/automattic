@@ -29,7 +29,7 @@ Contents:
 - Redact every secret before showing a command, its output or a captured artifact:
   write `<REDACTED>` in its place, keep credentials in the environment rather than in
   the command, and quote only the lines that carry the signal. When the redacted
-  output cannot show the defect, say so and [ask with context](../../runtime/explain/ask.md).
+  output cannot show the defect, say so and [ask with context](../../runtime/ask/ask.md).
 - Ask the user before touching their devices, accounts or running services, naming
   what the step changes and how it is undone. Reading them is not consent to change them.
 

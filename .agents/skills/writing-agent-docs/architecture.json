@@ -34,7 +34,8 @@
   [
    "diagnose",
    "research",
-   "prototype"
+   "prototype",
+   "explain"
   ],
   [
    "agents"
@@ -70,7 +71,7 @@
    "config"
   ],
   [
-   "explain",
+   "ask",
    "authoring"
   ],
   [
@@ -202,7 +203,7 @@
   },
   "explain": {
    "docs": [
-    "runtime/explain/**/*.md"
+    "skills/explain/**/*.md"
    ]
   },
   "setup": {
@@ -272,6 +273,11 @@
   "prototype": {
    "docs": [
     "skills/prototype/**/*.md"
+   ]
+  },
+  "ask": {
+   "docs": [
+    "runtime/ask/**/*.md"
    ]
   }
  },

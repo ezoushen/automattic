@@ -21,12 +21,12 @@ Read the PR/issue discussion, changed code, relevant callers, project standards 
 existing accepted decisions. Research discoverable facts before explaining them.
 If the target is unclear, establish what is known and ask for the missing selection.
 
-Read [explain](../../runtime/explain/explain.md) and choose the smallest in-chat view
+Read [explain](../explain/SKILL.md) and choose the smallest in-chat view
 that clarifies the change. The brief command needs no invocation here.
 
 ## Teach and discuss
 
-Teach the change in layers, as [explain](../../runtime/explain/explain.md) says,
+Teach the change in layers, as [explain](../explain/SKILL.md) says,
 WHY, WHAT, then HOW, and keep these walkthrough rules:
 
 1. **Explain the change.** Explain material tradeoffs, alternatives and scope limits;
@@ -34,7 +34,7 @@ WHY, WHAT, then HOW, and keep these walkthrough rules:
    and hypotheses.
 2. **Discuss and deepen.** Invite the user's questions and reactions. Connect each
    answer to what it means for the change and its review. Resolve confusion, by a
-   [re-pitch](../../runtime/explain/explain.md#re-pitch-what-lost-the-reader) when the
+   [re-pitch](../../runtime/ask/ask.md#re-pitch-what-lost-the-reader) when the
    user is lost, before asking the user to accept the affected scope or behavior.
 3. **Guide the next step.** Recommend the next topic or the transition to review.
    Adapt depth to the user; a fixed question count or an answered scope question does
