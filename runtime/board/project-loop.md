@@ -63,7 +63,8 @@ command must leave the tree clean, so declare its outputs in `.gitignore`.
 has the ticket branch checked out. Each log is kept under
 `.scratch/<slug>/reports/evidence/<NN>/accept-<N>/<head>/`. It refuses:
 - a worktree with tracked changes or untracked files that are not ignored (it names them);
-- a ticket whose base..head diff touches an entry's `paths`;
+- a ticket whose diff touches an entry's `paths`, from the report's base and from the merge-base
+  with the effort branch (`feat/<slug>`, or the one `spec-review.md` records; `main` when it does not exist);
 - a missing value: no such line, more than one, not a finite number, or a command that
   exits non-zero, leaves a process behind or times out;
 - a value worse than its baseline.

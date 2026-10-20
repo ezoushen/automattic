@@ -583,6 +583,48 @@ class BoardCLI(unittest.TestCase):
         self.record_measurement('echo recall 100', paths=['tools/', 'measure.sh'])
         self.cli('inline', '--accept', 'inline/01')
 
+    def forked_ticket(self, effort=True):
+        """inline/01 in `.worktrees/inline-01`; its builder commits an edit of a listed path, then names that commit as `base:`.
+
+        With `effort`, feat/inline already holds a prior ticket's edit of measure.sh and the ticket forks from it.
+        """
+        self.write_ticket('inline/01', 'implementing')
+        self.write_files({'measure.sh': 'echo recall 100\n', 'tools/fixture.txt': 'x\n'})
+        self.commit_gitignore()
+        self.commit('base')
+        if effort:
+            self.git('switch', '-q', '-c', 'feat/inline')
+            self.write_files({'measure.sh': 'echo recall 100 # an earlier ticket\n'})
+            self.commit('prior ticket on the effort branch')
+            self.git('switch', '-q', 'main')
+        worktree = self.root / '.worktrees/inline-01'
+        self.git('worktree', 'add', '-q', '-b', 'feat/inline-01', str(worktree), 'feat/inline' if effort else 'main')
+        commit = ['-C', str(worktree), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty']
+        (worktree / 'tools/fixture.txt').write_text('edited so that the tool reads differently\n')
+        self.git('-C', str(worktree), 'add', 'tools/fixture.txt')
+        self.git(*commit, '-m', 'the edit')
+        moved = self.git('-C', str(worktree), 'rev-parse', 'HEAD')
+        self.git(*commit, '-m', 'later work')
+        work = self.git('-C', str(worktree), 'rev-parse', 'HEAD')
+        self.record_measurement('sh measure.sh', paths=['measure.sh', 'tools/fixture.txt'])
+        self.write_report(moved, 'feat/inline-01', [work])
+
+    def test_a_moved_base_cannot_hide_a_tool_edit_and_earlier_effort_work_is_not_the_tickets_change(self):
+        self.forked_ticket()
+        assert self.refusal() == ("inline/01: measurement 'recall tool': the ticket changed what measures recall "
+                                  "(tools/fixture.txt); that needs allows: recall tool citing a ledger row\n"), self.refusal()
+
+    def test_without_an_effort_branch_the_merge_base_with_main_catches_a_moved_base(self):
+        self.forked_ticket(effort=False)
+        assert self.refusal() == ("inline/01: measurement 'recall tool': the ticket changed what measures recall "
+                                  "(tools/fixture.txt); that needs allows: recall tool citing a ledger row\n"), self.refusal()
+
+    def test_a_ticket_with_no_effort_branch_or_main_to_compare_with_is_refused(self):
+        self.forked_ticket(effort=False)
+        self.git('branch', '-m', 'main', 'trunk')
+        assert self.refusal() == ("inline/01: no effort branch (feat/inline) or main exists to compare "
+                                  "feat/inline-01 with\n"), self.refusal()
+
     def ticket_worktree(self, score):
         """inline/01 on feat/inline-01 in its own worktree; main keeps scoring 100 and the ticket branch scores `score`."""
         self.write_ticket('inline/01', 'implementing')

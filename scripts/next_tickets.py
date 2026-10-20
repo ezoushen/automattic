@@ -332,12 +332,21 @@ def measurement_results(fm, ref, base):
 
 
 def tool_changes(fm, entries, allowed, ref, base):
-    """(problems, notes) for tickets that changed files an entry lists in `paths`, between the report's base and ref.
+    """(problems, notes) for tickets that changed files an entry lists in `paths`.
 
-    Only `allows: <metric> tool` with its ledger citation excuses that entry; the file names go in the problem or note.
+    The change is what the diff shows from the report's base and from the merge-base with the effort branch (main when
+    the effort has none), so a builder cannot hide an edit by moving `base:`. Only `allows: <metric> tool` with its
+    ledger citation excuses an entry; the file names go in the problem or note.
     """
-    changed = subprocess.run(["git", "-C", str(ROOT), "diff", "--name-only", "--no-renames", "-z", base, ref],
-                             capture_output=True, text=True, check=True).stdout.split("\0")
+    slug = spec_of(fm["ticket"])
+    effort = branch_ref(effort_branch(slug)) or "refs/heads/main"
+    fork = subprocess.run(["git", "-C", str(ROOT), "merge-base", effort, ref], capture_output=True, text=True)
+    if fork.returncode:
+        return [f"no effort branch ({effort_branch(slug)}) or main exists to compare "
+                f"{ref.removeprefix('refs/heads/')} with"], []
+    changed = {name for start in (base, fork.stdout.strip()) for name in subprocess.run(
+        ["git", "-C", str(ROOT), "diff", "--name-only", "--no-renames", "-z", start, ref],
+        capture_output=True, text=True, check=True).stdout.split("\0")}
     problems, notes = [], []
     for entry in entries:
         touched = sorted({f for f in changed for p in entry.get("paths", [])
