@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """PreToolUse hook: log each `herdr agent start` a session runs, so the yield gate can name unregistered workers.
 
+It finds launches behind assignments, wrappers (`timeout`, `env` and their options) and a shell's `-c` string, not
+inside heredocs or backticks.
+
 Appends one JSON line per launch to the main checkout's .scratch/herdr-launches.jsonl: the time, agent name and
 pane, the coordinator (its HERDR_PANE_ID and host session ID) and the pane's cwd when Herdr reports it. Claude and
 Codex run it before Bash; Pi's extension passes its bash and bg_run calls. It never blocks the command.

@@ -3,10 +3,11 @@
 
 Reads every run's workers.sqlite under the main checkout's .scratch/*/reports/ that
 changed in the last day, without writing to it, and applies the lifecycle's yield
-gate. A coordinator (a session outside .worktrees/) is also held for each Herdr worker
-in a ticket worktree that no attempt in any run registers: each launch it logged and
-did not dismiss (hooks/herdr_launch.py) and each other live agent of its Herdr workspace. A check that
-cannot run is a named gap, never a pass. `claude` and `codex` speak their shared Stop
+gate. A coordinator (a session whose pane or session no launch or attempt names as a
+worker) is also held for each Herdr worker in a ticket worktree that no attempt accounts
+for and it did not dismiss: each launch it logged (hooks/herdr_launch.py) and each other
+live agent of its Herdr workspace. A check that cannot run, and an unreadable launch log
+line, are named gaps, never a pass. `claude` and `codex` speak their shared Stop
 hook protocol; `check <cwd> [session]` prints the gaps as JSON for other hosts. Set
 AUTOMATTIC_YIELD_HOOK=off to disable the check.
 """
@@ -123,8 +124,9 @@ def is_worker(pane, session, attempts, records):
 
 
 def unregistered(root, pane, session):
-    """Name each Herdr worker that no attempt in any run registers: each launch this coordinator logged into a
-    ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its Herdr workspace."""
+    """Name each Herdr worker that no attempt in any run and no dismissal of this coordinator accounts for: each
+    launch it logged into a ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its
+    Herdr workspace; and each unreadable log line."""
     module, attempts = None, []
     for state in root.glob('.scratch/*/reports/workers.sqlite'):
         module = module or lifecycle()
