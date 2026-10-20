@@ -69,7 +69,8 @@ else:
 
     def env(self, pane='w1:p1', **values):
         """The environment of a session in Herdr pane `pane` of workspace w1, or outside Herdr when None."""
-        env = {key: value for key, value in os.environ.items() if not key.startswith('HERDR_')}
+        env = {key: value for key, value in os.environ.items()
+               if not key.startswith('HERDR_') and key != 'AUTOMATTIC_WORKER'}
         env['PATH'] = f"{self.bin}{os.pathsep}{env['PATH']}"
         return dict(env, **({'HERDR_PANE_ID': pane, 'HERDR_WORKSPACE_ID': 'w1'} if pane else {}), **values)
 
@@ -167,7 +168,9 @@ class YieldGateHook(GateRepo):
                        worktree=str(worktree), head='head-1', execution=str(execution), runtime='claude',
                        worker='pane-2', native_session='native-2', owned=True,
                        packet=str(support.assignment_file(execution.parent, 'ticket')))
-        self.assertIsNone(self.stop(cwd=worktree, pane=None))
+        # A session is a worker exactly when its launch marked it, not because of its cwd.
+        self.assertIsNone(self.stop(cwd=worktree, pane=None, env={'AUTOMATTIC_WORKER': 'effort/ticket-2'}))
+        self.assertEqual(self.stop(cwd=worktree, pane=None)['decision'], 'block')
         self.assertEqual(self.stop(pane=None)['decision'], 'block')
 
     def test_runs_idle_for_a_day_and_other_directories_are_not_checked(self):
@@ -519,26 +522,67 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertEqual(self.check(), [self.gap('builder-1', 'w1:p5')])
         self.assertEqual(self.check(pane=None, session='host-1'), [])
 
-    def test_a_worker_session_is_held_neither_for_itself_nor_its_siblings(self):
-        # Rule 4: a session is a worker by identity, wherever its cwd: Herdr launched or registered its pane or,
-        # outside Herdr, its session is an attempt's native session. Its launches and siblings hold its coordinator.
-        sibling = self.repo / '.worktrees/ticket-2'
+    def test_a_marked_worker_is_held_neither_for_itself_nor_its_siblings_wherever_it_runs(self):
+        # Rule 4: a session is a worker exactly when AUTOMATTIC_WORKER is set; its launches and siblings hold only
+        # its coordinator. Includes a native worker that inherited its coordinator's HERDR_PANE_ID (review probe).
+        sibling, marked = self.repo / '.worktrees/ticket-2', {'AUTOMATTIC_WORKER': 'effort/ticket-1'}
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', session='coord-1')
-        self.register('w1:p7', 'ticket-3/1')
-        self.register('reviewer-1', 'ticket-4/1', native_session='worker-1')
         workers = (('w1:p5', 'builder-session', self.worktree), ('w1:p7', 'other-session', self.repo),
-                   (None, 'worker-1', self.worktree))
+                   ('w1:p1', 'worker-1', self.worktree), (None, 'worker-2', self.repo))
         for pane, session, cwd in workers:
-            self.launch('herdr agent start helper-1 --kind codex --pane w1:p8', cwd=cwd, pane=pane, session=session)
+            self.launch('herdr agent start helper-1 --kind codex --pane w1:p8', cwd=cwd, pane=pane, session=session,
+                        env=marked)
         self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', sibling)])
         for pane, session, cwd in workers:
-            self.assertEqual(self.check(cwd=cwd, pane=pane, session=session), [], (pane, session))
-            self.assertIsNone(self.stop(cwd=cwd, pane=pane, session=session))
+            self.assertEqual(self.check(cwd=cwd, pane=pane, session=session, env=marked), [], (pane, session))
+            self.assertIsNone(self.stop(cwd=cwd, pane=pane, session=session, env=marked))
         self.assertEqual(self.check(session='coord-1'), [self.gap('builder-1', 'w1:p5'),
                                                          self.live('builder-2', 'w1:p6', sibling)])
+        if shutil.which('node'):  # Pi's settle check inherits the marker from its process environment.
+            self.assertIsNone(self.pi("""
+console.log(JSON.stringify((await handlers.agent_before_settle(
+  { type: 'agent_before_settle', outcome: 'completed', entries: [], continue: false }, ctx)) ?? null));
+""", pane='w1:p5', env=marked))
+
+    def test_an_unmarked_session_in_a_reused_or_once_registered_pane_is_still_held(self):
+        # Rule 4 (review probes): pane history says nothing about who runs there now. A launch into another Herdr
+        # server's w1:p1, an old run's attempt for w1:p1 and a dismissed failed launch into w1:p7 leave the
+        # coordinators now in those panes held for their own unregistered launches and live agents.
+        self.launch('herdr --session s2 agent start remote-1 --kind codex --pane w1:p1', pane=None, session='host-9')
+        self.state = self.repo / '.scratch/old-run/reports/workers.sqlite'
+        self.state.parent.mkdir(parents=True)
+        self.register('w1:p1', 'old-1/1', pane='w1:p0')
+        self.launch('herdr agent start builder-0 --kind codex --pane w1:p7', session='coord-1')
+        self.assertEqual(self.dismiss('--pane', 'w1:p7', '--session', 'coord-1', '--reason', 'failed at trust dialog',
+                                      pane='w1:p1').returncode, 0)
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', session='host-1')
+        self.launch('herdr agent start builder-3 --kind codex --pane w1:p9', pane='w1:p7', session='coord-7')
+        self.serve(agents=[self.agent('builder-2', 'w1:p6', self.worktree)])
+        live = self.live('builder-2', 'w1:p6', self.worktree)
+        self.assertEqual(self.check(session='host-1'), [self.gap('builder-1', 'w1:p5'), live])
+        self.assertEqual(self.check(pane='w1:p7', session='coord-7'), [self.gap('builder-3', 'w1:p9'), live])
+
+    def test_a_marked_worker_of_a_coordinator_in_another_checkout_is_not_held(self):
+        # Rule 4 (review probe): the coordinator in this checkout launched and registered both workers in another
+        # checkout's worktrees; neither worker has a launch or attempt there, but the marker exempts them.
+        other = Path(self.tmp.name).resolve() / 'other'
+        subprocess.run(['git', 'init', '-q', str(other)], check=True)
+        first, second = other / '.worktrees/t1', other / '.worktrees/t2'
+        first.mkdir(parents=True)
+        second.mkdir(parents=True)
+        self.serve(panes={'default': {'w1:p5': {'pane_id': 'w1:p5', 'cwd': str(first)},
+                                      'w1:p6': {'pane_id': 'w1:p6', 'cwd': str(second)}}})
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5; '
+                    'herdr agent start builder-2 --kind codex --pane w1:p6')
+        self.register('w1:p5', 'ticket-1/1')
+        self.register('w1:p6', 'ticket-2/1')
+        self.serve(agents=[self.agent('builder-1', 'w1:p5', first), self.agent('builder-2', 'w1:p6', second)])
+        self.assertEqual(self.check(cwd=first, pane='w1:p5', session='worker-session',
+                                    env={'AUTOMATTIC_WORKER': 'effort/ticket-1'}), [])
+        self.assertEqual(self.check(session='host-1'), [])
 
     def test_a_coordinator_inside_a_worktree_is_still_held(self):
-        # Rule 4 by identity: a coordinator that works in .worktrees/, or cd's there, keeps both checks.
+        # Rule 4: an unmarked session is a coordinator wherever it works, so cd'ing into .worktrees/ keeps both checks.
         inside = self.repo / '.worktrees/coord'
         inside.mkdir()
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', cwd=inside)

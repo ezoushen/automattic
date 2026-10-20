@@ -51,7 +51,8 @@ def gaps(cwd, session=None):
     root = main_checkout(cwd)
     if root is None:
         return []
-    cwd, pane = Path(cwd).resolve(), os.environ.get('HERDR_PANE_ID')
+    # A session is a worker exactly when its launch set AUTOMATTIC_WORKER; any other session is a coordinator.
+    pane, worker = os.environ.get('HERDR_PANE_ID'), bool(os.environ.get('AUTOMATTIC_WORKER'))
     module, missing = None, []
     for state in sorted(root.glob('.scratch/*/reports/workers.sqlite')):
         if time.time() - state.stat().st_mtime > RECENT_SECONDS:
@@ -59,10 +60,6 @@ def gaps(cwd, session=None):
         module = module or lifecycle()
         db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
         try:
-            # A session inside a worker's own worktree is that worker, not its coordinator.
-            worker = any(Path(saved['worktree']) != root and cwd.is_relative_to(saved['worktree'])
-                         for saved in module.attempts(db))
-
             def coordinated(saved):
                 if pane and saved.get('coordinator'):
                     return saved['coordinator'] == pane
@@ -70,7 +67,8 @@ def gaps(cwd, session=None):
             missing += [f'{state}: {gap}' for gap in module.yield_gaps(db, coordinated)]
         finally:
             db.close()
-    return missing + unregistered(root, pane, session)
+    # Only a coordinator answers for its launches and the live agents in its workspace's worktrees.
+    return missing + ([] if worker else unregistered(root, pane, session))
 
 
 def herdr_agents():
@@ -114,15 +112,6 @@ def readable(record):
     return isinstance(record.get('coordinator'), dict) and {'time', 'agent', 'pane'} <= record.keys()
 
 
-def is_worker(pane, session, attempts, records):
-    """Whether this session is a worker, wherever its cwd: Herdr launched or registered its pane or, outside Herdr,
-    its session is an attempt's native session."""
-    if pane:
-        return (any(record.get('pane') == pane for record in records if 'dismissed' not in record)
-                or any(pane in handles(saved['worker']) for saved in attempts))
-    return any(saved['native_session'] == session for saved in attempts)
-
-
 def unregistered(root, pane, session):
     """Name each Herdr worker that no attempt in any run and no dismissal of this coordinator accounts for: each
     launch it logged into a ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its
@@ -149,8 +138,6 @@ def unregistered(root, pane, session):
             records.append(record)
         else:  # Named, and ignored for matching, so one bad line hides no other gap.
             unreadable.append(f'{log}: launch log line {number} is unreadable; fix or remove it')
-    if is_worker(pane, session, attempts, records):
-        return []  # Only its coordinator answers for its own launches and its siblings.
     launches = []
     for record in records:
         if 'dismissed' in record:  # Accounts for its coordinator's launches of that pane or name logged before it.
