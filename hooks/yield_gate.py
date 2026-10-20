@@ -4,8 +4,8 @@
 Reads every run's workers.sqlite under the main checkout's .scratch/*/reports/ that
 changed in the last day, without writing to it, and applies the lifecycle's yield
 gate. A coordinator (a session outside .worktrees/) is also held for each Herdr worker
-in a ticket worktree that no attempt in any run registers: each launch it logged
-(hooks/herdr_launch.py) and each other live agent of its Herdr workspace. A check that
+in a ticket worktree that no attempt in any run registers: each launch it logged and
+did not dismiss (hooks/herdr_launch.py) and each other live agent of its Herdr workspace. A check that
 cannot run is a named gap, never a pass. `claude` and `codex` speak their shared Stop
 hook protocol; `check <cwd> [session]` prints the gaps as JSON for other hosts. Set
 AUTOMATTIC_YIELD_HOOK=off to disable the check.
@@ -109,7 +109,13 @@ def unregistered(root, pane, session):
         finally:
             db.close()
     log, worktrees = root / LAUNCHES, (root / '.worktrees').resolve()
-    launches = [json.loads(line) for line in log.read_text().splitlines()] if log.is_file() else []
+    launches = []
+    for record in [json.loads(line) for line in log.read_text().splitlines()] if log.is_file() else []:
+        if 'dismissed' in record:  # Accounts for the launches of that pane or agent name logged before it.
+            launches = [launch for launch in launches
+                        if any(launch.get(key) != value for key, value in record['dismissed'].items())]
+        else:
+            launches.append(record)
     launches = [launch for launch in launches if launched_by(launch, pane, session)
                 and not workers & {launch['agent'], launch['pane']}
                 and ('cwd' not in launch or Path(launch['cwd']).resolve().is_relative_to(worktrees))]
@@ -140,7 +146,9 @@ def checked(cwd, session=None):
 def reason(missing):
     return ('These workers could finish or run without waking you:\n'
             + ''.join(f'- {gap}\n' for gap in missing)
-            + f'Register each launched worker ({PREPARE}). Arm a notified wait, recover the receipt or collect the '
+            + f'Register each launched worker, or dismiss a launch that needs none with `python3 {ROOT}/hooks/'
+            + f'herdr_launch.py dismiss --pane <pane> --reason <why>` ({PREPARE}). '
+            + 'Arm a notified wait, recover the receipt or collect the '
             + 'result (for a worker that is gone, a failed or cancelled result whose report says what was lost) '
             + f'before stopping ({GUIDE}).')
 

@@ -6,8 +6,12 @@ assigned channel. Keep one absolute `workers.sqlite` path per orchestration run 
 the main checkout's retained reports directory, `.scratch/<slug>/reports/workers.sqlite`;
 the yield hooks read only that location. The hooks also append each `herdr agent start`
 a session runs to the main checkout's `.scratch/herdr-launches.jsonl` (time, agent name,
-pane, coordinator pane or host session, and the pane's cwd when Herdr reports it), so a
-launch that no attempt registers is named at stop even after its pane closed. Use the maintained
+pane, the session's Herdr pane and host session, and the pane's cwd when Herdr reports it),
+so a launch that no attempt registers is named at stop even after its pane closed. A
+launch that needs no attempt (it failed, its pane was closed at a trust dialog, a probe)
+is accounted for by running `python3 <plugin root>/hooks/herdr_launch.py dismiss --pane
+<pane> --reason "<why>"` (or `--name <agent>`) in the checkout; the reason is required, and
+the dismissal covers only launches logged before it. Use the maintained
 `scripts/worker_lifecycle.py`; do not copy it into the project. Read-only workers
 only return evidence. If the coordinator itself cannot write
 coordination state, preserve the gap and use supported native waits and reports.

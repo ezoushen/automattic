@@ -300,6 +300,37 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual(self.check(pane=None, session='host-1'), [])
         self.assertIsNone(self.stop(pane=None, session='host-1'))
 
+    def dismiss(self, *args):
+        """Run the launch hook's `dismiss` command from the ticket worktree."""
+        return subprocess.run([sys.executable, str(LAUNCH), 'dismiss', *args], cwd=self.worktree, capture_output=True,
+                              text=True, env=self.env(None), timeout=20)
+
+    def test_a_dismissal_with_a_reason_accounts_for_a_launch_logged_before_it(self):
+        # Decision 1: a failed, denied or probe launch stays a gap until a dismissal with a reason accounts for it;
+        # a later launch of the same pane or name is a new launch.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p6', pane=None)
+        self.serve()
+        self.assertIn('herdr_launch.py dismiss', self.stop(pane=None, session='host-1')['reason'])
+        result = self.dismiss('--pane', 'w1:p5', '--reason', 'agent_not_ready; the user closed the pane')
+        self.assertEqual((result.returncode, result.stderr), (0, ''))
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p6')])
+        self.assertEqual(self.dismiss('--name', 'builder-2', '--reason', 'probe').returncode, 0)
+        self.assertEqual(self.check(pane=None, session='host-1'), [])
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-1', 'w1:p5')])
+
+    def test_a_dismissal_without_a_reason_is_refused_and_changes_nothing(self):
+        # Decision 1: accounting for a launch needs a stated reason.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
+        logged = self.logged()
+        for reason in ([], ['--reason', ''], ['--reason', '  ']):
+            result = self.dismiss('--pane', 'w1:p5', *reason)
+            self.assertEqual(result.returncode, 2, reason)
+            self.assertIn('--reason', result.stderr)
+        self.assertEqual(self.logged(), logged)
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-1', 'w1:p5')])
+
     def test_a_session_pane_name_handle_clears_a_launch_matching_its_pane_or_its_name(self):
         # Decision 2: the lifecycle also accepts `<session>/<pane>/<name>` as a worker handle.
         self.serve(panes={'default': {pane: {'pane_id': pane, 'cwd': str(self.worktree)}
@@ -370,6 +401,7 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertTrue(settled['continue'])
         self.assertIn(f"- {self.gap('builder-1', 'w1:p5')}\n", settled['entries'][0]['content'])
         self.assertIn('workers/prepare.md', settled['entries'][0]['content'])
+        self.assertIn('herdr_launch.py dismiss', settled['entries'][0]['content'])
 
     def test_a_live_agent_in_a_worktree_is_a_gap_until_an_attempt_registers_it(self):
         # Rule 3: an agent nobody logged (started by hand, or before the hook) still holds its workspace's coordinator.

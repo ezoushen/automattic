@@ -70,7 +70,10 @@ or, outside Herdr, sessions that are not inside a worker's own worktree.
 For a session outside `.worktrees/`, the same stop check names each Herdr launch it
 logged ([launch log](prepare.md)) into `.worktrees/` or a cwd Herdr did not report and,
 inside Herdr, each other live agent of its workspace whose cwd is in `.worktrees/`, when
-no attempt in any run registers that pane or agent name, however old the run. A check
+no attempt in any run registers that pane or agent name (alone or in a
+`<session>/<pane>/<name>` handle) and no dismissal accounts for it, however old the run.
+A launch belongs to the pane that ran it and, when both sides know one, the same host
+session, so a pane ID that a restarted Herdr reuses inherits nothing. A check
 that cannot run (Herdr or git fails or times out) is a named gap, never a pass.
 `AUTOMATTIC_YIELD_HOOK=off` disables the hooks.
 Read every completed wait's retained log and inspect the native worker/report. When

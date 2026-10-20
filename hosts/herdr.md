@@ -71,7 +71,8 @@ under [worker attempts](../runtime/workers/prepare.md) and [waits](../runtime/wo
 receipts and native worker state; rearm consumed waits after reconciliation.
 Register each pane before its first prompt: the plugin logs every `herdr agent start`,
 and the stop check names a launch into `.worktrees/`, or a live agent there, that no
-attempt registers, even after its pane closed.
+attempt registers, even after its pane closed. Dismiss a launch that failed, with its
+reason, as the worker attempts doc describes.
 
 Read the installed skill's completion section and current command-group help
 before the first wait. Use its default settled-state operation, with a bounded

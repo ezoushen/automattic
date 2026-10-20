@@ -44,7 +44,8 @@ export default function (pi) {
     continued = true;
     const content = "These workers could finish or run without waking you:\n"
       + missing.map((gap) => `- ${gap}\n`).join("")
-      + `Register each launched worker (${root}/runtime/workers/prepare.md). Arm a notified wait, recover the receipt `
+      + `Register each launched worker, or dismiss a launch that needs none with \`python3 ${root}/hooks/herdr_launch.py `
+      + `dismiss --pane <pane> --reason <why>\` (${root}/runtime/workers/prepare.md). Arm a notified wait, recover the receipt `
       + "or collect the result (for a worker that is gone, a failed or cancelled result whose report says what was lost) "
       + `before stopping (${root}/runtime/workers/wait.md).`;
     return { entries: [{ type: "custom_message", customType: "automattic_yield_gate", content, display: true }], continue: true };
