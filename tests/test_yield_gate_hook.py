@@ -115,6 +115,12 @@ class YieldGateHook(GateRepo):
         self.assertIsNone(self.stop(active=True))
         self.assertIsNone(self.stop(env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
 
+    def test_a_checkout_without_worktrees_never_asks_herdr(self):
+        # Review 4: a Herdr session in a repository with no .worktrees/ has no ticket worker to look for, so a broken
+        # Herdr neither slows nor holds it; its lifecycle gaps still show.
+        self.serve(fail='connection refused')
+        self.assertEqual(self.check(), [f'{self.state}: ticket-1/1: no armed wait'])
+
     def test_codex_uses_the_same_stop_protocol(self):
         self.assertEqual(self.stop(host='codex')['decision'], 'block')
         self.assertIsNone(self.stop(host='codex', active=True))
@@ -324,6 +330,13 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         refused = self.dismiss('--name', 'builder-1', '--reason', 'probe')
         self.assertEqual(refused.returncode, 2)
         self.assertIn('--session', refused.stderr)
+
+    def test_a_dismissal_also_accounts_for_a_live_agent_of_the_coordinator_that_dismissed(self):
+        # Review 3: a live agent that needs no attempt (a probe left running) is dismissed the same way.
+        self.serve(agents=[self.agent('probe-1', 'w1:p5', self.worktree), self.agent('probe-2', 'w1:p6', self.worktree)])
+        self.assertEqual(self.dismiss('--name', 'probe-1', '--reason', 'probe', pane='w1:p1').returncode, 0)
+        self.assertEqual(self.dismiss('--pane', 'w1:p6', '--reason', 'probe', pane='w1:p9').returncode, 0)
+        self.assertEqual(self.check(session='host-1'), [self.live('probe-2', 'w1:p6', self.worktree)])
 
     def test_a_dismissal_with_a_reason_accounts_for_a_launch_logged_before_it(self):
         # Decision 1: a failed, denied or probe launch stays a gap until a dismissal with a reason accounts for it;

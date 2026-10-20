@@ -80,10 +80,9 @@ def herdr_agents():
     return json.loads(result.stdout)['result']['agents']
 
 
-def launched_by(launch, pane, session):
-    """Whether this session logged the launch: pane and host session must both match when both sides know the
-    session, so a pane ID that a restarted Herdr reuses inherits nothing; otherwise the pane alone decides."""
-    theirs = launch['coordinator']
+def same_coordinator(theirs, pane, session):
+    """Whether a recorded coordinator ({pane, session}) is this session: pane and host session must both match when
+    both sides know the session, so a pane ID that a restarted Herdr reuses inherits nothing; else the pane decides."""
     if theirs['session'] and session:
         return theirs == {'pane': pane, 'session': session}
     return bool(pane) and theirs['pane'] == pane
@@ -137,16 +136,18 @@ def unregistered(root, pane, session):
         if 'dismissed' in record:  # Accounts for its coordinator's launches of that pane or name logged before it.
             launches = [launch for launch in launches
                         if any(launch.get(key) != value for key, value in record['dismissed'].items())
-                        or not launched_by(launch, record['by']['pane'], record['by']['session'])]
+                        or not same_coordinator(launch['coordinator'], record['by']['pane'], record['by']['session'])]
         else:
             launches.append(record)
-    launches = [launch for launch in launches if launched_by(launch, pane, session)
+    launches = [launch for launch in launches if same_coordinator(launch['coordinator'], pane, session)
                 and not any(clears(saved, launch) for saved in attempts)
                 and ('cwd' not in launch or Path(launch['cwd']).resolve().is_relative_to(worktrees))]
     workers |= {handle for launch in launches for handle in (launch['agent'], launch['pane'])}  # Named once.
+    workers |= {value for record in records if 'dismissed' in record  # This coordinator's dismissals cover live agents.
+                and same_coordinator(record['by'], pane, session) for value in record['dismissed'].values()}
     workspace, failed = os.environ.get('HERDR_WORKSPACE_ID'), []
     try:
-        agents = herdr_agents() if workspace else []
+        agents = herdr_agents() if workspace and worktrees.is_dir() else []  # No worktrees, no ticket workers.
     except Exception as error:  # A check that cannot run is a named gap, never a pass.
         agents, failed = [], [f'could not check Herdr workers: {error}']
     live = [agent for agent in agents
