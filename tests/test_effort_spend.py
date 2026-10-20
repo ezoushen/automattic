@@ -215,6 +215,20 @@ class EffortSpend(unittest.TestCase):
         self.assertEqual(result['host']['total']['responses'], 7)
         self.assertEqual(result['per_accepted_ticket']['output'], 280)
 
+    def test_each_yield_gate_header_traces_its_turn_to_the_yield_hook(self):
+        # Decision 5: the Stop reason's header changed twice; a transcript holding any of them is a yield-hook turn.
+        self.attempt('t1/1', 't1', 'sess-a')
+        host = self.claude_host([
+            'Stop hook feedback:\nThese lifecycle workers could finish without waking you:\n- t1/1',
+            ('2026-10-14T02:00:01Z', 'h1', 10, []),
+            'Stop hook feedback:\nThese workers could finish or run without waking you:\n- t1/1',
+            ('2026-10-14T02:00:02Z', 'h2', 20, []),
+            'Stop hook feedback:\nStopping now leaves these gaps:\n- fix: delivery incomplete under autofix',
+            ('2026-10-14T02:00:03Z', 'h3', 40, [])])
+        result = self.report('--host', str(host), '--since', '2026-10-14T02:00:00Z', '--until', '2026-10-14T03:00:00Z')
+        self.assertEqual({key: value['output'] for key, value in result['host']['by_trigger'].items()},
+                         {'yield-hook': 70})
+
     def test_pi_and_codex_hosts_are_traced_the_same_way(self):
         self.attempt('t1/1', 't1', 'sess-a')
         receipt = json.dumps({'event_id': 3, 'kind': 'hold', 'attempt': 't1/1'})

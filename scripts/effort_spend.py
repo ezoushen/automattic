@@ -15,7 +15,9 @@ import outcomes  # noqa: E402
 
 
 FIELDS = ('responses', 'input', 'cache_write', 'cache_read', 'output')
-YIELD_GATE = 'These lifecycle workers could finish without waking you'
+# The yield gate's Stop reason header, current first, then the ones older transcripts hold.
+YIELD_GATES = ('Stopping now leaves these gaps:', 'These workers could finish or run without waking you',
+               'These lifecycle workers could finish without waking you')
 SHELL_TOOLS = {'Bash', 'bash', 'exec_command', 'shell', 'shell_command'}
 TOOL_ACTIVITIES = {'read': {'Read', 'Grep', 'Glob', 'LS', 'read', 'grep', 'find', 'ls'},
                    'edit': {'Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'edit', 'write', 'apply_patch'},
@@ -47,7 +49,7 @@ def total(responses):
 def trigger(text):
     """What started a host turn: a wake receipt or notification, the yield hook, or the user."""
     text = text.strip()
-    if YIELD_GATE in text:
+    if any(header in text for header in YIELD_GATES):
         return 'yield-hook'
     if text.startswith(('<task-notification>', '<background-task-notification>')):
         return 'wake'
