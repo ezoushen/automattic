@@ -10,7 +10,7 @@ Only --set may be combined with --counts. --accept also runs the effort's standi
 (.scratch/<slug>/measurements.json) at the ticket head, in a clean checkout, and refuses a missing or worse value.
 --delivery names each failing field. --coordinate [--autofix] records the calling session (its Herdr pane and host
 session IDs) and the repair authorization in .scratch/<slug>/reports/coordinator.json for the stop hooks; with no slug
-only efforts with work left, and it refuses a session it cannot identify.
+only efforts with active work (a live effort branch, or a ticket not done), and it refuses a session it cannot identify.
 
 Tickets: .scratch/<slug>/issues/NN-title.md, with restricted YAML front matter
 (key: scalar and key: [a, b]). Only the orchestrator changes machine state.
@@ -160,13 +160,19 @@ def delivery_evidence(slug):
     return not delivery_problems(slug)
 
 
-def merged_and_deleted(slug):
-    """Whether an effort's branch is gone and its reviewed head is in main: integrated, with nothing left to deliver."""
-    head = str((review_front_matter(slug) or {}).get('review_head') or '')
-    return (branch_ref(effort_branch(slug)) is None and bool(re.fullmatch('[0-9a-f]{40}', head))
-            and subprocess.run(['git', '-C', str(ROOT), 'merge-base', '--is-ancestor', head, 'refs/heads/main'],
-                               capture_output=True).returncode == 0)
+def finished(slug):
+    """Whether the board records an effort as delivered and gone: its branch deleted, its reviewed head in main and a
+    passing E2E recorded at a head in main."""
+    fm = review_front_matter(slug) or {}
+    return (branch_ref(effort_branch(slug)) is None and fm.get('e2e_status') == 'passed'
+            and all(in_main(str(fm.get(key) or '')) for key in ('review_head', 'e2e_head')))
 
+
+def in_main(sha):
+    """Whether sha is a 40-hex commit that main contains."""
+    return bool(re.fullmatch('[0-9a-f]{40}', sha)) and subprocess.run(
+        ['git', '-C', str(ROOT), 'merge-base', '--is-ancestor', sha, 'refs/heads/main'],
+        capture_output=True).returncode == 0
 
 def delivery_problems(slug):
     """Structural delivery gate: each recorded field that fails it, [] when none does. The orchestrator must also
@@ -622,10 +628,9 @@ def main(argv):
             sys.exit(f"no Herdr pane (HERDR_PANE_ID) or host session ID ({', '.join(SESSION_VARIABLES)}) here: "
                      "the stop hold cannot bind this session")
         slugs = sorted({spec_of(t) for t in selected})
-        if not args.slug:  # Only efforts with work left: a ticket not done, or delivery incomplete on a live branch.
-            slugs = [slug for slug in slugs
-                     if any(fm['status'] != 'done' for t, fm in selected.items() if spec_of(t) == slug)
-                     or branch_ref(effort_branch(slug)) and delivery_problems(slug)]
+        if not args.slug:  # Only efforts with active work: a live effort branch, or a ticket not done.
+            slugs = [slug for slug in slugs if branch_ref(effort_branch(slug))
+                     or any(fm['status'] != 'done' for t, fm in selected.items() if spec_of(t) == slug)]
             if not slugs:
                 sys.exit('no selected effort has work left to coordinate')
         for slug in slugs:

@@ -68,7 +68,8 @@ elif args[:2] == ['agent', 'get'] and any(args[2] in (a['name'], a['pane_id']) f
     agent = next(a for a in served['agents'] if args[2] in (a['name'], a['pane_id']))
     print(json.dumps({{'result': {{'agent': agent, 'type': 'agent_info'}}}}))
 elif args[:2] == ['tab', 'list'] and session not in served['tabs']:
-    print(json.dumps({{'error': {{'code': 'server_not_running', 'message': 'no server for ' + session}}}}), file=sys.stderr)
+    print(json.dumps({{'error': {{'code': 'server_not_running', 'message': 'no server for ' + session}}}}),
+          file=sys.stderr)
     sys.exit(1)
 elif args[:3] == ['tab', 'list', '--workspace'] and not any(tab['workspace_id'] == args[3]
                                                             for tab in served['tabs'][session]):
@@ -826,7 +827,8 @@ class DeliveryHold(GateRepo):
         # binding refuses, saying the stop hold cannot bind, and records nothing.
         refused = self.bind(pane=None, code=1)
         self.assertEqual(refused.stderr, 'no Herdr pane (HERDR_PANE_ID) or host session ID (CLAUDE_CODE_SESSION_ID, '
-                                         'CODEX_SESSION_ID, PI_SESSION_ID) here: the stop hold cannot bind this session\n')
+                                         'CODEX_SESSION_ID, PI_SESSION_ID) here: the stop hold cannot bind this '
+                                         'session\n')
         self.assertFalse((self.repo / '.scratch/fix/reports/coordinator.json').exists())
 
     def test_no_other_session_is_held(self):
@@ -886,20 +888,54 @@ class DeliveryHold(GateRepo):
         self.bind(pane='w1:p1')
         self.assertEqual(self.check(pane='w1:p1'), [])
 
-    def test_an_effort_merged_into_main_with_its_branch_deleted_is_finished_and_not_held(self):
-        # Review 1 (11 of 11 real reviewed efforts): after delivery the effort branch is merged and deleted. Every ticket
-        # done and the reviewed head in main is what the board records of that, so nothing is held. A branch deleted
-        # while its reviewed head is not in main is still unfinished.
+    def held(self, slug, *problems):
+        """The delivery hold's gap for effort `slug`, naming `problems`."""
+        return (f"{slug}: delivery incomplete under autofix: {'; '.join(problems)}. Continue the autofix handoff "
+                f'({ROOT}/skills/dispatch/handoff.md) until `python3 {ROOT}/scripts/next_tickets.py --repo {self.repo} '
+                f'{slug} --delivery` passes, or record `blocker: <reason>` in '
+                f'{self.repo}/.scratch/{slug}/reports/spec-review.md')
+
+    def test_an_effort_is_finished_only_when_merged_deleted_and_e2e_passed_at_a_head_in_main(self):
+        # Review 1, re-review F1: the board records a finished effort as its branch gone, its reviewed head in main and
+        # a passing E2E at a head in main. Merged and deleted before E2E ran (the Pi run's report), it is still held;
+        # so is a passing E2E at a head main lacks, and a reviewed head main lacks.
         self.bind(pane='w1:p1')
         self.git('update-ref', 'refs/heads/main', self.head)
         self.git('branch', '-D', 'feat/fix')
-        self.assertEqual(self.check(pane='w1:p1'), [])
-        self.git('update-ref', 'refs/heads/main', self.start)
+        missing = 'effort branch feat/fix is not an existing branch'
         self.assertEqual(self.check(pane='w1:p1'), [
-            'fix: delivery incomplete under autofix: e2e_status: not-run (needs passed); e2e_by: none names no worker '
-            'run; effort branch feat/fix is not an existing branch. Continue the autofix handoff '
-            f'({ROOT}/skills/dispatch/handoff.md) until `python3 {ROOT}/scripts/next_tickets.py --repo {self.repo} fix '
-            f'--delivery` passes, or record `blocker: <reason>` in {self.report}'])
+            self.held('fix', 'e2e_status: not-run (needs passed)', 'e2e_by: none names no worker run', missing)])
+        self.review(delivered=True)
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.review(delivered=True, e2e_status='failed')
+        self.assertEqual(self.check(pane='w1:p1'), [self.held('fix', 'e2e_status: failed (needs passed)', missing)])
+        self.review(delivered=True, e2e_head='f' * 40)
+        self.assertEqual(self.check(pane='w1:p1'), [self.held('fix', missing)])
+        self.review(delivered=True)
+        self.git('update-ref', 'refs/heads/main', self.start)
+        self.assertEqual(self.check(pane='w1:p1'), [self.held('fix', missing)])
+
+    def test_an_old_effort_without_e2e_fields_is_bound_only_by_name_and_then_held_until_finished(self):
+        # Re-review F1, in an old real effort's shape: reviewed clean, no E2E or producer fields, merged into main
+        # and its branch deleted. Coordinating every effort binds only those with active work (a branch, or a ticket
+        # not done), so not it; named explicitly, it is held until finished by the definition above.
+        path = self.repo / '.scratch/audit/issues/01-task.md'
+        path.parent.mkdir(parents=True)
+        path.write_text('---\nticket: audit/01\nstatus: done\nblocked_by: []\ntouches: [a]\ndevices: []\n---\n')
+        report = self.repo / '.scratch/audit/reports/spec-review.md'
+        report.parent.mkdir(parents=True)
+        report.write_text(f'---\nreview_status: clean\ndocumentation_status: passed\nreview_base: {self.start}\n'
+                          f'review_diff_base: {self.start}\nreview_head: {self.reviewed}\n---\n')
+        self.git('update-ref', 'refs/heads/main', self.head)
+        self.review(delivered=True)  # A live effort branch is active work even once its delivery passes.
+        bound = self.bind(slug=None).stdout
+        self.assertEqual([line.split(':')[0] for line in bound.splitlines()], ['fix'], bound)
+        self.review()
+        self.bind(slug='audit', autofix=True)
+        self.assertEqual(self.check(pane='w1:p1'), [
+            self.held('audit', 'e2e_status: missing (needs passed)', 'review_by: missing names no worker run',
+                      'e2e_by: missing names no worker run', 'effort branch feat/audit is not an existing branch'),
+            self.gap()])
 
     def test_coordinating_every_effort_binds_only_those_with_work_left_and_refuses_when_none_has(self):
         # Review 1: with no slug, --coordinate binds an effort with a ticket not done, or with delivery incomplete and
@@ -1061,6 +1097,11 @@ class StaleTabs(GateRepo):
         binding.write_text('["w1:p9"]')
         self.assertEqual(self.check(pane='w1:p9'), [gap])
         self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        # Re-review F3: an ID is matched whole, so w1:p1 is not named by w1:p12, nor host-1 by host-12 or ghost-1.
+        binding.write_text('{"pane": "w1:p12", "sessions": ["host-12", "ghost-1"')
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        self.assertEqual(self.check(pane=None, session='host-1'), [])
+        self.assertEqual(self.check(pane='w1:p12'), [gap])
 
     def test_a_closed_workspace_or_stopped_herdr_session_means_the_tab_is_gone(self):
         # Review 2: real Herdr answers workspace_not_found for a closed workspace and server_not_running for a stopped

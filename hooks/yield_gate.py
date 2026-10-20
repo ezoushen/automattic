@@ -10,7 +10,8 @@ agent of its Herdr workspace. The session bound to coordinate an effort (next_ti
 --coordinate; without one, the pane that registered the attempt) is held for each collected
 attempt, neither retained nor retired, whose Herdr tab is still open, and for an effort whose
 review report (before it records one, the binding) records autofix: true and no blocker, with
-every ticket done and delivery failing, unless it was merged into main and its branch deleted. A
+every ticket done and delivery failing, until it is finished (branch deleted, reviewed head in
+main, E2E passed at a head in main). A
 check that cannot run, and a launch log line that is unreadable or malformed, are named gaps,
 never a pass. `claude` and `codex` speak their shared Stop
 hook protocol; `check <cwd> [session]` prints the gaps and the hold's message as JSON for other hosts. Set
@@ -20,6 +21,7 @@ import calendar
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -168,7 +170,7 @@ def undelivered(root, pane, session):
                 autofix = 'true' if binding.get('autofix') else 'false'
             if (autofix != 'true' or str(review.get('blocker') or 'none') != 'none'
                     or any(fm['status'] != 'done' for name, fm in tickets.items() if board.spec_of(name) == slug)
-                    or board.merged_and_deleted(slug)):
+                    or board.finished(slug)):
                 continue
             problems = board.delivery_problems(slug)
         except (Exception, SystemExit) as error:  # A check that cannot run is a named gap, never a pass.
@@ -197,7 +199,9 @@ def read_binding(path, pane, session):
             and isinstance(binding.get('sessions'), list)
             and all(isinstance(known, str) for known in binding['sessions'])):
         return binding, coordinates(binding, pane, session)
-    return None, any(value and value in text for value in (pane, session))
+    # A whole ID only, bounded by characters no pane or session ID holds, so w1:p1 is not found in w1:p12.
+    return None, any(value and re.search(rf'(?<![\w:.-]){re.escape(value)}(?![\w:.-])', text)
+                     for value in (pane, session))
 
 
 def coordinates(binding, pane, session):
