@@ -70,8 +70,9 @@ to a file and validate that artifact; exit zero alone does not establish integri
 Start every worker in a tab of its own in your workspace, never as a split of your
 pane, whatever placement the installed skill defaults to:
 
-1. `herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label "<slug>/<assignment> <role>" --no-focus`,
-   with your `HERDR_WORKSPACE_ID` as the workspace.
+1. `herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label "<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> --no-focus`,
+   with your `HERDR_WORKSPACE_ID` as the workspace. `AUTOMATTIC_WORKER` marks the
+   session as a worker, so the stop check does not hold it as a coordinator.
 2. `herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>`,
    with the `.result.root_pane.pane_id` that step 1 returned.
 3. Then register it, adding `"herdr": {"session": "<session>"}`. Registration reads the

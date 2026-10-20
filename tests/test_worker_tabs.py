@@ -115,7 +115,8 @@ class HerdrTabs(WorkerLifecycleCase):
         self.herdr_fixture(tab_panes=2)
         error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
         self.assertIn('One worker per tab: tab-1 holds 2 panes', error)
-        self.assertIn('herdr tab create --workspace <coordinator workspace> --cwd <worktree>', error)
+        self.assertIn('herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label '
+                      '"<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> --no-focus', error)
         self.assertEqual(self.cli('status')['attempts'], [])
 
     def test_registration_fails_closed_when_herdr_cannot_report_the_workers_tab(self):
@@ -199,13 +200,14 @@ class HerdrTabs(WorkerLifecycleCase):
 
 class TabRecipe(unittest.TestCase):
     def test_the_herdr_guide_starts_each_worker_in_a_tab_of_its_own_then_registers_it(self):
-        # Rule: the Herdr guide holds the recipe (tab create, agent start in its root pane, register) instead of a
-        # split of the caller's pane; the shared attempt doc names the registration field but not the Herdr recipe.
+        # Rule: the Herdr guide holds the recipe (tab create with the AUTOMATTIC_WORKER marker, agent start in its
+        # root pane, register) instead of a split of the caller's pane; the shared attempt doc names the
+        # registration field but not the Herdr recipe.
         guide = ' '.join((support.ROOT / 'hosts/herdr.md').read_text().split())
         position = 0
         for step in ('never as a split of your pane',
                      'herdr tab create --workspace <coordinator workspace> --cwd <worktree> '
-                     '--label "<slug>/<assignment> <role>" --no-focus',
+                     '--label "<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> --no-focus',
                      'herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>',
                      'register it', 'Retirement closes the pane, which closes the tab'):
             position = guide.find(step, position)
