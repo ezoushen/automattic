@@ -16,11 +16,12 @@ def prose(path):
 
 
 class TddSkill(unittest.TestCase):
-    def test_it_reads_the_standard_it_works_before_the_first_test(self):
+    def test_it_reads_the_standard_it_works_before_proposing_the_seams(self):
         declaration = re.search(r'^First read:.*?(?:\n\n|\Z)', SKILL.read_text(), re.M | re.S).group(0)
         self.assertEqual(' '.join(declaration.split()),
                          'First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.')
-        self.assertIn(f'[test-first development{STANDARD_LINK} in full before the first test', prose(SKILL))
+        # The agent proposes the seams itself here, so the standard's seam rules must be read before that.
+        self.assertIn(f'[test-first development{STANDARD_LINK} in full before proposing the seams', prose(SKILL))
         # The builder and ADR 0007 still name the standard, so it stays a standard.
         self.assertIn('](../standards/tdd.md)', prose(ROOT / 'agents/builder.md'))
 

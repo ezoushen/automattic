@@ -9,7 +9,7 @@ argument-hint: "[the behavior to build or the bug to fix]"
 First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 
 Build a behavior change test-first in this session; read
-[test-first development](../../standards/tdd.md) in full before the first test. The
+[test-first development](../../standards/tdd.md) in full before proposing the seams. The
 standard is written for a builder working a ticket; here there is no ticket, so the
 user stands in for it: the rules, their expected values and the seams come from the
 user.

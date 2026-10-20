@@ -88,8 +88,13 @@ class Huh(unittest.TestCase):
         self.assertIn('Skip the runtime bootstrap and the host session part', prose(EXPLAIN))
         self.assertFalse((ROOT / 'runtime/explain').exists())
         # Progress is a briefing, which reads live worker and check evidence that explaining skips.
-        self.assertIn('`/automattic:brief`', section)
-        self.assertNotIn('current state', EXPLAIN.read_text().split('---', 2)[1])
+        # explain skips the bootstrap that says how each host types a skill, so it names all three forms.
+        self.assertIn('(`/automattic:brief` in Claude Code, `$automattic:brief` in Codex, `/skill:brief` in Pi)', section)
+        readme_row = next(line for line in (ROOT / 'README.md').read_text().splitlines() if line.startswith('| `explain` |'))
+        for where, text in (('frontmatter', EXPLAIN.read_text().split('---', 2)[1]), ('README row', readme_row),
+                            ('openai.yaml', (ROOT / 'skills/explain/agents/openai.yaml').read_text())):
+            with self.subTest(where=where):
+                self.assertNotIn('current state', text)
 
     def test_no_show_me_dependency_remains(self):
         self.assertFalse((ROOT / 'addons').exists())

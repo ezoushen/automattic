@@ -122,4 +122,6 @@ session is the caller. Read the code, documents or state the question concerns f
 read-only, so each fact comes from its source; changing anything is outside an
 explanation. Then explain by this procedure, and mark a claim you have not checked as
 unchecked. Progress on an effort, branch or PR is a briefing, not an explanation: point
-the user to `/automattic:brief`, which reads the live worker and check evidence.
+the user to the brief skill, typed the host's way (`/automattic:brief` in Claude Code,
+`$automattic:brief` in Codex, `/skill:brief` in Pi), which reads the live worker and
+check evidence.

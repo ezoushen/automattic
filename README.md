@@ -23,7 +23,7 @@ Typed as `/automattic:<name>` in Claude Code, `$automattic:<name>` in Codex and
 | `diagnose` | Find the cause of a bug or failing check and return a reproducer |
 | `research` | Answer a question from primary sources, citing every claim |
 | `prototype` | Settle one design question with throwaway code and report the verdict |
-| `explain` | Explain code, a change or the current state in layers |
+| `explain` | Explain code, a change or a design in layers |
 | `tdd` | Build or fix test-first, one business rule at a time |
 
 The last five can be typed, and the agent also loads them itself when a request matches

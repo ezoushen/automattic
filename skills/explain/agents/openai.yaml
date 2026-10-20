@@ -1,5 +1,5 @@
 interface:
-  short_description: "Explain code, a change or the current state in layers"
+  short_description: "Explain code, a change or a design in layers"
   default_prompt: "Use $automattic:explain <topic> to explain it headline first, in layers, with the smallest text picture that helps."
 policy:
   allow_implicit_invocation: true
