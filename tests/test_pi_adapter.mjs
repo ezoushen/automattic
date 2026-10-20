@@ -103,8 +103,10 @@ try {
       (skill) => realpathSync(skill.filePath).startsWith(`${root}/skills/`),
     );
     assert.deepEqual(discovered.map((skill) => skill.name).sort(), readdirSync(join(root, "skills")).sort());
+    // The agent may load housekeeping and the five skills the user can also type; the rest are commands only.
+    const agentLoaded = new Set(["housekeeping", "diagnose", "research", "prototype", "explain", "tdd"]);
     for (const skill of discovered) {
-      assert.equal(skill.disableModelInvocation, skill.name !== "housekeeping");
+      assert.equal(skill.disableModelInvocation, !agentLoaded.has(skill.name), skill.name);
     }
   }
   console.log("Pi native reader: shared skills and invocation policy, symlinked bootstrap, startup/reload: ok");
