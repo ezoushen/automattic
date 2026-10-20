@@ -104,6 +104,15 @@ def clears(saved, launch):
     return (saved['registered_at'] or 0) >= calendar.timegm(time.strptime(launch['time'], '%Y-%m-%dT%H:%M:%SZ'))
 
 
+def readable(record):
+    """Whether a launch log line holds a launch or a dismissal the gate can match."""
+    if not isinstance(record, dict):
+        return False
+    if 'dismissed' in record:
+        return isinstance(record['dismissed'], dict) and isinstance(record.get('by'), dict)
+    return isinstance(record.get('coordinator'), dict) and {'time', 'agent', 'pane'} <= record.keys()
+
+
 def is_worker(pane, session, attempts, records):
     """Whether this session is a worker, wherever its cwd: Herdr launched or registered its pane or, outside Herdr,
     its session is an attempt's native session."""
@@ -128,7 +137,16 @@ def unregistered(root, pane, session):
             db.close()
     workers = {handle for saved in attempts for handle in handles(saved['worker'])}
     log, worktrees = root / LAUNCHES, (root / '.worktrees').resolve()
-    records = [json.loads(line) for line in log.read_text().splitlines()] if log.is_file() else []
+    records, unreadable = [], []
+    for number, line in enumerate(log.read_text().splitlines() if log.is_file() else [], 1):
+        try:
+            record = json.loads(line)
+        except ValueError:
+            record = None
+        if readable(record):
+            records.append(record)
+        else:  # Named, and ignored for matching, so one bad line hides no other gap.
+            unreadable.append(f'{log}: launch log line {number} is unreadable; fix or remove it')
     if is_worker(pane, session, attempts, records):
         return []  # Only its coordinator answers for its own launches and its siblings.
     launches = []
@@ -157,7 +175,7 @@ def unregistered(root, pane, session):
     return ([f"{log}: {launch['agent']} (pane {launch['pane']}): launched without a registered attempt"
              for launch in launches]
             + [f"Herdr agent {agent.get('name')} (pane {agent['pane_id']}) runs in {agent['cwd']} "
-               'without a registered attempt' for agent in live] + failed)
+               'without a registered attempt' for agent in live] + unreadable + failed)
 
 
 def checked(cwd, session=None):

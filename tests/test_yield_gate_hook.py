@@ -95,6 +95,23 @@ else:
         return json.loads(result.stdout)['missing']
 
 
+    def launch(self, command, cwd=None, pane='w1:p1', session='host-1', env=None):
+        """Run the Bash PreToolUse hook as Claude or Codex does before `command`."""
+        payload = {'hook_event_name': 'PreToolUse', 'tool_name': 'Bash', 'tool_input': {'command': command},
+                   'cwd': str(cwd or self.repo), 'session_id': session}
+        result = subprocess.run([sys.executable, str(LAUNCH)], input=json.dumps(payload), capture_output=True,
+                                text=True, env=self.env(pane, **(env or {})), timeout=20)
+        # The hook never blocks the command: no decision and a clean exit, whatever happened.
+        self.assertEqual((result.returncode, result.stdout), (0, ''), result.stderr)
+
+    def logged(self):
+        log = self.repo / '.scratch/herdr-launches.jsonl'
+        return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
+
+    def gap(self, agent, pane):
+        return f"{self.repo / '.scratch/herdr-launches.jsonl'}: {agent} (pane {pane}): launched without a registered attempt"
+
+
 class YieldGateHook(GateRepo):
     def setUp(self):
         super().setUp()
@@ -114,6 +131,19 @@ class YieldGateHook(GateRepo):
         # A stop that a stop hook already continued is let through, so a gap the host cannot fix never loops.
         self.assertIsNone(self.stop(active=True))
         self.assertIsNone(self.stop(env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
+
+    def test_an_unreadable_launch_log_line_is_named_and_hides_no_other_gap(self):
+        # Review 6: a torn or hand-broken line is reported by number and ignored for matching; the lifecycle gaps and
+        # the readable launches still show.
+        log = self.repo / '.scratch/herdr-launches.jsonl'
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5')
+        with log.open('a') as stream:
+            stream.write('{"time": "2026-10-2\n{"agent": "builder-9"}\n')
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p6')
+        self.assertEqual(self.check(), [f'{self.state}: ticket-1/1: no armed wait', self.gap('builder-1', 'w1:p5'),
+                                        self.gap('builder-2', 'w1:p6'),
+                                        f'{log}: launch log line 2 is unreadable; fix or remove it',
+                                        f'{log}: launch log line 3 is unreadable; fix or remove it'])
 
     def test_a_checkout_without_worktrees_never_asks_herdr(self):
         # Review 4: a Herdr session in a repository with no .worktrees/ has no ticket worker to look for, so a broken
@@ -194,19 +224,6 @@ class UnregisteredWorkers(GateRepo):
         self.worktree.mkdir(parents=True)
         self.serve(panes={'default': {'w1:p5': {'pane_id': 'w1:p5', 'cwd': str(self.worktree)}}})
 
-    def launch(self, command, cwd=None, pane='w1:p1', session='host-1', env=None):
-        """Run the Bash PreToolUse hook as Claude or Codex does before `command`."""
-        payload = {'hook_event_name': 'PreToolUse', 'tool_name': 'Bash', 'tool_input': {'command': command},
-                   'cwd': str(cwd or self.repo), 'session_id': session}
-        result = subprocess.run([sys.executable, str(LAUNCH)], input=json.dumps(payload), capture_output=True,
-                                text=True, env=self.env(pane, **(env or {})), timeout=20)
-        # The hook never blocks the command: no decision and a clean exit, whatever happened.
-        self.assertEqual((result.returncode, result.stdout), (0, ''), result.stderr)
-
-    def logged(self):
-        log = self.repo / '.scratch/herdr-launches.jsonl'
-        return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
-
     def register(self, worker, attempt, native_session=None, pane='w1:p1'):
         """Register `worker` for an attempt in the run's workers.sqlite, as prepare.md has the coordinator in
         Herdr pane `pane` (None: outside Herdr) do."""
@@ -224,9 +241,6 @@ class UnregisteredWorkers(GateRepo):
     @staticmethod
     def live(name, pane, cwd):
         return f'Herdr agent {name} (pane {pane}) runs in {cwd} without a registered attempt'
-
-    def gap(self, agent, pane):
-        return f"{self.repo / '.scratch/herdr-launches.jsonl'}: {agent} (pane {pane}): launched without a registered attempt"
 
     def pi(self, body, pane=None, env=None):
         """Run `body` with Pi's extension `handlers` (the last of each event) and a `ctx` for session pi-1 here."""
