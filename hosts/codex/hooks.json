@@ -19,8 +19,7 @@
           {
             "type": "command",
             "command": "python3 \"${PLUGIN_ROOT}/hooks/herdr_launch.py\"",
-            "timeout": 10,
-            "statusMessage": "Automattic: log Herdr launches"
+            "timeout": 10
           }
         ]
       }

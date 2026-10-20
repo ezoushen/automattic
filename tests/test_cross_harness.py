@@ -200,8 +200,11 @@ class CrossHarness(unittest.TestCase):
             assert set(config) == {'SessionStart', 'PreToolUse', 'Stop'}, (harness, config)
             assert config['Stop'][0]['hooks'][0]['command'].endswith(f'hooks/yield_gate.py" {harness}'), config
             guards = {entry['matcher']: [hook['command'] for hook in entry['hooks']] for entry in config['PreToolUse']}
-            # Both hosts log each Herdr launch before Bash runs it, so the yield gate can name unregistered workers.
-            assert any(command.endswith('hooks/herdr_launch.py"') for command in guards.get('Bash', [])), guards
+            # Both hosts log each Herdr launch before Bash runs it, so the yield gate can name unregistered workers;
+            # Codex shows a hook's statusMessage on every matching call, so the launch hook has none.
+            launch = [hook for entry in config['PreToolUse'] if entry['matcher'] == 'Bash' for hook in entry['hooks']
+                      if hook['command'].endswith('hooks/herdr_launch.py"')]
+            assert len(launch) == 1 and 'statusMessage' not in launch[0], guards
             if harness == 'claude':
                 guard = config['PreToolUse'][0]
                 assert guard['matcher'] == 'Agent|Task' and guard['hooks'][0]['command'].endswith('hooks/agent_model.py"')

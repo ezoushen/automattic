@@ -274,6 +274,20 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
              'cwd': str(self.worktree)},
             {'agent': 'reviewer-2', 'pane': 'w1:p6', 'coordinator': {'pane': None, 'session': 'host-1'}}])
 
+    def test_one_command_with_many_launches_stays_inside_the_hook_timeout(self):
+        # Review 7: the Herdr lookups of one hook run share a budget inside the hosts' hook timeout, so a hung
+        # Herdr still leaves every launch logged (cwd unknown) before the host kills the hook.
+        limit = min(hook['timeout'] for path in ('hooks/hooks.json', 'hosts/codex/hooks.json')
+                    for entry in json.loads((ROOT / path).read_text())['hooks']['PreToolUse']
+                    for hook in entry['hooks'] if hook['command'].endswith('hooks/herdr_launch.py"'))
+        self.serve(hang=True)
+        started = time.monotonic()
+        self.launch(' && '.join(f'herdr agent start b-{index} --kind codex --pane w1:p{index}' for index in range(1, 6)))
+        self.assertLess(time.monotonic() - started, limit - 2)
+        self.assertEqual([{key: value for key, value in record.items() if key not in ('time', 'coordinator')}
+                          for record in self.logged()],
+                         [{'agent': f'b-{index}', 'pane': f'w1:p{index}'} for index in range(1, 6)])
+
     def test_launches_behind_wrappers_and_shell_strings_are_logged(self):
         # Review 5: `timeout`, `env` with its options, `--session=S` and a shell's `-c` string still run a launch.
         self.serve(panes={'s1': {pane: {'pane_id': pane, 'cwd': str(self.worktree)} for pane in ('w1:p14', 'w1:p16')}})

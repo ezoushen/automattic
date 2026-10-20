@@ -22,6 +22,8 @@ import pr_body
 import yield_gate
 
 SHELLS = {'sh', 'bash', 'zsh', 'dash'}
+# All Herdr lookups of one hook run, well inside the hosts' 10-second hook timeout.
+LOOKUP_SECONDS = 4
 # Options of `env` and `timeout` that take a separate value: env -u NAME, -C DIR; timeout -s SIGNAL, -k DURATION.
 VALUED = {'-u', '-C', '-s', '-k'}
 
@@ -82,11 +84,14 @@ def starts(command):
             yield session, names[0] if names else None, options.get('--pane')
 
 
-def pane_cwd(session, pane):
-    """The pane's working directory as its Herdr server reports it, or None."""
+def pane_cwd(session, pane, deadline):
+    """The pane's working directory as its Herdr server reports it before the deadline, or None."""
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        return None
     try:
         result = subprocess.run(['herdr', *(['--session', session] if session else []), 'pane', 'get', pane],
-                                capture_output=True, text=True, timeout=3)
+                                capture_output=True, text=True, timeout=remaining)
         return json.loads(result.stdout)['result']['pane'].get('cwd') if result.returncode == 0 else None
     except Exception:
         return None  # An unknown cwd still counts at stop.
@@ -105,10 +110,11 @@ def main():
         coordinator = {'pane': os.environ.get('HERDR_PANE_ID'), 'session': event.get('session_id')}
         log = root / yield_gate.LAUNCHES
         log.parent.mkdir(parents=True, exist_ok=True)
+        deadline = time.monotonic() + LOOKUP_SECONDS
         for session, agent, pane in launches:
             record = {'time': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'agent': agent, 'pane': pane,
                       'coordinator': coordinator}
-            cwd = pane and pane_cwd(session, pane)
+            cwd = pane and pane_cwd(session, pane, deadline)
             with log.open('a') as stream:
                 stream.write(json.dumps(dict(record, **({'cwd': cwd} if cwd else {}))) + '\n')
     except Exception:
