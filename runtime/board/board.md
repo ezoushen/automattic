@@ -24,7 +24,7 @@ known account users; `--max-live` sees this board's workers, not every service c
 
 Use `--check` for validation, no action for candidates, `--counts` for counts,
 `--set <ticket> status=<state>` or `worker=<id>` for runtime state,
-`--accept <ticket>` for structural evidence checks, and `--delivery` for the
+`--accept <ticket>` for structural evidence checks and standing measurements, and `--delivery` for the
 structural delivery gate. Read and judge the evidence after those checks.
 Ordinary issue history without machine ticket metadata is not enrolled in this
 board. Malformed machine tickets remain errors; `--board` exposes invalid statuses

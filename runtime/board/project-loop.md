@@ -32,6 +32,25 @@ each maps to. The `blocked_by` graph orders specs; the area lock keeps concurren
 tickets apart. Name the gate tickets, so an orchestrator can say when concurrency
 buys nothing.
 
+## Standing measurements
+
+A metric a ticket could narrow without a test noticing (a recall rate, a size, a latency)
+is recorded in `.scratch/<slug>/measurements.json`, next to the alignment, as a JSON array:
+
+```json
+[{"name": "recall tool", "command": "node tools/measure-recall.mjs", "metric": "recall_t4",
+  "baseline": 100, "direction": "higher"}]
+```
+
+`command` goes to the shell and prints `<metric> <number>` lines; `direction` names the
+better way, `higher` or `lower`. `next_tickets.py --accept` runs every command itself at the
+ticket head, in the worktree that has the ticket branch checked out, and refuses a missing
+value (no such line, not a finite number, a command that exits non-zero) or one worse than
+its baseline. A ticket may lower a metric only with front matter `allows: <metric> <bound>`
+(the worst value it tolerates) and `allows_source: <row id>`, such as `U3`, a row of
+`.scratch/<slug>/ledger.md` where that decision is recorded. An effort without the file is
+accepted without measuring.
+
 ## E2E steps
 
 Identify the project's applicable E2E checks for the affected behaviors and areas:

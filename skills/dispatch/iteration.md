@@ -89,12 +89,15 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    [launch decision record](../../runtime/routing/report.md).
    If spawning fails, reconcile whether a child was actually created before retrying.
 5. When a worker finishes, perform the selected board's acceptance checks for report
-   structure and branch ancestry; then judge assigned implementation criteria and
-   recorded checks in `## Implemented`. Account for every ticket criterion, retaining
-   later-phase obligations for their named owners. Those pending gates do not block
-   implementation acceptance/integration; they still block delivery until verified.
+   structure and branch ancestry; they also run the effort's
+   [standing measurements](../../runtime/board/project-loop.md#standing-measurements) at the
+   ticket head and refuse a missing or worse value, which only a ledger-cited `allows` excuses.
+   Then judge assigned implementation criteria and recorded checks in `## Implemented`.
+   Account for every ticket criterion, retaining later-phase obligations for their named
+   owners. Those pending gates do not block implementation acceptance/integration; they
+   still block delivery until verified.
    Structural acceptance is not a code review.
-   Accept the worker's recorded checks at their commit; do not rerun them.
+   Accept the worker's recorded checks at their commit; do not rerun them, apart from those measurements.
    Collecting through the worker lifecycle records the decision outcome. Otherwise
    record it against that acceptance evidence or mark it unknown, then run the
    [completion record check](../../runtime/decisions/annotate.md#check-a-handoff)

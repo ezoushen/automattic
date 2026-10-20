@@ -6,7 +6,8 @@
 No action: JSON candidates. No slug: all efforts. Other efforts still hold locks.
 Actions: --board, --counts, --check, --accept TICKET,
          --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID).
-Only --set may be combined with --counts.
+Only --set may be combined with --counts. --accept also runs the effort's standing measurements
+(.scratch/<slug>/measurements.json) at the ticket head and refuses a missing or worse value.
 
 Tickets: .scratch/<slug>/issues/NN-title.md, with restricted YAML front matter
 (key: scalar and key: [a, b]). Only the orchestrator changes machine state.
@@ -17,6 +18,7 @@ edges and cycles between tickets or efforts. One orchestrator per checkout.
 import argparse
 from graphlib import CycleError, TopologicalSorter
 import json
+import math
 import os
 import re
 import sys
@@ -258,11 +260,129 @@ def accept(tickets, name):
             problems.append(f"no commit past base on {branch}")
         elif recorded and not listed_commit_on(text, base.group(1), ref):
             problems.append(f"no listed commit under ## Implemented is past base on {branch}")
+    notes = []
+    if not problems:
+        problems, notes = measurement_results(tickets[name], ref)
     for p in problems:
         print(f"{name}: {p}", file=sys.stderr)
     if not problems:
+        for note in notes:
+            print(f"{name}: {note}")
         print(f"{name}: report and branch carry the evidence; judge the content now")
     return not problems
+
+
+def measurement_results(fm, ref):
+    """Run the effort's standing measurements at the ticket head; (problems, notes on allowed regressions).
+
+    Each metric may not be worse than its baseline, unless the ticket's `allows` covers it.
+    """
+    slug = spec_of(fm["ticket"])
+    path = ISSUES / slug / "measurements.json"
+    if not path.is_file():
+        return [], []
+    try:
+        entries = read_measurements(path)
+    except ValueError as error:
+        return [f"measurements.json is unusable: {error}"], []
+    checkout = checkout_of(ref)
+    if checkout is None:
+        return [f"branch {ref.removeprefix('refs/heads/')} is checked out in no worktree; "
+                "its head cannot be measured"], []
+    problem = allowance_problem(fm, slug)
+    if problem:
+        return [problem], []
+    allowed = str(fm.get("allows", "")).split()
+    problems, notes = [], []
+    for entry in entries:
+        value, text = measure(entry, checkout)
+        label = f"measurement {entry['name']!r}: {entry['metric']}"
+        if value is None:
+            problems.append(f"{label} {text}; baseline {entry['baseline']}")
+            continue
+        sign = 1 if entry["direction"] == "higher" else -1
+        if sign * value < sign * entry["baseline"]:
+            worse = f"{label} is {text}, worse than baseline {entry['baseline']}"
+            bound = finite_number(allowed[1]) if allowed[:1] == [entry["metric"]] else None
+            if bound is None:
+                problems.append(f"{worse} ({entry['direction']} is better)")
+            elif sign * value < sign * bound:
+                problems.append(f"{worse} and past the bound {allowed[1]} that ledger row {fm['allows_source']} allows")
+            else:
+                notes.append(f"{worse}; allowed {'down' if sign > 0 else 'up'} to {allowed[1]} "
+                             f"by ledger row {fm['allows_source']}")
+    return problems, notes
+
+
+def measure(entry, checkout):
+    """Run one measurement command in checkout: (number, text as printed), or (None, why it has no value)."""
+    result = subprocess.run(entry["command"], shell=True, cwd=checkout, capture_output=True, text=True)
+    words = next((l.split() for l in result.stdout.splitlines() if l.split()[:1] == [entry["metric"]]), None)
+    if result.returncode:
+        return None, f"has no value (its command exited {result.returncode})"
+    if words is None:
+        return None, f"has no value (no `{entry['metric']} <number>` line in its output)"
+    value = finite_number(words[1]) if len(words) == 2 else None
+    return (value, words[1]) if value is not None else (None, f"is {' '.join(words[1:])!r}, not a number")
+
+
+def allowance_problem(fm, slug):
+    """Why the ticket's `allows` cannot excuse a regression, else None; it needs a ledger row as its source."""
+    if "allows" not in fm:
+        return None
+    ledger = f".scratch/{slug}/ledger.md"
+    words = str(fm["allows"]).split()
+    if not fm.get("allows_source"):
+        return f"allows: {fm['allows']} needs allows_source naming a row of {ledger}"
+    if not ledger_row(slug, str(fm["allows_source"])):
+        return f"allows_source {fm['allows_source']} is not a row of {ledger}"
+    if len(words) != 2 or finite_number(words[1]) is None:
+        return f"allows {fm['allows']!r} must read `<metric> <bound>` with a numeric bound"
+
+
+def ledger_row(slug, row):
+    """Whether row, such as U3, opens a table row of the effort's ledger: `| U3 (user) | ...`."""
+    ledger = ISSUES / slug / "ledger.md"
+    return bool(re.fullmatch(r"[A-Za-z]+[0-9]+", row) and ledger.is_file()
+                and re.search(rf"^\|\s*{row}(?=[\s(|])", ledger.read_text(), re.M))
+
+
+def read_measurements(path):
+    """The entries of a measurements.json; ValueError says why the file cannot gate anything."""
+    try:
+        entries = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        raise ValueError("not valid JSON") from None
+    if not isinstance(entries, list):
+        raise ValueError("not a JSON array of entries")
+    for number, entry in enumerate(entries, 1):
+        if not (isinstance(entry, dict)
+                and all(isinstance(entry.get(key), str) and entry[key] for key in ("name", "command", "metric"))
+                and entry["metric"].split() == [entry["metric"]]
+                and isinstance(entry.get("baseline"), (int, float)) and not isinstance(entry["baseline"], bool)
+                and math.isfinite(entry["baseline"]) and entry.get("direction") in ("higher", "lower")):
+            raise ValueError(f"entry {number} needs a name, command, metric without spaces, "
+                             "numeric baseline and a direction of higher or lower")
+    return entries
+
+
+def finite_number(text):
+    """text as a float when it reads as a finite number, else None."""
+    try:
+        number = float(text)
+    except ValueError:
+        return None
+    return number if math.isfinite(number) else None
+
+
+def checkout_of(ref):
+    """The worktree, the main checkout included, that has ref checked out, else None."""
+    listing = subprocess.run(["git", "-C", str(ROOT), "worktree", "list", "--porcelain"],
+                             capture_output=True, text=True).stdout
+    for block in listing.split("\n\n"):
+        fields = dict(line.partition(" ")[::2] for line in block.splitlines())
+        if fields.get("branch") == ref:
+            return fields["worktree"]
 
 
 def listed_commit_on(text, base, ref):

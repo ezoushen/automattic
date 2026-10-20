@@ -94,12 +94,12 @@ class BoardCLI(unittest.TestCase):
         self.root = Path(tmp.name)
         subprocess.run(['git', 'init', '-q', '-b', 'main', str(self.root)], check=True)
 
-    def write_ticket(self, name, status='ready', touches='runtime', blocked='', devices=''):
+    def write_ticket(self, name, status='ready', touches='runtime', blocked='', devices='', extra=''):
         slug, number = name.split('/')
         path = self.root / '.scratch' / slug / 'issues' / f'{number}-task.md'
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f'---\nticket: {name}\nstatus: {status}\n'
-                        f'blocked_by: [{blocked}]\ntouches: [{touches}]\ndevices: [{devices}]\n---\n')
+                        f'blocked_by: [{blocked}]\ntouches: [{touches}]\ndevices: [{devices}]\n{extra}---\n')
         return path
 
     def cli(self, *args, code=0):
@@ -199,6 +199,195 @@ class BoardCLI(unittest.TestCase):
         for sha in (off_branch, base, unmerged):
             self.write_report(other, 'feat/inline', [sha])
             assert 'no listed commit' in self.cli('inline', '--accept', 'inline/01', code=1).stderr, sha
+
+    def record_measurement(self, command, baseline=100, direction='higher', metric='recall'):
+        entry = {'name': 'recall tool', 'command': command, 'metric': metric,
+                 'baseline': baseline, 'direction': direction}
+        (self.root / '.scratch/inline/measurements.json').write_text(json.dumps([entry]))
+
+    def measured_ticket(self, command, extra='', **entry):
+        """inline/01 is finished on feat/inline, checked out in the main checkout, and its effort records one measurement."""
+        self.write_ticket('inline/01', 'implementing', extra=extra)
+        base = self.commit('base')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        self.record_measurement(command, **entry)
+        self.write_report(base, 'feat/inline', [self.commit('ticket work')])
+        return base
+
+    def test_a_metric_worse_than_its_baseline_refuses_acceptance_and_names_it(self):
+        # A measured regression is a refusal even when the report and branch are structurally fine.
+        self.measured_ticket('echo recall 83')
+        refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        assert refused == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100 "
+                           "(higher is better)\n"), refused
+        for command in ('echo recall 100', 'echo recall 101.5'):
+            self.record_measurement(command)
+            assert 'carry the evidence' in self.cli('inline', '--accept', 'inline/01').stdout, command
+
+    def test_a_metric_that_is_better_lower_is_worse_when_it_rises(self):
+        self.measured_ticket('echo latency 120', baseline=100, direction='lower', metric='latency')
+        refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        assert refused == ("inline/01: measurement 'recall tool': latency is 120, worse than baseline 100 "
+                           "(lower is better)\n"), refused
+        for command in ('echo latency 100', 'echo latency 90'):
+            self.record_measurement(command, direction='lower', metric='latency')
+            assert 'carry the evidence' in self.cli('inline', '--accept', 'inline/01').stdout, command
+
+    def test_a_metric_the_command_does_not_print_refuses_acceptance(self):
+        # No `recall <number>` line means nothing was measured; a longer metric name or a comment is not that line.
+        self.measured_ticket('true')
+        for command in ('true', 'echo recall_t4 100', 'echo "# recall 100"'):
+            self.record_measurement(command)
+            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+            assert refused == ("inline/01: measurement 'recall tool': recall has no value "
+                               "(no `recall <number>` line in its output); baseline 100\n"), (command, refused)
+
+    def test_a_metric_that_is_not_a_number_refuses_acceptance(self):
+        # `nan` is the dangerous one: it compares false against every baseline, so it would read as no regression.
+        self.measured_ticket('true')
+        for text in ('high', 'nan', 'inf', '83%', '83 percent', ''):
+            self.record_measurement(f'echo recall {text}')
+            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+            assert refused == (f"inline/01: measurement 'recall tool': recall is {text!r}, not a number; "
+                               "baseline 100\n"), (text, refused)
+
+    def test_a_measurement_command_that_fails_refuses_acceptance_even_after_printing_a_good_value(self):
+        self.measured_ticket('true')
+        for command, status in (('echo recall 100; exit 3', 3), ('no-such-measurement-tool-4f2a', 127)):
+            self.record_measurement(command)
+            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+            assert refused == (f"inline/01: measurement 'recall tool': recall has no value "
+                               f"(its command exited {status}); baseline 100\n"), (command, refused)
+
+    def test_a_measurements_file_that_cannot_be_read_as_specified_refuses_acceptance(self):
+        # An unreadable standing measurement is a gate that cannot run, never a pass.
+        self.measured_ticket('true')
+        path = self.root / '.scratch/inline/measurements.json'
+        good = {'name': 'recall tool', 'command': 'echo recall 100', 'metric': 'recall',
+                'baseline': 100, 'direction': 'higher'}
+        reason = 'entry 1 needs a name, command, metric without spaces, numeric baseline and a direction of higher or lower'
+        bad = [('not json', 'not valid JSON'), (json.dumps(good), 'not a JSON array of entries'),
+               (json.dumps([1]), reason), (json.dumps([{k: v for k, v in good.items() if k != 'command'}]), reason)]
+        bad += [(json.dumps([{**good, key: value}]), reason) for key, value in (
+            ('baseline', '100'), ('baseline', True), ('baseline', float('nan')), ('direction', 'up'),
+            ('metric', 'recall tool'), ('command', ''))]
+        for text, why in bad:
+            path.write_text(text)
+            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+            assert refused == f"inline/01: measurements.json is unusable: {why}\n", (text, refused)
+        path.write_text(json.dumps([good]))
+        self.cli('inline', '--accept', 'inline/01')
+
+    def write_ledger(self):
+        ledger = self.root / '.scratch/inline/ledger.md'
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        ledger.write_text('# inline: ledger\n\n| # | Decision | Hinge | Rejected |\n|---|---|---|---|\n'
+                          '| A1 (agent) | Cut the fixture | the tool | none |\n'
+                          '| U3 (user) | The SSN rule may lower recall to 80 | "go ahead" | keep 100 |\n'
+                          '| U12 (user) | Keep the recall tool | quoted | drop it |\n')
+
+    def test_a_cited_allowance_accepts_a_regression_up_to_its_bound_and_no_further(self):
+        # `allows` is the worst value the ticket tolerates, inclusive, in the metric's own direction.
+        self.write_ledger()
+        self.measured_ticket('echo recall 83', extra='allows: recall 80\nallows_source: U3\n')
+        accepted = self.cli('inline', '--accept', 'inline/01').stdout
+        assert accepted == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100; "
+                            "allowed down to 80 by ledger row U3\n"
+                            "inline/01: report and branch carry the evidence; judge the content now\n"), accepted
+        self.record_measurement('echo recall 80')
+        self.cli('inline', '--accept', 'inline/01')
+        self.record_measurement('echo recall 79')
+        refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        assert refused == ("inline/01: measurement 'recall tool': recall is 79, worse than baseline 100 "
+                           "and past the bound 80 that ledger row U3 allows\n"), refused
+        self.write_ticket('inline/01', 'implementing', extra='allows: latency 130\nallows_source: U3\n')
+        self.record_measurement('echo latency 130', direction='lower', metric='latency')
+        assert 'allowed up to 130' in self.cli('inline', '--accept', 'inline/01').stdout
+        self.record_measurement('echo latency 131', direction='lower', metric='latency')
+        assert 'past the bound 130' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
+
+    def test_an_allowance_covers_only_the_metric_it_names(self):
+        self.write_ledger()
+        self.measured_ticket('echo recall 83')
+        for allows in ('latency 80', 'recall_t4 80'):
+            self.write_ticket('inline/01', 'implementing', extra=f'allows: {allows}\nallows_source: U3\n')
+            refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+            assert refused == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100 "
+                               "(higher is better)\n"), (allows, refused)
+
+    def refusal(self, ticket='inline/01'):
+        return self.cli('inline', '--accept', ticket, code=1).stderr
+
+    def test_an_allowance_without_a_citation_is_refused(self):
+        # The ticket author cannot excuse a regression alone; the authority is a recorded ledger row.
+        self.write_ledger()
+        expected = "inline/01: allows: recall 80 needs allows_source naming a row of .scratch/inline/ledger.md\n"
+        self.measured_ticket('echo recall 83', extra='allows: recall 80\n')
+        assert self.refusal() == expected, self.refusal()
+        self.write_ticket('inline/01', 'implementing', extra='allows: recall 80\nallows_source:\n')
+        assert self.refusal() == expected, self.refusal()
+        self.record_measurement('echo recall 100')  # an uncited allowance is refused even when no regression needs it
+        assert self.refusal() == expected, self.refusal()
+
+    def test_an_allowance_citing_a_row_the_ledger_does_not_have_is_refused(self):
+        # Only a row id (the first cell of a ledger table row) is a citation: not a prefix, a header or a missing file.
+        self.measured_ticket('echo recall 83', extra='allows: recall 80\nallows_source: U3\n')
+        expected = "inline/01: allows_source {} is not a row of .scratch/inline/ledger.md\n"
+        assert self.refusal() == expected.format('U3'), self.refusal()  # no ledger file at all
+        self.write_ledger()
+        self.cli('inline', '--accept', 'inline/01')
+        for cited in ('U9', 'U', 'U1', 'U30', 'u3', '#', '---', 'Decision', 'A1)'):
+            self.write_ticket('inline/01', 'implementing', extra=f'allows: recall 80\nallows_source: {cited}\n')
+            assert self.refusal() == expected.format(cited), (cited, self.refusal())
+        self.write_ticket('inline/01', 'implementing', extra='allows: recall 80\nallows_source: A1\n')
+        self.cli('inline', '--accept', 'inline/01')
+
+    def test_an_allowance_that_does_not_read_metric_then_numeric_bound_is_refused(self):
+        self.write_ledger()
+        self.measured_ticket('echo recall 100')
+        for value in ('recall', 'recall high', 'recall 80 90', 'recall nan', ''):
+            self.write_ticket('inline/01', 'implementing', extra=f'allows: {value}\nallows_source: U3\n')
+            assert self.refusal() == (f"inline/01: allows {value!r} must read `<metric> <bound>` with a numeric bound\n"), \
+                (value, self.refusal())
+
+    def test_an_effort_without_a_measurements_file_accepts_exactly_as_before(self):
+        # No file, no gate: another effort's file and this ticket's own `allows` line change nothing here.
+        self.measured_ticket('echo recall 1', extra='allows: recall 80\n')
+        (self.root / '.scratch/inline/measurements.json').rename(self.root / '.scratch/inline/measurements.old')
+        other = self.root / '.scratch/other/measurements.json'
+        other.parent.mkdir(parents=True)
+        other.write_text(json.dumps([{'name': 'x', 'command': 'exit 1', 'metric': 'recall',
+                                      'baseline': 100, 'direction': 'higher'}]))
+        accepted = self.cli('inline', '--accept', 'inline/01').stdout
+        assert accepted == "inline/01: report and branch carry the evidence; judge the content now\n", accepted
+
+    def ticket_worktree(self, score):
+        """inline/01 on feat/inline-01 in its own worktree; main keeps scoring 100 and the ticket branch scores `score`."""
+        self.write_ticket('inline/01', 'implementing')
+        (self.root / 'score.txt').write_text('100\n')
+        self.git('add', 'score.txt')
+        base = self.commit('base with the recall score')
+        worktree = self.root / '.worktrees/inline-01'
+        self.git('worktree', 'add', '-q', '-b', 'feat/inline-01', str(worktree), base)
+        (worktree / 'score.txt').write_text(f'{score}\n')
+        self.git('-C', str(worktree), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-am', 'ticket work')
+        work = self.git('-C', str(worktree), 'rev-parse', 'HEAD')
+        self.record_measurement('echo recall $(cat score.txt)')
+        self.write_report(base, 'feat/inline-01', [work])
+
+    def test_the_measurement_runs_in_the_worktree_that_holds_the_ticket_head(self):
+        # Main still scores 100; only the ticket worktree, at the ticket head, scores 83.
+        self.ticket_worktree(83)
+        refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        assert refused == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100 "
+                           "(higher is better)\n"), refused
+
+    def test_a_ticket_branch_checked_out_nowhere_cannot_be_measured_and_is_refused(self):
+        self.ticket_worktree(100)
+        self.cli('inline', '--accept', 'inline/01')
+        self.git('worktree', 'remove', '--force', '.worktrees/inline-01')
+        refused = self.cli('inline', '--accept', 'inline/01', code=1).stderr
+        assert refused == "inline/01: branch feat/inline-01 is checked out in no worktree; its head cannot be measured\n", refused
 
     def test_a_recorded_branch_must_name_an_existing_branch(self):
         self.write_ticket('inline/01', 'implementing')
