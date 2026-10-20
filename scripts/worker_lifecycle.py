@@ -2,6 +2,7 @@
 """Retain worker attempts, wait receipts and design holds until the host collects them."""
 
 import argparse
+import errno
 import hashlib
 import json
 import math
@@ -321,9 +322,9 @@ def unsettled(saved):
             and not saved.get('accepted') and not saved.get('declined'))
 
 
-def return_check(saved, report):
+def return_check(saved, report, now):
     """What a completed result owes its job and agent: the job's report sections, and an untouched
-    worktree for an agent that writes nothing."""
+    worktree for an agent that writes nothing (`now` is its observed_state)."""
     if saved.get('job') not in DEFINITIONS['jobs']:
         return [], None  # Registered before agents and jobs existed.
     lines, fenced = [], None
@@ -341,35 +342,47 @@ def return_check(saved, report):
     # A heading names the section exactly, or continues it after a space, as in `## Fixed round 2`.
     missing = [heading for heading in DEFINITIONS['jobs'][saved['job']]['returns']
                if not any(line == heading or line.startswith(heading + ' ') for line in lines)]
-    return missing, read_only_change(saved)
+    return missing, read_only_change(saved, now)
 
 
-def read_only_change(saved):
-    """How a read-only agent's worktree differs from its registration, or None when it is as it was."""
+def observed_state(saved):
+    """The worktree state a read-only attempt is checked against at collection, read once; None for any other."""
+    return worktree_state(saved['worktree']) if saved.get('worktree_baseline') else None
+
+
+def read_only_change(saved, now):
+    """How a read-only agent's worktree differs from its registration, as (reason, restorable), or None when
+    it is as it was. An edited or deleted untracked file, or a worktree that cannot be verified, cannot be restored."""
     baseline = saved.get('worktree_baseline', False)
     if baseline is None:
-        return 'not a readable Git checkout at registration; read-only work cannot be verified'
+        return 'not a readable Git checkout at registration; read-only work cannot be verified', False
     if not baseline:
         return None
-    now = worktree_state(saved['worktree'])
     if now is None:
-        return 'worktree state unreadable at collection'
+        return 'worktree state unreadable at collection', False
     # A registration from before untracked files were recorded is held to HEAD and tracked changes only.
     legacy = 'untracked' not in baseline
     note = '; untracked files were not recorded at registration' if legacy else ''
     if now['head'] != baseline['head']:
-        return f'HEAD moved from {baseline["head"]} to {now["head"]}{note}'
+        return f'HEAD moved from {baseline["head"]} to {now["head"]}{note}', True
     if now['changes'] != baseline['changes']:
-        return f'tracked files differ from their state at registration{note}'
+        return f'tracked files differ from their state at registration{note}', True
     if legacy:
         return None
     before, after = baseline['untracked'], now['untracked']
     if appeared := sorted(set(after) - set(before)):
-        return f'an untracked file appeared: {appeared[0]}'
+        return f'an untracked file appeared: {appeared[0]}', True
     if deleted := sorted(set(before) - set(after)):
-        return f'an untracked file was deleted: {deleted[0]}'
+        return f'an untracked file was deleted: {deleted[0]}', False
     if edited := sorted(name for name in before if after[name] != before[name]):
-        return f'an untracked file changed: {edited[0]}'
+        return f'an untracked file changed: {edited[0]}', False
+
+
+def refusal(change):
+    reason, restorable = change
+    way_out = ('restore it and collect again' if restorable else
+               'record the result with its gap (`record`, kind `result`), then collect again; acceptance stays refused')
+    return f'Collection requires an unchanged worktree for a read-only agent ({reason}); {way_out}'
 
 
 def worktree_state(worktree):
@@ -381,15 +394,22 @@ def worktree_state(worktree):
     untracked = run('ls-files', '--others', '--exclude-standard', '-z')
     if head.returncode or diff.returncode or untracked.returncode:
         return None
-    names = filter(None, untracked.stdout.decode().split('\0'))
+    names = [os.fsdecode(name) for name in untracked.stdout.split(b'\0') if name]
+    digests = {name: content_digest(Path(worktree, name)) for name in names}
     return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
-            'untracked': {name: content_digest(Path(worktree, name)) for name in names}}
+            'untracked': {name: digest for name, digest in digests.items() if digest is not None}}
 
 
 def content_digest(path):
-    """A digest of a file's bytes, or of a symlink's target; a nested repository, which Git lists as its
-    directory, has no content of its own."""
-    data = os.readlink(path).encode() if path.is_symlink() else b'' if path.is_dir() else path.read_bytes()
+    """A digest of a file's bytes, or of a symlink's target. What cannot be read, such as a file without
+    permission or a nested repository (Git lists it as its directory), is held to a marker naming why; a file
+    that vanished since it was listed is None."""
+    try:
+        data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
+    except FileNotFoundError:
+        return None
+    except OSError as error:
+        return f'unreadable:{errno.errorcode.get(error.errno, error.errno)}'
     return hashlib.sha256(data).hexdigest()
 
 
@@ -428,9 +448,11 @@ def submitted_at(db, attempt):
     return min(times) if times else None
 
 
-def record(db, data):
+def record(db, data, refuse_changes=False):
     kind, attempt = data.get('kind'), data.get('attempt')
     require(text(attempt), 'Event requires attempt')
+    # A read-only worktree is read before the write lock is taken; the result check and any refusal use that one read.
+    now = observed_state(get(db, attempt)) if kind == 'result' and data.get('status') == 'completed' else None
     db.execute('BEGIN IMMEDIATE')
     with db:
         if kind == 'register':
@@ -478,10 +500,10 @@ def record(db, data):
                     require(previous.get('result') and previous.get('retained')
                             and not watching(previous) and not pending(db, previous['attempt']),
                             'Same-assignment reuse requires collected result, explicit retention and no live wait')
-            if DEFINITIONS['agents'][execution['agent']]['writes'] == 'none':
-                data['worktree_baseline'] = worktree_state(data['worktree'])
             saved = dict(data, agent=execution['agent'], job=execution['job'], execution_snapshot=execution,
                          requested=dict(settings, runtime=data['runtime']), verified=False)
+            if DEFINITIONS['agents'][execution['agent']]['writes'] == 'none':
+                saved['worktree_baseline'] = worktree_state(data['worktree'])  # Not in the event: it can be large.
             decision = linked_decision(execution)
             if decision:
                 saved['decision'] = decision
@@ -542,9 +564,11 @@ def record(db, data):
                 require(not saved.get('result'), 'Result already collected; use a new attempt for further work')
                 saved['result'] = dict(data, report_sha256=hashlib.sha256(report.read_bytes()).hexdigest())
                 if data['status'] == 'completed':
-                    missing, changed = return_check(saved, report)
+                    missing, change = return_check(saved, report, now)
+                    if refuse_changes and change:
+                        raise ValueError(refusal(change))
                     saved['result'].update({'missing_returns': missing} if missing else {},
-                                           **({'read_only_changes': changed} if changed else {}))
+                                           **({'read_only_changes': change[0]} if change else {}))
                 started = submitted_at(db, attempt)
                 if started:
                     saved['result']['metrics'] = {'worker_seconds': round(time.time() - started, 3)}
@@ -1027,10 +1051,7 @@ def collect(db, state, attempt, request):
                 and report_intact(saved), 'Resume collection with the same intact report and checked result')
         result = {'attempt': attempt, 'already_collected': True}
     else:
-        changed = request.get('status') == 'completed' and read_only_change(saved)
-        require(not changed, f'Collection requires an unchanged worktree for a read-only agent ({changed}); '
-                             'restore it and collect again')
-        result = record(db, dict(request, kind='result', attempt=attempt))
+        result = record(db, dict(request, kind='result', attempt=attempt), refuse_changes=True)
     with db:
         db.execute("UPDATE events SET acknowledged = 1 WHERE attempt = ? AND kind IN ('wait-finished', 'result')", (attempt,))
     if disposition['kind'] == 'retire':

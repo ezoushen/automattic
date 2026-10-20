@@ -210,6 +210,12 @@ class Definitions(unittest.TestCase):
         self.assertEqual(agent_defs.missing_inputs(job, complete.replace('report: /r.md', 'see the report')),
                          ['report'])
 
+    def test_the_reviewer_returns_its_worktree_as_registered_untracked_files_included(self):
+        # The collect check holds a read-only agent to its registered state, so the contract says the same.
+        text = ' '.join((support.ROOT / 'agents/reviewer.md').read_text().split())
+        self.assertIn('restore the tracked files you changed and remove the temporary untracked files you made', text)
+        self.assertIn('the worktree must match its state at registration, untracked files included', text)
+
     def test_the_plugin_definitions_are_valid(self):
         self.assertEqual(agent_defs.problems(support.ROOT), [])
         loaded = agent_defs.load(support.ROOT)

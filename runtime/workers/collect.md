@@ -14,10 +14,15 @@ gates remain under the shared acceptance contract.
 A `completed` result also owes its job's `returns` report sections (real headings,
 outside code blocks) and, for a `writes: none` agent, the same HEAD, tracked changes
 and untracked files (their content too) it was registered with; a gitignored file is
-not a change.
-`collect` refuses a worktree that differs and names the change; restore it and
-collect again. Any other gap, and a difference recorded through `result`, goes on the
-result; then `gate --stage accept` fails and recording acceptance is refused.
+not a change, and untracked files inside submodules and nested repositories are not
+checked.
+`collect` refuses a worktree that differs and names the change. Restore a moved HEAD,
+a tracked change or a new untracked file, then collect again. An edited or deleted
+untracked file, or a worktree whose state cannot be read, cannot be restored: record
+the result with `record` (kind `result`), which keeps the gap on it, then collect
+again; acceptance stays refused. Any other gap, and a difference recorded through
+`result`, goes on the result; then `gate --stage accept` fails and recording
+acceptance is refused.
 
 For a checked result, use `collect --state ... --attempt ... --input
 /absolute/result.json` after native inspection and wait reconciliation. The input

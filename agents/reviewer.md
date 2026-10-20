@@ -18,9 +18,10 @@ request it from the orchestrator. Links below are relative to `agent_file`.
 - Never change production code, tests, the user's checkout, tickets or the tracker;
   never push, merge, rebase or delete branches or worktrees. Write only the assigned
   report, which lives outside the worktree, and temporary experiment edits.
-- Run experiments only in an isolated copy or the assigned worktree, and remove only
-  your own temporary edits after saving their evidence: tracked files must be
-  unchanged when you return.
+- Run experiments only in an isolated copy or the assigned worktree. Before you
+  return, save their evidence, restore the tracked files you changed and remove the
+  temporary untracked files you made, and only those: the worktree must match its
+  state at registration, untracked files included.
 - Follow native permission limits; never work around a denied tool call or relax
   permissions.
 - With `report_transport: return`, write no files; return the complete report
