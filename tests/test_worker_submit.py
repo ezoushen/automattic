@@ -83,6 +83,16 @@ class Submission(WorkerLifecycleCase):
         self.register(runtime='codex')
         self.assertEqual(len(self.cli('status')['attempts']), 1)
 
+    def test_registration_refuses_an_untargeted_top_level_route_by_its_registered_runtime(self):
+        # Rule (review reproducer): a route that names no target runtime, such as a --route-choice Herdr route, is
+        # judged by the runtime it registers as; without launch controls a danger-full-access worker would verify.
+        self.execution.write_text(json.dumps({'harness': None, 'target_runtime': None, 'native_dispatch': False,
+            'executor': 'skill', 'agent': 'reviewer', 'job': 'diff-review',
+            'settings': {'model': 'gpt-6.1-sol', 'effort': 'high'}}))
+        error = self.register(runtime='codex', code=2)
+        self.assertIn('A route to a codex worker started as its own process requires its launch controls', error)
+        self.assertEqual(self.cli('status')['attempts'], [])
+
     def test_submit_reads_codex_session_and_latest_turn_controls(self):
         self.execution.write_text(json.dumps({'harness': 'codex', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'gpt-6.1-sol', 'effort': 'high'}}))

@@ -520,9 +520,12 @@ def record(db, data, refuse_changes=False):
                             'Same-assignment reuse requires collected result, explicit retention and no live wait')
             # The launch's write scope is requested like model and effort: a record without it stays unverified.
             scope = (execution.get('launch') or {}).get('verify', {})
-            target = execution.get('target_runtime')
-            require(scope or target not in TOP_LEVEL or execution.get('native_dispatch'),
-                    f'A route to a {target} worker started as its own process requires its launch controls '
+            # A route that is not a native child starts its own process: one that names no target runtime (a
+            # complete executor instance) is judged by the runtime it registers as.
+            own_process = execution.get('native_dispatch') is False or (
+                execution.get('target_runtime') in TOP_LEVEL and not execution.get('native_dispatch'))
+            require(scope or not own_process or data['runtime'] not in TOP_LEVEL,
+                    f'A route to a {data["runtime"]} worker started as its own process requires its launch controls '
                     '(launch.verify); resolve it again with agent_models.py --route')
             saved = dict(data, agent=execution['agent'], job=execution['job'], execution_snapshot=execution,
                          requested=dict(scope, **settings, runtime=data['runtime']), verified=False)
