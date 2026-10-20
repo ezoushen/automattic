@@ -70,7 +70,7 @@ def gaps(cwd, session=None):
             db.close()
     # A session inside a ticket worktree is a worker: only its coordinator answers for unregistered workers.
     if not cwd.is_relative_to((root / '.worktrees').resolve()):
-        missing += unregistered(root, pane or session, pane)
+        missing += unregistered(root, pane, session)
     return missing
 
 
@@ -82,7 +82,16 @@ def herdr_agents():
     return json.loads(result.stdout)['result']['agents']
 
 
-def unregistered(root, coordinator, pane):
+def launched_by(launch, pane, session):
+    """Whether this session logged the launch: pane and host session must both match when both sides know the
+    session, so a pane ID that a restarted Herdr reuses inherits nothing; otherwise the pane alone decides."""
+    theirs = launch['coordinator']
+    if theirs['session'] and session:
+        return theirs == {'pane': pane, 'session': session}
+    return bool(pane) and theirs['pane'] == pane
+
+
+def unregistered(root, pane, session):
     """Name each Herdr worker that no attempt in any run registers: each launch this coordinator logged into a
     ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its Herdr workspace."""
     module, workers = None, set()
@@ -95,7 +104,7 @@ def unregistered(root, coordinator, pane):
             db.close()
     log, worktrees = root / LAUNCHES, (root / '.worktrees').resolve()
     launches = [json.loads(line) for line in log.read_text().splitlines()] if log.is_file() else []
-    launches = [launch for launch in launches if coordinator and launch['coordinator'] == coordinator
+    launches = [launch for launch in launches if launched_by(launch, pane, session)
                 and not workers & {launch['agent'], launch['pane']}
                 and ('cwd' not in launch or Path(launch['cwd']).resolve().is_relative_to(worktrees))]
     workers |= {handle for launch in launches for handle in (launch['agent'], launch['pane'])}  # Named once.

@@ -2,7 +2,7 @@
 """PreToolUse hook: log each `herdr agent start` a session runs, so the yield gate can name unregistered workers.
 
 Appends one JSON line per launch to the main checkout's .scratch/herdr-launches.jsonl: the time, agent name and
-pane, the coordinator (HERDR_PANE_ID, else the host session ID) and the pane's cwd when Herdr reports it. Claude and
+pane, the coordinator (its HERDR_PANE_ID and host session ID) and the pane's cwd when Herdr reports it. Claude and
 Codex run it before Bash; Pi's extension passes its bash and bg_run calls. It never blocks the command.
 """
 import json
@@ -67,7 +67,7 @@ def main():
         root = yield_gate.main_checkout(event.get('cwd') or os.getcwd())
         if root is None:
             return
-        coordinator = os.environ.get('HERDR_PANE_ID') or event.get('session_id')
+        coordinator = {'pane': os.environ.get('HERDR_PANE_ID'), 'session': event.get('session_id')}
         log = root / yield_gate.LAUNCHES
         log.parent.mkdir(parents=True, exist_ok=True)
         for session, agent, pane in launches:

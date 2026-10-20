@@ -236,8 +236,8 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
         return json.loads(result.stdout)
 
     def test_each_herdr_agent_start_is_logged_in_the_main_checkout_for_its_coordinator(self):
-        # Rule 1: time, agent name, pane, coordinator (HERDR_PANE_ID, else the host session) and the pane's cwd
-        # as the named Herdr server reports it; a command that only mentions a launch records nothing.
+        # Rule 1: time, agent name, pane, coordinator (its Herdr pane and host session, each when known) and the
+        # pane's cwd as the named Herdr server reports it; a command that only mentions a launch records nothing.
         self.serve(panes={'s1': {'w1:p5': {'pane_id': 'w1:p5', 'cwd': str(self.worktree)}},
                           'default': {'w1:p5': {'pane_id': 'w1:p5', 'cwd': '/elsewhere'}}})
         before = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
@@ -249,8 +249,9 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
         for record in logged:
             self.assertTrue(before <= record.pop('time') <= after)
         self.assertEqual(logged, [
-            {'agent': 'builder-1', 'pane': 'w1:p5', 'coordinator': 'w1:p1', 'cwd': str(self.worktree)},
-            {'agent': 'reviewer-2', 'pane': 'w1:p6', 'coordinator': 'host-1'}])
+            {'agent': 'builder-1', 'pane': 'w1:p5', 'coordinator': {'pane': 'w1:p1', 'session': 'host-1'},
+             'cwd': str(self.worktree)},
+            {'agent': 'reviewer-2', 'pane': 'w1:p6', 'coordinator': {'pane': None, 'session': 'host-1'}}])
 
     def test_logging_never_blocks_the_command_even_when_herdr_or_the_log_fails(self):
         # Rule 1: a hung Herdr still leaves a record with the cwd unknown; an unwritable log only loses the record.
@@ -259,7 +260,7 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5')
         self.assertLess(time.monotonic() - started, 10)
         self.assertEqual([{key: value for key, value in record.items() if key != 'time'} for record in self.logged()],
-                         [{'agent': 'builder-1', 'pane': 'w1:p5', 'coordinator': 'w1:p1'}])
+                         [{'agent': 'builder-1', 'pane': 'w1:p5', 'coordinator': {'pane': 'w1:p1', 'session': 'host-1'}}])
         (self.repo / '.scratch/herdr-launches.jsonl').unlink()
         (self.repo / '.scratch/herdr-launches.jsonl').mkdir()
         self.serve()
@@ -267,7 +268,7 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
 
     @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
     def test_pi_logs_launches_from_bash_and_bg_run_without_blocking_them(self):
-        # Rule 1 on Pi: its tool_call covers bash and bg_run; the coordinator outside Herdr is Pi's session ID.
+        # Rule 1 on Pi: its tool_call covers bash and bg_run; the coordinator's session is Pi's session ID.
         verdicts = self.pi("""
 const call = (toolName, command) => handlers.tool_call({ type: 'tool_call', toolCallId: toolName, toolName,
   input: { command, name: 'launch' } }, ctx);
@@ -276,8 +277,9 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
 """)
         self.assertEqual(verdicts, [None, None])
         self.assertEqual([{key: value for key, value in record.items() if key != 'time'} for record in self.logged()], [
-            {'agent': 'builder-1', 'pane': 'w1:p5', 'coordinator': 'pi-1', 'cwd': str(self.worktree)},
-            {'agent': 'builder-2', 'pane': 'w1:p6', 'coordinator': 'pi-1'}])
+            {'agent': 'builder-1', 'pane': 'w1:p5', 'coordinator': {'pane': None, 'session': 'pi-1'},
+             'cwd': str(self.worktree)},
+            {'agent': 'builder-2', 'pane': 'w1:p6', 'coordinator': {'pane': None, 'session': 'pi-1'}}])
 
     def test_an_unregistered_launch_into_a_worktree_holds_its_coordinator_after_the_pane_closed(self):
         # Rule 2: the log outlives the panes; an attempt whose worker is the pane or the agent name clears the gap.
@@ -320,6 +322,18 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p5')])
         self.assertEqual(self.check(pane=None, session='host-2'), [])
         self.assertEqual(self.check(pane=None), [])
+
+    def test_a_reused_pane_with_another_host_session_inherits_no_launches(self):
+        # Decision 4: when the launch and the stopping session both carry a host session, pane and session must both
+        # match; the pane alone decides only when one side has no session (a restarted Herdr may reuse pane ids).
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane='w1:p1', session='old-1')
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p5', pane='w1:p1', session=None)
+        self.serve()
+        both = [self.gap('builder-1', 'w1:p5'), self.gap('builder-2', 'w1:p5')]
+        self.assertEqual(self.check(pane='w1:p1', session='new-1'), [self.gap('builder-2', 'w1:p5')])
+        self.assertEqual(self.check(pane='w1:p1', session='old-1'), both)
+        self.assertEqual(self.check(pane='w1:p1'), both)
+        self.assertEqual(self.check(pane='w1:p2', session='old-1'), [])
 
     def test_launches_and_registrations_count_however_long_ago_their_run_was_active(self):
         # Rule 2: neither the launch log nor a run's registrations age out with the gate's one-day filter.
