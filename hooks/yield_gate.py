@@ -25,12 +25,19 @@ ROOT = Path(__file__).resolve().parent.parent
 RECENT_SECONDS = 24 * 3600
 GUIDE = ROOT / 'runtime/workers/wait.md'
 PREPARE = ROOT / 'runtime/workers/prepare.md'
+HANDOFF = ROOT / 'skills/dispatch/handoff.md'
 # hooks/herdr_launch.py appends each `herdr agent start` here, one JSON object per line.
 LAUNCHES = '.scratch/herdr-launches.jsonl'
+# scripts/next_tickets.py --coordinate records here, in an effort's reports/, the session that coordinates it.
+BINDING = 'coordinator.json'
 
 
 def lifecycle():
-    spec = importlib.util.spec_from_file_location('worker_lifecycle', ROOT / 'scripts/worker_lifecycle.py')
+    return script('worker_lifecycle')
+
+
+def script(name):
+    spec = importlib.util.spec_from_file_location(name, ROOT / f'scripts/{name}.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -71,7 +78,28 @@ def gaps(cwd, session=None):
         finally:
             db.close()
     # Every session answers for its own launches; a worker (its launch set AUTOMATTIC_WORKER) not for its siblings.
-    return missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER'))
+    return (missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER'))
+            + undelivered(root, pane, session))
+
+
+def undelivered(root, pane, session):
+    """Name each effort this session was bound to coordinate (next_tickets.py --coordinate) whose delivery fails."""
+    board, missing = None, []
+    for path in sorted(root.glob(f'.scratch/*/reports/{BINDING}')):
+        binding = json.loads(path.read_text())
+        if not any(same_coordinator({'pane': binding['pane'], 'session': known}, pane, session)
+                   for known in binding['sessions'] or [None]):
+            continue
+        slug = path.parent.parent.name
+        if board is None:
+            board = script('next_tickets')
+            board.ROOT, board.ISSUES = root, root / '.scratch'
+        problems = board.delivery_problems(slug)
+        if problems:
+            missing.append(f"{slug}: delivery incomplete under autofix: {'; '.join(problems)}. Continue the autofix "
+                           f'handoff ({HANDOFF}) until `python3 {ROOT}/scripts/next_tickets.py --repo {root} {slug} '
+                           f'--delivery` passes, or record `blocker: <reason>` in {path.with_name("spec-review.md")}')
+    return missing
 
 
 def herdr_agents():
@@ -193,7 +221,7 @@ def checked(cwd, session=None):
 
 def reason(missing, session=None):
     dismiss = f"python3 {ROOT}/hooks/herdr_launch.py dismiss --pane <pane>{f' --session {session}' if session else ''}"
-    return ('These workers could finish or run without waking you:\n'
+    return ('Stopping now leaves these gaps:\n'
             + ''.join(f'- {gap}\n' for gap in missing)
             + f'Register each launched worker, or dismiss a launch that needs none with `{dismiss} --reason <why>` '
             + f'({PREPARE}). '

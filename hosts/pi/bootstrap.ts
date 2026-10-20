@@ -45,7 +45,7 @@ export default function (pi) {
     }
     if (!missing.length) return undefined;
     continued = true;
-    const content = "These workers could finish or run without waking you:\n"
+    const content = "Stopping now leaves these gaps:\n"
       + missing.map((gap) => `- ${gap}\n`).join("")
       + "Register each launched worker, or dismiss a launch that needs none with "
       + `\`python3 ${root}/hooks/herdr_launch.py dismiss --pane <pane> --session ${session} --reason <why>\` `

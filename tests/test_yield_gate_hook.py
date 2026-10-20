@@ -17,6 +17,9 @@ ROOT = support.ROOT
 HOOK = ROOT / 'hooks' / 'yield_gate.py'
 LAUNCH = ROOT / 'hooks' / 'herdr_launch.py'
 LIFECYCLE = ROOT / 'scripts' / 'worker_lifecycle.py'
+TICKETS = ROOT / 'scripts' / 'next_tickets.py'
+# What Claude Code, Codex and Pi export to the orchestrator's shell as their session ID; the test run's own are dropped.
+SESSION_VARIABLES = ('CLAUDE_CODE_SESSION_ID', 'CODEX_SESSION_ID', 'PI_SESSION_ID')
 
 
 class GateRepo(unittest.TestCase):
@@ -70,7 +73,7 @@ else:
     def env(self, pane='w1:p1', **values):
         """The environment of a session in Herdr pane `pane` of workspace w1, or outside Herdr when None."""
         env = {key: value for key, value in os.environ.items()
-               if not key.startswith('HERDR_') and key != 'AUTOMATTIC_WORKER'}
+               if not key.startswith('HERDR_') and key not in ('AUTOMATTIC_WORKER', *SESSION_VARIABLES)}
         env['PATH'] = f"{self.bin}{os.pathsep}{env['PATH']}"
         return dict(env, **({'HERDR_PANE_ID': pane, 'HERDR_WORKSPACE_ID': 'w1'} if pane else {}), **values)
 
@@ -95,6 +98,20 @@ else:
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)['missing']
 
+
+    def pi(self, body, pane=None, env=None):
+        """Run `body` with Pi's extension `handlers` (the last of each event) and a `ctx` for session pi-1 here."""
+        script = f"""
+const bootstrap = await import({json.dumps((ROOT / 'hosts/pi/bootstrap.ts').as_uri())});
+const handlers = {{}};
+bootstrap.default({{ on: (event, handler) => {{ handlers[event] = handler; }} }});
+const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionId: () => 'pi-1' }} }};
+{body}
+"""
+        result = subprocess.run(['node', '--input-type=module', '-e', script], capture_output=True, text=True,
+                                timeout=60, env=self.env(pane, **(env or {})))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)
 
     def launch(self, command, cwd=None, pane='w1:p1', session='host-1', env=None):
         """Run the Bash PreToolUse hook as Claude or Codex does before `command`."""
@@ -259,20 +276,6 @@ class UnregisteredWorkers(GateRepo):
     @staticmethod
     def live(name, pane, cwd):
         return f'Herdr agent {name} (pane {pane}) runs in {cwd} without a registered attempt'
-
-    def pi(self, body, pane=None, env=None):
-        """Run `body` with Pi's extension `handlers` (the last of each event) and a `ctx` for session pi-1 here."""
-        script = f"""
-const bootstrap = await import({json.dumps((ROOT / 'hosts/pi/bootstrap.ts').as_uri())});
-const handlers = {{}};
-bootstrap.default({{ on: (event, handler) => {{ handlers[event] = handler; }} }});
-const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionId: () => 'pi-1' }} }};
-{body}
-"""
-        result = subprocess.run(['node', '--input-type=module', '-e', script], capture_output=True, text=True,
-                                timeout=60, env=self.env(pane, **(env or {})))
-        self.assertEqual(result.returncode, 0, result.stderr)
-        return json.loads(result.stdout)
 
     def test_each_herdr_agent_start_is_logged_in_the_main_checkout_for_its_coordinator(self):
         # Rule 1: time, agent name, pane, coordinator (its Herdr pane and host session, each when known) and the
@@ -711,6 +714,116 @@ console.log(JSON.stringify([await settle(), await settle()]));
                          r'\n- could not check workers: Command failed: python3 \S+/hooks/yield_gate\.py check .+ pi-1\n'
                          r'python3: simulated crash\n')
         self.assertIsNone(repeated)
+
+
+class DeliveryHold(GateRepo):
+    """Dispatch binds the session that coordinates an effort; that session alone is held once when it stops with the
+    effort's delivery failing under autofix. The fixture is the Pi run: every ticket done, a repair committed after
+    review left review_head stale, and E2E never ran."""
+
+    def setUp(self):
+        super().setUp()
+        self.git('commit', '-q', '--allow-empty', '-m', 'start')
+        self.start = self.git('rev-parse', 'HEAD')
+        self.git('switch', '-q', '-c', 'feat/fix')
+        self.git('commit', '-q', '--allow-empty', '-m', 'reviewed work')
+        self.reviewed = self.git('rev-parse', 'HEAD')
+        self.git('commit', '-q', '--allow-empty', '-m', 'repair after review')
+        self.head = self.git('rev-parse', 'HEAD')
+        self.git('switch', '-q', '-')
+        self.ticket('01', 'done')
+        self.report = self.repo / '.scratch/fix/reports/spec-review.md'
+        self.report.parent.mkdir(parents=True)
+        self.review()
+
+    def git(self, *args):
+        return subprocess.run(['git', '-C', str(self.repo), '-c', 'user.name=t', '-c', 'user.email=t@t', *args],
+                              check=True, capture_output=True, text=True).stdout.strip()
+
+    def ticket(self, number, status):
+        path = self.repo / f'.scratch/fix/issues/{number}-task.md'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f'---\nticket: fix/{number}\nstatus: {status}\nblocked_by: []\ntouches: [t{number}]\n'
+                        'devices: []\n---\n')
+
+    def review(self, delivered=False, **fields):
+        """The review report's front matter: by default the Pi run's, or current and passed when `delivered`."""
+        head = self.head if delivered else self.reviewed
+        recorded = dict(autofix='true', blocker='none', review_status='clean', documentation_status='passed',
+                        review_head=head, review_base=self.start, review_diff_base=self.start,
+                        e2e_status='passed' if delivered else 'not-run', e2e_head=self.head if delivered else 'none',
+                        review_by='reviewer/1', e2e_by='verifier/2' if delivered else 'none', **fields)
+        self.report.write_text('---\n' + ''.join(f'{key}: {value}\n' for key, value in recorded.items()) + '---\n')
+
+    def bind(self, pane='w1:p1', **sessions):
+        """Run dispatch's binding as an orchestrator in Herdr pane `pane` (None: outside Herdr) whose host exports
+        `sessions` (a SESSION_VARIABLES name to its value)."""
+        result = subprocess.run([sys.executable, '-B', str(TICKETS), '--repo', str(self.repo), 'fix', '--coordinate'],
+                                capture_output=True, text=True, env=self.env(pane, **sessions), timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def gap(self):
+        return (f'fix: delivery incomplete under autofix: e2e_status: not-run (needs passed); e2e_by: none names no '
+                f'worker run; review_head: {self.reviewed} is stale against feat/fix head {self.head}; e2e_head: none '
+                f'is stale against feat/fix head {self.head}. Continue the autofix handoff '
+                f'({ROOT}/skills/dispatch/handoff.md) until `python3 {ROOT}/scripts/next_tickets.py --repo {self.repo} '
+                f'fix --delivery` passes, or record `blocker: <reason>` in {self.report}')
+
+    def test_the_bound_coordinator_stopping_with_delivery_failing_under_autofix_is_held_once(self):
+        # Rules 3 and 4: dispatch bound this Herdr pane. Its stop is held once on Claude and Codex, naming the failing
+        # fields and the command to continue; the hook's off switch still disables it; delivered, nothing holds it.
+        self.bind(pane='w1:p1')
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        for host in ('claude', 'codex'):
+            decision = self.stop(pane='w1:p1', host=host)
+            self.assertEqual(decision['decision'], 'block')
+            self.assertTrue(decision['reason'].startswith(f'Stopping now leaves these gaps:\n- {self.gap()}\n'),
+                            decision['reason'])
+            self.assertIsNone(self.stop(pane='w1:p1', host=host, active=True))
+        self.assertIsNone(self.stop(pane='w1:p1', env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
+        self.review(delivered=True)
+        self.assertEqual(self.check(pane='w1:p1'), [])
+
+    def test_outside_herdr_the_session_id_each_host_exports_binds_the_coordinator(self):
+        # Rule 3: Claude Code, Codex and Pi export their session ID to the orchestrator's shell; the binding records
+        # it, and the stop check holds the session the host then reports, and no other.
+        for variable, host in (('CLAUDE_CODE_SESSION_ID', 'claude'), ('CODEX_SESSION_ID', 'codex'),
+                               ('PI_SESSION_ID', None)):
+            self.bind(pane=None, **{variable: f'{variable}-1'})
+            self.assertEqual(self.check(pane=None, session=f'{variable}-1'), [self.gap()], variable)
+            self.assertEqual(self.check(pane=None, session='other-1'), [], variable)
+            if host:
+                self.assertEqual(self.stop(pane=None, session=f'{variable}-1', host=host)['decision'], 'block')
+                self.assertIsNone(self.stop(pane=None, session='other-1', host=host))
+
+    def test_no_other_session_is_held(self):
+        # Rule 4: when the binding and the stopping session both know a host session, pane and session must both match,
+        # so the bound pane now running another conversation (or a restarted Herdr's reused pane ID) is not held, nor
+        # is the same host session in another pane; with no session on one side the pane decides.
+        self.bind(pane='w1:p1', CLAUDE_CODE_SESSION_ID='host-1')
+        self.assertEqual(self.check(pane='w1:p1', session='host-1'), [self.gap()])
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
+        for pane, session in (('w1:p1', 'host-2'), ('w1:p9', 'host-1'), ('w1:p9', None), (None, 'host-2')):
+            self.assertEqual(self.check(pane=pane, session=session), [], (pane, session))
+
+    @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
+    def test_pi_holds_the_bound_coordinator_once_per_run(self):
+        # Rules 3 and 4 on Pi: its bash tool exports PI_SESSION_ID; the settle check holds that session once per run,
+        # with the same message, and not another Pi session.
+        self.bind(pane=None, PI_SESSION_ID='pi-1')
+        first, repeated, other = self.pi("""
+const settle = async (use) => (await handlers.agent_before_settle(
+  { type: 'agent_before_settle', outcome: 'completed', entries: [], continue: false }, use)) ?? null;
+const first = await settle(ctx), repeated = await settle(ctx);
+handlers.agent_settled({ type: 'agent_settled', aborted: false });
+console.log(JSON.stringify([first, repeated,
+  await settle({ ...ctx, sessionManager: { getSessionId: () => 'pi-2' } })]));
+""")
+        self.assertTrue(first['continue'])
+        self.assertTrue(first['entries'][0]['content'].startswith(f'Stopping now leaves these gaps:\n- {self.gap()}\n'),
+                        first['entries'][0]['content'])
+        self.assertIsNone(repeated)
+        self.assertIsNone(other)
 
 
 if __name__ == '__main__':

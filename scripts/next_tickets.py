@@ -39,6 +39,9 @@ except (ValueError, AssertionError):
 # Critical path first. TICKET_PRIORITY=spec-a,spec-b names the specs to drain first; default is name order.
 PRIORITY = [s for s in os.environ.get("TICKET_PRIORITY", "").split(",") if s]
 MEASURE_TIMEOUT = 600  # seconds a measurement command may run unless its entry sets timeout_seconds
+# The session ID Claude Code, Codex and Pi export to the orchestrator's shell; each equals the session_id their Stop
+# hook, or Pi's settle check, reports.
+SESSION_VARIABLES = ("CLAUDE_CODE_SESSION_ID", "CODEX_SESSION_ID", "PI_SESSION_ID")
 
 
 def parse_front_matter(text):
@@ -542,6 +545,17 @@ def set_field(tickets, name, assignment):
     print(f"{name}: {key} = {value}")
 
 
+def coordinate(slug):
+    """Record the session running this command as the effort's coordinator, which the stop hooks hold: its Herdr pane
+    and the session IDs its hosts export (a host started inside another's shell inherits the outer one's)."""
+    binding = {"pane": os.environ.get("HERDR_PANE_ID"),
+               "sessions": [os.environ[name] for name in SESSION_VARIABLES if os.environ.get(name)]}
+    path = ISSUES / slug / "reports" / "coordinator.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(binding) + "\n")
+    print(f"{slug}: coordinated by Herdr pane {binding['pane']}, host sessions {binding['sessions']}")
+
+
 def counts(tickets):
     n = {s: sum(fm["status"] == s for fm in tickets.values()) for s in ("done", "blocked", "ready")}
     n["live"] = sum(fm["status"] in LIVE for fm in tickets.values())
@@ -562,9 +576,10 @@ def main(argv):
     actions.add_argument("--can-verify", metavar="TICKET")
     actions.add_argument("--delivery", action="store_true", help="require done tickets and current review/E2E evidence")
     actions.add_argument("--set", nargs=2, metavar=("TICKET", "ASSIGNMENT"))
+    actions.add_argument("--coordinate", action="store_true", help="bind this session as the efforts' coordinator")
     parser.add_argument("--counts", action="store_true")
     args = parser.parse_args(argv)
-    if args.counts and any((args.check, args.board, args.accept, args.can_verify, args.delivery)):
+    if args.counts and any((args.check, args.board, args.accept, args.can_verify, args.delivery, args.coordinate)):
         parser.error("--counts may only be combined with --set")
     if args.max_live < 1:
         parser.error("--max-live must be positive")
@@ -587,6 +602,10 @@ def main(argv):
         for name, fm in selected.items():
             deps = ",".join(fm.get("blocked_by", [])) or "-"
             print(f"{fm.get('status', '<missing>'):<12} {name:<52} touches={','.join(fm.get('touches', []))} blocked_by={deps}")
+        return
+    if args.coordinate:
+        for slug in sorted({spec_of(t) for t in selected}):
+            coordinate(slug)
         return
     if args.set:
         set_field(tickets, *args.set)
