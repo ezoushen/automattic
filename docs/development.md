@@ -5,6 +5,18 @@ Changes to the plugin follow its own architecture rules
 below enforce them. Read the [decision index](adr/README.md) before an architectural change:
 only accepted ADRs bind, and a change that conflicts with one is raised, not worked around.
 
+- A new ADR's number is re-checked against the fetched `main` before review, and renumbered on a collision
+  ([ADR 0001](adr/0001-adr-numbers-are-checked-on-main.md)).
+- Grilling asks the user about principles and material forks only, never implementation detail
+  ([ADR 0002](adr/0002-grilling-asks-principles-only.md)).
+- An ADR records a decision others must follow, or one that passes the three tests; a bare rule goes to the rules
+  file ([ADR 0003](adr/0003-adrs-record-what-others-follow.md)).
+- An accepted ADR is superseded, never rewritten
+  ([ADR 0004](adr/0004-adrs-are-superseded-never-rewritten.md)).
+- The ADR index is updated in the same commit as the ADRs it lists
+  ([ADR 0005](adr/0005-the-adr-index-is-the-current-state.md)).
+- An ADR is accepted, superseded or deprecated, never proposed
+  ([ADR 0006](adr/0006-adr-statuses-have-no-proposed.md)).
 - Builders work test-first from `standards/tdd.md` and each test protects a named business rule
   ([ADR 0007](adr/0007-builders-work-test-first-from-our-own-standard.md)).
 - Builders refactor the ticket's own code after green, within the ticket's scope

@@ -42,10 +42,18 @@ class RepoAdrs(unittest.TestCase):
                 'the tests green; a wider refactor goes to review.',
             '0009-the-framework-depends-on-no-external-skill-package.md':
                 "A repository-wide test rejects the package's name and its distinctive skill names outside the "
-                'journals, these ADRs and the test itself',
+                'journals, the ADR folder and the test itself',
         }
-        for name, rule in rules.items():
-            with self.subTest(adr=name):
+        rules_first = {
+            '0007-builders-work-test-first-from-our-own-standard.md':
+                'Every builder works test-first from the [TDD standard](../../standards/tdd.md): one failing test '
+                'seen to fail, then only enough code to pass it, one rule at a time.',
+            '0009-the-framework-depends-on-no-external-skill-package.md':
+                'The framework depends on no external skill package: its manifests declare no skill dependency, and '
+                'its procedures, standards and jobs are its own, under its own names.',
+        }
+        for name, rule in list(rules.items()) + list(rules_first.items()):
+            with self.subTest(adr=name, rule=rule[:40]):
                 self.assertIn(rule, ' '.join((ROOT / 'docs/adr' / name).read_text().split()))
 
     def test_each_accepted_index_entry_starts_with_its_adr_title(self):
@@ -57,6 +65,14 @@ class RepoAdrs(unittest.TestCase):
             title = (ROOT / 'docs/adr' / name).read_text().splitlines()[0].removeprefix('# ')
             with self.subTest(adr=name):
                 self.assertTrue(text.startswith(title + ':'), text)
+
+    def test_every_accepted_adr_has_a_one_line_rule_in_the_development_doc(self):
+        text = (ROOT / 'docs/development.md').read_text()
+        index = (ROOT / 'docs/adr/README.md').read_text()
+        accepted = index[index.index('## Accepted'):index.index('## Superseded')]
+        for name in re.findall(r'^- \[\d{4}\]\((\d{4}-[^)]+\.md)\)', accepted, re.M):
+            with self.subTest(adr=name):
+                self.assertRegex(text, r'(?m)^- .+\n?.*\]\(adr/%s\)\)\.$' % re.escape(name))
 
     def test_the_development_rules_point_to_the_standalone_framework_adrs(self):
         text = ' '.join((ROOT / 'docs/development.md').read_text().split())

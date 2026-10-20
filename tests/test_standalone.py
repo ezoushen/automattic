@@ -18,7 +18,9 @@ SKILLS = ('ask-matt', 'chief-of-staff', 'claude-handoff', 'codebase-design', 'di
           'scaffold-exercises', 'setup-pre-commit', 'setup-ts-deep-modules', 'to-prd', 'to-questionnaire', 'to-spec',
           'to-tickets', 'wait-what', 'wayfinder', 'writing-beats', 'writing-for-agents', 'writing-fragments',
           'writing-shape')
-EXTERNAL = re.compile(r'mattpocock|(?<![a-z])matt(?![a-z])|pocock|(?<![\w-])(?:%s)(?![\w-])' % '|'.join(map(re.escape, SKILLS)),
+# The bare name is matched case-sensitively so camelCase identifiers count but words such as matter or format do not.
+NAME = r'(?-i:(?<![A-Za-z])[Mm]att(?![a-z])|(?<=[a-z])Matt(?![a-z])|(?<![A-Za-z])MATT(?![A-Za-z]))'
+EXTERNAL = re.compile(r'mattpocock|%s|pocock|(?<![\w-])(?:%s)(?![\w-])' % (NAME, '|'.join(map(re.escape, SKILLS))),
                       re.IGNORECASE)
 
 
@@ -48,6 +50,12 @@ class Standalone(unittest.TestCase):
     def test_the_guard_catches_the_name_inside_an_identifier_but_not_inside_a_word(self):
         self.assertIsNotNone(EXTERNAL.search('def test_matt_skills(self):'))
         self.assertIsNotNone(EXTERNAL.search('MATT_SKILLS = 1'))
+        for camel in ('useMatt()', 'MattSkills', 'mattX'):
+            with self.subTest(identifier=camel):
+                self.assertIsNotNone(EXTERNAL.search(camel))
+        for word in ('MATTER', 'Matter', 'FORMATTED', 'Automattic'):
+            with self.subTest(word=word):
+                self.assertIsNone(EXTERNAL.search(word))
         self.assertIsNone(EXTERNAL.search('the output format matters'))
 
     def test_the_manifests_declare_no_dependency(self):
