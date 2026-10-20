@@ -86,21 +86,25 @@ def undelivered(root, pane, session):
     """Name each effort this session was bound to coordinate (next_tickets.py --coordinate) whose delivery fails."""
     board, tickets, missing = None, None, []
     for path in sorted(root.glob(f'.scratch/*/reports/{BINDING}')):
-        binding = json.loads(path.read_text())
-        if not any(same_coordinator({'pane': binding['pane'], 'session': known}, pane, session)
-                   for known in binding['sessions'] or [None]):
-            continue
         slug = path.parent.parent.name
-        if board is None:
-            board = script('next_tickets')
-            board.ROOT, board.ISSUES = root, root / '.scratch'
-            tickets = board.load()
-        review = board.review_front_matter(slug) or {}
-        # Only authorized repairs owe delivery, once every ticket is done; a recorded blocker is why delivery stops here.
-        if (review.get('autofix') != 'true' or str(review.get('blocker') or 'none') != 'none'
-                or any(fm['status'] != 'done' for name, fm in tickets.items() if board.spec_of(name) == slug)):
+        try:
+            binding = json.loads(path.read_text())
+            if not any(same_coordinator({'pane': binding['pane'], 'session': known}, pane, session)
+                       for known in binding['sessions'] or [None]):
+                continue
+            if board is None:
+                module = script('next_tickets')
+                module.ROOT, module.ISSUES = root, root / '.scratch'
+                board, tickets = module, module.load()  # load() exits on a board it refuses.
+            review = board.review_front_matter(slug) or {}
+            # Only authorized repairs owe delivery, once every ticket is done; a recorded blocker is why it stops here.
+            if (review.get('autofix') != 'true' or str(review.get('blocker') or 'none') != 'none'
+                    or any(fm['status'] != 'done' for name, fm in tickets.items() if board.spec_of(name) == slug)):
+                continue
+            problems = board.delivery_problems(slug)
+        except (Exception, SystemExit) as error:  # A check that cannot run is a named gap, never a pass.
+            missing.append(f'could not check delivery of {slug}: {error}')
             continue
-        problems = board.delivery_problems(slug)
         if problems:
             missing.append(f"{slug}: delivery incomplete under autofix: {'; '.join(problems)}. Continue the autofix "
                            f'handoff ({HANDOFF}) until `python3 {ROOT}/scripts/next_tickets.py --repo {root} {slug} '

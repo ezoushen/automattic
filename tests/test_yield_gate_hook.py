@@ -839,6 +839,19 @@ class DeliveryHold(GateRepo):
         self.ticket('02', 'done')
         self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
 
+    def test_a_delivery_check_that_cannot_run_is_a_named_gap_that_holds_once(self):
+        # Rule 4: a board the scheduler refuses (a ticket id that is not <slug>/<NN>) leaves the check unable to run:
+        # a named gap for the coordinator, held once, never a pass or a crashed hook.
+        self.bind(pane='w1:p1')
+        self.ticket('02', 'done')
+        bad = self.repo / '.scratch/fix/issues/02-task.md'
+        bad.write_text(bad.read_text().replace('ticket: fix/02', 'ticket: Fix 2'))
+        gap = f"could not check delivery of fix: {bad}: invalid ticket id 'Fix 2'"
+        self.assertEqual(self.check(pane='w1:p1'), [gap])
+        self.assertIn(f'- {gap}\n', self.stop(pane='w1:p1')['reason'])
+        self.assertIsNone(self.stop(pane='w1:p1', active=True))
+        self.assertEqual(self.check(pane='w1:p9'), [])
+
     @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
     def test_pi_holds_the_bound_coordinator_once_per_run(self):
         # Rules 3 and 4 on Pi: its bash tool exports PI_SESSION_ID; the settle check holds that session once per run,
