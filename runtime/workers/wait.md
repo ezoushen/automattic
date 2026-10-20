@@ -95,7 +95,9 @@ label; `status.pending[].payload.triage` holds its `decision_id` for the assessm
 Handle the wake as follows:
 
 - Settled idle with this assignment's complete report may be completion. Idle
-  without accepted prompt activity or a current report remains unverified.
+  without accepted prompt activity or a current report remains unverified. Any wait
+  that ended, settled or not, leaves its monitor `finished`: record `reconciled` before
+  `collect` ([input shape](collect.md#collect-a-result)).
 - Error, timeout, provider failure or lost monitor requires inspection of the same
   worker and its owned jobs. Record `reconciled` with that evidence after the old
   wait has stopped. If work remains live, arm a new independent wait for it.

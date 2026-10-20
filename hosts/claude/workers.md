@@ -117,8 +117,14 @@ for live workers in the current run.
 
 ## Top-level workers
 
-A Claude worker started as its own process, such as one launched through Herdr, takes the
-route's `launch.argv` after `--`; every restriction is in it, since the user's default mode
+From a Claude coordinator, `agent_models.py --harness claude --route` resolves a Claude-runtime
+worker as a native subagent: `native_dispatch` is true and there is no `launch`. Start it with the
+`Agent` tool; its restrictions are the agent profile's tools, which Claude enforces, plus
+the read-only worktree check at collection. It is not launched through Herdr.
+
+A Claude worker started as its own process takes a route's `launch.argv` after `--`, and only a
+non-Claude coordinator (Codex, Pi or OpenCode, resolving with its own `--harness` and
+`--target-runtime claude`) gets one, to start through Herdr. Every restriction is in it, since the user's default mode
 is `auto`. It sets `--permission-mode dontAsk` and the agent's tools as `--allowedTools`,
 then `--model` and `--effort`. For `writes: none`, resolve with `--worktree <abs worktree>
 --reports <abs reports dir>` (the resolver refuses without them); the launch then adds absolute
@@ -136,5 +142,11 @@ else the trust dialog blocks the start (Herdr: `agent_not_ready`, agent `blocked
 dialog to the user; never answer it. Claude's write scope rests on these launch flags plus the
 read-only worktree check at collection: a TUI transcript lists no tools, so `submit` checks only
 that the latest `permission-mode` row is `dontAsk`, which `none` and `worktree` launches share.
+
+Startup of a Herdr-started Claude worker follows [the startup order](../../runtime/workers/prepare.md):
+`herdr agent get` reports `agent_session` (kind `id`) at start, but the transcript gets its first
+assistant row, which `submit` reads for model and effort, only after a reply. Send the probe with
+`herdr agent prompt <name> '<reply READY, use no tools>' --wait --timeout 120000`, then register with that id
+and `submit`.
 
 The [executor guides](../executors/README.md) cover each executor type a route can select.

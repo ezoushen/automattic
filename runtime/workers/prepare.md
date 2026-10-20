@@ -94,9 +94,14 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    controls remain omitted from `requested`; record actual controls when available.
    A legitimate model alias needs `model_alias_evidence` from the installed binding,
    not a similarity guess. Missing or conflicting requested controls leave work
-   blocked. If metadata exists only after a first response, limit that initial turn
-   to reading the assignment and reporting checkout anchors. Collect its native
-   metadata before allowing edits or review verdicts.
+   blocked.
+
+   **Startup order.** The native session record (Claude transcript, Codex rollout, Pi
+   session JSONL, OpenCode session) exists only after the worker's first reply, yet
+   `register` needs `native_session` and `submit` needs the recorded settings. So:
+   start the worker; send a short probe asking for a fixed reply and no tools, through the
+   transport and not `submit`; read the native session id; `register` (its `packet` is the
+   assignment text, not the probe); then `submit` the assignment. Verify the probe's reply first.
 4. For supported native formats, invoke productive work through `submit --state
    ... --attempt ... --input /absolute/submit.json`, using this input shape:
 
@@ -111,6 +116,13 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
      }
    }
    ```
+
+   A `timeout` over 60 needs `notify`: the helper refuses a longer wait before invoking
+   the worker, since nothing would wake the host. `notify.argv` is any literal argv with
+   one whole `{receipt}` argument and a `timeout` of at most 45. With no named parent agent
+   (an unnamed coordinator pane, or a subagent whose prompt would reach the user's
+   session), use a command that only records the receipt, such as `["echo", "{receipt}"]`;
+   it wakes nobody, so read the receipt with `status`.
 
    `native` is the registered session's Claude/Pi JSONL, Codex rollout JSONL, or
    a current OpenCode export JSON file (`opencode session export <id>` in OpenCode 2,

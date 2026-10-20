@@ -37,19 +37,27 @@ The user's running service does not fail closed: MCP and plugin tools from the u
 configuration stay callable under a session's deny rules.
 
 1. Start `opencode serve --hostname 127.0.0.1 --port <free port>` with `XDG_CONFIG_HOME`,
-   `XDG_DATA_HOME` and `XDG_STATE_HOME` in a fresh directory and a known `OPENCODE_PASSWORD`.
+   `XDG_DATA_HOME` and `XDG_STATE_HOME` in a fresh directory and a known `OPENCODE_PASSWORD`,
+   and with `HERDR_PANE_ID` and `HERDR_TAB_ID` unset (`env -u HERDR_PANE_ID -u HERDR_TAB_ID`): the
+   server's Herdr plugin reports state for the pane in that environment, which from the coordinator's
+   shell is the coordinator's pane.
 2. Create the session from the route's `launch.api`: `opencode api POST /api/session
    --server <url> -d '<body>'`, with `"location":{"directory":"<worktree>"}` added to
    `launch.api.body`; without it the session gets another directory. The body denies edit
    and subagent for `writes: none` and subagent for `worktree`; a denied agent still
    writes through the `general` subagent unless subagent is denied.
-3. In the worker's tab, export `OPENCODE_PASSWORD`, then start the TUI with
-   `--server <url> --session <id>`.
-4. After the startup probe, redirect `opencode session export <id> --server <url>` to a
+3. In the worker's tab, export `OPENCODE_PASSWORD` and the same isolated `XDG_CONFIG_HOME`,
+   `XDG_DATA_HOME` and `XDG_STATE_HOME`; without them the TUI loads the user's own `tui.json`, not the
+   Herdr reporter. Then start the TUI with `--server <url> --session <id>`.
+4. Send the startup probe through the transport (`herdr agent prompt <name> '<reply READY, use no tools>' --wait`);
+   the export has no assistant turn before it. Then redirect `opencode session export <id> --server <url>` to a
    file and submit with it: `info.permissions` must equal the launch's rules and the latest
    assistant turn must show the model and variant.
    The export records no server, so `submit` cannot tell an export of the private server's
    session from one of the user's service: export with `--server <url>` and never substitute.
+
+Run `opencode run` against the server with stdin from `/dev/null` (`< /dev/null`); it blocks when stdin is
+not a terminal.
 
 A `writes: none` worker keeps the shell for checks and its report but no editing tool; the
 read-only worktree check at collection covers what its shell writes.

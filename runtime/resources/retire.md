@@ -3,7 +3,10 @@
 For Herdr, `collect` with `disposition.kind: retire` closes the registered
 conversation's pane after final use. An already collected result uses `retire
 --state ... --attempt ... --input /absolute/retire.json`, with `session`, `pane`
-and `jobs_evidence`. The helper checks ownership, intact collected report,
+and `jobs_evidence`; for a completed `acceptance: true` job (`ticket`) with no `accepted` or `declined`
+record it also needs `acceptance` in its own input, even after a retaining `collect`: `{"decision": "accepted", "commit", "evidence"}`,
+`{"decision": "declined", "reason"}` or `{"decision": "deferred", "reason"}`, and it refuses before the pane closes
+without it. The helper checks ownership, intact collected report,
 acknowledged receipts, stopped waits, native runtime/conversation identity and
 idle/done state before closing. The registered `worker` must be the returned pane
 ID, unique agent name, or explicit `session/pane/name` handle; use the latter for

@@ -24,6 +24,16 @@ again; acceptance stays refused. Any other gap, and a difference recorded throug
 `result`, goes on the result; then `gate --stage accept` fails and recording
 acceptance is refused.
 
+After a wait settles (state `finished`, as after any `submit` or `watch` that ran to its end),
+`collect` and the `result` record are refused with "Collect or reconcile the wait before the
+assignment result" until a `record` of kind `reconciled` is written, once the wait's process is gone:
+
+```json
+{"kind": "reconciled", "attempt": "ticket-12/implementation-1", "evidence": ["wait log read; worker inspected"]}
+```
+
+Pass it with `record --state ... --input /absolute/reconciled.json`.
+
 For a checked result, use `collect --state ... --attempt ... --input
 /absolute/result.json` after native inspection and wait reconciliation. The input
 contains `status`, checked `head`, existing immutable `report`, verification
