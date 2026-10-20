@@ -57,10 +57,13 @@ class LaunchControls(unittest.TestCase):
 
     def test_codex_route_sets_a_permissions_profile_for_the_write_scope_and_never_asks(self):
         # Rule: a profile reads everything; `none` writes only $TMPDIR and the reports directory, so checks still run;
-        # `worktree` also writes the worktree and the main checkout's .git, where a linked worktree commits.
-        # Approval never, model and effort explicit.
-        subprocess.run(['git', 'init', '-q', str(self.root)], check=True)
+        # `worktree` also writes the worktree, the main checkout's .git, where a linked worktree commits, and the
+        # worktree's own git directory. Approval never, model and effort explicit.
         options, worktree, reports, git = self.places()
+        for args in (['init', '-q', str(self.root)],
+                     ['-C', str(self.root), 'commit', '-q', '--allow-empty', '-m', 'init'],
+                     ['-C', str(self.root), 'worktree', 'add', '-q', worktree]):
+            subprocess.run(['git', *args], check=True, capture_output=True)
         tail = ['-a', 'never', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"']
         self.assertEqual(self.route('sol', 'diff-review', 'claude', *options)['launch'], {
             'writes': 'none',
@@ -73,9 +76,11 @@ class LaunchControls(unittest.TestCase):
             'writes': 'worktree',
             'argv': ['-c', 'default_permissions="automattic_worktree"',
                      '-c', 'permissions.automattic_worktree.filesystem={":root"="read",":tmpdir"="write",'
-                     f'"{reports}"="write","{worktree}"="write","{git}"="write"}}', *tail],
+                     f'"{reports}"="write","{worktree}"="write","{git}"="write","{git}/worktrees/wt"="write"}}',
+                     *tail],
             'verify': {'sandbox': 'workspace-write', 'approval': 'never', 'filesystem': sorted([
-                'read :root', 'write :tmpdir', f'write {reports}', f'write {worktree}', f'write {git}'])}})
+                'read :root', 'write :tmpdir', f'write {reports}', f'write {worktree}', f'write {git}',
+                f'write {git}/worktrees/wt'])}})
         # A native child of the same runtime takes no launch flags; its agent profile restricts it.
         self.assertNotIn('launch', self.route('sol', 'diff-review', host='codex'))
 
@@ -114,10 +119,23 @@ class LaunchControls(unittest.TestCase):
         for args in (['init', '-q', str(main)], ['-C', str(main), 'commit', '-q', '--allow-empty', '-m', 'init'],
                      ['-C', str(main), 'worktree', 'add', '-q', str(linked)]):
             subprocess.run(['git', *args], check=True, capture_output=True)
-        options, worktree, reports, _ = self.places()
-        launch = self.route('sol', 'ticket', 'claude', '--repo', str(linked), *options)['launch']
+        launch = self.route('sol', 'ticket', 'claude', '--repo', str(linked), '--worktree', str(linked),
+                            '--reports', str(self.root / 'reports'))['launch']
         self.assertIn(f'write {main.resolve() / ".git"}', launch['verify']['filesystem'])
         self.assertNotIn(f'write {linked.resolve() / ".git"}', launch['verify']['filesystem'])
+
+    def test_codex_builder_writes_its_own_worktree_git_directory(self):
+        # Rule: Codex keeps a linked worktree's own git directory (.git/worktrees/<name>, where its index.lock goes)
+        # read-only under a write on the common dir, so the builder needs an explicit write entry for it.
+        main, worktree = self.root / 'main', self.root / 'wt'
+        for args in (['init', '-q', str(main)], ['-C', str(main), 'commit', '-q', '--allow-empty', '-m', 'init'],
+                     ['-C', str(main), 'worktree', 'add', '-q', str(worktree)]):
+            subprocess.run(['git', *args], check=True, capture_output=True)
+        options, _, _, _ = self.places()
+        launch = self.route('sol', 'ticket', 'claude', '--repo', str(main), *options)['launch']
+        own = main.resolve() / '.git' / 'worktrees' / 'wt'
+        self.assertIn(f'write {own}', launch['verify']['filesystem'])
+        self.assertIn(f'"{own}"="write"', launch['argv'][3])
 
     def test_a_route_whose_launch_needs_its_worktree_or_reports_is_refused_without_them(self):
         # Rule: Codex needs --reports for every scope and --worktree for `worktree`; Claude `none` needs both.

@@ -778,12 +778,13 @@ PI_TOOLS = {'none': ('read', 'grep', 'find', 'ls', 'bash'), 'worktree': ('read',
 OPENCODE_DENY = {'none': ('edit', 'subagent'), 'worktree': ('subagent',)}  # `none` keeps the shell for checks.
 
 
-def git_common_dir(repo):
-    """The git directory a checkout's linked worktrees share, also when `repo` is itself a linked worktree."""
-    process = subprocess.run(['git', '-C', str(repo), 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+def git_dir(checkout, which='--git-common-dir'):
+    """The git directory a checkout's linked worktrees share, also when `checkout` is itself a linked worktree; with
+    `--git-dir`, the checkout's own one (.git/worktrees/<name> for a linked worktree)."""
+    process = subprocess.run(['git', '-C', str(checkout), 'rev-parse', '--path-format=absolute', which],
                              capture_output=True, text=True)
     if process.returncode:
-        raise ValueError(f'{repo} is not a git checkout: {process.stderr.strip()}')
+        raise ValueError(f'{checkout} is not a git checkout: {process.stderr.strip()}')
     return str(Path(process.stdout.strip()).resolve())
 
 
@@ -837,8 +838,11 @@ def launch_controls(runtime, agent, settings, repo, worktree=None, reports=None)
                 'verify': {'permissions': rules}}
     # A permissions profile given with -c applies over the user's sandbox_mode and is recorded as a workspace-write
     # policy with its entries. Both scopes read everything and write temporary files and the reports; `worktree` also
-    # writes the worktree and the main checkout's .git, where a linked worktree's commits land.
-    writable = [':tmpdir', str(reports)] + ([str(worktree), git_common_dir(repo)] if writes == 'worktree' else [])
+    # writes the worktree and the main checkout's .git, where a linked worktree's commits land, and the worktree's own
+    # git directory, which Codex keeps read-only under the common one.
+    writable = [':tmpdir', str(reports)]
+    if writes == 'worktree':
+        writable += dict.fromkeys([str(worktree), git_dir(repo), git_dir(worktree, '--git-dir')])
     profile = f'automattic_{writes}'
     table = ','.join(['":root"="read"'] + [f'{json.dumps(path)}="write"' for path in writable])
     argv = ['-c', f'default_permissions="{profile}"', '-c', f'permissions.{profile}.filesystem={{{table}}}',
