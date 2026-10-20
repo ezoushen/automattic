@@ -39,8 +39,8 @@ Supply absolute `adapter`, `agent_file`, `job_file`, `plugin_root`, `repo`, the 
 user decisions and exact failure evidence. Children read the adapter, agent file and job
 file, then verify worktree and branch. Pass paths instead of copied conversations.
 Record a child's startup with `native`, its rollout (its `session_meta` names the child's
-`agent_path`): a child inherits its parent's `turn_context.cwd`, so startup verifies it only
-when that directory is inside the child's assigned worktree.
+`agent_path`): a child inherits its parent's `turn_context.cwd`, so outside the child's
+worktree it is a `status` warning, and a read-only child is held to that checkout as well.
 After session loss, inspect saved IDs; reconstruct absent agents from surviving
 files/worktrees and record replacement IDs.
 
@@ -89,6 +89,11 @@ or empty candidate list is not completion. Persist before interruption and resum
 from disk. Goals require explicit user requests and follow runtime status rules;
 a blocked board alone cannot justify changing goal status. Scheduled work requires
 an explicit user request; an automation does not replace waiting for live children.
+
+Codex runs a plugin's hooks, the yield gate and launch log included, only after the user
+trusts them, and records trust per hooks-file path and per hook: a moved hooks file or a new
+hook runs only once the user trusts it again. Codex skips a hook whose trust entry still
+names an old path, such as `harnesses/codex/hooks.json`.
 
 ## Top-level workers
 
