@@ -67,6 +67,11 @@ and each undelivered receipt; fix those first. On Claude Code and Codex (Stop ho
 and Pi (extension), the plugin also runs it when you stop, over runs active in the last
 day, and sends you back once. It holds only the Herdr pane that registered a worker
 or, outside Herdr, sessions that are not inside a worker's own worktree.
+For a session outside `.worktrees/`, the same stop check names each Herdr launch it
+logged ([launch log](prepare.md)) into `.worktrees/` or a cwd Herdr did not report and,
+inside Herdr, each other live agent of its workspace whose cwd is in `.worktrees/`, when
+no attempt in any run registers that pane or agent name, however old the run. A check
+that cannot run (Herdr or git fails or times out) is a named gap, never a pass.
 `AUTOMATTIC_YIELD_HOOK=off` disables the hooks.
 Read every completed wait's retained log and inspect the native worker/report. When
 the opt-in [wake-triage pilot](../decisions/shadow-pilots.md#wake-triage-shadow-pilot) is enabled,

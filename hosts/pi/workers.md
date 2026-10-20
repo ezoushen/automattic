@@ -51,7 +51,9 @@ resume the same dispatch on notification. Report it as running, not finished.
 Use a bounded `action: "status", id: <run-id>` for stale/blocked work; do not poll
 or sleep to keep the parent alive. Follow runtime wait instructions for work that
 lacks native notifications. Workers registered in the worker lifecycle (such as
-Herdr panes) need a passing `gate --stage yield` before you yield.
+Herdr panes) need a passing `gate --stage yield` before you yield. The extension logs
+each `herdr agent start` run through `bash` or `bg_run`, and its settle check also names
+Herdr workers you launched but did not register, or says why it could not check.
 
 Use `action: "steer"` for a running child. For completed work, inspect
 `action: "children.list"` and use `action: "resume", id: <resumable-id>, message: ...`.

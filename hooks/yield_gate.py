@@ -3,8 +3,12 @@
 
 Reads every run's workers.sqlite under the main checkout's .scratch/*/reports/ that
 changed in the last day, without writing to it, and applies the lifecycle's yield
-gate. `claude` and `codex` speak their shared Stop hook protocol; `check <cwd>`
-prints the gaps as JSON for other hosts. Set AUTOMATTIC_YIELD_HOOK=off to disable the check.
+gate. A coordinator (a session outside .worktrees/) is also held for each Herdr worker
+in a ticket worktree that no attempt in any run registers: each launch it logged
+(hooks/herdr_launch.py) and each other live agent of its Herdr workspace. A check that
+cannot run is a named gap, never a pass. `claude` and `codex` speak their shared Stop
+hook protocol; `check <cwd> [session]` prints the gaps as JSON for other hosts. Set
+AUTOMATTIC_YIELD_HOOK=off to disable the check.
 """
 import importlib.util
 import json

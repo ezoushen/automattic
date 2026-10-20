@@ -93,9 +93,11 @@ model whose definition doesn't pin one, and an automattic agent launch whose
 prompt lacks `job_file:` or any input of that job, or names a job of another agent. `AUTOMATTIC_AGENT_MODEL_HOOK=off` disables
 it. A second `PreToolUse` hook (`hooks/pr_body.py`) denies `gh pr create` and
 `gh pr edit` unless the description comes from a `--body-file` that passes
-`scripts/lint_pr_body.py`. `AUTOMATTIC_PR_HOOK=off` disables it. A `Stop` hook
+`scripts/lint_pr_body.py`. `AUTOMATTIC_PR_HOOK=off` disables it. A third, `hooks/herdr_launch.py`,
+logs each `herdr agent start` for the yield gate and never blocks. A `Stop` hook
 (`hooks/yield_gate.py`) applies the worker lifecycle's yield gate when the session
-stops; `AUTOMATTIC_YIELD_HOOK=off` disables it. A non-Anthropic model needs a configured cross-runtime route (Herdr, Pi or
+stops, and names Herdr workers you launched but did not register;
+`AUTOMATTIC_YIELD_HOOK=off` disables it. A non-Anthropic model needs a configured cross-runtime route (Herdr, Pi or
 Codex), not an Agent call. Offer those routes when an agent's configured pool
 includes them and the assignment is long enough to justify the launch overhead.
 

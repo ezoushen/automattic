@@ -60,7 +60,9 @@ Codex and Pi list it.
   PreToolUse checks require each Agent call to name a model and carry its job's inputs
   (`hooks/agent_model.py`) and let `gh pr create|edit` publish only a linted body
   (`hooks/pr_body.py`); a Stop check keeps the session alive while a worker could
-  finish unseen (`hooks/yield_gate.py`; Pi and Codex apply the same gate). There is
+  finish unseen or a Herdr worker it launched is unregistered (`hooks/yield_gate.py`, fed
+  by `hooks/herdr_launch.py`, which logs each `herdr agent start`; Pi and Codex apply the
+  same gate). There is
   no Git command blocklist; native permissions apply.
 
 ## Layout

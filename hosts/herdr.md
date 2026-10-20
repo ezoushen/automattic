@@ -69,6 +69,9 @@ to a file and validate that artifact; exit zero alone does not establish integri
 Bind each prompt, independent wait and collected result to its registered attempt
 under [worker attempts](../runtime/workers/prepare.md) and [waits](../runtime/workers/wait.md). Resume from its pending
 receipts and native worker state; rearm consumed waits after reconciliation.
+Register each pane before its first prompt: the plugin logs every `herdr agent start`,
+and the stop check names a launch into `.worktrees/`, or a live agent there, that no
+attempt registers, even after its pane closed.
 
 Read the installed skill's completion section and current command-group help
 before the first wait. Use its default settled-state operation, with a bounded

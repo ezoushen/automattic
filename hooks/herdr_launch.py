@@ -62,8 +62,10 @@ def main():
         event = json.load(sys.stdin)
         command = (event.get('tool_input') or {}).get('command') or ''
         launches = list(starts(command)) if 'herdr' in command else []
-        root = launches and yield_gate.main_checkout(event.get('cwd') or os.getcwd())
-        if not root:
+        if not launches:
+            return
+        root = yield_gate.main_checkout(event.get('cwd') or os.getcwd())
+        if root is None:
             return
         coordinator = os.environ.get('HERDR_PANE_ID') or event.get('session_id')
         log = root / yield_gate.LAUNCHES

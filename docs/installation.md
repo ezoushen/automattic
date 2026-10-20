@@ -41,7 +41,7 @@ workflow directories are symlinks into this checkout, including `skills`, `agent
 the top-level `bootstrap.md` file is a symlink too. Its `.codex-plugin/` directory and
 small `plugin.json` registration are regular files/directories, copied from this
 tree's Codex manifest; the portable root `plugin.json` is omitted from that local
-wrapper. This selects Codex's registration, including its SessionStart and Stop hooks.
+wrapper. This selects Codex's registration, including its SessionStart, PreToolUse and Stop hooks.
 The installed scanner requires a real version directory and manifest. When setting
 up elsewhere, replace only a verified Automattic snapshot with this wrapper and
 links; preserve unrelated installations.
