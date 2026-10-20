@@ -6,8 +6,12 @@ changed in the last day, without writing to it, and applies the lifecycle's yiel
 gate. Every session is also held for each Herdr launch it logged (hooks/herdr_launch.py)
 into a ticket worktree that no attempt accounts for and it did not dismiss; one without
 AUTOMATTIC_WORKER, the marker every worker is launched with, also for each other such live
-agent of its Herdr workspace. A check that cannot run, and a launch log line that is
-unreadable or malformed, are named gaps, never a pass. `claude` and `codex` speak their shared Stop
+agent of its Herdr workspace. The session bound to coordinate an effort (next_tickets.py
+--coordinate; without one, the pane that registered the attempt) is held for each collected
+attempt that is not retained whose Herdr tab is still open, and for an effort whose review
+report records autofix: true and no blocker, with every ticket done and delivery failing. A
+check that cannot run, and a launch log line that is unreadable or malformed, are named gaps,
+never a pass. `claude` and `codex` speak their shared Stop
 hook protocol; `check <cwd> [session]` prints the gaps as JSON for other hosts. Set
 AUTOMATTIC_YIELD_HOOK=off to disable the check.
 """

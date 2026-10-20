@@ -5,9 +5,11 @@
 
 No action: JSON candidates. No slug: all efforts. Other efforts still hold locks.
 Actions: --board, --counts, --check, --accept TICKET,
-         --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID).
+         --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID), --coordinate.
 Only --set may be combined with --counts. --accept also runs the effort's standing measurements
 (.scratch/<slug>/measurements.json) at the ticket head, in a clean checkout, and refuses a missing or worse value.
+--delivery names each failing field. --coordinate records the calling session (its Herdr pane and host session IDs)
+in .scratch/<slug>/reports/coordinator.json for the stop hooks.
 
 Tickets: .scratch/<slug>/issues/NN-title.md, with restricted YAML front matter
 (key: scalar and key: [a, b]). Only the orchestrator changes machine state.

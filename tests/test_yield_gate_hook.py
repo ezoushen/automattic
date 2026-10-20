@@ -769,7 +769,8 @@ class DeliveryHold(GateRepo):
         head = self.head if delivered else self.reviewed
         recorded = dict(dict(autofix='true', blocker='none', review_status='clean', documentation_status='passed',
                              review_head=head, review_base=self.start, review_diff_base=self.start,
-                             e2e_status='passed' if delivered else 'not-run', e2e_head=self.head if delivered else 'none',
+                             e2e_status='passed' if delivered else 'not-run',
+                             e2e_head=self.head if delivered else 'none',
                              review_by='reviewer/1', e2e_by='verifier/2' if delivered else 'none'), **fields)
         self.report.write_text('---\n' + ''.join(f'{key}: {value}\n' for key, value in recorded.items()
                                                  if value is not None) + '---\n')

@@ -7,10 +7,14 @@ Front matter uses literal scalars, never quoted placeholders in a finished repor
 IDs) that produced the statuses at those heads. When the orchestrator runs checks itself, where that is
 permitted, it names the run log instead. A status with no run behind it is not
 evidence, and the delivery gate rejects a bare `orchestrator` or `host`. An effort the
-user ran directly on main adds `effort_branch: main`; the gate reads `feat/<slug>` otherwise:
+user ran directly on main adds `effort_branch: main`; the gate reads `feat/<slug>` otherwise.
+`autofix` is `true` only when repairs are authorized. `blocker` names the concrete blocker
+that stops delivery, and is `none` once nothing does. The stop hooks read both fields:
 
 ```markdown
 ---
+autofix: false
+blocker: none
 review_status: incomplete
 documentation_status: incomplete
 review_head: <40-hex commit>

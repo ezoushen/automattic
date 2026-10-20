@@ -766,7 +766,8 @@ class BoardCLI(unittest.TestCase):
         self.git('switch', '-q', 'main')
         review, evidence = self.deliver('fx', 'feat/fx', start, reviewed)
         review.write_text(evidence.replace('e2e_status: passed', 'e2e_status: not-run')
-                          .replace(f'e2e_head: {reviewed}', 'e2e_head: none').replace('e2e_by: verifier/2', 'e2e_by: none'))
+                          .replace(f'e2e_head: {reviewed}', 'e2e_head: none')
+                          .replace('e2e_by: verifier/2', 'e2e_by: none'))
         refused = self.cli('fx', '--delivery', code=1).stderr
         assert sorted(refused.splitlines()) == sorted([
             f'fx: review_head: {reviewed} is stale against feat/fx head {repaired}',

@@ -23,8 +23,9 @@ export default function (pi) {
     return { systemPrompt: `${event.systemPrompt}\n\n${hint}` };
   });
 
-  // Keep working while a lifecycle worker could finish without waking this host, or a worker this session
-  // launched is unregistered: at most once per run, so a gap the host cannot fix never loops.
+  // Keep working while a lifecycle worker could finish without waking this host, a worker this session launched is
+  // unregistered, or an effort it coordinates is undelivered under autofix: at most once per run, so a gap the host
+  // cannot fix never loops.
   let continued = false;
   pi.on("agent_settled", () => {
     continued = false;
