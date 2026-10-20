@@ -747,13 +747,15 @@ class DeliveryHold(GateRepo):
                         'devices: []\n---\n')
 
     def review(self, delivered=False, **fields):
-        """The review report's front matter: by default the Pi run's, or current and passed when `delivered`."""
+        """The review report's front matter: by default the Pi run's, or current and passed when `delivered`; `fields`
+        replace values, and a None value leaves the field out."""
         head = self.head if delivered else self.reviewed
-        recorded = dict(autofix='true', blocker='none', review_status='clean', documentation_status='passed',
-                        review_head=head, review_base=self.start, review_diff_base=self.start,
-                        e2e_status='passed' if delivered else 'not-run', e2e_head=self.head if delivered else 'none',
-                        review_by='reviewer/1', e2e_by='verifier/2' if delivered else 'none', **fields)
-        self.report.write_text('---\n' + ''.join(f'{key}: {value}\n' for key, value in recorded.items()) + '---\n')
+        recorded = dict(dict(autofix='true', blocker='none', review_status='clean', documentation_status='passed',
+                             review_head=head, review_base=self.start, review_diff_base=self.start,
+                             e2e_status='passed' if delivered else 'not-run', e2e_head=self.head if delivered else 'none',
+                             review_by='reviewer/1', e2e_by='verifier/2' if delivered else 'none'), **fields)
+        self.report.write_text('---\n' + ''.join(f'{key}: {value}\n' for key, value in recorded.items()
+                                                 if value is not None) + '---\n')
 
     def bind(self, pane='w1:p1', **sessions):
         """Run dispatch's binding as an orchestrator in Herdr pane `pane` (None: outside Herdr) whose host exports
@@ -805,6 +807,37 @@ class DeliveryHold(GateRepo):
         self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
         for pane, session in (('w1:p1', 'host-2'), ('w1:p9', 'host-1'), ('w1:p9', None), (None, 'host-2')):
             self.assertEqual(self.check(pane=pane, session=session), [], (pane, session))
+
+    def test_a_recorded_blocker_lets_the_coordinator_stop(self):
+        # Rules 1 and 4: `blocker: <reason>` in the review report records why delivery cannot progress, and with it the
+        # coordinator stops; `none`, the report template's value, and an empty value are no blocker.
+        self.bind(pane='w1:p1')
+        self.review(blocker='the staging device is offline')
+        self.assertEqual(self.check(pane='w1:p1'), [])
+        self.assertIsNone(self.stop(pane='w1:p1'))
+        for none in ('none', ''):
+            self.review(blocker=none)
+            self.assertEqual(self.check(pane='w1:p1'), [self.gap()], none)
+
+    def test_without_autofix_the_coordinator_stops(self):
+        # Rules 1 and 4: only `autofix: true`, the recorded repair authorization, holds. A read-only review (`false`),
+        # a report that records no authorization, and no report at all stop after review, as dispatch says.
+        self.bind(pane='w1:p1')
+        for autofix in ('false', None):
+            self.review(autofix=autofix)
+            self.assertEqual(self.check(pane='w1:p1'), [], autofix)
+        self.report.unlink()
+        self.assertEqual(self.check(pane='w1:p1'), [])
+
+    def test_while_a_ticket_is_not_done_the_coordinator_is_not_held_for_delivery(self):
+        # Rule 4: the hold covers delivery once every ticket is done; an unfinished or blocked ticket is still
+        # implementation, which the board and the worker gates answer for.
+        self.bind(pane='w1:p1')
+        for status in ('implementing', 'blocked'):
+            self.ticket('02', status)
+            self.assertEqual(self.check(pane='w1:p1'), [], status)
+        self.ticket('02', 'done')
+        self.assertEqual(self.check(pane='w1:p1'), [self.gap()])
 
     @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
     def test_pi_holds_the_bound_coordinator_once_per_run(self):
