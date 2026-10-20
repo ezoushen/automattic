@@ -155,7 +155,7 @@ class BoardCLI(unittest.TestCase):
 
     def test_blocking_a_ticket_needs_a_reason_recorded_on_the_ticket(self):
         # Rule (E4 pi): `status=blocked` is refused without `blocker=<reason>`, leaving the ticket as it was; with one,
-        # the ticket's front matter keeps the status and the reason, which the board then reads.
+        # the ticket's front matter keeps the status and the reason.
         path = self.write_ticket('active/01', 'implementing')
         before = path.read_text()
         refused = self.cli('active', '--set', 'active/01', 'status=blocked', code=1)
@@ -167,6 +167,17 @@ class BoardCLI(unittest.TestCase):
         self.cli('active', '--set', 'active/01', 'status=blocked', 'blocker=recall is 50, worse than baseline 100')
         fm = nt.parse_front_matter(path.read_text())
         assert (fm['status'], fm['blocker']) == ('blocked', 'recall is 50, worse than baseline 100'), fm
+
+    def test_a_stored_blocker_is_cleared_on_unblocking_and_never_reused(self):
+        # Rule: leaving `blocked` clears the stored reason; blocking again needs a new one, and the refusal says the
+        # stored one is not reused.
+        path = self.write_ticket('active/01', 'blocked', extra='blocker: device offline\n')
+        refused = self.cli('active', '--set', 'active/01', 'status=blocked', code=1)
+        assert refused.stderr == ('active/01: status=blocked needs the reason too, even with one stored '
+                                  "('device offline'): --set active/01 status=blocked blocker=<reason>\n"), refused.stderr
+        self.cli('active', '--set', 'active/01', 'status=ready')
+        fm = nt.parse_front_matter(path.read_text())
+        assert (fm['status'], 'blocker' in fm) == ('ready', False), fm
 
     def git(self, *args):
         return subprocess.run(['git', '-C', str(self.root), *args], check=True,

@@ -24,7 +24,7 @@ known account users; `--max-live` sees this board's workers, not every service c
 
 Use `--check` for validation, no action for candidates, `--counts` for counts,
 `--set <ticket> status=<state>` or `worker=<id>` for runtime state (`status=blocked` also
-takes `blocker=<reason>`, which the ticket's front matter keeps; it is refused without one),
+takes a new `blocker=<reason>`, which the ticket's front matter keeps until it leaves `blocked`),
 `--accept <ticket>` for structural evidence checks and standing measurements, `--delivery` for the
 structural delivery gate, which names each failing field, and `--coordinate` to bind the calling
 session as the effort's coordinator. Read and judge the evidence after those checks.

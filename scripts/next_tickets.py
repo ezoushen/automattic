@@ -552,11 +552,17 @@ def set_field(tickets, name, assignments):
         fields[key] = value.strip() if key == "blocker" else value
     if "status" in fields and fields["status"] not in STATUSES:
         sys.exit(f"{name}: status {fields['status']!r} is not one of {sorted(STATUSES)}")
-    if fields.get("status") == "blocked" and not fields.get("blocker"):
-        sys.exit(f"{name}: status=blocked needs the reason too: --set {name} status=blocked blocker=<reason>")
     fm = tickets[name]
+    if fields.get("status") == "blocked" and not fields.get("blocker"):
+        stored = f", even with one stored ({fm['blocker']!r})" if fm.get("blocker") else ""
+        sys.exit(f"{name}: status=blocked needs the reason too{stored}: "
+                 f"--set {name} status=blocked blocker=<reason>")
     path = ROOT / fm["path"]
     head, sep, body = path.read_text().partition("\n---\n")
+    if fields.get("status", "blocked") != "blocked":
+        # A ticket leaving `blocked` drops its reason.
+        fields.pop("blocker", None)
+        head = re.sub(r"\nblocker:.*$", "", head, flags=re.M)
     for key, value in fields.items():
         pattern = re.compile(rf"^({re.escape(key)}:).*$", re.M)
         if pattern.search(head):
