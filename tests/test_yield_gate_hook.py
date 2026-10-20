@@ -564,9 +564,10 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertEqual(self.check(pane=None, session='host-1'),
                          [f'{self.state}: ticket-1/1: no armed wait', f'{self.state}: ticket-2/1: no armed wait'])
 
-    def test_a_marked_worker_is_held_neither_for_itself_nor_its_siblings_wherever_it_runs(self):
-        # Rule 4: a session is a worker exactly when AUTOMATTIC_WORKER is set; its launches and siblings hold only
-        # its coordinator. Includes a native worker that inherited its coordinator's HERDR_PANE_ID (review probe).
+    def test_a_marked_worker_answers_for_its_own_launches_but_not_its_siblings_wherever_it_runs(self):
+        # Rule 4: AUTOMATTIC_WORKER skips only the live-sibling scan. Each marked session (in its worktree, at the
+        # checkout root, in its coordinator's inherited pane, outside Herdr) is held for the helper it launched,
+        # even after the helper's pane closed (probe H), and never for its siblings or its coordinator's launches.
         sibling, marked = self.repo / '.worktrees/ticket-2', {'AUTOMATTIC_WORKER': 'effort/ticket-1'}
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', session='coord-1')
         workers = (('w1:p5', 'builder-session', self.worktree), ('w1:p7', 'other-session', self.repo),
@@ -576,8 +577,8 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
                         env=marked)
         self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', sibling)])
         for pane, session, cwd in workers:
-            self.assertEqual(self.check(cwd=cwd, pane=pane, session=session, env=marked), [], (pane, session))
-            self.assertIsNone(self.stop(cwd=cwd, pane=pane, session=session, env=marked))
+            self.assertEqual(self.check(cwd=cwd, pane=pane, session=session, env=marked),
+                             [self.gap('helper-1', 'w1:p8')], (pane, session))
         self.assertEqual(self.check(session='coord-1'), [self.gap('builder-1', 'w1:p5'),
                                                          self.live('builder-2', 'w1:p6', sibling)])
         if shutil.which('node'):  # Pi's settle check inherits the marker from its process environment.

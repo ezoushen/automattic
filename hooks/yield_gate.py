@@ -70,8 +70,8 @@ def gaps(cwd, session=None):
             missing += [f'{state}: {gap}' for gap in module.yield_gaps(db, coordinated)]
         finally:
             db.close()
-    # For the Herdr checks a session is a worker exactly when its launch set AUTOMATTIC_WORKER.
-    return missing + ([] if os.environ.get('AUTOMATTIC_WORKER') else unregistered(root, pane, session))
+    # Every session answers for its own launches; a worker (its launch set AUTOMATTIC_WORKER) not for its siblings.
+    return missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER'))
 
 
 def herdr_agents():
@@ -128,10 +128,10 @@ def readable(record):
             and identity(record.get('coordinator')) and text(record.get('cwd')))
 
 
-def unregistered(root, pane, session):
+def unregistered(root, pane, session, siblings=True):
     """Name each Herdr worker that no attempt in any run and no dismissal of this coordinator accounts for: each
-    launch it logged into a ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its
-    Herdr workspace; and each unreadable log line."""
+    launch it logged into a ticket worktree or an unknown cwd, with `siblings` each other live agent in a ticket
+    worktree of its Herdr workspace; and each unreadable log line."""
     module, attempts = None, []
     for state in root.glob('.scratch/*/reports/workers.sqlite'):
         module = module or lifecycle()
@@ -170,7 +170,7 @@ def unregistered(root, pane, session):
                 and same_coordinator(record['by'], pane, session) for value in record['dismissed'].values()}
     workspace, failed = os.environ.get('HERDR_WORKSPACE_ID'), []
     try:
-        agents = herdr_agents() if workspace and worktrees.is_dir() else []  # No worktrees, no ticket workers.
+        agents = herdr_agents() if siblings and workspace and worktrees.is_dir() else []  # No worktrees, no workers.
     except Exception as error:  # A check that cannot run is a named gap, never a pass.
         agents, failed = [], [f'could not check Herdr workers: {error}']
     live = [agent for agent in agents
