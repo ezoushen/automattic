@@ -137,8 +137,6 @@ def gaps(db, data, stage, revision=None):
     missing = []
     if not data.get('verified'):
         missing.append('runtime settings verification')
-    if 'observed' in data and unbound(data):
-        missing.append("the worker's working directory from its native record")
     if hold(db, data['assignment']):
         missing.append('design ruling and updated criteria')
     row = db.execute('SELECT data FROM criteria WHERE assignment = ?', (data['assignment'],)).fetchone()
@@ -356,14 +354,37 @@ def return_check(saved, report, now):
 
 
 def observed_state(saved):
-    """The worktree state a read-only attempt is checked against at collection, read once; None for any other."""
-    return worktree_state(saved['worktree']) if saved.get('worktree_baseline') else None
+    """The checkout states a read-only attempt is checked against at collection, read once: its worktree's and each
+    other checkout's its native record put it in; None for any other attempt."""
+    if not saved.get('worktree_baseline'):
+        return None
+    return {'worktree': worktree_state(saved['worktree']),
+            'checkouts': {checkout: worktree_state(checkout) for checkout in saved.get('checkout_baselines', {})}}
+
+
+def checkout_root(path):
+    """The top of the Git checkout holding path, resolved, or None outside one."""
+    found = subprocess.run(['git', '-C', str(path), 'rev-parse', '--show-toplevel'], capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL)
+    return str(Path(found.stdout.strip()).resolve()) if found.returncode == 0 else None
 
 
 def read_only_change(saved, now):
-    """How a read-only agent's worktree differs from its registration, as (reason, restorable), or None when
-    it is as it was. An edited or deleted untracked file, or a worktree that cannot be verified, cannot be restored."""
-    baseline = saved.get('worktree_baseline', False)
+    """How a read-only agent's worktree, or another checkout its native record put it in, differs from when it was
+    recorded, as (reason, restorable), or None when each is as it was."""
+    change = checkout_change(saved.get('worktree_baseline', False), now and now['worktree'])
+    if change or not now:
+        return change
+    for checkout, baseline in saved.get('checkout_baselines', {}).items():
+        found = checkout_change(baseline, now['checkouts'].get(checkout))
+        if found:
+            return f'in {checkout}, where its native record put it: {found[0]}', found[1]
+    return None
+
+
+def checkout_change(baseline, now):
+    """How a checkout differs from its recorded state, as (reason, restorable), or None when it is as it was. An
+    edited or deleted untracked file, or a checkout that cannot be verified, cannot be restored."""
     if baseline is None:
         return 'not a readable Git checkout at registration; read-only work cannot be verified', False
     if not baseline:
@@ -463,11 +484,15 @@ def record(db, data, refuse_changes=False):
     require(text(attempt), 'Event requires attempt')
     # A read-only worktree is read before the write lock is taken; the result check and any refusal use that one read.
     now = observed_state(get(db, attempt)) if kind == 'result' and data.get('status') == 'completed' else None
-    located = None
+    located = elsewhere = None
     if kind == 'startup' and text(data.get('native')):
-        # A native record is read before the write lock is taken too.
+        # A native record, and a read-only agent's other checkout, are read before the write lock is taken too.
         target = get(db, attempt)
         located = native_settings.working_directory(data['native'], target['runtime'], target['native_session'])
+        checkout = located and 'worktree_baseline' in target and checkout_root(located)
+        if checkout and checkout != checkout_root(target['worktree']) \
+                and checkout not in target.get('checkout_baselines', {}):
+            elsewhere = checkout, worktree_state(checkout)
     # Herdr is asked before the write lock is taken too, so a Herdr that does not answer holds no lock. The
     # execution is read once, here, so the attempt keeps the route that decided whether to ask.
     placed = execution = None
@@ -574,11 +599,12 @@ def record(db, data, refuse_changes=False):
                         'Alias evidence requires requested and observed model IDs')
                 saved['observed'], saved['startup_evidence'] = observed, data
                 if located:
-                    require(not native_settings.outside(located, saved['worktree'], saved['runtime']),
-                            f'The native record puts the worker in {Path(located).resolve()}, outside its assigned '
-                            f'worktree {saved["worktree"]}; the attempt stays unverified')
-                saved['working_directory'] = located
-                saved['verified'] = not mismatched(saved) and not unbound(saved)
+                    # A Claude or Codex native child records its coordinator's directory, so this only warns.
+                    saved['observed_cwd'] = str(Path(located).resolve())
+                if elsewhere:
+                    # A read-only agent working in another checkout is held to that one too.
+                    saved.setdefault('checkout_baselines', {})[elsewhere[0]] = elsewhere[1]
+                saved['verified'] = not mismatched(saved)
             elif kind == 'submitted':
                 require(not gaps(db, saved, 'work'), 'Verify runtime settings and resolve design hold before work')
                 require(not saved.get('submitted') and not saved.get('result'),
@@ -882,13 +908,6 @@ def check_channel(db, state, saved, notify):
                                                 finished_at=time.time())))
     require(code == 0, f'Wake channel failed its check (exit {code}; log {log}). It must return once the parent '
                        "accepts the message, without waiting for the parent's turn. Fix it before arming this wait.")
-
-
-def unbound(saved):
-    """Whether a native child (a route with `native_dispatch`) of Claude, Codex or Pi lacks the working directory its
-    own native record gives it: it skips `submit`, whose native read binds the worktree, so startup must."""
-    return (saved['execution_snapshot'].get('native_dispatch') is True
-            and saved['runtime'] in ('claude', 'codex', 'pi') and not saved.get('working_directory'))
 
 
 def mismatched(saved):
@@ -1208,9 +1227,13 @@ def status(db, attempt=None):
                for row in pending(db, saved['attempt'])):
             attention.append('inspect parent and recover pending notification')
         summary = {key: saved[key] for key in ('attempt', 'assignment', 'agent', 'job', 'worker', 'native_session',
-                   'herdr', 'head', 'requested', 'observed', 'verified', 'monitor', 'result', 'accepted', 'declined',
-                   'acceptance_deferred', 'retained', 'closed',
+                   'herdr', 'head', 'requested', 'observed', 'observed_cwd', 'verified', 'monitor', 'result',
+                   'accepted', 'declined', 'acceptance_deferred', 'retained', 'closed',
                    'retirement_requested') if key in saved}
+        if saved.get('observed_cwd') and native_settings.outside(saved['observed_cwd'], saved['worktree'],
+                                                                 saved['runtime']):
+            summary['warnings'] = [f"the native record puts the worker in {saved['observed_cwd']}, outside its "
+                                   f"registered worktree {saved['worktree']}"]
         result.append(dict(summary, attention=attention,
                            **({'native_closed_by': closure['attempt']} if closure else {})))
     active_holds = [dict(json.loads(row[1]), assignment=row[0])

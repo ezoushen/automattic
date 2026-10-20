@@ -216,14 +216,15 @@ class Definitions(unittest.TestCase):
         self.assertIn('restore the tracked files you changed and remove the temporary untracked files you made', text)
         self.assertIn('the worktree must match its state at registration, untracked files included', text)
 
-    def test_every_agent_first_moves_into_its_assigned_worktree(self):
-        # E4: a native worker starts in its coordinator's directory, and startup binds it by that record, so each
-        # agent's first action is to change into the assigned worktree and confirm it.
+    def test_every_agent_addresses_its_assigned_worktree_by_absolute_path(self):
+        # E4: a native worker starts in its coordinator's directory and its shell may reset between commands, so a
+        # `cd` does not hold: each agent names the worktree in every command and confirms it once.
         for agent in ('builder', 'reviewer', 'verifier'):
             text = ' '.join((support.ROOT / f'agents/{agent}.md').read_text().split())
-            self.assertIn('Your first action is `cd <worktree>`, the assigned worktree, confirmed by '
-                          '`git rev-parse --show-toplevel`; where the shell starts each command afresh, '
-                          'begin every command with that `cd`.', text, agent)
+            self.assertIn('A shell may start each command in another directory, so use absolute paths and '
+                          '`git -C <worktree>` in every command, and confirm the assigned worktree once with '
+                          '`git -C <worktree> rev-parse --show-toplevel`.', text, agent)
+            self.assertNotIn('Your first action is `cd <worktree>`', text, agent)
 
     def test_the_builder_writes_the_report_file_acceptance_reads(self):
         # E4 D5: `--accept` reads `.scratch/<slug>/reports/<NN>.md`, so the builder writes it, whatever a host says

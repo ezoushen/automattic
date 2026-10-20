@@ -11,9 +11,10 @@ disallowedTools: Write
 
 Read the absolute `adapter` and `job_file` in your assignment before acting; the job
 says what to judge, what you receive and what you return. If either is missing, request
-it from the orchestrator. Your first action is `cd <worktree>`, the assigned worktree,
-confirmed by `git rev-parse --show-toplevel`; where the shell starts each command
-afresh, begin every command with that `cd`. Links below are relative to `agent_file`.
+it from the orchestrator. A shell may start each command in another directory, so use
+absolute paths and `git -C <worktree>` in every command, and confirm the assigned
+worktree once with `git -C <worktree> rev-parse --show-toplevel`. Links below are
+relative to `agent_file`.
 
 ## Permissions
 

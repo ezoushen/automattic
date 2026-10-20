@@ -197,6 +197,18 @@ class BoardCLI(unittest.TestCase):
         self.write_report(base, body=f'Checked branch: feat/inline\nbranch: feat/inline\n')
         assert 'feat/inline-01' in self.cli('inline', '--accept', 'inline/01', code=1).stderr
 
+    def test_a_builder_commit_in_its_coordinators_checkout_is_not_accepted(self):
+        # E4 claude builder 01: a native builder ran in its coordinator's directory and committed on the effort's
+        # branch, leaving its own ticket branch at base; acceptance refuses the ticket branch with no commit past base.
+        self.write_ticket('inline/01', 'implementing')
+        base = self.commit('base')
+        self.git('branch', 'feat/inline-01')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        stray = self.commit('ticket work, committed in the coordinator checkout')
+        self.write_report(base, commits=[stray])
+        refused = self.cli('inline', '--accept', 'inline/01', code=1)
+        assert refused.stderr == 'inline/01: no commit past base on feat/inline-01\n', refused.stderr
+
     def test_a_shared_effort_branch_counts_only_the_commits_the_report_lists(self):
         self.write_ticket('inline/01', 'implementing')
         base = self.commit('base')

@@ -32,7 +32,7 @@ coordinator, wherever it runs and whichever pane it is in.
 
 The helper records attempts and durable receipts. Its `submit` captures
 session-bound native settings before invoking a productive prompt command. It
-neither launches workers nor parses assignment output or approves a design.
+neither launches workers, parses assignment output nor approves a design.
 Its wait can deliver durable receipts through a declared native parent callback;
 it cannot wake a sleeping host. `collect` requires retirement or explicit retention; `retire`
 uses Herdr's native lifecycle interface and confirms the bound pane is absent.
@@ -89,10 +89,10 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
 3. Use `submit` below to capture settings automatically from native evidence for
    Claude, Codex, Pi and OpenCode. Native children (they skip `submit`) and other formats
    use `record startup` with `attempt`, native `observed` runtime/model/effort and an
-   `evidence` array of native metadata references. A Claude, Codex or Pi child adds `native`,
-   its record; one placing it outside the registered worktree is refused, naming both
-   paths; none leaves it unverified. Verify each new attempt;
-   cached executor availability does not prove its settings. Inherited
+   `evidence` array of native metadata references. A Claude, Codex or Pi child may add `native`,
+   its record; outside its worktree that draws a `status` warning, and collection holds a
+   read-only agent to that checkout. Verify each new attempt; cached
+   availability proves no new worker's settings. Inherited
    controls remain omitted from `requested`; record actual controls when available.
    A legitimate model alias needs `model_alias_evidence` from the installed binding,
    not a similarity guess. Missing or conflicting requested controls leave work

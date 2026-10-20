@@ -2,6 +2,7 @@
 """Worker submission verifies native model and effort before productive work."""
 
 import json
+import subprocess
 import sys
 import unittest
 
@@ -618,9 +619,10 @@ class Submission(WorkerLifecycleCase):
 
 
 class NativeWorkingDirectory(WorkerLifecycleCase):
-    """A native child (Claude subagent, Codex or Pi native child) skips `submit`, so its startup record binds it to
-    its registered worktree by the working directory its own native record gives it (E4: a Claude subagent committed
-    from its coordinator's directory; a Codex reviewer read a worktree other than the one registered)."""
+    """A native child (Claude subagent, Codex or Pi native child) skips `submit`; its own native record says where it
+    works. Claude and Codex children carry their coordinator's directory, so a directory outside the registered
+    worktree is a warning, and for an agent that writes nothing that checkout is watched as well (E4: a Codex reviewer
+    registered to the review worktree wrote in the effort worktree)."""
 
     SESSIONS = {'claude': 'a1b2c3', 'codex': '/root/review', 'pi': 'pi-child-1'}
 
@@ -642,15 +644,16 @@ class NativeWorkingDirectory(WorkerLifecycleCase):
                           {'type': 'turn_context', 'payload': {'model': 'm', 'cwd': str(cwd)}}],
                 'pi': [{'type': 'session', 'id': session, 'cwd': str(cwd)}]}[runtime]
 
-    def native_child(self, runtime):
+    def native_child(self, runtime, agent='builder', job='ticket', worktree=None):
         """Register a native child of `runtime` for the worktree, as its coordinator's resolved route says."""
         self.execution.write_text(json.dumps({'harness': runtime, 'target_runtime': runtime, 'native_dispatch': True,
-                                              'agent': 'builder', 'job': 'ticket',
+                                              'agent': agent, 'job': job,
                                               'settings': {'model': 'm', 'effort': 'high'}}))
         attempt = f'{runtime}-1/1'
-        self.record('register', attempt, assignment=f'{runtime}-1', repo=str(self.root), worktree=str(self.worktree),
-                    head='head-1', execution=str(self.execution), runtime=runtime, worker=self.SESSIONS[runtime],
-                    native_session=self.SESSIONS[runtime], owned=True, packet=str(self.packet()))
+        self.record('register', attempt, assignment=f'{runtime}-1', repo=str(self.root),
+                    worktree=str(worktree or self.worktree), head='head-1', execution=str(self.execution),
+                    runtime=runtime, worker=self.SESSIONS[runtime], native_session=self.SESSIONS[runtime], owned=True,
+                    packet=str(self.packet()))
         return attempt
 
     def startup(self, attempt, runtime, rows=None, code=0):
@@ -662,48 +665,87 @@ class NativeWorkingDirectory(WorkerLifecycleCase):
                            observed={'runtime': runtime, 'model': 'm', 'effort': 'high'},
                            **({'native': str(native)} if rows is not None else {}))
 
-    def test_a_native_child_outside_its_worktree_is_refused_naming_both_paths(self):
+    def attempt(self, attempt):
+        return next(row for row in self.cli('status')['attempts'] if row['attempt'] == attempt)
+
+    def test_a_native_child_outside_its_worktree_is_a_warning_naming_both_paths(self):
         # Rule: the working directory comes from the native record (Claude: the subagent transcript's cwd; Codex:
-        # turn_context.cwd; Pi: the session header's cwd); a directory outside the registered worktree refuses
-        # startup, naming both, and the attempt stays unverified. The worktree itself verifies it.
+        # turn_context.cwd; Pi: the session header's cwd). Outside the registered worktree it is recorded as
+        # observed_cwd and `status` warns, naming both paths; it does not block. Inside the worktree, no warning.
         coordinator = self.root.resolve()
         for runtime, session in self.SESSIONS.items():
             with self.subTest(runtime=runtime):
                 attempt = self.native_child(runtime)
-                refused = self.startup(attempt, runtime, self.native_rows(runtime, coordinator, session), code=2)
-                self.assertEqual(refused, f'The native record puts the worker in {coordinator}, outside its assigned '
-                                          f'worktree {self.worktree}; the attempt stays unverified\n')
-                saved = next(row for row in self.cli('status')['attempts'] if row['attempt'] == attempt)
-                self.assertFalse(saved['verified'])
-                self.assertTrue(self.startup(attempt, runtime,
-                                             self.native_rows(runtime, self.worktree, session))['verified'])
+                self.assertTrue(self.startup(attempt, runtime, self.native_rows(runtime, coordinator, session))['verified'])
+                saved = self.attempt(attempt)
+                self.assertEqual((saved['observed_cwd'], saved.get('warnings')), (str(coordinator), [
+                    f'the native record puts the worker in {coordinator}, outside its registered worktree '
+                    f'{self.worktree}']))
+                self.startup(attempt, runtime, self.native_rows(runtime, self.worktree, session))
+                saved = self.attempt(attempt)
+                self.assertEqual((saved['observed_cwd'], saved.get('warnings')), (str(self.worktree), None))
 
-    def test_a_claude_subagent_may_work_in_a_subdirectory_of_its_worktree(self):
-        # Rule: as `submit` allows, a Claude cwd inside the worktree binds it; one inside a nested repository does not.
+    def test_a_claude_subdirectory_is_inside_its_worktree_and_a_nested_repository_is_not(self):
+        # Rule: as `submit` allows, a Claude cwd inside the worktree is in it; one inside a nested repository is not.
         attempt, session = self.native_child('claude'), self.SESSIONS['claude']
         nested = self.worktree / 'vendor' / 'other'
         (nested / '.git').mkdir(parents=True)
-        refused = self.startup(attempt, 'claude', self.native_rows('claude', nested, session), code=2)
-        self.assertEqual(refused, f'The native record puts the worker in {nested}, outside its assigned '
-                                  f'worktree {self.worktree}; the attempt stays unverified\n')
+        self.startup(attempt, 'claude', self.native_rows('claude', nested, session))
+        self.assertEqual(self.attempt(attempt).get('warnings'), [
+            f'the native record puts the worker in {nested}, outside its registered worktree {self.worktree}'])
         child = self.worktree / 'src'
         child.mkdir()
-        self.assertTrue(self.startup(attempt, 'claude', self.native_rows('claude', child, session))['verified'])
+        self.startup(attempt, 'claude', self.native_rows('claude', child, session))
+        self.assertNotIn('warnings', self.attempt(attempt))
 
-    def test_a_native_child_without_a_working_directory_from_its_record_stays_unverified(self):
-        # Rule: missing evidence never passes. No native record, a record that names no working directory, or one
-        # of another session leaves the attempt unverified, so it can neither take work nor complete.
+    def test_a_native_child_with_no_record_keeps_todays_settings_verification(self):
+        # Rule: a native child registered after launch records startup with its observed settings alone, as Claude
+        # dispatch does today; that still verifies it (no record: no observed_cwd, no warning). A record of another
+        # session is refused.
         attempt, session = self.native_child('claude'), self.SESSIONS['claude']
-        self.assertFalse(self.startup(attempt, 'claude')['verified'])
-        rows = [{key: value for key, value in row.items() if key != 'cwd'}
-                for row in self.native_rows('claude', self.worktree, session)]
-        self.assertFalse(self.startup(attempt, 'claude', rows)['verified'])
+        self.assertTrue(self.startup(attempt, 'claude')['verified'])
+        self.assertNotIn('observed_cwd', self.attempt(attempt))
         refused = self.startup(attempt, 'claude', self.native_rows('claude', self.worktree, 'other-child'), code=2)
         self.assertEqual(refused, 'Native evidence does not belong to the registered session\n')
-        gate = self.cli('gate', '--attempt', attempt, '--stage', 'work', code=1)
-        self.assertEqual(gate['missing'], ['runtime settings verification',
-                                           "the worker's working directory from its native record"])
-        self.record('submitted', attempt, code=2, evidence=['accepted prompt'])
+
+    def git(self, checkout, *args):
+        return subprocess.run(['git', '-C', str(checkout), '-c', 'user.name=t', '-c', 'user.email=t@t', *args],
+                              check=True, capture_output=True, text=True).stdout.strip()
+
+    def test_a_read_only_child_working_in_another_checkout_is_held_to_both(self):
+        # Rule (E4 codex): a reviewer registered to the review worktree whose rollout puts it in the effort worktree
+        # (another checkout of the same repository) has that checkout snapshotted at startup too; collection refuses
+        # a change in either one, and collects once both are as they were.
+        repo = (self.root / 'repo').resolve()
+        repo.mkdir()
+        self.git(repo, 'init', '-q', '-b', 'main')
+        (repo / 'code.py').write_text('x = 1\n')
+        self.git(repo, 'add', '-A')
+        self.git(repo, 'commit', '-qm', 'base')
+        head = self.git(repo, 'rev-parse', 'HEAD')
+        effort, review = repo / '.worktrees' / 'e4-codex', repo / '.worktrees' / 'e4-codex-review'
+        self.git(repo, 'worktree', 'add', '-q', '-b', 'feat/e4-codex', str(effort))
+        self.git(repo, 'worktree', 'add', '-q', '--detach', str(review), head)
+        attempt = self.native_child('codex', 'reviewer', 'diff-review', worktree=review)
+        self.startup(attempt, 'codex', self.native_rows('codex', effort, self.SESSIONS['codex']))
+        self.record('submitted', attempt, evidence=['native followup accepted'])
+        report = self.root / 'review.md'
+        report.write_text('## Coverage\n\n## Review round 1\n')
+        request = self.root / 'collect.json'
+        request.write_text(json.dumps({
+            'status': 'completed', 'head': head, 'report': str(report), 'evidence': ['review.md'],
+            'disposition': {'kind': 'retain', 'reason': 'recheck', 'next_use': 'recheck', 'evidence': ['review.md']}}))
+        (effort / 'notes.md').write_text('reviewer scratch\n')
+        refused = self.cli('collect', '--attempt', attempt, '--input', str(request), code=2)
+        self.assertEqual(refused, f'Collection requires an unchanged worktree for a read-only agent (in {effort}, '
+                                  'where its native record put it: an untracked file appeared: notes.md); restore it '
+                                  'and collect again\n')
+        (effort / 'notes.md').unlink()
+        (review / 'code.py').write_text('x = 2\n')
+        refused = self.cli('collect', '--attempt', attempt, '--input', str(request), code=2)
+        self.assertIn('(tracked files differ from their state at registration)', refused)
+        self.git(review, 'checkout', '-q', '--', 'code.py')
+        self.cli('collect', '--attempt', attempt, '--input', str(request))
 
 
 if __name__ == '__main__':
