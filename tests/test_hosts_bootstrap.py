@@ -65,6 +65,13 @@ class Bootstrap(unittest.TestCase):
         [owner] = [cell for trigger, cell in rows() if re.search(r'creat\w+ a PR', trigger)]
         self.assertRegex(owner, r'run the `delivery` checkpoint or record an evidenced skip, then the \[required-check watch\]')
 
+    def test_the_worker_launch_row_links_the_lifecycle_docs_directly(self):
+        # A Pi orchestrator that never followed launch.md's links launched ten workers it never registered.
+        [owner] = [cell for trigger, cell in rows() if re.search(r'before .*worker launch', trigger, re.I)]
+        linked = [link for _, link in check_docs.links(owner)]
+        for doc in ('runtime/workers/prepare.md', 'runtime/workers/wait.md'):
+            self.assertIn(doc, linked)
+
     def test_every_path_a_row_names_exists(self):
         for trigger, cell in rows():
             for named in PATH.findall(cell):
