@@ -91,6 +91,12 @@ def launched_by(launch, pane, session):
     return bool(pane) and theirs['pane'] == pane
 
 
+def handles(worker):
+    """What a registered worker matches: itself, and the pane and name of a `<session>/<pane>/<name>` handle."""
+    parts = worker.rsplit('/', 2)
+    return {worker, *parts[1:]} if len(parts) == 3 else {worker}
+
+
 def unregistered(root, pane, session):
     """Name each Herdr worker that no attempt in any run registers: each launch this coordinator logged into a
     ticket worktree or an unknown cwd, and each other live agent in a ticket worktree of its Herdr workspace."""
@@ -99,7 +105,7 @@ def unregistered(root, pane, session):
         module = module or lifecycle()
         db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
         try:
-            workers |= {saved['worker'] for saved in module.attempts(db)}
+            workers |= {handle for saved in module.attempts(db) for handle in handles(saved['worker'])}
         finally:
             db.close()
     log, worktrees = root / LAUNCHES, (root / '.worktrees').resolve()

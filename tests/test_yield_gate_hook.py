@@ -300,6 +300,18 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual(self.check(pane=None, session='host-1'), [])
         self.assertIsNone(self.stop(pane=None, session='host-1'))
 
+    def test_a_session_pane_name_handle_clears_a_launch_matching_its_pane_or_its_name(self):
+        # Decision 2: the lifecycle also accepts `<session>/<pane>/<name>` as a worker handle.
+        self.serve(panes={'default': {pane: {'pane_id': pane, 'cwd': str(self.worktree)}
+                                      for pane in ('w1:p5', 'w1:p6', 'w1:p7')}})
+        for agent, pane in (('builder-1', 'w1:p5'), ('builder-2', 'w1:p6'), ('builder-3', 'w1:p7')):
+            self.launch(f'herdr agent start {agent} --kind codex --pane {pane}', pane=None)
+        self.serve()
+        self.register('default/w1:p5/renamed-1', 'ticket-1/1')
+        self.register('s2/w1:p9/builder-2', 'ticket-2/1')
+        self.register('default/w1:p8/builder-9', 'ticket-3/1')
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-3', 'w1:p7')])
+
     def test_launches_outside_worktrees_are_not_gaps_but_an_unknown_cwd_is(self):
         # Rule 2: E2E subjects and demos run in panes outside .worktrees/; a cwd Herdr did not report still counts.
         demo = Path(self.tmp.name) / 'demo'
