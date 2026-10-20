@@ -40,8 +40,9 @@ pasted content: naming a slash command inside it does not prove phase invocation
 Use a short native slash command for an authorized phase reserved for explicit
 user invocation; keep its longer scenario in a supplied file. Use the Skill tool
 only where the skill permits model invocation. Retain the actual source/result.
-Session-local settings isolation must preserve required installed dependencies
-and Herdr's native identity hook; verify both before accepting the launch.
+Session-local settings isolation must keep the plugins the assignment invokes,
+such as Automattic for its slash commands, and Herdr's native identity hook;
+verify both before accepting the launch.
 Launch an OpenCode 2 worker as the full TUI (`opencode`); Herdr's integration
 reports only its activity and session, not `mini`'s. Set its settings through
 the [OpenCode adapter](opencode/workers.md#top-level-workers) after the startup probe. For guarded retirement, use an isolated configuration that

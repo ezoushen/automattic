@@ -59,7 +59,7 @@ class Standalone(unittest.TestCase):
                 self.assertIsNone(EXTERNAL.search(word))
         self.assertIsNone(EXTERNAL.search('the output format matters'))
 
-    def test_the_guard_catches_the_files_the_package_setup_writes(self):
+    def test_the_guard_catches_the_files_the_package_setup_writes_but_not_our_own(self):
         for path in ('docs/agents/issue-tracker.md', 'docs/agents/triage-labels.md', 'docs/agents/domain.md'):
             with self.subTest(path=path):
                 self.assertIsNotNone(EXTERNAL.search(f'and any existing `{path}`;'))
@@ -78,11 +78,16 @@ class Standalone(unittest.TestCase):
     def test_no_session_or_launch_doc_resolves_an_external_package(self):
         for path in ('bootstrap.md', 'runtime/workers/before-launch.md', 'runtime/workers/README.md',
                      'runtime/resources/capacity.md', 'hosts/claude/session.md', 'hosts/codex/session.md',
-                     'hosts/pi/session.md', 'hosts/opencode/session.md', 'docs/installation.md'):
+                     'hosts/pi/session.md', 'hosts/opencode/session.md', 'hosts/herdr.md', 'docs/installation.md'):
             with self.subTest(path=path):
                 text = prose(path)
                 self.assertNotRegex(text, r'(?i)dependency identity|dependency skills|resolve [^.]{0,40}dependenc'
-                                          r'|plugin dependency|skill dependency')
+                                          r'|plugin dependency|skill dependency|installed dependenc')
+
+    def test_a_herdr_worker_keeps_the_plugins_its_assignment_invokes(self):
+        self.assertIn('Session-local settings isolation must keep the plugins the assignment invokes, such as '
+                      "Automattic for its slash commands, and Herdr's native identity hook; verify both before "
+                      'accepting the launch.', prose('hosts/herdr.md'))
 
     def test_a_situational_skill_keeps_its_invocation_policy(self):
         self.assertIn("Honor each skill's invocation policy in the host's catalog: never read a skill's body to get "
