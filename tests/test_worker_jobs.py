@@ -456,7 +456,8 @@ sys.exit(process.returncode)
 
     def test_the_collect_doc_says_what_the_check_covers_and_how_to_get_past_a_refusal(self):
         doc = ' '.join((support.ROOT / 'runtime/workers/collect.md').read_text().split())
-        self.assertIn('untracked files inside submodules and nested repositories are not checked', doc)
+        self.assertIn('Untracked files inside submodules, nested repositories and unreadable directories are not '
+                      'checked, and an unreadable file only for its presence', doc)
         self.assertIn('Restore a moved HEAD, a tracked change or a new untracked file, then collect again', doc)
         self.assertIn('record the result with `record` (kind `result`), which keeps the gap on it, then collect again', doc)
 

@@ -14,8 +14,8 @@ gates remain under the shared acceptance contract.
 A `completed` result also owes its job's `returns` report sections (real headings,
 outside code blocks) and, for a `writes: none` agent, the same HEAD, tracked changes
 and untracked files (their content too) it was registered with; a gitignored file is
-not a change, and untracked files inside submodules and nested repositories are not
-checked.
+not a change. Untracked files inside submodules, nested repositories and unreadable
+directories are not checked, and an unreadable file only for its presence.
 `collect` refuses a worktree that differs and names the change. Restore a moved HEAD,
 a tracked change or a new untracked file, then collect again. An edited or deleted
 untracked file, or a worktree whose state cannot be read, cannot be restored: record
