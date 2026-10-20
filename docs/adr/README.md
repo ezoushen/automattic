@@ -10,8 +10,8 @@ The binding decisions of this repository, newest last. Format, statuses and supe
 - [0004](0004-adrs-are-superseded-never-rewritten.md) ADRs are superseded, never rewritten: the old ADR's status line is its only edit; a partial overrule supersedes the whole.
 - [0005](0005-the-adr-index-is-the-current-state.md) The ADR index is the current-state view: updated in the same commit, checked with `--index`, read first.
 - [0006](0006-adr-statuses-have-no-proposed.md) ADR statuses have no proposed: accepted, superseded by ADR-NNNN or deprecated; the user's yes accepts.
-- [0007](0007-builders-work-test-first-from-our-own-standard.md) Builders work test-first from our own TDD standard: one rule at a time, each test names its business rule and fails when that rule breaks; coverage means rules, not lines.
-- [0008](0008-builders-refactor-after-green-within-the-ticket.md) Builders refactor the ticket's own code after green, within the ticket's scope; a wider refactor goes to review.
+- [0007](0007-builders-work-test-first-from-our-own-standard.md) Builders work test-first from our own standard, and tests protect business rules: one rule at a time, each test names its business rule and fails when that rule breaks; coverage means rules, not lines.
+- [0008](0008-builders-refactor-after-green-within-the-ticket.md) Builders refactor after green, within the ticket: the ticket's own code, within its scope; a wider refactor goes to review.
 - [0009](0009-the-framework-depends-on-no-external-skill-package.md) The framework depends on no external skill package: no manifest dependency, its own procedures under its own names, guarded by a repository-wide test.
 
 ## Superseded

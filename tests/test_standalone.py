@@ -18,7 +18,7 @@ SKILLS = ('ask-matt', 'chief-of-staff', 'claude-handoff', 'codebase-design', 'di
           'scaffold-exercises', 'setup-pre-commit', 'setup-ts-deep-modules', 'to-prd', 'to-questionnaire', 'to-spec',
           'to-tickets', 'wait-what', 'wayfinder', 'writing-beats', 'writing-for-agents', 'writing-fragments',
           'writing-shape')
-EXTERNAL = re.compile(r'mattpocock|\bmatt\b|pocock|(?<![\w-])(?:%s)(?![\w-])' % '|'.join(map(re.escape, SKILLS)),
+EXTERNAL = re.compile(r'mattpocock|(?<![a-z])matt(?![a-z])|pocock|(?<![\w-])(?:%s)(?![\w-])' % '|'.join(map(re.escape, SKILLS)),
                       re.IGNORECASE)
 
 
@@ -44,6 +44,11 @@ class Standalone(unittest.TestCase):
                 continue
             found += [f'{name}:{number}' for number, line in enumerate(text.splitlines(), 1) if EXTERNAL.search(line)]
         self.assertEqual(found, [])
+
+    def test_the_guard_catches_the_name_inside_an_identifier_but_not_inside_a_word(self):
+        self.assertIsNotNone(EXTERNAL.search('def test_matt_skills(self):'))
+        self.assertIsNotNone(EXTERNAL.search('MATT_SKILLS = 1'))
+        self.assertIsNone(EXTERNAL.search('the output format matters'))
 
     def test_the_manifests_declare_no_dependency(self):
         claude = json.loads((ROOT / '.claude-plugin/plugin.json').read_text())

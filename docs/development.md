@@ -5,6 +5,13 @@ Changes to the plugin follow its own architecture rules
 below enforce them. Read the [decision index](adr/README.md) before an architectural change:
 only accepted ADRs bind, and a change that conflicts with one is raised, not worked around.
 
+- Builders work test-first from `standards/tdd.md` and each test protects a named business rule
+  ([ADR 0007](adr/0007-builders-work-test-first-from-our-own-standard.md)).
+- Builders refactor the ticket's own code after green, within the ticket's scope
+  ([ADR 0008](adr/0008-builders-refactor-after-green-within-the-ticket.md)).
+- The plugin declares no external skill package as a dependency
+  ([ADR 0009](adr/0009-the-framework-depends-on-no-external-skill-package.md)).
+
 ## Suite and hooks
 
 `python3 tests/run_all.py` runs every `tests/test_*.py` file in parallel (about 15 s)

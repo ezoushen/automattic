@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """This repository records its own binding decisions as ADRs with a checked index."""
 import json
+import re
 import subprocess
 import unittest
 
@@ -30,18 +31,44 @@ class RepoAdrs(unittest.TestCase):
         text = ' '.join((ROOT / 'docs/adr/0004-adrs-are-superseded-never-rewritten.md').read_text().split())
         self.assertIn('apart from repairing a broken status or supersede link', text)
 
-    def test_each_matt_replacement_adr_states_its_rule(self):
+    def test_each_standalone_framework_adr_states_its_rule(self):
         rules = {
             '0007-builders-work-test-first-from-our-own-standard.md':
-                'Every builder works test-first from the [TDD standard](../../standards/tdd.md)',
+                'Each test names the business rule it protects, takes its expected value from an independent source '
+                'and each new or changed test is shown to fail when that rule is deliberately broken; coverage means '
+                'every rule and acceptance criterion has such a test, not a line-coverage figure.',
             '0008-builders-refactor-after-green-within-the-ticket.md':
-                "refactors the ticket's own code within the ticket's scope",
+                "Once a test passes, the builder refactors the ticket's own code within the ticket's scope, keeping "
+                'the tests green; a wider refactor goes to review.',
             '0009-the-framework-depends-on-no-external-skill-package.md':
-                'The framework depends on no external skill package',
+                "A repository-wide test rejects the package's name and its distinctive skill names outside the "
+                'journals, these ADRs and the test itself',
         }
         for name, rule in rules.items():
             with self.subTest(adr=name):
                 self.assertIn(rule, ' '.join((ROOT / 'docs/adr' / name).read_text().split()))
+
+    def test_each_accepted_index_entry_starts_with_its_adr_title(self):
+        index = (ROOT / 'docs/adr/README.md').read_text()
+        accepted = index[index.index('## Accepted'):index.index('## Superseded')]
+        entries = re.findall(r'^- \[\d{4}\]\((\d{4}-[^)]+\.md)\) (.+)$', accepted, re.M)
+        self.assertEqual(9, len(entries))
+        for name, text in entries:
+            title = (ROOT / 'docs/adr' / name).read_text().splitlines()[0].removeprefix('# ')
+            with self.subTest(adr=name):
+                self.assertTrue(text.startswith(title + ':'), text)
+
+    def test_the_development_rules_point_to_the_standalone_framework_adrs(self):
+        text = ' '.join((ROOT / 'docs/development.md').read_text().split())
+        for rule in (
+                'Builders work test-first from `standards/tdd.md` and each test protects a named business rule '
+                '([ADR 0007](adr/0007-builders-work-test-first-from-our-own-standard.md)).',
+                "Builders refactor the ticket's own code after green, within the ticket's scope "
+                '([ADR 0008](adr/0008-builders-refactor-after-green-within-the-ticket.md)).',
+                'The plugin declares no external skill package as a dependency '
+                '([ADR 0009](adr/0009-the-framework-depends-on-no-external-skill-package.md)).'):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, text)
 
     def test_contributors_are_told_to_read_the_index_first(self):
         text = ' '.join((ROOT / 'docs/development.md').read_text().split())
