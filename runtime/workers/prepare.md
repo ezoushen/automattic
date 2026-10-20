@@ -91,7 +91,7 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    use `record startup` with `attempt`, native `observed` runtime/model/effort and an
    `evidence` array of native metadata references. A Claude, Codex or Pi child may add `native`,
    its record; outside its worktree that draws a `status` warning, and collection holds a
-   read-only agent to that checkout. Verify each new attempt; cached
+   read-only Pi child to it. Verify each new attempt; cached
    availability proves no new worker's settings. Inherited
    controls remain omitted from `requested`; record actual controls when available.
    A legitimate model alias needs `model_alias_evidence` from the installed binding,

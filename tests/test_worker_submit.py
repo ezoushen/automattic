@@ -712,10 +712,8 @@ class NativeWorkingDirectory(WorkerLifecycleCase):
         return subprocess.run(['git', '-C', str(checkout), '-c', 'user.name=t', '-c', 'user.email=t@t', *args],
                               check=True, capture_output=True, text=True).stdout.strip()
 
-    def test_a_read_only_child_working_in_another_checkout_is_held_to_both(self):
-        # Rule (E4 codex): a reviewer registered to the review worktree whose rollout puts it in the effort worktree
-        # (another checkout of the same repository) has that checkout snapshotted at startup too; collection refuses
-        # a change in either one, and collects once both are as they were.
+    def two_checkouts(self):
+        """A repository with an effort worktree (feat/e4) and a detached review worktree at its base: E4's shape."""
         repo = (self.root / 'repo').resolve()
         repo.mkdir()
         self.git(repo, 'init', '-q', '-b', 'main')
@@ -723,29 +721,57 @@ class NativeWorkingDirectory(WorkerLifecycleCase):
         self.git(repo, 'add', '-A')
         self.git(repo, 'commit', '-qm', 'base')
         head = self.git(repo, 'rev-parse', 'HEAD')
-        effort, review = repo / '.worktrees' / 'e4-codex', repo / '.worktrees' / 'e4-codex-review'
-        self.git(repo, 'worktree', 'add', '-q', '-b', 'feat/e4-codex', str(effort))
+        effort, review = repo / '.worktrees' / 'e4', repo / '.worktrees' / 'e4-review'
+        self.git(repo, 'worktree', 'add', '-q', '-b', 'feat/e4', str(effort))
         self.git(repo, 'worktree', 'add', '-q', '--detach', str(review), head)
-        attempt = self.native_child('codex', 'reviewer', 'diff-review', worktree=review)
-        self.startup(attempt, 'codex', self.native_rows('codex', effort, self.SESSIONS['codex']))
-        self.record('submitted', attempt, evidence=['native followup accepted'])
+        return head, effort, review
+
+    def collect_request(self, head):
         report = self.root / 'review.md'
         report.write_text('## Coverage\n\n## Review round 1\n')
         request = self.root / 'collect.json'
         request.write_text(json.dumps({
             'status': 'completed', 'head': head, 'report': str(report), 'evidence': ['review.md'],
             'disposition': {'kind': 'retain', 'reason': 'recheck', 'next_use': 'recheck', 'evidence': ['review.md']}}))
+        return str(request)
+
+    def test_a_read_only_pi_child_working_in_another_checkout_is_held_to_both(self):
+        # Rule: a Pi child's session header is its own directory (`cwd:` at launch). A reviewer registered to the
+        # review worktree whose header names the effort worktree has that checkout snapshotted at startup too;
+        # collection refuses a change in either one, and collects once both are as they were.
+        head, effort, review = self.two_checkouts()
+        attempt = self.native_child('pi', 'reviewer', 'diff-review', worktree=review)
+        self.startup(attempt, 'pi', self.native_rows('pi', effort, self.SESSIONS['pi']))
+        self.record('submitted', attempt, evidence=['native child started'])
+        request = self.collect_request(head)
         (effort / 'notes.md').write_text('reviewer scratch\n')
-        refused = self.cli('collect', '--attempt', attempt, '--input', str(request), code=2)
+        refused = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
         self.assertEqual(refused, f'Collection requires an unchanged worktree for a read-only agent (in {effort}, '
                                   'where its native record put it: an untracked file appeared: notes.md); restore it '
                                   'and collect again\n')
         (effort / 'notes.md').unlink()
         (review / 'code.py').write_text('x = 2\n')
-        refused = self.cli('collect', '--attempt', attempt, '--input', str(request), code=2)
+        refused = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
         self.assertIn('(tracked files differ from their state at registration)', refused)
         self.git(review, 'checkout', '-q', '--', 'code.py')
-        self.cli('collect', '--attempt', attempt, '--input', str(request))
+        self.cli('collect', '--attempt', attempt, '--input', request)
+
+    def test_a_claude_or_codex_read_only_child_is_held_to_its_registered_worktree_alone(self):
+        # Rule (review probe R1): a Claude or Codex child's record names its coordinator's directory, not its own, so
+        # changes there (the coordinator integrating a ticket into the effort worktree, as dispatch has it do while a
+        # review runs) are not the child's; collection checks the registered worktree only, and status still warns.
+        head, effort, review = self.two_checkouts()
+        for runtime in ('claude', 'codex'):
+            with self.subTest(runtime=runtime):
+                attempt = self.native_child(runtime, 'reviewer', 'diff-review', worktree=review)
+                self.startup(attempt, runtime, self.native_rows(runtime, effort, self.SESSIONS[runtime]))
+                self.record('submitted', attempt, evidence=['native child started'])
+                (effort / f'{runtime}.py').write_text('y = 1\n')
+                self.git(effort, 'add', '-A')
+                self.git(effort, 'commit', '-qm', f'integrate a ticket while the {runtime} review runs')
+                self.assertEqual(self.attempt(attempt).get('warnings'), [
+                    f'the native record puts the worker in {effort}, outside its registered worktree {review}'])
+                self.cli('collect', '--attempt', attempt, '--input', self.collect_request(head))
 
 
 if __name__ == '__main__':

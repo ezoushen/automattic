@@ -40,7 +40,9 @@ user decisions and exact failure evidence. Children read the adapter, agent file
 file, then verify worktree and branch. Pass paths instead of copied conversations.
 Record a child's startup with `native`, its rollout (its `session_meta` names the child's
 `agent_path`): a child inherits its parent's `turn_context.cwd`, so outside the child's
-worktree it is a `status` warning, and a read-only child is held to that checkout as well.
+worktree it is a `status` warning. A read-only child's writes outside its registered worktree
+are not detected: what holds is the agent's absolute-path rule and, for a builder, `--accept`'s
+check of its ticket branch.
 After session loss, inspect saved IDs; reconstruct absent agents from surviving
 files/worktrees and record replacement IDs.
 

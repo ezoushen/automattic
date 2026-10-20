@@ -489,7 +489,9 @@ def record(db, data, refuse_changes=False):
         # A native record, and a read-only agent's other checkout, are read before the write lock is taken too.
         target = get(db, attempt)
         located = native_settings.working_directory(data['native'], target['runtime'], target['native_session'])
-        checkout = located and 'worktree_baseline' in target and checkout_root(located)
+        # Only a Pi record names the child's own directory; Claude and Codex ones name their coordinator's.
+        checkout = (located and target['runtime'] == 'pi' and 'worktree_baseline' in target
+                    and checkout_root(located))
         if checkout and checkout != checkout_root(target['worktree']) \
                 and checkout not in target.get('checkout_baselines', {}):
             elsewhere = checkout, worktree_state(checkout)
@@ -602,7 +604,7 @@ def record(db, data, refuse_changes=False):
                     # A Claude or Codex native child records its coordinator's directory, so this only warns.
                     saved['observed_cwd'] = str(Path(located).resolve())
                 if elsewhere:
-                    # A read-only agent working in another checkout is held to that one too.
+                    # A read-only Pi child working in another checkout is held to that one too.
                     saved.setdefault('checkout_baselines', {})[elsewhere[0]] = elsewhere[1]
                 saved['verified'] = not mismatched(saved)
             elif kind == 'submitted':

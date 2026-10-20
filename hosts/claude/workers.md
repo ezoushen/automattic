@@ -124,7 +124,9 @@ the read-only worktree check at collection. It is not launched through Herdr.
 Register it with its `agentId` as `native_session` and record startup with `native`, its
 transcript (`subagents/agent-<agentId>.jsonl` in the session's directory). Every row there
 carries the coordinator's session directory, not the subagent's own `cd`, so outside the
-assigned worktree it is a `status` warning, not a refusal.
+assigned worktree it is a `status` warning, not a refusal. A read-only subagent's writes outside
+its registered worktree are not detected: what holds is the agent's absolute-path rule and, for a
+builder, `--accept`'s check of its ticket branch.
 
 A Claude worker started as its own process takes a route's `launch.argv` after `--`, and only a
 non-Claude coordinator (Codex, Pi or OpenCode, resolving with its own `--harness` and
