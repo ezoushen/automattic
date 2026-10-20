@@ -30,8 +30,8 @@ class Diagnose(unittest.TestCase):
     def test_the_diagnose_doc_names_no_language_specific_tooling(self):
         source = (ROOT / DOC).read_text()
         self.assertNotIn('```', source)
-        # The only code spans are the redaction marker and the bootstrap path every command first reads.
-        self.assertEqual(set(re.findall(r'`([^`]+)`', source)), {'<REDACTED>', '../../bootstrap.md'})
+        # The only code spans are the redaction marker, the bootstrap path every command first reads and the tdd skill.
+        self.assertEqual(set(re.findall(r'`([^`]+)`', source)), {'<REDACTED>', '../../bootstrap.md', '/automattic:tdd'})
         text = prose(DOC).lower()
         for tool in ('pytest', 'unittest', 'python', 'jest', 'node', 'npm', 'yarn', 'playwright', 'puppeteer', 'curl',
                      'cargo', 'go test', 'gradle', 'maven', 'dotnet', 'rspec', 'xcodebuild', 'swift test',
@@ -53,11 +53,19 @@ class Diagnose(unittest.TestCase):
         section = prose(DOC).split('## Invoked directly', 1)[1]
         for rule in ('only after the confirmed cause',
                      'the shrunk case becomes the failing test at the seam where the defect occurs',
-                     '](../../standards/tdd.md)'):
+                     '](../../standards/tdd.md)',
+                     'with the user in place of the ticket, as `/automattic:tdd` works it',
+                     'confirm the seam with the user before the test'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, section)
         self.assertIn('runtime bootstrap', prose(DOC))
         self.assertFalse((ROOT / 'runtime/diagnose').exists())
+
+    def test_the_agent_loads_it_on_what_the_user_reports(self):
+        # Its direct path offers a fix only the user asked for, so it fires on the user's report, not on the agent's
+        # own failing check mid-task.
+        description = re.search(r'^description: (.+)$', (ROOT / DOC).read_text(), re.M).group(1)
+        self.assertIn('Use when the user reports', description)
 
 
 if __name__ == '__main__':

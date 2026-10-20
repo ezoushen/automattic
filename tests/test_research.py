@@ -39,16 +39,18 @@ class Research(unittest.TestCase):
         text = prose(DOC)
         self.assertIn("a helper agent of the host, not a job of the builder, reviewer or verifier", text)
         self.assertIn('](../../runtime/resources/capacity.md)', text)
+        self.assertIn("record it in the effort's run report when one exists", text)
         self.assertNotIn('](../../runtime/workers/launch.md)', text)
 
     def test_invoked_directly_the_users_question_is_the_question(self):
         section = prose(DOC).split('## Invoked directly', 1)[1]
         for rule in ("the user's question is the question",
                      '`.scratch/<topic>/`',
+                     'name the helper in the answer',
                      'answer in the conversation'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, section)
-        self.assertIn('runtime bootstrap', prose(DOC))
+        self.assertIn('First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.', prose(DOC))
         self.assertFalse((ROOT / 'runtime/research').exists())
 
     def test_the_pipeline_map_sends_a_defect_to_diagnosis(self):

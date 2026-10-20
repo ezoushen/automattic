@@ -70,6 +70,7 @@ class ArchitectureDocs(unittest.TestCase):
         flat = ' '.join(section.split())
         self.assertIn('A skill both the user types and the agent loads by its trigger', flat)
         self.assertIn('nothing below the skills links one', flat)
+        self.assertIn('A skill that launches nothing (`huh`, `explain`) skips the bootstrap', flat)
 
     def test_the_skill_contents_list_the_new_section(self):
         self.assertIn('- [Extend the architecture](#extend-the-architecture)', SKILL)

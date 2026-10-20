@@ -46,10 +46,16 @@ class Prototype(unittest.TestCase):
 
     def test_invoked_directly_it_builds_in_its_own_worktree_and_answers_the_user(self):
         section = prose(SKILL).split('## Invoked directly', 1)[1]
-        for rule in ('throwaway branch in its own worktree', 'the verdict in the conversation', 'offer'):
+        for rule in ('throwaway branch in its own worktree', 'the verdict in the conversation', 'offer',
+                     "the worktree's path", '](../../runtime/interview/record.md)'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, section)
         self.assertIn('runtime bootstrap', prose(SKILL))
+
+    def test_the_agent_loads_it_on_what_the_user_wants(self):
+        # Loading it creates a branch, a worktree and a commit, so it fires on the user's request only.
+        description = re.search(r'^description: (.+)$', (ROOT / SKILL).read_text(), re.M).group(1)
+        self.assertIn('Use when the user wants', description)
 
     def test_neither_keeps_less_than_the_builders_core_gates(self):
         for path in (SKILL, JOB):

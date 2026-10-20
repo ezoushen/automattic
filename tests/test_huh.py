@@ -87,6 +87,9 @@ class Huh(unittest.TestCase):
                 self.assertIn(rule, section)
         self.assertIn('Skip the runtime bootstrap and the host session part', prose(EXPLAIN))
         self.assertFalse((ROOT / 'runtime/explain').exists())
+        # Progress is a briefing, which reads live worker and check evidence that explaining skips.
+        self.assertIn('`/automattic:brief`', section)
+        self.assertNotIn('current state', EXPLAIN.read_text().split('---', 2)[1])
 
     def test_no_show_me_dependency_remains(self):
         self.assertFalse((ROOT / 'addons').exists())

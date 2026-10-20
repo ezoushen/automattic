@@ -239,8 +239,7 @@ def first_read(root, architecture, rel):
 
 def entry_doc(root, architecture, rel, skill, declared):
     """A finding when a skill is not its own module holding its procedure in SKILL.md: a skill mapped
-    into another module, or one whose `First read:` paragraph links a doc named after it in its own
-    module, wraps a doc. A same-named doc in a lower module is a dependency, not a wrapper."""
+    into another module, or one whose `First read:` paragraph links a doc named after it, wraps a doc."""
     if not architecture.data.get('entry_doc'):
         return []
     fields = frontmatter(skill.read_text())[0] or {}
@@ -250,7 +249,7 @@ def entry_doc(root, architecture, rel, skill, declared):
     if module != name:
         return [Finding(rel(skill), 1, 'error', 'entry-doc',
                         f'map {folder} as its own module named {name} holding its procedure; it is in {module}')]
-    if any(path.name == f'{name}.md' and architecture.module(rel(path)) == name for path in declared):
+    if any(path.name == f'{name}.md' for path in declared):
         return [Finding(rel(skill), 1, 'error', 'entry-doc',
                         f'its `First read:` paragraph links {name}.md; move that procedure into this SKILL.md')]
     return []

@@ -170,8 +170,14 @@ class CrossHarness(unittest.TestCase):
             # huh is a short re-pitch trigger that launches nothing (tests/test_huh.py).
             if name != 'huh':
                 assert len(text.encode()) >= 2500, f'{path}: a skill holds its procedure'
-            if name not in implicit_skills and name != 'huh':
-                assert 'runtime bootstrap' in text, path
+            first_read = re.search(r'^First read:.*?(?:\n\n|\Z)', text, re.M | re.S).group(0)
+            if name in {'huh', 'explain'}:
+                # They launch nothing, so they skip the bootstrap the session hook points to.
+                assert 'Skip the runtime bootstrap and the host session part' in ' '.join(first_read.split()), path
+            elif name not in implicit_skills:
+                assert first_read.startswith('First read: the runtime bootstrap (`../../bootstrap.md`), '
+                                             'the host session part'), path
+                assert 'skip' not in first_read.lower(), path
             if name in commands:
                 assert 'disable-model-invocation: true' in text, path
                 assert 'user-invocable: false' not in text, path

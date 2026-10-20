@@ -16,10 +16,11 @@ def prose(path):
 
 
 class TddSkill(unittest.TestCase):
-    def test_it_first_reads_the_standard_it_works(self):
+    def test_it_reads_the_standard_it_works_before_the_first_test(self):
         declaration = re.search(r'^First read:.*?(?:\n\n|\Z)', SKILL.read_text(), re.M | re.S).group(0)
-        self.assertIn(STANDARD_LINK, declaration)
-        self.assertIn('runtime bootstrap', declaration)
+        self.assertEqual(' '.join(declaration.split()),
+                         'First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.')
+        self.assertIn(f'[test-first development{STANDARD_LINK} in full before the first test', prose(SKILL))
         # The builder and ADR 0007 still name the standard, so it stays a standard.
         self.assertIn('](../standards/tdd.md)', prose(ROOT / 'agents/builder.md'))
 
@@ -57,6 +58,7 @@ class TddSkill(unittest.TestCase):
         for sentence in ('Write one failing test, run it and see it fail for the expected reason',
                          'Mock only at system boundaries', 'Expected values come from an independent source'):
             with self.subTest(sentence=sentence):
+                self.assertIn(sentence, prose(ROOT / 'standards/tdd.md'))
                 self.assertNotIn(sentence, text)
 
 

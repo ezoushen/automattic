@@ -1,6 +1,6 @@
 ---
 name: prototype
-description: "Build throwaway code that answers one design question paper cannot settle (does this logic hold, or what should it look like) and report the verdict. Use to sanity-check a state model, an ordering or a rule's edge cases, or to compare a few interface or output variants."
+description: "Build throwaway code that answers one design question paper cannot settle (does this logic hold, or what should it look like) and report the verdict. Use when the user wants to sanity-check a state model, an ordering or a rule's edge cases, or to compare a few interface or output variants."
 argument-hint: "<the one question to settle>"
 ---
 
@@ -48,7 +48,8 @@ the throwaway branch and commit.
 
 When the user asks for a prototype, build it on a throwaway branch in its own worktree
 created from the current commit, so the user's checkout stays as it was. Give the
-verdict in the conversation, with the run command so the user can see it for
-themselves; for a look question, say which variant to look at and how. When the
-verdict settles a design decision, offer to record it: a ledger row when an effort is
-under way, and an ADR when it qualifies under the [ADR rules](../../runtime/domain/adr.md#when-to-offer-one).
+verdict in the conversation, with the run command and the worktree's path, which stays
+until the user drops it, so they can see it for themselves; for a look question, say
+which variant to look at and how. When the verdict settles a design decision, offer to
+record it: a [ledger row](../../runtime/interview/record.md) when an effort is under way,
+and an ADR when it qualifies under the [ADR rules](../../runtime/domain/adr.md#when-to-offer-one).

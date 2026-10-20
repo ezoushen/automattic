@@ -290,11 +290,10 @@ class ArchitectureRules(Fixture):
         [(_, _, message)] = self.messages('entry-doc')
         self.assertIn('SKILL.md', message)
 
-    def test_a_skill_holding_its_procedure_may_first_read_a_lower_doc_that_shares_its_name(self):
-        # A standard or runtime doc named like the skill (standards/tdd.md for the tdd skill) is a dependency the
-        # skill builds on, not a wrapper; the procedure still lives in the skill's own module.
+    def test_a_skill_in_its_own_module_that_first_reads_a_same_named_lower_doc_is_an_error(self):
+        # The thin-wrapper shape: a skill whose first read is a standard or runtime doc named like it.
         self.entry_tree('shared/tool.md', own_module=True, command=True)
-        self.assertEqual(self.check(), set())
+        self.assertEqual(self.check(), {('skills/tool/SKILL.md', 1, 'entry-doc', 'error')})
 
     def host_tree(self, **extra):
         self.first_read_tree()

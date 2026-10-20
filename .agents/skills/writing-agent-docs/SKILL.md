@@ -69,7 +69,7 @@ differs from the base; list deliberate edits in a JSON file passed with `--allow
 | `cycle` | Modules link each other in a loop | Break the loop at the link `direction` also reports |
 | `first-read` | Bootstrap, host session, skill and the docs its `First read:` paragraph links, over the budget | Move detail out of those docs or the bootstrap |
 | `first-read-line` | A `SKILL.md` has no line starting `First read:` | Add a paragraph starting `First read:` that links the docs the skill reads before acting |
-| `entry-doc` | A skill's folder is not its own module, or its `First read:` paragraph links a `<skill>.md` in that module instead of the skill holding its procedure; a same-named doc in a lower module, such as `standards/tdd.md`, is a dependency | Put the procedure in its `SKILL.md` and map `skills/<skill>/` as a module; a doc agents need without a trigger belongs in `runtime/` or `standards/`, not in a wrapper skill |
+| `entry-doc` | A skill's folder is not its own module, or its `First read:` paragraph links a `<skill>.md` instead of the skill holding its procedure | Put the procedure in its `SKILL.md` and map `skills/<skill>/` as a module; a doc agents need without a trigger belongs in `runtime/` or `standards/`, not in a wrapper skill |
 | `host-shape` | A folder under `hosts/` that does not hold exactly `session.md` and `workers.md` | Move other text to the runtime doc that owns it |
 | `shared-section` | A section, other than a file's title or only section, linked from 3+ files in other modules | Make it its own file, or link the whole file |
 | `unmapped` | No module in architecture.json owns the doc | Add its path to the owning module |
@@ -124,5 +124,5 @@ each other, so the order grows without loosening a rule. Run the checker and
   its description is its trigger. Text agents read by link, or a runtime doc needs, is a
   `runtime/` module or a standard, named in an agent's `core_skills` when every job needs it;
   a procedure the user may also run alone is a skill at a lower level than those that read it.
-  A command that only re-pitches the conversation and launches nothing (`huh`) skips
-  the bootstrap and the procedure size floor; keep its trigger short.
+  A skill that launches nothing (`huh`, `explain`) skips the bootstrap; `huh`, which only
+  re-pitches the conversation, also skips the procedure size floor; keep its trigger short.

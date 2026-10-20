@@ -1,6 +1,6 @@
 ---
 name: diagnose
-description: "Find the cause of a bug, failing check or regression: build a command that fails on it, shrink the case, test ranked hypotheses, and report the cause with a reproducer. Use when something is broken, throws, fails or got slower."
+description: "Find the cause of a bug, failing check or regression: build a command that fails on it, shrink the case, test ranked hypotheses, and report the cause with a reproducer. Use when the user reports something broken, throwing, failing or slower, or asks why it happens."
 argument-hint: "[symptom, failing command or issue]"
 ---
 
@@ -78,5 +78,7 @@ When the user asks for a diagnosis, the user's report is the symptom: build the 
 from it and return to the user as this procedure describes. When they also asked for
 the fix, this session owns the repair, and it starts only after the confirmed cause is
 reported: the shrunk case becomes the failing test at the seam where the defect occurs,
-and the fix follows [test-first development](../../standards/tdd.md). A fix the user
+and the fix follows [test-first development](../../standards/tdd.md) with the user in
+place of the ticket, as `/automattic:tdd` works it: confirm the seam with the user before
+the test, and offer a refactor wider than the fix rather than making it. A fix the user
 did not ask for is offered, not applied.

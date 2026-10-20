@@ -1,6 +1,6 @@
 ---
 name: explain
-description: "Explain code, a change, a design or the current state so the user follows it: the headline first, then the story in layers, with one small text picture (call tree, file tree, sequence, diff, table) where a shape helps. Use when the user asks to explain, walk through or show how something works."
+description: "Explain code, a change or a design so the user follows it: the headline first, then the story in layers, with one small text picture (call tree, file tree, sequence, diff, table) where a shape helps. Use when the user asks to explain, walk through or show how something works."
 argument-hint: "[what to explain] [depth or focus]"
 ---
 
@@ -121,4 +121,5 @@ When the user asks for an explanation, the user's question sets the scope and th
 session is the caller. Read the code, documents or state the question concerns first,
 read-only, so each fact comes from its source; changing anything is outside an
 explanation. Then explain by this procedure, and mark a claim you have not checked as
-unchecked.
+unchecked. Progress on an effort, branch or PR is a briefing, not an explanation: point
+the user to `/automattic:brief`, which reads the live worker and check evidence.
