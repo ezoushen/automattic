@@ -151,35 +151,48 @@ def effort_branch(slug):
 
 
 def delivery_evidence(slug):
-    """Structural delivery gate; the orchestrator must also judge the recorded evidence.
+    return not delivery_problems(slug)
+
+
+def delivery_problems(slug):
+    """Structural delivery gate: each recorded field that fails it, [] when none does. The orchestrator must also
+    judge the recorded evidence.
 
     main keeps moving after an effort delivered on it, so there the reviewed head only has to stay in main.
     """
     fm = review_front_matter(slug)
-    ref = branch_ref(effort_branch(slug))
-    if fm is None or ref is None:
-        return False
-    head = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--verify', f'{ref}^{{commit}}'],
-                          capture_output=True, text=True)
+    if fm is None:
+        return [f'no review report at {ISSUES / slug / "reports" / "spec-review.md"}']
+    problems = [f'{key}: {fm.get(key) or "missing"} (needs {value})' for key, value in
+                (('review_status', 'clean'), ('documentation_status', 'passed'), ('e2e_status', 'passed'))
+                if fm.get(key) != value]
+    # The worker runs that produced the statuses; a host-written status alone is not evidence.
+    problems += [f'{key}: {fm.get(key) or "missing"} names no worker run' for key in ('review_by', 'e2e_by')
+                 if str(fm.get(key) or '').strip().lower() in ('', 'none', 'n/a', 'unknown', 'orchestrator', 'host')]
+    branch = effort_branch(slug)
+    ref = branch_ref(branch)
+    head = ref and subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--verify', f'{ref}^{{commit}}'],
+                                  capture_output=True, text=True)
+    if not head or head.returncode:
+        return problems + [f'effort branch {branch} is not an existing branch']
     base = fm.get('review_base', '')
-    if head.returncode or not isinstance(base, str) or not re.fullmatch('[0-9a-f]{40}', base):
-        return False
+    if not isinstance(base, str) or not re.fullmatch('[0-9a-f]{40}', base):
+        return problems + [f'review_base: {base or "missing"} is not a 40-hex commit']
     sha = head.stdout.strip()
     reviewed = str(fm.get('review_head') or '')
     if ref == 'refs/heads/main' and re.fullmatch('[0-9a-f]{40}', reviewed) and subprocess.run(
             ['git', '-C', str(ROOT), 'merge-base', '--is-ancestor', reviewed, sha]).returncode == 0:
         sha = reviewed
+    problems += [f'{key}: {fm.get(key) or "missing"} is stale against {branch} head {sha}'
+                 for key in ('review_head', 'e2e_head') if fm.get(key) != sha]
+    if sha == base:
+        problems.append(f'review_head: {sha} is review_base, so nothing was reviewed')
     merge_base = subprocess.run(['git', '-C', str(ROOT), 'merge-base', '--all', base, sha],
                                 capture_output=True, text=True)
-    # The worker runs that produced the statuses; a host-written status alone is not evidence.
-    producers = [str(fm.get(key) or '').strip() for key in ('review_by', 'e2e_by')]
-    if any(p.lower() in ('', 'none', 'n/a', 'unknown', 'orchestrator', 'host') for p in producers):
-        return False
-    return (fm.get('review_status') == 'clean' and fm.get('review_head') == sha and sha != base
-            and fm.get('documentation_status') == 'passed'
-            and fm.get('e2e_status') == 'passed' and fm.get('e2e_head') == sha
-            and merge_base.returncode == 0
-            and merge_base.stdout.splitlines() == [fm.get('review_diff_base')])
+    if merge_base.returncode or merge_base.stdout.splitlines() != [fm.get('review_diff_base')]:
+        problems.append(f'review_diff_base: {fm.get("review_diff_base") or "missing"} is not the merge base of '
+                        f'review_base and {branch} head {sha}')
+    return problems
 
 
 def ready(tickets, slug=None, max_live=MAX_LIVE):
@@ -585,11 +598,14 @@ def main(argv):
     if args.check:
         return
     if args.delivery:
-        bad = [slug for slug in sorted({spec_of(t) for t in selected})
-               if any(fm['status'] != 'done' for t, fm in selected.items() if spec_of(t) == slug)
-               or not delivery_evidence(slug)]
+        bad = []
+        for slug in sorted({spec_of(t) for t in selected}):
+            undone = [f"{t} ({fm['status']})" for t, fm in selected.items()
+                      if spec_of(t) == slug and fm['status'] != 'done']
+            bad += [f'{slug}: {problem}' for problem in
+                    ([f"tickets not done: {', '.join(undone)}"] if undone else []) + delivery_problems(slug)]
         if bad:
-            sys.exit('delivery incomplete or stale: ' + ', '.join(bad))
+            sys.exit('\n'.join(bad))
         print('delivery evidence matches selected effort heads; inspect the recorded artifacts')
         return
     for name, fn in ((args.accept, accept), (args.can_verify, can_verify)):

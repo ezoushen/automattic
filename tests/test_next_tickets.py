@@ -755,5 +755,37 @@ class BoardCLI(unittest.TestCase):
         review.write_text(unreviewed.replace(head, start))
         self.cli('onmain', '--delivery', code=1)
 
+    def test_delivery_names_each_field_that_fails(self):
+        # Rule 2 (the Pi run): a repair committed after review leaves review_head stale against the effort head, and
+        # E2E never ran; the gate names each failing field, not only the effort.
+        self.write_ticket('fx/01', 'done')
+        start = self.commit('start')
+        self.git('switch', '-q', '-c', 'feat/fx')
+        reviewed = self.commit('reviewed work')
+        repaired = self.commit('repair after review')
+        self.git('switch', '-q', 'main')
+        review, evidence = self.deliver('fx', 'feat/fx', start, reviewed)
+        review.write_text(evidence.replace('e2e_status: passed', 'e2e_status: not-run')
+                          .replace(f'e2e_head: {reviewed}', 'e2e_head: none').replace('e2e_by: verifier/2', 'e2e_by: none'))
+        refused = self.cli('fx', '--delivery', code=1).stderr
+        assert sorted(refused.splitlines()) == sorted([
+            f'fx: review_head: {reviewed} is stale against feat/fx head {repaired}',
+            'fx: e2e_status: not-run (needs passed)',
+            f'fx: e2e_head: none is stale against feat/fx head {repaired}',
+            'fx: e2e_by: none names no worker run']), refused
+
+    def test_delivery_names_the_tickets_that_are_not_done(self):
+        # Rule 2: with current review and E2E evidence, an unfinished ticket alone fails the gate, and it is named.
+        self.write_ticket('fx/01', 'done')
+        self.write_ticket('fx/02', 'implementing', touches='docs')
+        self.write_ticket('fx/03', 'blocked', touches='tests')
+        start = self.commit('start')
+        self.git('switch', '-q', '-c', 'feat/fx')
+        head = self.commit('reviewed work')
+        self.git('switch', '-q', 'main')
+        self.deliver('fx', 'feat/fx', start, head)
+        refused = self.cli('fx', '--delivery', code=1).stderr
+        assert refused == 'fx: tickets not done: fx/02 (implementing), fx/03 (blocked)\n', refused
+
 if __name__ == '__main__':
     unittest.main()
