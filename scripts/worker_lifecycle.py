@@ -354,25 +354,43 @@ def read_only_change(saved):
     now = worktree_state(saved['worktree'])
     if now is None:
         return 'worktree state unreadable at collection'
+    # A registration from before untracked files were recorded is held to HEAD and tracked changes only.
+    legacy = 'untracked' not in baseline
+    note = '; untracked files were not recorded at registration' if legacy else ''
     if now['head'] != baseline['head']:
-        return f'HEAD moved from {baseline["head"]} to {now["head"]}'
+        return f'HEAD moved from {baseline["head"]} to {now["head"]}{note}'
     if now['changes'] != baseline['changes']:
-        return 'tracked files differ from their state at registration'
-    if appeared := sorted(set(now['untracked']) - set(baseline['untracked'])):
+        return f'tracked files differ from their state at registration{note}'
+    if legacy:
+        return None
+    before, after = baseline['untracked'], now['untracked']
+    if appeared := sorted(set(after) - set(before)):
         return f'an untracked file appeared: {appeared[0]}'
+    if deleted := sorted(set(before) - set(after)):
+        return f'an untracked file was deleted: {deleted[0]}'
+    if edited := sorted(name for name in before if after[name] != before[name]):
+        return f'an untracked file changed: {edited[0]}'
 
 
 def worktree_state(worktree):
-    """HEAD, a digest of tracked changes against it and the untracked files the ignore rules leave visible, or
-    None outside a readable Git checkout. A snapshot check may start from a dirty tree, so a read-only agent
-    is held to the state it was given."""
+    """HEAD, a digest of tracked changes against it and a digest of each untracked file the ignore rules leave
+    visible, or None outside a readable Git checkout. A snapshot check may start from a dirty tree, so a
+    read-only agent is held to the state it was given."""
     run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL)
     head, diff = run('rev-parse', 'HEAD'), run('diff', '--no-ext-diff', '--no-textconv', '--no-color', '--binary', 'HEAD')
     untracked = run('ls-files', '--others', '--exclude-standard', '-z')
     if head.returncode or diff.returncode or untracked.returncode:
         return None
+    names = filter(None, untracked.stdout.decode().split('\0'))
     return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
-            'untracked': sorted(filter(None, untracked.stdout.decode().split('\0')))}
+            'untracked': {name: content_digest(Path(worktree, name)) for name in names}}
+
+
+def content_digest(path):
+    """A digest of a file's bytes, or of a symlink's target; a nested repository, which Git lists as its
+    directory, has no content of its own."""
+    data = os.readlink(path).encode() if path.is_symlink() else b'' if path.is_dir() else path.read_bytes()
+    return hashlib.sha256(data).hexdigest()
 
 
 def require_returned(saved):

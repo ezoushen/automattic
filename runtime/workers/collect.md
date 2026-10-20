@@ -13,7 +13,8 @@ attempts retain their own report snapshots. Other evidence links and live runtim
 gates remain under the shared acceptance contract.
 A `completed` result also owes its job's `returns` report sections (real headings,
 outside code blocks) and, for a `writes: none` agent, the same HEAD, tracked changes
-and untracked files it was registered with; a gitignored file is not a change.
+and untracked files (their content too) it was registered with; a gitignored file is
+not a change.
 `collect` refuses a worktree that differs and names the change; restore it and
 collect again. Any other gap, and a difference recorded through `result`, goes on the
 result; then `gate --stage accept` fails and recording acceptance is refused.

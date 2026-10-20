@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """A registered attempt carries its agent and job: independence, required report sections, read-only work."""
 import json
+import sqlite3
 import subprocess
 import unittest
 
@@ -40,6 +41,43 @@ class Jobs(WorkerLifecycleCase):
         report = self.root / 'review.md'
         report.write_text('## Coverage\n\n## Review round 1\n')
         return report
+
+    def test_an_untracked_file_a_read_only_agent_edits_is_a_change(self):
+        head = self.checkout()
+        (self.worktree / 'before.txt').write_text('there before the agent started\n')
+        report = self.review(head)
+        (self.worktree / 'before.txt').write_text('rewritten by the agent\n')
+        self.record('result', 'review-1/1', status='completed', head=head, report=str(report), evidence=['review.md'])
+        gate = self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', head, code=1)
+        self.assertEqual(gate['missing'],
+                         ['unchanged worktree for a read-only agent (an untracked file changed: before.txt)'])
+
+    def test_an_untracked_file_a_read_only_agent_deletes_is_a_change(self):
+        head = self.checkout()
+        (self.worktree / 'before.txt').write_text('there before the agent started\n')
+        report = self.review(head)
+        (self.worktree / 'before.txt').unlink()
+        self.record('result', 'review-1/1', status='completed', head=head, report=str(report), evidence=['review.md'])
+        gate = self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', head, code=1)
+        self.assertEqual(gate['missing'],
+                         ['unchanged worktree for a read-only agent (an untracked file was deleted: before.txt)'])
+
+    def test_untracked_symlinks_and_a_nested_repository_are_held_to_their_registered_state(self):
+        head = self.checkout()
+        (self.worktree / 'target').mkdir()
+        (self.worktree / 'link').symlink_to('target')
+        (self.worktree / 'dangling').symlink_to('absent')
+        self.git('init', '-q', 'nested')
+        report = self.review(head)
+        self.record('result', 'review-1/1', status='completed', head=head, report=str(report), evidence=['review.md'])
+        self.assertTrue(self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', head)['complete'])
+
+    def forget_untracked(self, attempt):
+        """Make a registration read as one made before the snapshot listed untracked files."""
+        with sqlite3.connect(self.state) as db:
+            data = json.loads(db.execute('SELECT data FROM attempts WHERE id = ?', (attempt,)).fetchone()[0])
+            del data['worktree_baseline']['untracked']
+            db.execute('UPDATE attempts SET data = ? WHERE id = ?', (json.dumps(data), attempt))
 
     def collect_request(self, head, report):
         request = self.root / 'collect.json'
@@ -223,6 +261,31 @@ class Jobs(WorkerLifecycleCase):
         error = self.cli('collect', '--attempt', 'review-1/1', '--input', self.collect_request('head-1', report), code=2)
         self.assertIn('Collection requires an unchanged worktree for a read-only agent (not a readable Git checkout '
                       'at registration; read-only work cannot be verified)', error)
+
+    def test_a_registration_without_untracked_files_does_not_count_a_new_untracked_file(self):
+        head = self.checkout()
+        report = self.review(head)
+        self.forget_untracked('review-1/1')
+        (self.worktree / 'notes.txt').write_text('scratch\n')
+        self.cli('collect', '--attempt', 'review-1/1', '--input', self.collect_request(head, report))
+        self.assertTrue(self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', head)['complete'])
+
+    def test_a_registration_without_untracked_files_still_catches_head_and_tracked_changes_and_says_so(self):
+        head = self.checkout()
+        for number, change in enumerate(('commit', 'edit'), 1):
+            with self.subTest(change=change):
+                attempt = f'review-{number}/1'
+                report = self.review(head, attempt, f'native-{number}')
+                self.forget_untracked(attempt)
+                (self.worktree / 'code.py').write_text('x = 2\n')
+                if change == 'commit':
+                    self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qam', 'reviewer edit')
+                reason = (f'HEAD moved from {head} to {self.git("rev-parse", "HEAD")}' if change == 'commit'
+                          else 'tracked files differ from their state at registration')
+                error = self.cli('collect', '--attempt', attempt, '--input', self.collect_request(head, report), code=2)
+                self.assertIn('Collection requires an unchanged worktree for a read-only agent '
+                              f'({reason}; untracked files were not recorded at registration)', error)
+                self.git('reset', '-q', '--hard', head)
 
     def test_a_read_only_agent_outside_a_git_checkout_cannot_be_verified(self):
         self.use('reviewer', 'diff-review')
