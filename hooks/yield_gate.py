@@ -10,6 +10,7 @@ cannot run is a named gap, never a pass. `claude` and `codex` speak their shared
 hook protocol; `check <cwd> [session]` prints the gaps as JSON for other hosts. Set
 AUTOMATTIC_YIELD_HOOK=off to disable the check.
 """
+import calendar
 import importlib.util
 import json
 import os
@@ -94,6 +95,16 @@ def handles(worker):
     return {worker, *parts[1:]} if len(parts) == 3 else {worker}
 
 
+def clears(saved, launch):
+    """Whether an attempt accounts for a logged launch: it names the launch's pane or agent, and its coordinator
+    recorded at registration is the launch's pane or, with none recorded, it was registered no earlier."""
+    if not handles(saved['worker']) & {launch['agent'], launch['pane']}:
+        return False
+    if saved.get('coordinator'):
+        return saved['coordinator'] == launch['coordinator']['pane']
+    return (saved['registered_at'] or 0) >= calendar.timegm(time.strptime(launch['time'], '%Y-%m-%dT%H:%M:%SZ'))
+
+
 def is_worker(pane, session, attempts, records):
     """Whether this session is a worker, wherever its cwd: Herdr launched or registered its pane or, outside Herdr,
     its session is an attempt's native session."""
@@ -111,7 +122,9 @@ def unregistered(root, pane, session):
         module = module or lifecycle()
         db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
         try:
-            attempts += module.attempts(db)
+            registered = {row[0]: json.loads(row[1])['recorded_at']
+                          for row in db.execute("SELECT attempt, payload FROM events WHERE kind = 'register'")}
+            attempts += [dict(saved, registered_at=registered.get(saved['attempt'])) for saved in module.attempts(db)]
         finally:
             db.close()
     workers = {handle for saved in attempts for handle in handles(saved['worker'])}
@@ -121,13 +134,14 @@ def unregistered(root, pane, session):
         return []  # Only its coordinator answers for its own launches and its siblings.
     launches = []
     for record in records:
-        if 'dismissed' in record:  # Accounts for the launches of that pane or agent name logged before it.
+        if 'dismissed' in record:  # Accounts for its coordinator's launches of that pane or name logged before it.
             launches = [launch for launch in launches
-                        if any(launch.get(key) != value for key, value in record['dismissed'].items())]
+                        if any(launch.get(key) != value for key, value in record['dismissed'].items())
+                        or not launched_by(launch, record['by']['pane'], record['by']['session'])]
         else:
             launches.append(record)
     launches = [launch for launch in launches if launched_by(launch, pane, session)
-                and not workers & {launch['agent'], launch['pane']}
+                and not any(clears(saved, launch) for saved in attempts)
                 and ('cwd' not in launch or Path(launch['cwd']).resolve().is_relative_to(worktrees))]
     workers |= {handle for launch in launches for handle in (launch['agent'], launch['pane'])}  # Named once.
     workspace, failed = os.environ.get('HERDR_WORKSPACE_ID'), []
@@ -153,11 +167,12 @@ def checked(cwd, session=None):
         return [f'could not check workers: {error}']
 
 
-def reason(missing):
+def reason(missing, session=None):
+    dismiss = f"python3 {ROOT}/hooks/herdr_launch.py dismiss --pane <pane>{f' --session {session}' if session else ''}"
     return ('These workers could finish or run without waking you:\n'
             + ''.join(f'- {gap}\n' for gap in missing)
-            + f'Register each launched worker, or dismiss a launch that needs none with `python3 {ROOT}/hooks/'
-            + f'herdr_launch.py dismiss --pane <pane> --reason <why>` ({PREPARE}). '
+            + f'Register each launched worker, or dismiss a launch that needs none with `{dismiss} --reason <why>` '
+            + f'({PREPARE}). '
             + 'Arm a notified wait, recover the receipt or collect the '
             + 'result (for a worker that is gone, a failed or cancelled result whose report says what was lost) '
             + f'before stopping ({GUIDE}).')
@@ -176,7 +191,7 @@ def main():
         return 0
     missing = checked(Path(payload.get('cwd') or os.getcwd()), payload.get('session_id'))
     if missing:
-        print(json.dumps({'decision': 'block', 'reason': reason(missing)}))
+        print(json.dumps({'decision': 'block', 'reason': reason(missing, payload.get('session_id'))}))
     return 0
 
 

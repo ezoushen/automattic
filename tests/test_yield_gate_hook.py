@@ -295,16 +295,35 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
             self.assertEqual(decision['decision'], 'block')
             self.assertIn(''.join(f'- {gap}\n' for gap in missing), decision['reason'])
             self.assertIn('workers/prepare.md', decision['reason'])
-        self.register('w1:p5', 'ticket-1/1')
+        self.register('w1:p5', 'ticket-1/1', pane=None)
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p6')])
-        self.register('builder-2', 'ticket-2/1')
+        self.register('builder-2', 'ticket-2/1', pane=None)
         self.assertEqual(self.check(pane=None, session='host-1'), [])
         self.assertIsNone(self.stop(pane=None, session='host-1'))
 
-    def dismiss(self, *args):
-        """Run the launch hook's `dismiss` command from the ticket worktree."""
+    def dismiss(self, *args, pane=None):
+        """Run the launch hook's `dismiss` command from the ticket worktree, in Herdr pane `pane` or outside Herdr."""
         return subprocess.run([sys.executable, str(LAUNCH), 'dismiss', *args], cwd=self.worktree, capture_output=True,
-                              text=True, env=self.env(None), timeout=20)
+                              text=True, env=self.env(pane), timeout=20)
+
+    def test_a_dismissal_clears_only_the_launches_of_the_coordinator_that_dismissed(self):
+        # Review 2: a dismissal records who dismissed (pane and host session) and accounts only for that
+        # coordinator's launches; with no identity it could account for nothing, so it is refused.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None, session='host-1')
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p6', pane=None, session='host-2')
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p7', pane='w1:p1', session='host-3')
+        self.serve()
+        self.assertIn(f'herdr_launch.py dismiss --pane <pane> --session host-1 --reason <why>',
+                      self.stop(pane=None, session='host-1')['reason'])
+        self.assertEqual(self.dismiss('--name', 'builder-1', '--session', 'host-2', '--reason', 'probe').returncode, 0)
+        self.assertEqual(self.logged()[-1]['by'], {'pane': None, 'session': 'host-2'})
+        self.assertEqual(self.dismiss('--pane', 'w1:p7', '--reason', 'probe', pane='w1:p1').returncode, 0)
+        self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-1', 'w1:p5')])
+        self.assertEqual(self.check(pane=None, session='host-2'), [])
+        self.assertEqual(self.check(session='host-3'), [])
+        refused = self.dismiss('--name', 'builder-1', '--reason', 'probe')
+        self.assertEqual(refused.returncode, 2)
+        self.assertIn('--session', refused.stderr)
 
     def test_a_dismissal_with_a_reason_accounts_for_a_launch_logged_before_it(self):
         # Decision 1: a failed, denied or probe launch stays a gap until a dismissal with a reason accounts for it;
@@ -313,10 +332,11 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.launch('herdr agent start builder-2 --kind codex --pane w1:p6', pane=None)
         self.serve()
         self.assertIn('herdr_launch.py dismiss', self.stop(pane=None, session='host-1')['reason'])
-        result = self.dismiss('--pane', 'w1:p5', '--reason', 'agent_not_ready; the user closed the pane')
+        result = self.dismiss('--pane', 'w1:p5', '--session', 'host-1', '--reason',
+                              'agent_not_ready; the user closed the pane')
         self.assertEqual((result.returncode, result.stderr), (0, ''))
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-2', 'w1:p6')])
-        self.assertEqual(self.dismiss('--name', 'builder-2', '--reason', 'probe').returncode, 0)
+        self.assertEqual(self.dismiss('--name', 'builder-2', '--session', 'host-1', '--reason', 'probe').returncode, 0)
         self.assertEqual(self.check(pane=None, session='host-1'), [])
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-1', 'w1:p5')])
@@ -326,11 +346,24 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
         logged = self.logged()
         for reason in ([], ['--reason', ''], ['--reason', '  ']):
-            result = self.dismiss('--pane', 'w1:p5', *reason)
+            result = self.dismiss('--pane', 'w1:p5', '--session', 'host-1', *reason)
             self.assertEqual(result.returncode, 2, reason)
             self.assertIn('--reason', result.stderr)
         self.assertEqual(self.logged(), logged)
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-1', 'w1:p5')])
+
+    def test_only_a_registration_by_the_launching_coordinator_or_after_the_launch_clears_it(self):
+        # Review 2: an attempt recorded with another coordinator's pane, or registered outside Herdr before the
+        # launch, belongs to another run whose worker shares the name.
+        self.register('builder-1', 'old-1/1', pane=None)
+        time.sleep(1.1)  # The log keeps whole seconds: the next launches come strictly later.
+        for index in range(1, 5):
+            self.launch(f'herdr agent start builder-{index} --kind codex --pane w1:p{index + 4}')
+        self.register('builder-2', 'other-1/1', pane='w1:p9')
+        self.register('builder-3', 'ticket-3/1', pane='w1:p1')
+        self.register('builder-4', 'ticket-4/1', pane=None)
+        self.serve()
+        self.assertEqual(self.check(session='host-1'), [self.gap('builder-1', 'w1:p5'), self.gap('builder-2', 'w1:p6')])
 
     def test_a_session_pane_name_handle_clears_a_launch_matching_its_pane_or_its_name(self):
         # Decision 2: the lifecycle also accepts `<session>/<pane>/<name>` as a worker handle.
@@ -339,9 +372,9 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         for agent, pane in (('builder-1', 'w1:p5'), ('builder-2', 'w1:p6'), ('builder-3', 'w1:p7')):
             self.launch(f'herdr agent start {agent} --kind codex --pane {pane}', pane=None)
         self.serve()
-        self.register('default/w1:p5/renamed-1', 'ticket-1/1')
-        self.register('s2/w1:p9/builder-2', 'ticket-2/1')
-        self.register('default/w1:p8/builder-9', 'ticket-3/1')
+        self.register('default/w1:p5/renamed-1', 'ticket-1/1', pane=None)
+        self.register('s2/w1:p9/builder-2', 'ticket-2/1', pane=None)
+        self.register('default/w1:p8/builder-9', 'ticket-3/1', pane=None)
         self.assertEqual(self.check(pane=None, session='host-1'), [self.gap('builder-3', 'w1:p7')])
 
     def test_launches_outside_worktrees_are_not_gaps_but_an_unknown_cwd_is(self):
@@ -383,7 +416,7 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         # Rule 2: neither the launch log nor a run's registrations age out with the gate's one-day filter.
         log, stale = self.repo / '.scratch/herdr-launches.jsonl', time.time() - 2 * 24 * 3600
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane=None)
-        self.register('builder-1', 'ticket-1/1')
+        self.register('builder-1', 'ticket-1/1', pane=None)
         self.launch('herdr agent start builder-2 --kind codex --pane w1:p6', pane=None)
         self.serve()
         for path in (self.state, log):
@@ -402,7 +435,8 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertTrue(settled['continue'])
         self.assertIn(f"- {self.gap('builder-1', 'w1:p5')}\n", settled['entries'][0]['content'])
         self.assertIn('workers/prepare.md', settled['entries'][0]['content'])
-        self.assertIn('herdr_launch.py dismiss', settled['entries'][0]['content'])
+        self.assertIn('herdr_launch.py dismiss --pane <pane> --session pi-1 --reason <why>',
+                      settled['entries'][0]['content'])
 
     def test_a_live_agent_in_a_worktree_is_a_gap_until_an_attempt_registers_it(self):
         # Rule 3: an agent nobody logged (started by hand, or before the hook) still holds its workspace's coordinator.

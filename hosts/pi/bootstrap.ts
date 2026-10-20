@@ -31,9 +31,9 @@ export default function (pi) {
   });
   pi.on("agent_before_settle", (event, ctx) => {
     if (continued || event.outcome !== "completed" || process.env.AUTOMATTIC_YIELD_HOOK === "off") return undefined;
-    let missing;
+    let missing, session;
     try {
-      const session = ctx.sessionManager.getSessionId();
+      session = ctx.sessionManager.getSessionId();
       const output = execFileSync("python3", [`${root}/hooks/yield_gate.py`, "check", ctx.cwd, session],
         { encoding: "utf8", timeout: 20000 });
       missing = JSON.parse(output).missing;
@@ -44,9 +44,10 @@ export default function (pi) {
     continued = true;
     const content = "These workers could finish or run without waking you:\n"
       + missing.map((gap) => `- ${gap}\n`).join("")
-      + `Register each launched worker, or dismiss a launch that needs none with \`python3 ${root}/hooks/herdr_launch.py `
-      + `dismiss --pane <pane> --reason <why>\` (${root}/runtime/workers/prepare.md). Arm a notified wait, recover the receipt `
-      + "or collect the result (for a worker that is gone, a failed or cancelled result whose report says what was lost) "
+      + "Register each launched worker, or dismiss a launch that needs none with "
+      + `\`python3 ${root}/hooks/herdr_launch.py dismiss --pane <pane> --session ${session} --reason <why>\` `
+      + `(${root}/runtime/workers/prepare.md). Arm a notified wait, recover the receipt or collect the result `
+      + "(for a worker that is gone, a failed or cancelled result whose report says what was lost) "
       + `before stopping (${root}/runtime/workers/wait.md).`;
     return { entries: [{ type: "custom_message", customType: "automattic_yield_gate", content, display: true }], continue: true };
   });
