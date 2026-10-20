@@ -31,6 +31,8 @@ TAB_RECIPE = ('start the worker in a tab of its own: `herdr tab create --workspa
               '--no-focus`, then `herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>`, '
               'then register it')
 LOOKUP_SECONDS = 5  # Registration's wait on each Herdr call.
+# Native write-scope controls: a launch requests them (its `verify`) and startup observes them.
+SCOPE = ('permission_mode', 'sandbox', 'approval', 'tools', 'permissions')
 
 
 def require(value, message):
@@ -515,8 +517,10 @@ def record(db, data, refuse_changes=False):
                     require(previous.get('result') and previous.get('retained')
                             and not watching(previous) and not pending(db, previous['attempt']),
                             'Same-assignment reuse requires collected result, explicit retention and no live wait')
+            # The launch's write scope is requested like model and effort: a record without it stays unverified.
+            scope = (execution.get('launch') or {}).get('verify', {})
             saved = dict(data, agent=execution['agent'], job=execution['job'], execution_snapshot=execution,
-                         requested=dict(settings, runtime=data['runtime']), verified=False)
+                         requested=dict(scope, **settings, runtime=data['runtime']), verified=False)
             if placed:
                 saved['herdr'] = placed
             if DEFINITIONS['agents'][execution['agent']]['writes'] == 'none':
@@ -543,8 +547,9 @@ def record(db, data, refuse_changes=False):
                     or kind in ('ruling', 'accepted', 'declined'), 'Native conversation already closed')
             if kind == 'startup':
                 observed = data.get('observed')
-                require(isinstance(observed, dict) and not set(observed) - {'runtime', 'model', 'effort'}
-                        and all(text(value) for value in observed.values()), 'Invalid native settings')
+                require(isinstance(observed, dict) and not set(observed) - {'runtime', 'model', 'effort', *SCOPE}
+                        and all(text(value) or isinstance(value, list) and value for value in observed.values()),
+                        'Invalid native settings')
                 require(isinstance(data.get('evidence'), list) and data['evidence']
                         and all(text(x) for x in data['evidence']),
                         'Startup requires native evidence')
@@ -671,7 +676,10 @@ def record(db, data, refuse_changes=False):
                            choice=saved.get('decision', {}).get('choice'),
                            reason=f'Registered attempt {attempt} with the recommended route.')
     elif kind == 'startup' and saved['verified']:
-        journal = annotate(saved, 'execution', requested=saved['requested'], observed=saved['observed'],
+        # The decision journal records model settings; the write scope stays with the attempt.
+        requested, observed = ({key: value for key, value in found.items() if key not in SCOPE}
+                               for found in (saved['requested'], saved['observed']))
+        journal = annotate(saved, 'execution', requested=requested, observed=observed,
                            evidence=data['evidence'], revision=saved['head'],
                            **({'model_alias_evidence': data['model_alias_evidence']}
                               if data.get('model_alias_evidence') else {}))

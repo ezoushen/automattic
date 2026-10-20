@@ -187,13 +187,14 @@ else: sys.exit(3)
         self.native_env = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ['PATH'],
                                HERDR_PANE_ID='caller-pane', HERDR_TAB_ID='caller-tab')
 
-    def opencode_v2_export(self, *content, directory=None, session='native-1'):
-        """An `opencode session export` document as OpenCode 2 writes it."""
+    def opencode_v2_export(self, *content, directory=None, session='native-1', permissions=None):
+        """An `opencode session export` document as OpenCode 2 writes it, with the session's permissions when given."""
         model = {'providerID': 'opencode', 'id': 'deepseek-v4.1-flash-free', 'variant': 'high'}
         native = self.root / 'native-v2.json'
         native.write_text(json.dumps({
             'info': {'id': session, 'model': {'providerID': 'opencode', 'id': 'session-default'},
-                     'location': {'directory': str(directory or self.root)}},
+                     'location': {'directory': str(directory or self.root)},
+                     **({'permissions': permissions} if permissions is not None else {})},
             'messages': [{'id': 'm1', 'type': 'user', 'text': 'probe'},
                          *({'id': f'a{index}', 'type': 'assistant', 'agent': 'build', 'model': model,
                             'content': list(parts)} for index, parts in enumerate(content)),

@@ -52,13 +52,14 @@ def observe(path, runtime, session, worktree):
             raise ValueError('Native evidence worktree does not match the assignment')
         provider, model = latest['provider'], latest['model']
         settings = {'runtime': runtime, 'model': provider + '/' + model if provider and model else None,
-                    'effort': latest['variant']}
-        settings = {key: value for key, value in settings.items() if isinstance(value, str) and value.strip()}
+                    'effort': latest['variant'], 'permissions': info.get('permissions')}
+        settings = {key: value for key, value in settings.items()
+                    if isinstance(value, str) and value.strip() or isinstance(value, list) and value}
         return {'observed': settings, 'session': session, 'worktree': str(Path(worktree).resolve()),
                 'source': str(path), 'source_bytes': len(raw), 'source_sha256': hashlib.sha256(raw).hexdigest()}
     if runtime not in ('claude', 'codex', 'pi'):
         raise ValueError('Unsupported native evidence runtime')
-    digest, size, latest, header = hashlib.sha256(), 0, None, None
+    digest, size, latest, header, mode = hashlib.sha256(), 0, None, None, None
     entries = {}
     with path.open('rb') as stream:
         for line in stream:
@@ -73,6 +74,8 @@ def observe(path, runtime, session, worktree):
                 if not isinstance(row.get('message'), dict):
                     raise ValueError('Unsupported native assistant schema')
                 latest = row
+            elif runtime == 'claude' and row.get('type') == 'permission-mode':
+                mode = row.get('permissionMode')  # A TUI transcript lists no tools; its latest mode is the evidence.
             elif runtime == 'codex' and row.get('type') == 'session_meta':
                 header = row['payload']
                 if not isinstance(header, dict):
@@ -92,6 +95,11 @@ def observe(path, runtime, session, worktree):
                                                            'modelId', 'thinkingLevel')}
                     latest['message'] = {key: row.get('message', {}).get(key)
                                          for key in ('role', 'provider', 'model', 'stopReason')}
+                    # A compaction's system message is a complete tool checkpoint; other system messages patch tools.
+                    system = (row.get('systemMessage') or {}) if row.get('type') == 'compaction' \
+                        else row.get('message', {})
+                    latest['tools'] = [[tool['name'] for tool in system.get(key) or []]
+                                       for key in ('toolsAdded', 'toolsRemoved')]
                     if not isinstance(latest['id'], str) or latest['id'] in entries:
                         raise ValueError('Invalid native branch entry identity')
                     entries[latest['id']] = latest
@@ -112,6 +120,11 @@ def observe(path, runtime, session, worktree):
                 latest['effort'] = entry['thinkingLevel']
             elif entry['type'] == 'model_change':
                 latest['model'] = entry['provider'] + '/' + entry['modelId']
+            elif entry['type'] == 'compaction':
+                latest['tools'] = sorted(set(entry['tools'][0]))
+            elif entry['type'] == 'message' and entry['message']['role'] == 'system':
+                added, removed = entry['tools']
+                latest['tools'] = sorted((set(latest.get('tools', [])) | set(added)) - set(removed))
             elif entry['type'] == 'message' and entry['message']['role'] == 'assistant':
                 message = entry['message']
                 latest['model'] = message['provider'] + '/' + message['model']
@@ -141,6 +154,15 @@ def observe(path, runtime, session, worktree):
         effort = latest.get('effort')
     model = latest.get('message', {}).get('model') if runtime == 'claude' else latest.get('model')
     settings = {'runtime': runtime, 'model': model, 'effort': effort}
-    settings = {key: value for key, value in settings.items() if isinstance(value, str) and value.strip()}
+    if runtime == 'claude':
+        settings['permission_mode'] = mode
+    elif runtime == 'codex':
+        policy = latest.get('sandbox_policy')
+        settings.update(sandbox=policy.get('type') if isinstance(policy, dict) else None,
+                        approval=latest.get('approval_policy'))
+    else:  # Pi
+        settings['tools'] = latest.get('tools')
+    settings = {key: value for key, value in settings.items()
+                if isinstance(value, str) and value.strip() or isinstance(value, list) and value}
     return {'observed': settings, 'session': session, 'worktree': str(Path(worktree).resolve()),
             'source': str(path), 'source_bytes': size, 'source_sha256': digest.hexdigest()}

@@ -82,6 +82,125 @@ class Submission(WorkerLifecycleCase):
         self.assertEqual(self.cli('status')['attempts'][0]['observed'],
                          {'runtime': 'codex', 'model': 'gpt-6.1-sol', 'effort': 'high'})
 
+    def submit_scoped(self, request_code=0):
+        """Submit the productive-work marker command with the native record at native.jsonl."""
+        request = self.root / 'submit.json'
+        request.write_text(json.dumps({'native': str(self.root / 'native.jsonl'), 'timeout': 2,
+            'argv': [sys.executable, '-c', 'from pathlib import Path; Path("productive-work").touch()']}))
+        return self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request), code=request_code)
+
+    def assert_scope_refused(self):
+        """A record whose write scope differs from the launch, or lacks it, blocks work unverified."""
+        self.assertIn('verified', self.submit_scoped(2))
+        self.assertFalse(self.cli('status')['attempts'][0]['verified'])
+        self.assertFalse((self.root / 'productive-work').exists())
+
+    def test_submit_refuses_codex_work_until_the_rollout_shows_the_launch_sandbox_and_approval(self):
+        # Rule: submit verifies the write scope from the native record; a different or missing control blocks work.
+        self.execution.write_text(json.dumps({'target_runtime': 'codex', 'agent': 'builder', 'job': 'ticket',
+            'settings': {'model': 'gpt-6.1-sol', 'effort': 'high'},
+            'launch': {'writes': 'worktree', 'verify': {'sandbox': 'workspace-write', 'approval': 'never'}}}))
+        self.register(runtime='codex')
+        turn = {'model': 'gpt-6.1-sol', 'effort': 'high', 'cwd': str(self.root), 'approval_policy': 'never',
+                'sandbox_policy': {'type': 'workspace-write', 'writable_roots': [str(self.root)]}}
+
+        def rollout(**changes):
+            context = {key: value for key, value in dict(turn, **changes).items() if value is not None}
+            (self.root / 'native.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in (
+                {'type': 'session_meta', 'payload': {'id': 'native-1', 'cwd': str(self.root)}},
+                {'type': 'turn_context', 'payload': context})))
+        for case, changes in (('user default', {'sandbox_policy': {'type': 'danger-full-access'}}),
+                              ('other scope', {'sandbox_policy': {'type': 'read-only'}}),
+                              ('asks for approval', {'approval_policy': 'on-request'}),
+                              ('no sandbox recorded', {'sandbox_policy': None}),
+                              ('no approval recorded', {'approval_policy': None})):
+            with self.subTest(case=case):
+                rollout(**changes)
+                self.assert_scope_refused()
+        rollout()
+        self.submit_scoped()
+        self.assertTrue((self.root / 'productive-work').exists())
+        self.assertEqual(self.cli('status')['attempts'][0]['observed'], {
+            'runtime': 'codex', 'model': 'gpt-6.1-sol', 'effort': 'high', 'sandbox': 'workspace-write',
+            'approval': 'never'})
+
+    def test_submit_refuses_claude_work_until_the_transcript_shows_dont_ask_mode(self):
+        # Rule: a TUI transcript has no tool list, so its latest permission-mode row is the write-scope evidence.
+        execution = json.loads(self.execution.read_text())
+        execution['launch'] = {'writes': 'worktree', 'verify': {'permission_mode': 'dontAsk'}}
+        self.execution.write_text(json.dumps(execution))
+        self.register()
+        assistant = {'type': 'assistant', 'sessionId': 'native-1', 'isSidechain': False, 'cwd': str(self.root),
+                     'perTurnEffort': 'high', 'message': {'model': 'sonnet'}}
+
+        def transcript(*modes):
+            rows = [{'type': 'permission-mode', 'permissionMode': mode, 'sessionId': 'native-1'} for mode in modes]
+            (self.root / 'native.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in [*rows, assistant]))
+        for case, modes in (('user default', ('auto',)), ('changed after launch', ('dontAsk', 'bypassPermissions')),
+                            ('no mode recorded', ())):
+            with self.subTest(case=case):
+                transcript(*modes)
+                self.assert_scope_refused()
+        transcript('dontAsk', 'dontAsk')
+        self.submit_scoped()
+        self.assertTrue((self.root / 'productive-work').exists())
+        self.assertEqual(self.cli('status')['attempts'][0]['observed'], {
+            'runtime': 'claude', 'model': 'sonnet', 'effort': 'high', 'permission_mode': 'dontAsk'})
+
+    def pi_session(self, *tool_changes, checkpoint=None):
+        """A Pi session file whose active branch carries one system message per (added, removed) tool-name change,
+        then, when given, a compaction whose system message checkpoints these tool names."""
+        rows = [{'type': 'session', 'id': 'native-1', 'cwd': str(self.root)},
+                {'type': 'model_change', 'id': 'model', 'parentId': None, 'provider': 'dgx', 'modelId': 'glm-5.3-flash'},
+                {'type': 'thinking_level_change', 'id': 'e0', 'parentId': 'model', 'thinkingLevel': 'high'}]
+        for index, (added, removed) in enumerate(tool_changes, 1):
+            message = {'role': 'system', 'content': '', 'sections': {}}
+            message.update({'toolsAdded': [{'name': name, 'description': name, 'parameters': {}} for name in added]}
+                           if added else {}, **({'toolsRemoved': [{'name': name} for name in removed]} if removed else {}))
+            rows.append({'type': 'message', 'id': f'e{index}', 'parentId': f'e{index - 1}', 'message': message})
+        if checkpoint is not None:
+            rows.append({'type': 'compaction', 'id': 'compacted', 'parentId': rows[-1]['id'], 'summary': 'Earlier work.',
+                         'firstKeptEntryId': 'compacted', 'tokensBefore': 50000, 'systemMessage': {
+                             'role': 'system', 'content': '', 'toolsAdded': [{'name': name} for name in checkpoint]}})
+        rows.append({'type': 'message', 'id': 'reply', 'parentId': rows[-1]['id'],
+                     'message': {'role': 'assistant', 'provider': 'dgx', 'model': 'glm-5.3-flash', 'stopReason': 'stop'}})
+        (self.root / 'native.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in rows))
+
+    def test_submit_refuses_pi_work_until_the_session_offers_exactly_the_launch_tools(self):
+        # Rule: the tools a Pi session offers replay from its system messages (toolsAdded, then toolsRemoved) and
+        # must be exactly the launch's allowlist; an extra tool, such as an extension shell, blocks work.
+        self.execution.write_text(json.dumps({'target_runtime': 'pi', 'agent': 'reviewer', 'job': 'diff-review',
+            'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'},
+            'launch': {'writes': 'none', 'verify': {'tools': ['find', 'grep', 'ls', 'read']}}}))
+        self.register(runtime='pi')
+        read_only = ['read', 'grep', 'find', 'ls']
+        for case, changes in (('user default', [(['read', 'bash', 'edit', 'write', 'bg_run', 'subagent'], [])]),
+                              ('tool added later', [(read_only, []), (['bg_run'], [])]),
+                              ('no tool record', [])):
+            with self.subTest(case=case):
+                self.pi_session(*changes)
+                self.assert_scope_refused()
+        self.pi_session((read_only + ['bg_run'], []), ([], ['bg_run']))
+        self.submit_scoped()
+        self.assertTrue((self.root / 'productive-work').exists())
+        self.assertEqual(self.cli('status')['attempts'][0]['observed'], {
+            'runtime': 'pi', 'model': 'dgx/glm-5.3-flash', 'effort': 'high', 'tools': ['find', 'grep', 'ls', 'read']})
+
+    def test_submit_reads_pi_tools_from_the_latest_compaction_checkpoint(self):
+        # Rule (boundary): a compaction stores a complete tool checkpoint, so the tools offered after it replace
+        # whatever earlier system messages declared.
+        self.execution.write_text(json.dumps({'target_runtime': 'pi', 'agent': 'reviewer', 'job': 'diff-review',
+            'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'},
+            'launch': {'writes': 'none', 'verify': {'tools': ['find', 'grep', 'ls', 'read']}}}))
+        self.register(runtime='pi')
+        read_only = ['read', 'grep', 'find', 'ls']
+        self.pi_session((read_only, []), checkpoint=read_only + ['write'])
+        self.assert_scope_refused()
+        self.pi_session((read_only + ['bash', 'edit', 'write'], []), checkpoint=read_only)
+        self.submit_scoped()
+        self.assertTrue((self.root / 'productive-work').exists())
+        self.assertEqual(self.cli('status')['attempts'][0]['observed']['tools'], ['find', 'grep', 'ls', 'read'])
+
     def test_submit_reads_pi_controls_from_active_branch(self):
         self.execution.write_text(json.dumps({'harness': 'pi', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'}}))
@@ -194,6 +313,30 @@ class Submission(WorkerLifecycleCase):
             native = self.opencode_v2_export(*content, **options)
             self.assertIn(reason, self.submit_opencode_v2(native, code=2))
             self.assertFalse((self.root / 'productive-work').exists())
+
+    def test_submit_refuses_opencode_work_until_the_export_shows_the_launch_deny_rules(self):
+        # Rule: the session's permissions in its export must be exactly the launch's rules; with the last matching
+        # rule winning, a missing deny or a later allow widens the scope.
+        def deny(*actions):
+            return [{'action': action, 'resource': '*', 'effect': 'deny'} for action in actions]
+        rules = deny('edit', 'shell', 'subagent')
+        self.execution.write_text(json.dumps({'target_runtime': 'opencode', 'agent': 'reviewer', 'job': 'diff-review',
+            'settings': {'model': 'opencode/deepseek-v4.1-flash-free', 'effort': 'high'},
+            'launch': {'writes': 'none', 'verify': {'permissions': rules}}}))
+        self.register(runtime='opencode')
+        ready = [{'type': 'text', 'text': 'ready'}]
+        for case, permissions in (('none recorded', None), ('subagent allowed', deny('edit', 'shell')),
+                                  ('allowed again later', rules + [{'action': 'edit', 'resource': '*', 'effect': 'allow'}])):
+            with self.subTest(case=case):
+                self.assertIn('verified', self.submit_opencode_v2(self.opencode_v2_export(ready, permissions=permissions),
+                                                                  code=2))
+                self.assertFalse(self.cli('status')['attempts'][0]['verified'])
+                self.assertFalse((self.root / 'productive-work').exists())
+        self.submit_opencode_v2(self.opencode_v2_export(ready, permissions=rules))
+        self.assertTrue((self.root / 'productive-work').exists())
+        self.assertEqual(self.cli('status')['attempts'][0]['observed'], {
+            'runtime': 'opencode', 'model': 'opencode/deepseek-v4.1-flash-free', 'effort': 'high',
+            'permissions': rules})
 
     def test_submit_records_submitted_when_the_activity_gated_prompt_succeeds(self):
         self.register()

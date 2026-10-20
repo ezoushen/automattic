@@ -29,6 +29,24 @@ class Outcomes(WorkerLifecycleCase):
         self.assertGreaterEqual(outcome['metrics']['worker_seconds'], 0)
         self.assertTrue(journal_store.check(self.journal, decision_id, 'completion', 'head-1')['complete'])
 
+    def test_a_scoped_launch_still_records_its_routed_execution(self):
+        # Rule: the decision journal records the verified runtime, model and effort; the write-scope controls are
+        # the lifecycle's to verify and never cost the decision its execution record.
+        decision_id = self.routed(runtime='codex')
+        execution = json.loads(self.execution.read_text())
+        execution.update(harness='codex', launch={'writes': 'worktree',
+                                                  'verify': {'sandbox': 'workspace-write', 'approval': 'never'}})
+        self.execution.write_text(json.dumps(execution))
+        self.register(runtime='codex')
+        result = self.record('startup', observed={'runtime': 'codex', 'model': 'sonnet', 'effort': 'high',
+                                                  'sandbox': 'workspace-write', 'approval': 'never'},
+                             evidence=['rollout.jsonl:2'])
+        self.assertEqual((result['verified'], result['journal']), (True, {'execution': 'recorded'}))
+        recorded = self.annotations(decision_id)[-1]
+        self.assertEqual((recorded['event'], recorded['requested'], recorded['observed']),
+                         ('execution', {'runtime': 'codex', 'model': 'sonnet', 'effort': 'high'},
+                          {'runtime': 'codex', 'model': 'sonnet', 'effort': 'high'}))
+
     def test_journal_capture_failure_is_reported_without_blocking_the_worker(self):
         decision_id = self.routed(runtime='executor-defined')
         self.register()
