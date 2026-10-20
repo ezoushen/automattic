@@ -13,12 +13,34 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
 
 import pr_body
 import yield_gate
+
+SHELLS = {'sh', 'bash', 'zsh', 'dash'}
+# Options of `env` and `timeout` that take a separate value: env -u NAME, -C DIR; timeout -s SIGNAL, -k DURATION.
+VALUED = {'-u', '-C', '-s', '-k'}
+
+
+def runs(words):
+    """The words of the command a simple command runs, past assignments and wrappers with their options."""
+    while words:
+        head = words[0]
+        if pr_body.ASSIGNMENT.match(head) or head in pr_body.WRAPPERS - {'env'}:
+            words = words[1:]
+        elif head in ('env', 'timeout'):
+            words = words[1:]
+            while words and words[0].startswith('-'):
+                words = words[2:] if words[0] in VALUED else words[1:]
+            if head == 'timeout':
+                words = words[1:]  # The duration.
+        else:
+            break
+    return words
 
 
 def starts(command):
@@ -28,14 +50,22 @@ def starts(command):
         for index, token in enumerate(tokens + [';']):
             if token not in pr_body.SEPARATORS and index < len(tokens):
                 continue
-            words, start = pr_body.unwrap(tokens[start:index]), index + 1
-            while words and pr_body.ASSIGNMENT.match(words[0]):
-                words = pr_body.unwrap(words[1:])
+            words, start = runs(tokens[start:index]), index + 1
+            if words and Path(words[0]).name in SHELLS:
+                for at, word in enumerate(words[1:], 1):  # The string a shell's `-c` runs.
+                    if not word.startswith('-'):
+                        break
+                    if re.fullmatch(r'-[A-Za-z]*c[A-Za-z]*', word) and at + 1 < len(words):
+                        yield from starts(words[at + 1])
+                        break
+                continue
             if not words or Path(words[0]).name != 'herdr':
                 continue
             session, words = None, words[1:]
             if words[:1] == ['--session'] and len(words) > 1:
                 session, words = words[1], words[2:]
+            elif words[:1] and words[0].startswith('--session='):
+                session, words = words[0].split('=', 1)[1], words[1:]
             if words[:2] != ['agent', 'start']:
                 continue
             words = words[2:words.index('--')] if '--' in words else words[2:]

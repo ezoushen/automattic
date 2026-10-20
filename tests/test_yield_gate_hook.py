@@ -260,6 +260,22 @@ const ctx = {{ cwd: {json.dumps(str(self.repo))}, sessionManager: {{ getSessionI
              'cwd': str(self.worktree)},
             {'agent': 'reviewer-2', 'pane': 'w1:p6', 'coordinator': {'pane': None, 'session': 'host-1'}}])
 
+    def test_launches_behind_wrappers_and_shell_strings_are_logged(self):
+        # Review 5: `timeout`, `env` with its options, `--session=S` and a shell's `-c` string still run a launch.
+        self.serve(panes={'s1': {pane: {'pane_id': pane, 'cwd': str(self.worktree)} for pane in ('w1:p14', 'w1:p16')}})
+        for command in ('timeout 60 herdr agent start a-1 --kind codex --pane w1:p11',
+                        'timeout -s KILL -k 5 60 herdr agent start a-2 --kind codex --pane w1:p12',
+                        'env -u HERDR_PANE_ID -i FOO=1 herdr agent start a-3 --kind codex --pane w1:p13',
+                        'herdr --session=s1 agent start a-4 --kind codex --pane w1:p14',
+                        'sh -c "herdr agent start a-5 --kind codex --pane w1:p15"',
+                        "bash -lc 'cd /tmp && herdr --session s1 agent start a-6 --kind codex --pane w1:p16'",
+                        'bash -c "timeout 30 herdr agent start a-7 --kind codex --pane w1:p17" && echo done'):
+            self.launch(command, pane=None)
+        self.assertEqual([(record['agent'], record['pane'], record.get('cwd')) for record in self.logged()], [
+            ('a-1', 'w1:p11', None), ('a-2', 'w1:p12', None), ('a-3', 'w1:p13', None),
+            ('a-4', 'w1:p14', str(self.worktree)), ('a-5', 'w1:p15', None), ('a-6', 'w1:p16', str(self.worktree)),
+            ('a-7', 'w1:p17', None)])
+
     def test_logging_never_blocks_the_command_even_when_herdr_or_the_log_fails(self):
         # Rule 1: a hung Herdr still leaves a record with the cwd unknown; an unwritable log only loses the record.
         self.serve(hang=True)
