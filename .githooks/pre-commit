@@ -24,7 +24,7 @@ while IFS= read -r -d '' name; do
   case "$name" in
     *.py) check=python ;;
     *.sh) check=shell ;;
-    *) git show ":$name" | head -n 1 | grep -qE '^#!.*\bbash\b' && check=shell ;;
+    *) git show ":$name" | sed -n 1p | grep -qE '^#!.*\bbash\b' && check=shell ;;  # sed reads it all: no broken pipe under pipefail
   esac
   case "$check" in
     python) git show ":$name" | python3 -c 'import ast, sys; ast.parse(sys.stdin.buffer.read(), sys.argv[1])' "$name" || failed=1 ;;

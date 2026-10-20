@@ -17,7 +17,7 @@ base=''
 child=''
 
 alive() { ps -p "$1" >/dev/null 2>&1; }
-group_alive() { ps -A -o pgid= | grep -qx " *$1"; }
+group_alive() { ps -A -o pgid= | grep -x " *$1" >/dev/null; }  # read it all: an early exit breaks ps's pipe, and pipefail would call the group dead
 
 # A directory left by a run that is over: named automattic-pre-push.XXXXXX, holding the
 # numeric PID of a hook that is gone and, when recorded, a process group with no members.

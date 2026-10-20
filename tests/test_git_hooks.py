@@ -54,6 +54,15 @@ class PreCommit(HookRepo):
                 (self.root / name).unlink()
                 git(self.root, 'add', '-A')
 
+    def test_a_large_bash_script_without_an_extension_is_still_syntax_checked(self):
+        # Reading only its first line must not break the pipe on a long file and skip the check under pipefail.
+        self.assertEqual(self.commit().returncode, 0)
+        name = 'scripts/long-tool'
+        (self.root / name).write_text('#!/usr/bin/env bash\nif then fi\n' + '# padding\n' * 40000)
+        rejected = self.commit()
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertIn(f'pre-commit: {name}: shell syntax error', rejected.stdout + rejected.stderr)
+
     def test_the_syntax_check_judges_the_staged_content_and_accepts_any_valid_python(self):
         self.assertEqual(self.commit().returncode, 0)
         bad = self.root / 'scripts/bad.py'

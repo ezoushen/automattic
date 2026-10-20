@@ -59,6 +59,27 @@ class PrePushSignals(HookRepo):
         self.assertFalse([pid for pid in self.suite_pids() if self.alive(pid)], 'escalated to KILL')
         self.assertEqual(self.temporary_worktrees(), [])
 
+    def test_a_live_check_group_is_found_however_much_of_the_process_table_follows_it(self):
+        # A grep that stops at the first match closes the pipe on ps; under pipefail that must not read as a
+        # dead group, or the next push removes the worktree from under running checks. The stub writes the
+        # table, pauses so the reader has seen it, then writes it again, as a long ps does.
+        bin_dir = self.base / 'bin'
+        bin_dir.mkdir()
+        (bin_dir / 'ps').write_text('#!/bin/sh\nif [ "$*" = "-A -o pgid=" ]; then\n'
+                                    '  /bin/ps -A -o pgid=; sleep 0.3; exec /bin/ps -A -o pgid=\nfi\n'
+                                    'exec /bin/ps "$@"\n')
+        (bin_dir / 'ps').chmod(0o755)
+        hook = self.start_hook()
+        [tree] = self.temporary_worktrees()
+        hook.kill()
+        hook.wait(timeout=10)
+        self.slow.unlink()
+        self.assertTrue(any(self.alive(pid) for pid in self.suite_pids()), 'its checks are still running')
+        self.env['PATH'] = f'{bin_dir}:{self.env["PATH"]}'
+        early = self.push('main')
+        self.assertEqual(early.returncode, 0, early.stdout + early.stderr)
+        self.assertEqual(self.temporary_worktrees().count(tree), 1, 'not removed from under running checks')
+
     def test_a_worktree_left_by_a_killed_hook_is_reclaimed_once_its_checks_are_gone(self):
         hook = self.start_hook()
         [tree] = self.temporary_worktrees()
