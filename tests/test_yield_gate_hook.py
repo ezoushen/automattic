@@ -382,6 +382,56 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertEqual(self.check(), [self.live('builder-1', 'w1:p5', self.worktree),
                                         self.live('builder-2', 'w1:p6', sibling)])
 
+    def test_a_herdr_failure_or_timeout_is_a_named_gap_that_holds_once(self):
+        # Rule 5: a check that cannot run is a named gap, never a pass, and Stop is still held only once.
+        self.serve(fail='connection refused')
+        gap = ('could not check Herdr workers: herdr agent list exited 1: '
+               '{"error": {"code": "server_unavailable", "message": "connection refused"}}')
+        self.assertEqual(self.check(), [gap])
+        decision = self.stop()
+        self.assertEqual(decision['decision'], 'block')
+        self.assertIn(f'- {gap}\n', decision['reason'])
+        self.assertIsNone(self.stop(active=True))
+        self.assertIsNone(self.stop(env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
+        # A session outside Herdr has no workspace to check, so a broken Herdr is no gap there.
+        self.assertEqual(self.check(pane=None, session='host-1'), [])
+        self.serve(hang=True)
+        [gap] = self.check()
+        self.assertRegex(gap, r"^could not check Herdr workers: .*'herdr', 'agent', 'list'.* timed out after 5 seconds$")
+
+    def test_a_git_failure_is_a_named_gap_not_a_pass(self):
+        # Rule 5: when git cannot name the session's checkout the gate says so; outside any repository is no checkout.
+        broken = Path(self.tmp.name) / 'broken-git'
+        broken.mkdir()
+        (broken / 'git').write_text('#!/bin/sh\necho "fatal: unable to read index" >&2\nexit 128\n')
+        (broken / 'git').chmod(0o700)
+        env = {'PATH': f"{broken}{os.pathsep}{self.env()['PATH']}"}
+        gap = 'could not check workers: git rev-parse exited 128: fatal: unable to read index'
+        self.assertEqual(self.check(env=env), [gap])
+        self.assertIn(f'- {gap}\n', self.stop(env=env)['reason'])
+        self.assertIsNone(self.stop(env=env, active=True))
+        outside = Path(self.tmp.name) / 'elsewhere'
+        outside.mkdir()
+        self.assertEqual(self.check(cwd=outside), [])
+
+    @unittest.skipUnless(shutil.which('node'), 'Node.js runs the Pi extension')
+    def test_pi_surfaces_a_check_that_could_not_run_and_continues_once(self):
+        # Rule 5 on Pi: when the yield gate itself cannot run, the settle hook names the failure, once per run.
+        broken = Path(self.tmp.name) / 'broken-python'
+        broken.mkdir()
+        (broken / 'python3').write_text('#!/bin/sh\necho "python3: simulated crash" >&2\nexit 1\n')
+        (broken / 'python3').chmod(0o700)
+        first, repeated = self.pi("""
+const settle = async () => (await handlers.agent_before_settle(
+  { type: 'agent_before_settle', outcome: 'completed', entries: [], continue: false }, ctx)) ?? null;
+console.log(JSON.stringify([await settle(), await settle()]));
+""", pane='w1:p1', env={'PATH': f"{broken}{os.pathsep}{self.env()['PATH']}"})
+        self.assertTrue(first['continue'])
+        self.assertRegex(first['entries'][0]['content'],
+                         r'\n- could not check workers: Command failed: python3 \S+/hooks/yield_gate\.py check .+ pi-1\n'
+                         r'python3: simulated crash\n')
+        self.assertIsNone(repeated)
+
 
 if __name__ == '__main__':
     unittest.main()

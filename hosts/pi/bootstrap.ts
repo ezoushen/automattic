@@ -37,8 +37,8 @@ export default function (pi) {
       const output = execFileSync("python3", [`${root}/hooks/yield_gate.py`, "check", ctx.cwd, session],
         { encoding: "utf8", timeout: 20000 });
       missing = JSON.parse(output).missing;
-    } catch {
-      return undefined;
+    } catch (error) {
+      missing = [`could not check workers: ${error.message.trim()}`];  // A broken check never passes silently.
     }
     if (!missing.length) return undefined;
     continued = true;

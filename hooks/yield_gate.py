@@ -31,9 +31,14 @@ def lifecycle():
 
 
 def main_checkout(cwd):
+    """The main checkout holding cwd, None outside any repository; raises when git cannot tell."""
     result = subprocess.run(['git', '-C', str(cwd), 'rev-parse', '--path-format=absolute', '--git-common-dir'],
-                            capture_output=True, text=True, timeout=5)
-    return Path(result.stdout.strip()).parent if result.returncode == 0 else None
+                            capture_output=True, text=True, timeout=5, env=dict(os.environ, LC_ALL='C'))
+    if result.returncode == 0:
+        return Path(result.stdout.strip()).parent
+    if 'not a git repository' in result.stderr:
+        return None
+    raise RuntimeError(f'git rev-parse exited {result.returncode}: {result.stderr.strip()}')
 
 
 def gaps(cwd, session=None):
@@ -68,6 +73,8 @@ def gaps(cwd, session=None):
 def herdr_agents():
     """The live agents the session's Herdr server reports."""
     result = subprocess.run(['herdr', 'agent', 'list'], capture_output=True, text=True, timeout=5)
+    if result.returncode:
+        raise RuntimeError(f'herdr agent list exited {result.returncode}: {(result.stderr or result.stdout).strip()}')
     return json.loads(result.stdout)['result']['agents']
 
 
@@ -88,15 +95,27 @@ def unregistered(root, coordinator, pane):
                 and not workers & {launch['agent'], launch['pane']}
                 and ('cwd' not in launch or Path(launch['cwd']).resolve().is_relative_to(worktrees))]
     workers |= {handle for launch in launches for handle in (launch['agent'], launch['pane'])}  # Named once.
-    workspace = os.environ.get('HERDR_WORKSPACE_ID')
-    live = [agent for agent in (herdr_agents() if workspace else [])
+    workspace, failed = os.environ.get('HERDR_WORKSPACE_ID'), []
+    try:
+        agents = herdr_agents() if workspace else []
+    except Exception as error:  # A check that cannot run is a named gap, never a pass.
+        agents, failed = [], [f'could not check Herdr workers: {error}']
+    live = [agent for agent in agents
             if agent.get('workspace_id') == workspace and agent['pane_id'] != pane and agent.get('cwd')
             and Path(agent['cwd']).resolve().is_relative_to(worktrees)
             and not workers & {agent.get('name'), agent['pane_id']}]
     return ([f"{log}: {launch['agent']} (pane {launch['pane']}): launched without a registered attempt"
              for launch in launches]
             + [f"Herdr agent {agent.get('name')} (pane {agent['pane_id']}) runs in {agent['cwd']} "
-               'without a registered attempt' for agent in live])
+               'without a registered attempt' for agent in live] + failed)
+
+
+def checked(cwd, session=None):
+    """The gaps, or one naming why the check could not run: a broken check never passes silently."""
+    try:
+        return gaps(cwd, session)
+    except Exception as error:
+        return [f'could not check workers: {error}']
 
 
 def reason(missing):
@@ -111,14 +130,14 @@ def main():
     if os.environ.get('AUTOMATTIC_YIELD_HOOK') == 'off':
         return 0
     if sys.argv[1:2] == ['check'] and len(sys.argv) in (3, 4):
-        print(json.dumps({'missing': gaps(Path(sys.argv[2]), *sys.argv[3:])}))
+        print(json.dumps({'missing': checked(Path(sys.argv[2]), *sys.argv[3:])}))
         return 0
     if sys.argv[1:] not in (['claude'], ['codex']):
         sys.exit('usage: yield_gate.py claude|codex < stop-hook-input, or yield_gate.py check <cwd> [session]')
     payload = json.load(sys.stdin)
     if payload.get('stop_hook_active'):
         return 0
-    missing = gaps(Path(payload.get('cwd') or os.getcwd()), payload.get('session_id'))
+    missing = checked(Path(payload.get('cwd') or os.getcwd()), payload.get('session_id'))
     if missing:
         print(json.dumps({'decision': 'block', 'reason': reason(missing)}))
     return 0
