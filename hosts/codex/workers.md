@@ -109,4 +109,9 @@ it. `submit` verifies the rollout's latest `turn_context`: the `sandbox_policy` 
 (`workspace-write` for a profile), `approval_policy` and the `permission_profile` entries.
 `codex exec` has no `-a` and always runs with approval `never`.
 
+Startup follows [the startup order](../../runtime/workers/prepare.md): the rollout and Herdr's
+`agent_session` appear only after the first turn, so send the probe
+(`herdr agent prompt <name> '<reply READY, use no tools>' --wait`), read the rollout id, register, then
+`submit`.
+
 The [executor guides](../executors/README.md) cover each executor type a route can select.

@@ -90,4 +90,9 @@ the read-only worktree check at collection covers what its shell writes.
 `submit` verifies the tools the session offers, replayed from its system messages'
 `toolsAdded` and `toolsRemoved`: an extension or MCP tool beyond the allowlist blocks the work.
 
+Startup follows [the startup order](../../runtime/workers/prepare.md): the session JSONL exists only
+after the first reply, so send the probe with `herdr agent prompt <name> '<reply READY, use no tools>' --wait`
+first. `herdr agent get` reports `agent_session` as a path, so take `native_session` from that JSONL's
+filename UUID; register `packet` as the assignment text, not the probe, then `submit`.
+
 The [executor guides](../executors/README.md) cover each executor type a route can select.
