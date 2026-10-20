@@ -81,4 +81,17 @@ from disk. Goals require explicit user requests and follow runtime status rules;
 a blocked board alone cannot justify changing goal status. Scheduled work requires
 an explicit user request; an automation does not replace waiting for live children.
 
+## Top-level workers
+
+A Codex worker started as its own process, such as one launched through Herdr, takes the
+route's `launch.argv` after `--`; every restriction is in it, since the user's default is
+`danger-full-access` with approval `never`. It sets `-s read-only` for `writes: none` or
+`-s workspace-write` for `worktree`, `-a never`, `-m` and `-c model_reasoning_effort="<effort>"`,
+each value one argument. Start it in a worktree of a checkout the user already trusts: anywhere
+else "Trust this folder?" blocks the start (Herdr: `agent_not_ready`, agent `blocked`). Report
+that dialog to the user; never answer it. The read-only sandbox blocks every write, temporary
+files included, so a `writes: none` worker gets `report_transport: return`. `submit` verifies
+the rollout's latest `turn_context`: its `sandbox_policy` type and `approval_policy`. `codex
+exec` has no `-a` and always runs with approval `never`.
+
 The [executor guides](../executors/README.md) cover each executor type a route can select.

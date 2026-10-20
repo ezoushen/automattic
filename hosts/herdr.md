@@ -45,15 +45,17 @@ Session-local settings isolation must keep the plugins the assignment invokes,
 such as Automattic for its slash commands, and Herdr's native identity hook;
 verify both before accepting the launch.
 Launch an OpenCode 2 worker as the full TUI (`opencode`); Herdr's integration
-reports only its activity and session, not `mini`'s. Set its settings through
-the [OpenCode adapter](opencode/workers.md#top-level-workers) after the startup probe. For guarded retirement, use an isolated configuration that
-preserves the installed server plugin and, for the full TUI, its native TUI session
-reporter. Reproduce the installer's current TUI configuration in the isolated
-config directory, including its referenced module; a server-plugin entry alone
-does not load the TUI reporter. Use the supported configuration filename (for
-example, `tui.jsonc`) rather than assuming another file is read. An isolated
-OpenCode 2 configuration also needs its own service port (`opencode service set
-port <free port>`); otherwise it collides with the user's background service.
+reports only its activity and session, not `mini`'s. It attaches to a private server
+whose session carries its settings and write scope, as the
+[OpenCode adapter](opencode/workers.md#top-level-workers) describes. Its isolated
+configuration keeps the installed Herdr server plugin and, for the full TUI, its native TUI
+session reporter, and nothing else of the user's: MCP tools from the user's configuration
+stay callable under the session's deny rules. Reproduce the installer's current TUI
+configuration in the isolated config directory, including its referenced module; a
+server-plugin entry alone does not load the TUI reporter. Use the supported configuration filename (for
+example, `tui.jsonc`) rather than assuming another file is read. The private
+server takes a free port of its own (`opencode serve --port <free port>`), never the
+user's background service.
 Check `integration status` and the actual `agent_session` before productive work;
 a current server alone does not establish that its integration is loaded.
 If startup returns before the native input UI finishes loading, wait for its
@@ -74,7 +76,11 @@ pane, whatever placement the installed skill defaults to:
    with your `HERDR_WORKSPACE_ID` as the workspace. `AUTOMATTIC_WORKER` is how
    Automattic's stop check tells a worker from its coordinator.
 2. `herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>`,
-   with the `.result.root_pane.pane_id` that step 1 returned.
+   with the `.result.root_pane.pane_id` that step 1 returned. The launch args are the
+   route's `launch.argv`, which holds the worker's write scope, model and effort; each
+   runtime's recipe is in its adapter: [Claude](claude/workers.md#top-level-workers),
+   [Codex](codex/workers.md#top-level-workers), [Pi](pi/workers.md#top-level-workers) and
+   [OpenCode](opencode/workers.md#top-level-workers), whose args name a private server and session.
 3. Then register it, adding `"herdr": {"session": "<session>"}`; `herdr session list`
    names the session. Registration reads the worker's pane, tab, workspace and name
    from `herdr agent get` and refuses a tab that holds another pane or is your own.

@@ -31,21 +31,38 @@ proves configuration loading, not successful provider execution.
 ## Top-level workers
 
 A top-level OpenCode 2 worker, such as one launched through Herdr, runs the full TUI,
-which has no model flag and ignores a profile's variant. After the startup probe
-has created its session, switch that session through the API, agent first:
+which has no `--agent` or model flag and ignores a profile's variant. Its agent, model,
+variant and write scope come from the session it opens, created on a private server.
+The user's running service does not fail closed: MCP and plugin tools from the user's
+configuration stay callable under a session's deny rules.
 
-```
-opencode api POST /api/session/<id>/agent -H x-opencode-directory:<worktree> -d '{"agent":"build"}'
-opencode api POST /api/session/<id>/model -H x-opencode-directory:<worktree> \
-  -d '{"model":{"providerID":"<provider>","id":"<model>","variant":"<effort>"}}'
-```
+1. Start `opencode serve --hostname 127.0.0.1 --port <free port>` with `XDG_CONFIG_HOME`,
+   `XDG_DATA_HOME` and `XDG_STATE_HOME` in a fresh directory and a known `OPENCODE_PASSWORD`.
+2. Create the session from the route's `launch.api`: `opencode api POST /api/session
+   --server <url> -d '<body>'`, with `"location":{"directory":"<worktree>"}` added to
+   `launch.api.body`; without it the session gets another directory. The body denies edit,
+   shell and subagent for `writes: none` and subagent for `worktree`; a denied agent still
+   writes through the `general` subagent unless subagent is denied.
+3. In the worker's tab, export `OPENCODE_PASSWORD`, then start the TUI with
+   `--server <url> --session <id>`.
+4. After the startup probe, redirect `opencode session export <id> --server <url>` to a
+   file and submit with it: `info.permissions` must equal the launch's rules and the latest
+   assistant turn must show the model and variant.
 
-Use `build` unless the assignment names another agent; a user's default agent may
-be an orchestrator that delegates. The switch takes effect on the next turn, so send
-a second read-only probe, then export the session (`opencode session export <id>`)
-and submit with that export: its latest assistant turn must show both settings. `opencode mini
---model <provider/model>#<variant>` applies settings at launch, but Herdr cannot
-observe `mini`'s activity, so it does not suit lifecycle workers.
+A `writes: none` worker has no shell or editing tool, so assign `report_transport: return`.
+`opencode mini --model <provider/model>#<variant>` applies settings at launch, but Herdr
+cannot observe `mini`'s activity, so it does not suit lifecycle workers.
+
+**Models on the private server.** The isolated server has none of the user's providers or
+credentials. The built-in `opencode` provider's free models ran there without credentials.
+For another provider, add it under `providers` in the server's configuration
+(`$XDG_CONFIG_HOME/opencode/opencode.json`, or `OPENCODE_CONFIG_CONTENT` in the server's
+environment, which a server started this way reads), with its key as `{env:<NAME>}` and that
+variable set for `opencode serve` ([config](https://opencode.ai/v2/docs/config),
+[providers](https://opencode.ai/v2/docs/providers)). List what the server offers with
+`opencode models --server <url>`. Not verified: such a provider end to end, a variant set at
+session creation (submit checks it), and whether `opencode auth` with the isolated
+`XDG_DATA_HOME` gives the server credentials.
 
 This adapter covers model configuration and profile selection. Full Automattic
 native dispatch lifecycle/worktree integration in OpenCode is not implemented or verified;

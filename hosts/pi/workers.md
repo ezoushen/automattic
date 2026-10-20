@@ -27,7 +27,8 @@ Fresh context keeps prior hypotheses and unrelated parent history out of reviews
 
 Use only the route's resolved settings by the **shared agent**, not the generic
 native `worker` name. Ticket workload labels do not select models. Validate an
-explicit override against the native provider/model catalog; report unsupported
+explicit override against the native provider/model catalog (`pi --list-models <search>`;
+a bare `pi models` starts a full session); report unsupported
 combinations for pool recovery without approximating them. Map a model override to the dispatch `model` field;
 map effort to its `provider/model:<effort>` suffix. The installed pi-subagents
 dispatch does not accept a separate thinking parameter. For effort-only overrides,
@@ -50,8 +51,9 @@ completion notifications: yield the turn when no independent work remains, then
 resume the same dispatch on notification. Report it as running, not finished.
 Use a bounded `action: "status", id: <run-id>` for stale/blocked work; do not poll
 or sleep to keep the parent alive. Follow runtime wait instructions for work that
-lacks native notifications. Workers registered in the worker lifecycle (such as
-Herdr panes) need a passing `gate --stage yield` before you yield. The extension logs
+lacks native notifications. For workers registered in the worker lifecycle (such as
+Herdr panes), Pi's background wait is `bg_run`: run `worker_lifecycle.py submit` and
+`watch` through it with `notify`, and they need a passing `gate --stage yield` before you yield. The extension logs
 each `herdr agent start` run through `bash` or `bg_run`, and its settle check also names
 Herdr workers you launched but did not register, or says why it could not check. A
 pi-subagents child in the background runner (`PI_SUBAGENT_CHILD=1`) skips that check; a
@@ -74,5 +76,16 @@ The orchestrator retains board updates, integration and authorized publication.
 Automattic adds no Git blocklist. Native permissions and agent permissions
 remain binding. Scheduling a recurring run or enabling a persistent goal requires
 an explicit user request; ordinary async dispatch uses completion notifications.
+
+## Top-level workers
+
+A Pi worker started as its own process, such as one launched through Herdr, takes the
+route's `launch.argv` after `--`; every restriction is in it, since the user's permission
+extension runs in `yoloMode`. It sets `--tools` as an allowlist, `read,grep,find,ls` for
+`writes: none` and the seven built-ins for `worktree`, then `--provider`, `--model` and
+`--thinking`. Never narrow with `--exclude-tools`: extension shells such as `bg_run` stay.
+A `writes: none` worker has no shell or editing tool, so assign `report_transport: return`.
+`submit` verifies the tools the session offers, replayed from its system messages'
+`toolsAdded` and `toolsRemoved`: an extension or MCP tool beyond the allowlist blocks the work.
 
 The [executor guides](../executors/README.md) cover each executor type a route can select.
