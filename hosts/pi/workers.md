@@ -82,8 +82,9 @@ an explicit user request; ordinary async dispatch uses completion notifications.
 A Pi worker started as its own process, such as one launched through Herdr, takes the
 route's `launch.argv` after `--`; every restriction is in it, since the user's permission
 extension runs in `yoloMode`. It sets `--tools` as an allowlist, `read,grep,find,ls,bash` for
-`writes: none` and the seven built-ins for `worktree`, then `--provider`, `--model` and
-`--thinking`. Never narrow with `--exclude-tools`: extension shells such as `bg_run` stay.
+`writes: none` and the seven built-ins for `worktree`, `--no-mcp` (the allowlist keeps MCP
+tools; the flag is listed by `pi --help`, its effect unobserved here), then `--provider`,
+`--model` and `--thinking`. Never narrow with `--exclude-tools`: extension shells such as `bg_run` stay.
 A `writes: none` worker keeps `bash` for checks and its report but has no write or edit tool;
 the read-only worktree check at collection covers what its shell writes.
 `submit` verifies the tools the session offers, replayed from its system messages'

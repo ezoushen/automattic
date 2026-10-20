@@ -120,15 +120,20 @@ for live workers in the current run.
 A Claude worker started as its own process, such as one launched through Herdr, takes the
 route's `launch.argv` after `--`; every restriction is in it, since the user's default mode
 is `auto`. It sets `--permission-mode dontAsk` and the agent's tools as `--allowedTools`,
-then `--model` and `--effort`. For `writes: none` it adds `--disallowedTools
-Edit,Write,NotebookEdit` and, while Bash stays, a `--settings` deny on edits under the
-directory the worker starts in. So start it with the tab's `--cwd` at the assigned worktree,
-and only in a worktree of a checkout the user already trusts: anywhere else the trust dialog
-blocks the start (Herdr: `agent_not_ready`, agent `blocked`). Report that dialog to the user;
-never answer it. A `writes: none` worker has no editing tool, so assign `report_transport:
-return`. The deny covers Bash redirects and file commands, not a script that opens files
-itself, and MCP tools the user allowed stay callable; the read-only worktree check at
-collection is the backstop. A TUI transcript lists no tools, so `submit` verifies its
-`permission-mode` rows instead: the latest must be `dontAsk`.
+then `--model` and `--effort`. For `writes: none`, resolve with `--worktree <abs worktree>
+--reports <abs reports dir>` (the resolver refuses without them); the launch then adds absolute
+rules that deny edits under the worktree and allow them under the reports directory, shell-quoted:
+
+```
+--settings '{"permissions":{"deny":["Edit(//<worktree>/**)"],"allow":["Edit(//<reports>/**)"]}}'
+```
+
+A deny of this kind was probed against the Edit tool, the Write tool and a shell redirect; it
+does not stop a script that opens files itself, and MCP tools the user's settings allow stay
+callable. Start the worker only in a worktree of a checkout the user already trusts: anywhere
+else the trust dialog blocks the start (Herdr: `agent_not_ready`, agent `blocked`). Report that
+dialog to the user; never answer it. Claude's write scope rests on these launch flags plus the
+read-only worktree check at collection: a TUI transcript lists no tools, so `submit` checks only
+that the latest `permission-mode` row is `dontAsk`, which `none` and `worktree` launches share.
 
 The [executor guides](../executors/README.md) cover each executor type a route can select.

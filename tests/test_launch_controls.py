@@ -34,8 +34,9 @@ class LaunchControls(unittest.TestCase):
             self.data['models'][name] = {'description': name, 'runtimes': {runtime: {
                 'id': model, 'thinking': {'default': 'high', 'allowed': ['high']}}}}
 
-    def route(self, model, job, host='claude', *options):
-        """The --route output for a job whose agent uses this model, from a host Herdr bridges to it."""
+    def route(self, model, job, host='claude', *options, code=0):
+        """The --route output for a job whose agent uses this model, from a host Herdr bridges to it (stderr when
+        the resolver refuses)."""
         self.data['agents'] = {'builder': {'model': model}, 'reviewer': {'model': model}}
         self.user.write_text(json.dumps(self.data))
         process = subprocess.run([sys.executable, '-B', str(SCRIPT), '--repo', str(self.root), '--harness', host,
@@ -44,54 +45,71 @@ class LaunchControls(unittest.TestCase):
                                  capture_output=True, text=True,
                                  env=support.isolated_env(self.root, HERDR_ENV='1', AUTOMATTIC_PROFILE='',
                                                           AUTOMATTIC_SESSION=''))
-        self.assertEqual(process.returncode, 0, process.stderr)
-        return json.loads(process.stdout)
+        self.assertEqual(process.returncode, code, process.stderr)
+        return json.loads(process.stdout) if code == 0 else process.stderr
 
-    def test_codex_route_sets_the_sandbox_for_the_write_scope_and_never_asks(self):
-        # Rule: `worktree` gets workspace-write; `none` a permissions profile that reads everything and writes only
-        # $TMPDIR and the reports directory, so checks still run; approval never, model and effort explicit.
-        reports = self.root.resolve() / 'reports'  # Codex records resolved paths (/private/var for /var).
-        profile = ('permissions.automattic_none.filesystem='
-                   '{":root"="read",":tmpdir"="write",' + json.dumps(str(reports)) + '="write"}')
-        self.assertEqual(self.route('sol', 'diff-review', 'claude', '--reports', str(self.root / 'reports'))['launch'], {
+    def places(self):
+        """--worktree and --reports as a host passes them (unresolved), and the resolved paths a launch must name,
+        as Codex records them (/private/var for /var)."""
+        worktree, reports = self.root / 'wt', self.root / 'reports'
+        return (['--worktree', str(worktree), '--reports', str(reports)],
+                str(worktree.resolve()), str(reports.resolve()), str(self.root.resolve() / '.git'))
+
+    def test_codex_route_sets_a_permissions_profile_for_the_write_scope_and_never_asks(self):
+        # Rule: a profile reads everything; `none` writes only $TMPDIR and the reports directory, so checks still run;
+        # `worktree` also writes the worktree and the main checkout's .git, where a linked worktree commits.
+        # Approval never, model and effort explicit.
+        options, worktree, reports, git = self.places()
+        tail = ['-a', 'never', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"']
+        self.assertEqual(self.route('sol', 'diff-review', 'claude', *options)['launch'], {
             'writes': 'none',
-            'argv': ['-c', 'default_permissions="automattic_none"', '-c', profile, '-a', 'never',
-                     '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"'],
+            'argv': ['-c', 'default_permissions="automattic_none"',
+                     '-c', 'permissions.automattic_none.filesystem={":root"="read",":tmpdir"="write",'
+                     f'"{reports}"="write"}}', *tail],
             'verify': {'sandbox': 'workspace-write', 'approval': 'never',
-                       'filesystem': ['read :root', f'write {reports}', 'write :tmpdir']}})  # Sorted.
-        # Without a reports directory the worker writes only temporary files and returns its report.
-        launch = self.route('sol', 'diff-review')['launch']
-        self.assertEqual((launch['argv'][3], launch['verify']['filesystem']),
-                         ('permissions.automattic_none.filesystem={":root"="read",":tmpdir"="write"}',
-                          ['read :root', 'write :tmpdir']))
-        self.assertEqual(self.route('sol', 'ticket')['launch'], {
+                       'filesystem': sorted(['read :root', 'write :tmpdir', f'write {reports}'])}})
+        self.assertEqual(self.route('sol', 'ticket', 'claude', *options)['launch'], {
             'writes': 'worktree',
-            'argv': ['-s', 'workspace-write', '-a', 'never', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"'],
-            'verify': {'sandbox': 'workspace-write', 'approval': 'never'}})
+            'argv': ['-c', 'default_permissions="automattic_worktree"',
+                     '-c', 'permissions.automattic_worktree.filesystem={":root"="read",":tmpdir"="write",'
+                     f'"{reports}"="write","{worktree}"="write","{git}"="write"}}', *tail],
+            'verify': {'sandbox': 'workspace-write', 'approval': 'never', 'filesystem': sorted([
+                'read :root', 'write :tmpdir', f'write {reports}', f'write {worktree}', f'write {git}'])}})
         # A native child of the same runtime takes no launch flags; its agent profile restricts it.
         self.assertNotIn('launch', self.route('sol', 'diff-review', host='codex'))
 
-    def test_claude_route_allows_only_the_agents_tools_and_keeps_a_read_only_shell_out_of_the_worktree(self):
-        # Rule: dontAsk with the agent's tools as the allowlist; `writes: none` denies every editing tool and, since
-        # its shell stays, edits under the worktree it starts in.
-        self.assertEqual(self.route('opus', 'diff-review', host='codex')['launch'], {
+    def test_claude_route_lets_a_read_only_agent_edit_its_reports_but_never_the_worktree(self):
+        # Rule: dontAsk with the agent's tools as the allowlist; for `writes: none` absolute settings rules deny edits
+        # (tools, shell redirects) under the worktree and allow them under the reports directory.
+        options, worktree, reports, _ = self.places()
+        settings = json.dumps({'permissions': {'deny': [f'Edit(/{worktree}/**)'], 'allow': [f'Edit(/{reports}/**)']}},
+                              separators=(',', ':'))
+        self.assertEqual(self.route('opus', 'diff-review', 'codex', *options)['launch'], {
             'writes': 'none',
             'argv': ['--permission-mode', 'dontAsk',
-                     '--allowedTools', 'Read,Grep,Glob,Bash,Skill,SendMessage,Monitor,TaskStop',
-                     '--disallowedTools', 'Edit,Write,NotebookEdit',
-                     '--settings', '{"permissions":{"deny":["Edit(./**)"]}}',
-                     '--model', 'claude-opus-5-5', '--effort', 'high'],
+                     '--allowedTools', 'Read,Grep,Glob,Bash,Edit,Skill,SendMessage,Monitor,TaskStop',
+                     '--settings', settings, '--model', 'claude-opus-5-5', '--effort', 'high'],
             'verify': {'permission_mode': 'dontAsk'}})
-        self.assertEqual(self.route('opus', 'ticket', host='codex')['launch'], {
+        self.assertIn('"deny":["Edit(//', settings)  # The absolute form: `//` and an absolute path.
+        self.assertEqual(self.route('opus', 'ticket', 'codex', *options)['launch'], {
             'writes': 'worktree',
             'argv': ['--permission-mode', 'dontAsk',
                      '--allowedTools', 'Read,Edit,Write,Bash,Grep,Glob,Skill,SendMessage,Monitor,TaskStop',
                      '--model', 'claude-opus-5-5', '--effort', 'high'],
             'verify': {'permission_mode': 'dontAsk'}})
 
+    def test_a_route_whose_launch_needs_its_worktree_or_reports_is_refused_without_them(self):
+        # Rule: Codex needs --reports for every scope and --worktree for `worktree`; Claude `none` needs both.
+        for model, job, missing in (('sol', 'diff-review', '--reports'), ('sol', 'ticket', '--worktree, --reports'),
+                                    ('opus', 'diff-review', '--worktree, --reports')):
+            with self.subTest(model=model, job=job):
+                self.assertIn(f'its launch controls need {missing}', self.route(model, job, 'pi', code=2))
+        self.assertIn('launch', self.route('opus', 'ticket', 'pi'))  # A Claude builder needs neither.
+
     def test_pi_route_offers_an_explicit_tool_allowlist_for_the_write_scope(self):
         # Rule: `--tools` is an allowlist (an exclude list leaks bg_run); `none` keeps the shell for checks but no
-        # write or edit tool, `worktree` gets the full built-in set; provider, model and thinking explicit.
+        # write or edit tool, `worktree` gets the full built-in set; `--tools` keeps MCP tools, so `--no-mcp`;
+        # provider, model and thinking explicit.
         for job, writes, tools, offered in (
                 ('diff-review', 'none', 'read,grep,find,ls,bash', ['bash', 'find', 'grep', 'ls', 'read']),
                 ('ticket', 'worktree', 'read,bash,edit,write,grep,find,ls',
@@ -99,7 +117,8 @@ class LaunchControls(unittest.TestCase):
             with self.subTest(job=job):
                 self.assertEqual(self.route('glm', job)['launch'], {
                     'writes': writes,
-                    'argv': ['--tools', tools, '--provider', 'dgx', '--model', 'glm-5.3-flash', '--thinking', 'high'],
+                    'argv': ['--tools', tools, '--no-mcp', '--provider', 'dgx', '--model', 'glm-5.3-flash',
+                             '--thinking', 'high'],
                     'verify': {'tools': offered}})
 
     def test_opencode_route_creates_its_session_with_deny_rules_for_the_write_scope(self):

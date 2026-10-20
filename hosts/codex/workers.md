@@ -91,17 +91,19 @@ an explicit user request; an automation does not replace waiting for live childr
 
 A Codex worker started as its own process, such as one launched through Herdr, takes the
 route's `launch.argv` after `--`; every restriction is in it, since the user's default is
-`danger-full-access` with approval `never`. It sets `-s workspace-write` for `worktree`; for
-`writes: none` a permissions profile (`-c default_permissions=...` and its `filesystem` table)
-that reads everything and writes only `$TMPDIR` and the reports directory, so checks still run
-and the worktree stays read-only. Resolve with `--reports <absolute reports dir>` to make that
-directory writable; without it the worker returns its report (`report_transport: return`). Then
-`-a never`, `-m` and `-c model_reasoning_effort="<effort>"`, each value one argument. A profile
-given with `-c` applied over a config `sandbox_mode` in a `codex exec` probe; the TUI with a
-profile is unprobed. Start it in a worktree of a checkout the user already trusts: anywhere
-else "Trust this folder?" blocks the start (Herdr: `agent_not_ready`, agent `blocked`). Report
-that dialog to the user; never answer it. `submit` verifies the rollout's latest `turn_context`:
-its `sandbox_policy` type, `approval_policy` and, for `writes: none`, the `permission_profile`
-entries. `codex exec` has no `-a` and always runs with approval `never`.
+`danger-full-access` with approval `never`. Resolve with `--reports <abs reports dir>`, and for
+`writes: worktree` also `--worktree <abs worktree>`; the resolver refuses without them. The launch
+is a permissions profile (`-c default_permissions=...` and its `filesystem` table) that reads
+everything and writes `$TMPDIR` and the reports directory; `worktree` also writes the worktree
+and the main checkout's `.git`, where a linked worktree's commits land. Then `-a never`, `-m`
+and `-c model_reasoning_effort="<effort>"`, each value one argument. In logged-out `codex exec`
+probes a profile given with `-c` applied over a config `sandbox_mode`, and the rollout recorded
+exactly these entries; the TUI with a profile is unprobed, and whether `git commit` succeeds
+under it (Codex otherwise keeps `.git` read-only) awaits an end-to-end run. Start it in a
+worktree of a checkout the user already trusts: anywhere else "Trust this folder?" blocks the
+start (Herdr: `agent_not_ready`, agent `blocked`). Report that dialog to the user; never answer
+it. `submit` verifies the rollout's latest `turn_context`: the `sandbox_policy` type
+(`workspace-write` for a profile), `approval_policy` and the `permission_profile` entries.
+`codex exec` has no `-a` and always runs with approval `never`.
 
 The [executor guides](../executors/README.md) cover each executor type a route can select.

@@ -48,6 +48,8 @@ configuration stay callable under a session's deny rules.
 4. After the startup probe, redirect `opencode session export <id> --server <url>` to a
    file and submit with it: `info.permissions` must equal the launch's rules and the latest
    assistant turn must show the model and variant.
+   The export records no server, so `submit` cannot tell an export of the private server's
+   session from one of the user's service: export with `--server <url>` and never substitute.
 
 A `writes: none` worker keeps the shell for checks and its report but no editing tool; the
 read-only worktree check at collection covers what its shell writes.
