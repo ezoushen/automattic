@@ -32,7 +32,8 @@ TAB_RECIPE = ('start the worker in a tab of its own: `herdr tab create --workspa
               'then register it')
 LOOKUP_SECONDS = 5  # Registration's wait on each Herdr call.
 # Native write-scope controls: a launch requests them (its `verify`) and startup observes them.
-SCOPE = ('permission_mode', 'sandbox', 'approval', 'tools', 'permissions')
+SCOPE = ('permission_mode', 'sandbox', 'approval', 'filesystem', 'tools', 'permissions')
+TOP_LEVEL = ('claude', 'codex', 'opencode', 'pi')  # Runtimes whose own process the resolver gives launch controls.
 
 
 def require(value, message):
@@ -519,6 +520,10 @@ def record(db, data, refuse_changes=False):
                             'Same-assignment reuse requires collected result, explicit retention and no live wait')
             # The launch's write scope is requested like model and effort: a record without it stays unverified.
             scope = (execution.get('launch') or {}).get('verify', {})
+            target = execution.get('target_runtime')
+            require(scope or target not in TOP_LEVEL or execution.get('native_dispatch'),
+                    f'A route to a {target} worker started as its own process requires its launch controls '
+                    '(launch.verify); resolve it again with agent_models.py --route')
             saved = dict(data, agent=execution['agent'], job=execution['job'], execution_snapshot=execution,
                          requested=dict(scope, **settings, runtime=data['runtime']), verified=False)
             if placed:

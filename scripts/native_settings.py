@@ -160,6 +160,13 @@ def observe(path, runtime, session, worktree):
         policy = latest.get('sandbox_policy')
         settings.update(sandbox=policy.get('type') if isinstance(policy, dict) else None,
                         approval=latest.get('approval_policy'))
+        # A permissions profile also reports workspace-write, so its filesystem entries tell what is writable.
+        profile = latest.get('permission_profile') or {}
+        system = profile.get('file_system') or {}
+        if profile.get('type') == 'managed' and system.get('type') == 'restricted':
+            settings['filesystem'] = sorted(
+                entry['access'] + ' ' + (':' + entry['path']['value']['kind'] if entry['path']['type'] == 'special'
+                                         else entry['path']['path']) for entry in system['entries'])
     else:  # Pi
         settings['tools'] = latest.get('tools')
     settings = {key: value for key, value in settings.items()

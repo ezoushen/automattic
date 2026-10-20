@@ -66,6 +66,23 @@ class Submission(WorkerLifecycleCase):
                 else:
                     boundary.unlink()
 
+    def test_registration_refuses_a_top_level_route_without_launch_controls(self):
+        # Rule: a worker started as its own runtime process carries the resolver's launch controls, or its write
+        # scope could never be verified; a native child route is exempt.
+        for runtime in ('claude', 'codex', 'opencode', 'pi'):
+            with self.subTest(runtime=runtime):
+                self.execution.write_text(json.dumps({'harness': None, 'target_runtime': runtime, 'native_dispatch': False,
+                                                      'agent': 'builder', 'job': 'ticket', 'settings': {}}))
+                error = self.register(f'ticket-1/{runtime}', session=f'native-{runtime}', worker=f'pane-{runtime}',
+                                      runtime=runtime, code=2)
+                self.assertIn(f'A route to a {runtime} worker started as its own process requires its launch '
+                              'controls (launch.verify)', error)
+        self.assertEqual(self.cli('status')['attempts'], [])
+        self.execution.write_text(json.dumps({'harness': 'codex', 'target_runtime': 'codex', 'native_dispatch': True,
+                                              'agent': 'builder', 'job': 'ticket', 'settings': {}}))
+        self.register(runtime='codex')
+        self.assertEqual(len(self.cli('status')['attempts']), 1)
+
     def test_submit_reads_codex_session_and_latest_turn_controls(self):
         self.execution.write_text(json.dumps({'harness': 'codex', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'gpt-6.1-sol', 'effort': 'high'}}))
@@ -124,6 +141,51 @@ class Submission(WorkerLifecycleCase):
             'runtime': 'codex', 'model': 'gpt-6.1-sol', 'effort': 'high', 'sandbox': 'workspace-write',
             'approval': 'never'})
 
+    def test_submit_refuses_read_only_codex_work_unless_its_permission_profile_keeps_the_worktree_read_only(self):
+        # Rule: for `writes: none` the rollout's permission profile must be exactly the launch's: everything readable,
+        # only $TMPDIR and the reports directory writable. A workspace-write sandbox on the worktree, the user
+        # default, another sandbox or a record without the profile blocks work.
+        reports = str(self.root / 'reports')
+        self.execution.write_text(json.dumps({'target_runtime': 'codex', 'agent': 'reviewer', 'job': 'diff-review',
+            'settings': {'model': 'gpt-6.1-sol', 'effort': 'high'}, 'launch': {'writes': 'none', 'verify': {
+                'sandbox': 'workspace-write', 'approval': 'never',
+                'filesystem': ['read :root', f'write {reports}', 'write :tmpdir']}}}))
+        self.register(runtime='codex')
+
+        def special(kind, access):
+            return {'path': {'type': 'special', 'value': {'kind': kind}}, 'access': access}
+
+        def path(name, access, **extra):
+            return dict({'path': {'type': 'path', 'path': name}, 'access': access}, **extra)
+        profile = {'type': 'managed', 'network': 'restricted', 'file_system': {'type': 'restricted', 'entries': [
+            path(reports, 'write'), special('root', 'read'), special('tmpdir', 'write')]}}
+        on_worktree = {'type': 'managed', 'network': 'restricted', 'file_system': {'type': 'restricted', 'entries': [
+            special('root', 'read'), path(str(self.root), 'write'), special('slash_tmp', 'write'),
+            special('tmpdir', 'write'), path(str(self.root / '.git'), 'read', missing_path_behavior='skip')]}}
+
+        def rollout(sandbox, permission_profile):
+            context = {'model': 'gpt-6.1-sol', 'effort': 'high', 'cwd': str(self.root), 'approval_policy': 'never',
+                       'sandbox_policy': {'type': sandbox}}
+            if permission_profile is not None:
+                context['permission_profile'] = permission_profile
+            (self.root / 'native.jsonl').write_text(''.join(json.dumps(row) + '\n' for row in (
+                {'type': 'session_meta', 'payload': {'id': 'native-1', 'cwd': str(self.root)}},
+                {'type': 'turn_context', 'payload': context})))
+        for case, sandbox, permission_profile in (
+                ('worktree writable', 'workspace-write', on_worktree),
+                ('user default', 'danger-full-access', {'type': 'disabled'}),
+                ('read-only', 'read-only', {'type': 'managed', 'network': 'restricted', 'file_system': {
+                    'type': 'restricted', 'entries': [special('root', 'read')]}}),
+                ('no profile recorded', 'workspace-write', None)):
+            with self.subTest(case=case):
+                rollout(sandbox, permission_profile)
+                self.assert_scope_refused()
+        rollout('workspace-write', profile)
+        self.submit_scoped()
+        self.assertTrue((self.root / 'productive-work').exists())
+        self.assertEqual(self.cli('status')['attempts'][0]['observed']['filesystem'],
+                         ['read :root', f'write {reports}', 'write :tmpdir'])
+
     def test_submit_refuses_claude_work_until_the_transcript_shows_dont_ask_mode(self):
         # Rule: a TUI transcript has no tool list, so its latest permission-mode row is the write-scope evidence.
         execution = json.loads(self.execution.read_text())
@@ -171,9 +233,9 @@ class Submission(WorkerLifecycleCase):
         # must be exactly the launch's allowlist; an extra tool, such as an extension shell, blocks work.
         self.execution.write_text(json.dumps({'target_runtime': 'pi', 'agent': 'reviewer', 'job': 'diff-review',
             'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'},
-            'launch': {'writes': 'none', 'verify': {'tools': ['find', 'grep', 'ls', 'read']}}}))
+            'launch': {'writes': 'none', 'verify': {'tools': ['bash', 'find', 'grep', 'ls', 'read']}}}))
         self.register(runtime='pi')
-        read_only = ['read', 'grep', 'find', 'ls']
+        read_only = ['read', 'grep', 'find', 'ls', 'bash']  # `none` keeps the shell, never write or edit.
         for case, changes in (('user default', [(['read', 'bash', 'edit', 'write', 'bg_run', 'subagent'], [])]),
                               ('tool added later', [(read_only, []), (['bg_run'], [])]),
                               ('no tool record', [])):
@@ -184,22 +246,22 @@ class Submission(WorkerLifecycleCase):
         self.submit_scoped()
         self.assertTrue((self.root / 'productive-work').exists())
         self.assertEqual(self.cli('status')['attempts'][0]['observed'], {
-            'runtime': 'pi', 'model': 'dgx/glm-5.3-flash', 'effort': 'high', 'tools': ['find', 'grep', 'ls', 'read']})
+            'runtime': 'pi', 'model': 'dgx/glm-5.3-flash', 'effort': 'high', 'tools': ['bash', 'find', 'grep', 'ls', 'read']})
 
     def test_submit_reads_pi_tools_from_the_latest_compaction_checkpoint(self):
         # Rule (boundary): a compaction stores a complete tool checkpoint, so the tools offered after it replace
         # whatever earlier system messages declared.
         self.execution.write_text(json.dumps({'target_runtime': 'pi', 'agent': 'reviewer', 'job': 'diff-review',
             'settings': {'model': 'dgx/glm-5.3-flash', 'effort': 'high'},
-            'launch': {'writes': 'none', 'verify': {'tools': ['find', 'grep', 'ls', 'read']}}}))
+            'launch': {'writes': 'none', 'verify': {'tools': ['bash', 'find', 'grep', 'ls', 'read']}}}))
         self.register(runtime='pi')
-        read_only = ['read', 'grep', 'find', 'ls']
+        read_only = ['read', 'grep', 'find', 'ls', 'bash']  # `none` keeps the shell, never write or edit.
         self.pi_session((read_only, []), checkpoint=read_only + ['write'])
         self.assert_scope_refused()
-        self.pi_session((read_only + ['bash', 'edit', 'write'], []), checkpoint=read_only)
+        self.pi_session((read_only + ['edit', 'write'], []), checkpoint=read_only)
         self.submit_scoped()
         self.assertTrue((self.root / 'productive-work').exists())
-        self.assertEqual(self.cli('status')['attempts'][0]['observed']['tools'], ['find', 'grep', 'ls', 'read'])
+        self.assertEqual(self.cli('status')['attempts'][0]['observed']['tools'], ['bash', 'find', 'grep', 'ls', 'read'])
 
     def test_submit_reads_pi_controls_from_active_branch(self):
         self.execution.write_text(json.dumps({'harness': 'pi', 'agent': 'builder', 'job': 'ticket',
@@ -319,13 +381,13 @@ class Submission(WorkerLifecycleCase):
         # rule winning, a missing deny or a later allow widens the scope.
         def deny(*actions):
             return [{'action': action, 'resource': '*', 'effect': 'deny'} for action in actions]
-        rules = deny('edit', 'shell', 'subagent')
+        rules = deny('edit', 'subagent')  # `none` keeps the shell for checks.
         self.execution.write_text(json.dumps({'target_runtime': 'opencode', 'agent': 'reviewer', 'job': 'diff-review',
             'settings': {'model': 'opencode/deepseek-v4.1-flash-free', 'effort': 'high'},
             'launch': {'writes': 'none', 'verify': {'permissions': rules}}}))
         self.register(runtime='opencode')
         ready = [{'type': 'text', 'text': 'ready'}]
-        for case, permissions in (('none recorded', None), ('subagent allowed', deny('edit', 'shell')),
+        for case, permissions in (('none recorded', None), ('subagent allowed', deny('edit')),
                                   ('allowed again later', rules + [{'action': 'edit', 'resource': '*', 'effect': 'allow'}])):
             with self.subTest(case=case):
                 self.assertIn('verified', self.submit_opencode_v2(self.opencode_v2_export(ready, permissions=permissions),

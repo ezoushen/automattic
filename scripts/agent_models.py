@@ -405,7 +405,7 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
                       adaptive_thinking=None, *, job=None, session_id=None, candidate=None, selection=None,
                       eligible_candidates=None, list_candidates=False, target_runtime=None, assignment=None,
                       eligible_thinking=None, journal=None, assignment_id=None, excluded_candidates=None,
-                      after_failure=None):
+                      after_failure=None, reports=None):
     if job is not None:
         if job not in JOBS:
             raise ValueError(f'Unknown job {job!r}; jobs: {", ".join(sorted(JOBS))}')
@@ -758,7 +758,7 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
                          'choose an eligible setting or verify registration before retrying')
     # A native child takes no flags; a worker started as its own runtime process gets them explicitly.
     runtime = metadata.get('target_runtime')
-    launch = launch_controls(runtime, agent, settings) if not native and runtime in HARNESSES else None
+    launch = launch_controls(runtime, agent, settings, reports) if not native and runtime in HARNESSES else None
     # Named delegates and skills can forward to another runtime; the host is not the destination.
     return {'harness': host if native else None, 'host_harness': host, 'agent': agent, 'job': job,
             'settings': settings, 'sources': sources, 'files': [],
@@ -773,14 +773,15 @@ def resolve_execution(repo, user_config, user_executors, host, agent, task, choi
 
 
 EDIT_TOOLS = ('Edit', 'Write', 'NotebookEdit')  # Claude's file-editing tools.
-PI_TOOLS = {'none': ('read', 'grep', 'find', 'ls'), 'worktree': ('read', 'bash', 'edit', 'write', 'grep', 'find', 'ls')}
-OPENCODE_DENY = {'none': ('edit', 'shell', 'subagent'), 'worktree': ('subagent',)}
+PI_TOOLS = {'none': ('read', 'grep', 'find', 'ls', 'bash'), 'worktree': ('read', 'bash', 'edit', 'write', 'grep', 'find', 'ls')}
+OPENCODE_DENY = {'none': ('edit', 'subagent'), 'worktree': ('subagent',)}  # `none` keeps the shell for checks.
 
 
-def launch_controls(runtime, agent, settings):
+def launch_controls(runtime, agent, settings, reports=None):
     """Flags for a worker started as its own runtime process: the agent's write scope and the resolved model and
     effort, each passed explicitly because every user default allows full writes. `verify` holds the native
-    record's values that the worker lifecycle's submit compares."""
+    record's values that the worker lifecycle's submit compares. A read-only worker keeps a shell for checks; the
+    read-only worktree check at collection covers what a shell writes."""
     definition = DEFINITIONS['agents'][agent]
     writes = definition['writes']
     model, effort = settings.get('model'), settings.get('effort')
@@ -798,7 +799,8 @@ def launch_controls(runtime, agent, settings):
         argv += (['--model', model] if model else []) + (['--effort', effort] if effort else [])
         return {'writes': writes, 'argv': argv, 'verify': {'permission_mode': 'dontAsk'}}
     if runtime == 'pi':
-        # An allowlist: an exclude list leaves extension shells such as bg_run.
+        # An allowlist: an exclude list leaves extension shells such as bg_run. `none` keeps bash for checks;
+        # the read-only worktree check at collection covers its writes.
         tools = PI_TOOLS[writes]
         provider, _, name = model.partition('/') if model and '/' in model else ('', '', model)
         argv = ['--tools', ','.join(tools)] + (['--provider', provider] if provider else []) + (
@@ -814,10 +816,19 @@ def launch_controls(runtime, agent, settings):
             body['model'] = dict(providerID=provider, id=name, **({'variant': effort} if effort else {}))
         return {'writes': writes, 'api': {'method': 'POST', 'path': '/api/session', 'body': body},
                 'verify': {'permissions': rules}}
-    sandbox = 'read-only' if writes == 'none' else 'workspace-write'
-    argv = ['-s', sandbox, '-a', 'never'] + (['-m', model] if model else []) + (
+    verify = {'sandbox': 'workspace-write', 'approval': 'never'}
+    if writes == 'none':
+        # Read everything, write only temporary files and the reports directory, so checks can still run. A profile
+        # given with -c applies over the user's sandbox_mode; the rollout records it as a workspace-write policy.
+        writable = [':tmpdir'] + ([str(reports)] if reports else [])
+        table = ','.join([f'":root"="read"'] + [f'{json.dumps(path)}="write"' for path in writable])
+        argv = ['-c', 'default_permissions="automattic_none"', '-c', f'permissions.automattic_none.filesystem={{{table}}}']
+        verify['filesystem'] = sorted(['read :root'] + [f'write {path}' for path in writable])
+    else:
+        argv = ['-s', 'workspace-write']
+    argv += ['-a', 'never'] + (['-m', model] if model else []) + (
         ['-c', f'model_reasoning_effort={json.dumps(effort)}'] if effort else [])
-    return {'writes': writes, 'argv': argv, 'verify': {'sandbox': sandbox, 'approval': 'never'}}
+    return {'writes': writes, 'argv': argv, 'verify': verify}
 
 
 def read_config(path):
@@ -947,6 +958,8 @@ def main():
     parser.add_argument('--after-failure', metavar='EVIDENCE',
                         help='retry after a failed attempt: consult the decision model with this failure evidence')
     parser.add_argument('--journal', type=Path, help='absolute session journal for decision-model calls')
+    parser.add_argument('--reports', type=Path,
+                        help='absolute reports directory a read-only Codex worker may write; requires --route')
     parser.add_argument('--assignment-id', help='stable assignment/attempt identity; required with --journal')
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument('--list-candidates', action='store_true', help='inspect the effective pool without selecting')
@@ -1011,6 +1024,8 @@ def main():
                                        assignment=assignment_text(args.assignment) if args.assignment else None,
                                        journal=args.journal, assignment_id=args.assignment_id,
                                        after_failure=args.after_failure,
+                                       # Canonical, as Codex records resolved paths (/private/var for /var).
+                                       reports=args.reports.expanduser().resolve() if args.reports else None,
                                        excluded_candidates=json_argument(args.excluded_candidates, '--excluded-candidates',
                                                                          dict, '\'{"luna":"quota exhausted"}\''))
         else:

@@ -15,7 +15,8 @@ class HerdrTabs(WorkerLifecycleCase):
         """Resolve the worker through the Herdr skill, as the resolver does for a Herdr route."""
         execution = json.loads(self.execution.read_text())
         execution.update(harness=None, target_runtime='claude', executor='skill', executor_context='herdr',
-                         executor_config={'skill': 'herdr', 'instruction': 'Run one worker.'})
+                         executor_config={'skill': 'herdr', 'instruction': 'Run one worker.'},
+                         native_dispatch=False, launch={'writes': 'worktree', 'verify': {'permission_mode': 'dontAsk'}})
         self.execution.write_text(json.dumps(execution))
 
     def collected(self):

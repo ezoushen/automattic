@@ -57,8 +57,10 @@ class WorkerLifecycleCase(unittest.TestCase):
         return support.assignment_file(self.root, json.loads(self.execution.read_text()).get('job', 'ticket'))
 
     def ready(self, attempt='ticket-1/1'):
+        """A worker whose native record shows the settings and launch controls it was given, prompted."""
+        scope = json.loads(self.execution.read_text()).get('launch', {}).get('verify', {})
         self.record('startup', attempt, observed={'runtime': 'claude', 'model': 'sonnet',
-                                                'effort': 'high'}, evidence=['native.jsonl:1'])
+                                                'effort': 'high', **scope}, evidence=['native.jsonl:1'])
         self.record('submitted', attempt, evidence=['native.jsonl:2:accepted prompt'])
 
     def watch(self, attempt='ticket-1/1', script='print("idle")', code=0, timeout=2):

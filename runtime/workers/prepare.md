@@ -119,8 +119,10 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    and worktree, reads actual model/effort, and retains a minimal snapshot with the
    source prefix length and SHA-256; it does not copy conversation contents. A route's
    `launch.verify` joins the requested controls at registration: Claude's latest permission
-   mode, Codex's sandbox and approval policies, the tools a Pi session offers and an OpenCode
-   session's permissions must equal it, and a record without them leaves the attempt unverified.
+   mode, Codex's sandbox and approval policies and permission profile, the tools a Pi session
+   offers and an OpenCode session's permissions must equal it, and a record without them leaves
+   the attempt unverified. Registration refuses a route to a worker started as its own Claude,
+   Codex, OpenCode or Pi process that lacks `launch`; a native child route is exempt.
    Claude may report a subdirectory within the assigned checkout; nested Git
    repositories/worktrees and paths outside that checkout remain rejected.
    Pi controls follow the latest persisted branch. A failed Pi assistant response

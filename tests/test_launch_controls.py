@@ -34,13 +34,13 @@ class LaunchControls(unittest.TestCase):
             self.data['models'][name] = {'description': name, 'runtimes': {runtime: {
                 'id': model, 'thinking': {'default': 'high', 'allowed': ['high']}}}}
 
-    def route(self, model, job, host='claude'):
+    def route(self, model, job, host='claude', *options):
         """The --route output for a job whose agent uses this model, from a host Herdr bridges to it."""
         self.data['agents'] = {'builder': {'model': model}, 'reviewer': {'model': model}}
         self.user.write_text(json.dumps(self.data))
         process = subprocess.run([sys.executable, '-B', str(SCRIPT), '--repo', str(self.root), '--harness', host,
                                   '--job', job, '--route', '--user-executors', str(self.user),
-                                  '--user-config', str(self.root / 'absent.json')],
+                                  '--user-config', str(self.root / 'absent.json'), *options],
                                  capture_output=True, text=True,
                                  env=support.isolated_env(self.root, HERDR_ENV='1', AUTOMATTIC_PROFILE='',
                                                           AUTOMATTIC_SESSION=''))
@@ -48,13 +48,26 @@ class LaunchControls(unittest.TestCase):
         return json.loads(process.stdout)
 
     def test_codex_route_sets_the_sandbox_for_the_write_scope_and_never_asks(self):
-        # Rule: read-only for `writes: none`, workspace-write for `worktree`, approval never, model and effort explicit.
-        for job, writes, sandbox in (('diff-review', 'none', 'read-only'), ('ticket', 'worktree', 'workspace-write')):
-            with self.subTest(job=job):
-                self.assertEqual(self.route('sol', job)['launch'], {
-                    'writes': writes,
-                    'argv': ['-s', sandbox, '-a', 'never', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"'],
-                    'verify': {'sandbox': sandbox, 'approval': 'never'}})
+        # Rule: `worktree` gets workspace-write; `none` a permissions profile that reads everything and writes only
+        # $TMPDIR and the reports directory, so checks still run; approval never, model and effort explicit.
+        reports = self.root.resolve() / 'reports'  # Codex records resolved paths (/private/var for /var).
+        profile = ('permissions.automattic_none.filesystem='
+                   '{":root"="read",":tmpdir"="write",' + json.dumps(str(reports)) + '="write"}')
+        self.assertEqual(self.route('sol', 'diff-review', 'claude', '--reports', str(self.root / 'reports'))['launch'], {
+            'writes': 'none',
+            'argv': ['-c', 'default_permissions="automattic_none"', '-c', profile, '-a', 'never',
+                     '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"'],
+            'verify': {'sandbox': 'workspace-write', 'approval': 'never',
+                       'filesystem': ['read :root', f'write {reports}', 'write :tmpdir']}})  # Sorted.
+        # Without a reports directory the worker writes only temporary files and returns its report.
+        launch = self.route('sol', 'diff-review')['launch']
+        self.assertEqual((launch['argv'][3], launch['verify']['filesystem']),
+                         ('permissions.automattic_none.filesystem={":root"="read",":tmpdir"="write"}',
+                          ['read :root', 'write :tmpdir']))
+        self.assertEqual(self.route('sol', 'ticket')['launch'], {
+            'writes': 'worktree',
+            'argv': ['-s', 'workspace-write', '-a', 'never', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"'],
+            'verify': {'sandbox': 'workspace-write', 'approval': 'never'}})
         # A native child of the same runtime takes no launch flags; its agent profile restricts it.
         self.assertNotIn('launch', self.route('sol', 'diff-review', host='codex'))
 
@@ -77,10 +90,10 @@ class LaunchControls(unittest.TestCase):
             'verify': {'permission_mode': 'dontAsk'}})
 
     def test_pi_route_offers_an_explicit_tool_allowlist_for_the_write_scope(self):
-        # Rule: `--tools` is an allowlist (an exclude list leaks bg_run); read-only tools for `none`, the full
-        # built-in set for `worktree`; provider, model and thinking explicit.
+        # Rule: `--tools` is an allowlist (an exclude list leaks bg_run); `none` keeps the shell for checks but no
+        # write or edit tool, `worktree` gets the full built-in set; provider, model and thinking explicit.
         for job, writes, tools, offered in (
-                ('diff-review', 'none', 'read,grep,find,ls', ['find', 'grep', 'ls', 'read']),
+                ('diff-review', 'none', 'read,grep,find,ls,bash', ['bash', 'find', 'grep', 'ls', 'read']),
                 ('ticket', 'worktree', 'read,bash,edit,write,grep,find,ls',
                  ['bash', 'edit', 'find', 'grep', 'ls', 'read', 'write'])):
             with self.subTest(job=job):
@@ -91,11 +104,11 @@ class LaunchControls(unittest.TestCase):
 
     def test_opencode_route_creates_its_session_with_deny_rules_for_the_write_scope(self):
         # Rule: the TUI has no --agent or -m, so the session is created through the API with its model, variant and
-        # permissions; `none` denies edit, shell and subagent, `worktree` denies subagent (a denied agent still
-        # writes through the general subagent).
+        # permissions; `none` denies edit and subagent but keeps the shell for checks, `worktree` denies subagent
+        # (a denied agent still writes through the general subagent).
         def deny(*actions):
             return [{'action': action, 'resource': '*', 'effect': 'deny'} for action in actions]
-        for job, writes, rules in (('diff-review', 'none', deny('edit', 'shell', 'subagent')),
+        for job, writes, rules in (('diff-review', 'none', deny('edit', 'subagent')),
                                    ('ticket', 'worktree', deny('subagent'))):
             with self.subTest(job=job):
                 self.assertEqual(self.route('flash', job)['launch'], {

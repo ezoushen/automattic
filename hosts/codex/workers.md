@@ -1,5 +1,11 @@
 # Codex dispatch runtime
 
+Contents:
+- [Assignment and capacity](#assignment-and-capacity)
+- [Peer messages](#peer-messages)
+- [Continuation](#continuation)
+- [Top-level workers](#top-level-workers)
+
 Resolve [executors](../../runtime/workers/launch.md) first. Default to native children, not sidebar
 tasks. An explicitly selected external executor owns its launch/lifecycle and
 settings; the native operations below apply only to `executor: native`. Complete
@@ -85,13 +91,17 @@ an explicit user request; an automation does not replace waiting for live childr
 
 A Codex worker started as its own process, such as one launched through Herdr, takes the
 route's `launch.argv` after `--`; every restriction is in it, since the user's default is
-`danger-full-access` with approval `never`. It sets `-s read-only` for `writes: none` or
-`-s workspace-write` for `worktree`, `-a never`, `-m` and `-c model_reasoning_effort="<effort>"`,
-each value one argument. Start it in a worktree of a checkout the user already trusts: anywhere
+`danger-full-access` with approval `never`. It sets `-s workspace-write` for `worktree`; for
+`writes: none` a permissions profile (`-c default_permissions=...` and its `filesystem` table)
+that reads everything and writes only `$TMPDIR` and the reports directory, so checks still run
+and the worktree stays read-only. Resolve with `--reports <absolute reports dir>` to make that
+directory writable; without it the worker returns its report (`report_transport: return`). Then
+`-a never`, `-m` and `-c model_reasoning_effort="<effort>"`, each value one argument. A profile
+given with `-c` applied over a config `sandbox_mode` in a `codex exec` probe; the TUI with a
+profile is unprobed. Start it in a worktree of a checkout the user already trusts: anywhere
 else "Trust this folder?" blocks the start (Herdr: `agent_not_ready`, agent `blocked`). Report
-that dialog to the user; never answer it. The read-only sandbox blocks every write, temporary
-files included, so a `writes: none` worker gets `report_transport: return`. `submit` verifies
-the rollout's latest `turn_context`: its `sandbox_policy` type and `approval_policy`. `codex
-exec` has no `-a` and always runs with approval `never`.
+that dialog to the user; never answer it. `submit` verifies the rollout's latest `turn_context`:
+its `sandbox_policy` type, `approval_policy` and, for `writes: none`, the `permission_profile`
+entries. `codex exec` has no `-a` and always runs with approval `never`.
 
 The [executor guides](../executors/README.md) cover each executor type a route can select.

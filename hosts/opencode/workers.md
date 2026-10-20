@@ -40,8 +40,8 @@ configuration stay callable under a session's deny rules.
    `XDG_DATA_HOME` and `XDG_STATE_HOME` in a fresh directory and a known `OPENCODE_PASSWORD`.
 2. Create the session from the route's `launch.api`: `opencode api POST /api/session
    --server <url> -d '<body>'`, with `"location":{"directory":"<worktree>"}` added to
-   `launch.api.body`; without it the session gets another directory. The body denies edit,
-   shell and subagent for `writes: none` and subagent for `worktree`; a denied agent still
+   `launch.api.body`; without it the session gets another directory. The body denies edit
+   and subagent for `writes: none` and subagent for `worktree`; a denied agent still
    writes through the `general` subagent unless subagent is denied.
 3. In the worker's tab, export `OPENCODE_PASSWORD`, then start the TUI with
    `--server <url> --session <id>`.
@@ -49,7 +49,8 @@ configuration stay callable under a session's deny rules.
    file and submit with it: `info.permissions` must equal the launch's rules and the latest
    assistant turn must show the model and variant.
 
-A `writes: none` worker has no shell or editing tool, so assign `report_transport: return`.
+A `writes: none` worker keeps the shell for checks and its report but no editing tool; the
+read-only worktree check at collection covers what its shell writes.
 `opencode mini --model <provider/model>#<variant>` applies settings at launch, but Herdr
 cannot observe `mini`'s activity, so it does not suit lifecycle workers.
 
