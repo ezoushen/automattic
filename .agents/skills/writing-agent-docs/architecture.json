@@ -32,7 +32,8 @@
    "setup"
   ],
   [
-   "diagnose"
+   "diagnose",
+   "research"
   ],
   [
    "agents"
@@ -42,9 +43,6 @@
   ],
   [
    "hosts"
-  ],
-  [
-   "research"
   ],
   [
    "interview"
@@ -172,7 +170,7 @@
   },
   "research": {
    "docs": [
-    "runtime/research/**/*.md"
+    "skills/research/**/*.md"
    ]
   },
   "agents": {

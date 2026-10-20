@@ -87,7 +87,7 @@ human-authorized merge by the orchestrator.
 
 ## Re-entry
 
-- A blocked ticket whose cause is a missing **fact** → [research](../../runtime/research/research.md); a **defect** →
+- A blocked ticket whose cause is a missing **fact** → [research](../research/SKILL.md); a **defect** →
   [diagnosis](../diagnose/SKILL.md); a **contract decision** → resolve against accepted
   priorities and record the deciding source; unresolved conflicts return for human
   alignment while independent work continues, not a retrospective rewrite of criteria; a **wrong
@@ -121,7 +121,7 @@ Every method the phases use ships in this plugin: test-first work from the
 [TDD standard](../../standards/tdd.md), module design from the
 [design standard](../../standards/design.md), ticket slicing from
 [slicing](../../runtime/board/slicing.md), missing facts from
-[research](../../runtime/research/research.md), defects from
+[research](../research/SKILL.md), defects from
 [diagnosis](../diagnose/SKILL.md), and a question paper cannot settle
 from align's [prototype](../align/jobs/prototype.md) job. The review command supplies
 scope, priority and allowed mutation context and its own

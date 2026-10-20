@@ -1,0 +1,5 @@
+interface:
+  short_description: "Answer a question from primary sources, with citations"
+  default_prompt: "Use $automattic:research <question> to gather cited evidence from primary sources and save the findings."
+policy:
+  allow_implicit_invocation: true
