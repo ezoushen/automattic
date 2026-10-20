@@ -120,7 +120,7 @@ The iteration stage of [dispatch](SKILL.md); the [review handoff](handoff.md) fo
    No other worker may use that worktree then; the orchestrator completes the merge.
 6. A blocked ticket is the orchestrator's work: research missing facts under
    [research](../../runtime/research/research.md), diagnose defects under
-   [diagnosis](../../runtime/diagnose/diagnose.md), resolve engineering choices within accepted constraints, or return to
+   [diagnosis](../diagnose/SKILL.md), resolve engineering choices within accepted constraints, or return to
    align/refine for design errors. Apply [escalation checkpoints](../../runtime/workers/escalation.md)
    before retrying a worker, and report the retain/replacement decision.
    Read scoped source/diffs when needed to resolve

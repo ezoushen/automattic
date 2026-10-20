@@ -32,6 +32,9 @@
    "setup"
   ],
   [
+   "diagnose"
+  ],
+  [
    "agents"
   ],
   [
@@ -41,7 +44,6 @@
    "hosts"
   ],
   [
-   "diagnose",
    "research"
   ],
   [
@@ -165,7 +167,7 @@
   },
   "diagnose": {
    "docs": [
-    "runtime/diagnose/**/*.md"
+    "skills/diagnose/**/*.md"
    ]
   },
   "research": {

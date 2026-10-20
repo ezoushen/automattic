@@ -156,21 +156,28 @@ class CrossHarness(unittest.TestCase):
         # Codex 0.162 reads a root manifest declaring the Agent Plugins $schema as that format and drops
         # .codex-plugin hooks, so a copied install would register none.
         assert '$schema' not in portable, 'root plugin.json must not declare $schema'
+        # Three invocation policies: commands only the user types, a skill only the agent loads by its trigger, and
+        # skills both can start.
         commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief', 'huh'}
         implicit_skills = {'housekeeping'}
-        assert {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')} == commands | implicit_skills
+        both = {'diagnose'}
+        assert {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')} == commands | implicit_skills | both
         for path in (PLUGIN / 'skills').glob('*/SKILL.md'):
-            implicit = path.parent.name in implicit_skills
+            name = path.parent.name
+            implicit = name in implicit_skills | both
             text = path.read_text()
             # Every skill holds its procedure in SKILL.md; none is a thin entry over a lower doc.
             # huh is a short re-pitch trigger that launches nothing (tests/test_huh.py).
-            if path.parent.name != 'huh':
+            if name != 'huh':
                 assert len(text.encode()) >= 2500, f'{path}: a skill holds its procedure'
-            if not implicit and path.parent.name != 'huh':
+            if name not in implicit_skills and name != 'huh':
                 assert 'runtime bootstrap' in text, path
-            if not implicit:
+            if name in commands:
                 assert 'disable-model-invocation: true' in text, path
                 assert 'user-invocable: false' not in text, path
+            elif name in both:
+                assert 'disable-model-invocation: true' not in text, f'{path}: the agent may load it by its trigger'
+                assert 'user-invocable: false' not in text, f'{path}: the user may type it'
             else:
                 assert 'disable-model-invocation: true' not in text, path
                 assert 'user-invocable: false' in text, f'{path}: only the commands appear in the typed menu'

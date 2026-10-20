@@ -43,7 +43,7 @@ class Research(unittest.TestCase):
 
     def test_the_pipeline_map_sends_a_defect_to_diagnosis(self):
         text = prose('skills/brief/pipeline.md')
-        self.assertIn('](../../runtime/diagnose/diagnose.md)', text)
+        self.assertIn('](../diagnose/SKILL.md)', text)
 
 
 if __name__ == '__main__':

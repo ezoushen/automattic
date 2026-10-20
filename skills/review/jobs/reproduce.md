@@ -23,7 +23,7 @@ it.
 ## Finish line
 
 Diagnosis only: never repair the finding. When a finding needs its cause
-established, follow [diagnosis](../../../runtime/diagnose/diagnose.md), one reproducer per finding.
+established, follow [diagnosis](../../diagnose/SKILL.md), one reproducer per finding.
 A successful workaround alone does not establish the root cause. Run and minimize
 the evidence in isolation under check [planning](../../../runtime/checks/plan.md)
 and [execution](../../../runtime/checks/run.md), with stable input identity and only

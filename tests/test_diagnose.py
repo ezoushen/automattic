@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Diagnosis builds a failing loop before any theory, under the plugin's own procedure."""
+"""Diagnosis builds a failing loop before any theory; the user types it or the agent loads it on a defect."""
 import re
 import unittest
 
 import support
 
 ROOT = support.ROOT
-DOC = 'runtime/diagnose/diagnose.md'
+DOC = 'skills/diagnose/SKILL.md'
 
 
 def prose(path):
@@ -30,7 +30,8 @@ class Diagnose(unittest.TestCase):
     def test_the_diagnose_doc_names_no_language_specific_tooling(self):
         source = (ROOT / DOC).read_text()
         self.assertNotIn('```', source)
-        self.assertEqual(set(re.findall(r'`([^`]+)`', source)), {'<REDACTED>'})
+        # The only code spans are the redaction marker and the bootstrap path every command first reads.
+        self.assertEqual(set(re.findall(r'`([^`]+)`', source)), {'<REDACTED>', '../../bootstrap.md'})
         text = prose(DOC).lower()
         for tool in ('pytest', 'unittest', 'python', 'jest', 'node', 'npm', 'yarn', 'playwright', 'puppeteer', 'curl',
                      'cargo', 'go test', 'gradle', 'maven', 'dotnet', 'rspec', 'xcodebuild', 'swift test',
@@ -39,12 +40,24 @@ class Diagnose(unittest.TestCase):
                 self.assertNotIn(tool, text)
 
     def test_the_reproduce_job_and_the_blocked_ticket_step_use_it(self):
-        for path, link in (('skills/review/jobs/reproduce.md', '../../../runtime/diagnose/diagnose.md'),
-                           ('skills/dispatch/iteration.md', '../../runtime/diagnose/diagnose.md')):
+        for path, link in (('skills/review/jobs/reproduce.md', '../../diagnose/SKILL.md'),
+                           ('skills/dispatch/iteration.md', '../diagnose/SKILL.md')):
             with self.subTest(path=path):
                 self.assertIn(f']({link})', prose(path))
-        self.assertIn('diagnose defects under [diagnosis](../../runtime/diagnose/diagnose.md)',
+        self.assertIn('diagnose defects under [diagnosis](../diagnose/SKILL.md)',
                       prose('skills/dispatch/iteration.md'))
+
+    def test_invoked_directly_the_fix_follows_the_diagnosis_test_first(self):
+        # Diagnosis itself still never repairs; a user who asked for the fix gets it only after the cause is
+        # confirmed, starting from the reproducer as a failing test.
+        section = prose(DOC).split('## Invoked directly', 1)[1]
+        for rule in ('only after the confirmed cause',
+                     'the shrunk case becomes the failing test at the seam where the defect occurs',
+                     '](../../standards/tdd.md)'):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, section)
+        self.assertIn('runtime bootstrap', prose(DOC))
+        self.assertFalse((ROOT / 'runtime/diagnose').exists())
 
 
 if __name__ == '__main__':

@@ -1,8 +1,16 @@
+---
+name: diagnose
+description: "Find the cause of a bug, failing check or regression: build a command that fails on it, shrink the case, test ranked hypotheses, and report the cause with a reproducer. Use when something is broken, throws, fails or got slower."
+argument-hint: "[symptom, failing command or issue]"
+---
+
 # Diagnose a defect
 
-Read when a defect needs its cause established: review's reproduce job and
-dispatch's blocked-ticket step use it. The procedure establishes the cause and a
-reproducer; whoever owns the repair applies the fix.
+First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
+
+Read when a defect needs its cause established: the user's request, review's
+reproduce job and dispatch's blocked-ticket step use it. The procedure establishes the
+cause and a reproducer; whoever owns the repair applies the fix.
 
 Contents:
 - [Rules](#rules)
@@ -10,6 +18,7 @@ Contents:
 - [Reproduce and shrink](#reproduce-and-shrink)
 - [Rank hypotheses](#rank-hypotheses)
 - [Return](#return)
+- [Invoked directly](#invoked-directly)
 
 ## Rules
 
@@ -20,7 +29,7 @@ Contents:
 - Redact every secret before showing a command, its output or a captured artifact:
   write `<REDACTED>` in its place, keep credentials in the environment rather than in
   the command, and quote only the lines that carry the signal. When the redacted
-  output cannot show the defect, say so and [ask with context](../explain/ask.md).
+  output cannot show the defect, say so and [ask with context](../../runtime/explain/ask.md).
 - Ask the user before touching their devices, accounts or running services, naming
   what the step changes and how it is undone. Reading them is not consent to change them.
 
@@ -37,7 +46,7 @@ procedure prevents. The command:
 - finishes in seconds where the project allows, and runs unattended.
 
 Use the project's own test runner, entry point or a small script with a fixed input.
-Run it under check [planning](../checks/plan.md) and [execution](../checks/run.md),
+Run it under check [planning](../../runtime/checks/plan.md) and [execution](../../runtime/checks/run.md),
 with stable input identity. When no such command can be built, stop and report what
 was tried; hypotheses without one are not evidence.
 
@@ -62,3 +71,12 @@ hypotheses, the redacted command and its output, and the shrunk case. The failin
 is kept as the regression test: hand it to the repair owner, who turns it into a
 failing test at the seam where the defect occurs before fixing. When no seam can hold
 it, report that as a finding.
+
+## Invoked directly
+
+When the user asks for a diagnosis, the user's report is the symptom: build the loop
+from it and return to the user as this procedure describes. When they also asked for
+the fix, this session owns the repair, and it starts only after the confirmed cause is
+reported: the shrunk case becomes the failing test at the seam where the defect occurs,
+and the fix follows [test-first development](../../standards/tdd.md). A fix the user
+did not ask for is offered, not applied.
