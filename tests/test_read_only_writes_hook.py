@@ -472,5 +472,23 @@ class CodexChildren(Checkouts):
                     self.assertIsNone(self.run_codex('Bash', tool_input, cwd=cwd))
 
 
+    def test_no_child_rewrites_its_own_rollout(self):
+        # Rule (T15 review F3): a child's task name, which picks its record, comes from its own rollout
+        # (transcript_path), so in a session with records no child, a writer included, writes that file: else a
+        # reviewer could claim a sibling builder's task.
+        self.assertEqual(self.record('build_1', self.agents / 'builder.md', self.worktree).returncode, 0)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        meta = json.dumps({'type': 'session_meta', 'payload': {'id': 'c1', 'agent_path': '/root/build_1'}})
+        for task in ('review_1', 'build_1'):
+            rollout = self.tmp / 'codex/rollout-c1.jsonl'
+            for tool, tool_input in (('Bash', {'command': f'echo {quote(meta)} > {quote(str(rollout))}'}),
+                                     ('apply_patch', {'command': self.patch(f'*** Update File: {rollout}', '@@',
+                                                                            '-a', '+b')})):
+                with self.subTest(task=task, tool=tool):
+                    decision = self.run_codex(tool, tool_input, task=task)
+                    self.assertEqual((decision or {}).get('permissionDecision'), 'deny', tool)
+                    self.assertIn(str(rollout), decision['permissionDecisionReason'])
+
+
 if __name__ == '__main__':
     unittest.main()

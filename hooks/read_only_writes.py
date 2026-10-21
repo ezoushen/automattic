@@ -193,12 +193,12 @@ def assigned_worktree(event):
 
 
 def protected(paths, cwd, guarded, assigned, main):
-    """(main checkout, assigned worktree, the paths a read-only agent may not write): those under `guarded`, which
-    holds what widens its allowance, and those inside `main` (None: outside any checkout) or one of its worktrees,
-    outside its reports and the worktree `assigned()` names. The reports and paths outside those checkouts are decided first, so no later
-    lookup can deny them."""
+    """(main checkout, assigned worktree, the paths a read-only agent may not write): those under any of `guarded`,
+    which hold what widens its allowance, and those inside `main` (None: outside any checkout) or one of its worktrees,
+    outside its reports and the worktree `assigned()` names. The reports and paths outside those checkouts are
+    decided first, so no later lookup can deny them."""
     resolved = [os.path.realpath(os.path.join(cwd, os.path.expanduser(path))) for path in paths]
-    own = [path for path in resolved if guarded and Path(path).is_relative_to(guarded)]
+    own = [path for path in resolved if any(Path(path).is_relative_to(place) for place in guarded)]
     resolved = [path for path in resolved if path not in own]
     if main is None:
         return None, None, own  # A session outside any checkout protects none of them.
@@ -228,7 +228,7 @@ def claude(event):
     cwd = event.get('cwd') or os.getcwd()
     # The session's transcripts hold the assignment that widens what the agent may write, so it never writes them.
     transcript = event.get('transcript_path') or ''
-    sessions = Path(os.path.realpath(transcript[:-len('.jsonl')])) if transcript.endswith('.jsonl') else None
+    sessions = [Path(os.path.realpath(transcript[:-len('.jsonl')]))] if transcript.endswith('.jsonl') else []
     try:
         paths = (shell_writes(tool_input.get('command') or '', cwd) if tool == 'Bash'
                  else [tool_input.get(FILE_TOOLS[tool]) or ''])
@@ -282,6 +282,10 @@ def codex(event):
     name = f'Codex child {event["agent_id"]}'
     try:
         records = Path(os.path.realpath(main / RECORDS))
+        # The rollout names the child's task, which picks its record, so no child writes it.
+        rollout = event.get('transcript_path')
+        guarded = [records] + ([Path(os.path.realpath(rollout))] if rollout else [])
+        never = f'the assignment records under {records} or its rollout {rollout}'
         task = child_task(event)
         name = f'Codex child {task or event["agent_id"]}'
         try:
@@ -290,10 +294,10 @@ def codex(event):
             record = None
         definition = isinstance(record, dict) and agent_defs.load(ROOT)['agents'].get(record.get('agent'))
         if definition and definition.get('writes') != 'none':
-            written = [path for path in paths
-                       if Path(os.path.realpath(os.path.join(cwd, path))).is_relative_to(records)]
+            written = [path for path in paths if os.path.isabs(path) and
+                       any(Path(os.path.realpath(path)).is_relative_to(place) for place in guarded)]
             if written:
-                deny(f'{name} never writes the assignment records under {records}; {", ".join(written)} is there.')
+                deny(f'{name} never writes {never}; {", ".join(written)} is there.')
             return
         relative = [path[len(WORKDIR) + 1:] for path in paths if not os.path.isabs(path)]
         if relative:
@@ -301,14 +305,14 @@ def codex(event):
                  f'pass the shell workdir to hooks, so write to an absolute path.')
             return
         worktree = definition and record.get('worktree')
-        root, assigned, written = protected(paths, cwd, records, lambda: worktree and Path(worktree), main)
+        root, assigned, written = protected(paths, cwd, guarded, lambda: worktree and Path(worktree), main)
     except Exception as error:  # Once the session's records exist, a check that cannot run denies the call.
         deny(f'{name} is held read-only (writes: none) and this write could not be checked: {error}')
         return
     if written:
         agent = (f'({ROOT}/agents/{record["agent"]}.md).' if definition else
                  f'(no assignment record in {records / session}).')
-        deny(refusal(name, root, assigned, written, f'the assignment records under {records}') + f' {agent}')
+        deny(refusal(name, root, assigned, written, never) + f' {agent}')
 
 
 def assign(args):
