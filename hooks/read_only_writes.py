@@ -172,15 +172,13 @@ def assigned_worktree(event):
     return Path(os.path.realpath(match.group(1))) if match else None
 
 
-def protected(paths, cwd, event):
-    """(main checkout, assigned worktree, the paths a read-only agent may not write): those inside the main checkout or
-    one of its worktrees, outside its reports and the assigned worktree. The reports and paths outside those checkouts
-    are decided first, so no later lookup can deny them."""
+def protected(paths, cwd, guarded, assigned):
+    """(main checkout, assigned worktree, the paths a read-only agent may not write): those under `guarded`, which
+    holds what widens its allowance, and those inside the main checkout or one of its worktrees, outside its reports
+    and the worktree `assigned()` names. The reports and paths outside those checkouts are decided first, so no later
+    lookup can deny them."""
     resolved = [os.path.realpath(os.path.join(cwd, os.path.expanduser(path))) for path in paths]
-    # The session's transcripts hold the assignment that widens what the agent may write, so it never writes them.
-    transcript = event.get('transcript_path') or ''
-    sessions = Path(os.path.realpath(transcript[:-len('.jsonl')])) if transcript.endswith('.jsonl') else None
-    own = [path for path in resolved if sessions and Path(path).is_relative_to(sessions)]
+    own = [path for path in resolved if guarded and Path(path).is_relative_to(guarded)]
     resolved = [path for path in resolved if path not in own]
     main = yield_gate.main_checkout(cwd)
     if main is None:
@@ -188,10 +186,96 @@ def protected(paths, cwd, event):
     held = [path for path in resolved if not in_reports(path, main)]
     family = checkouts(main) if held else []
     held = [path for path in held if any(Path(path).is_relative_to(checkout) for checkout in family)]
-    assigned = assigned_worktree(event) if held else None
+    assigned = assigned() if held else None
     if assigned not in family[1:]:  # Only a worktree of the family, never the main checkout itself.
         assigned = None
     return main, assigned, own + [path for path in held if not (assigned and Path(path).is_relative_to(assigned))]
+
+
+def refusal(name, root, assigned, written, guarded):
+    """The deny reason for a read-only agent's writes outside what it may write."""
+    own = f' and in its assigned worktree {assigned}' if assigned else ''
+    where = f'its report under {root}/.scratch/<slug>/reports/{own}' if root else 'no file'
+    return (f'{name} is read-only (writes: none): inside the checkouts it writes only {where}, and never '
+            f'{guarded}; {", ".join(written)} is outside that')
+
+
+def claude(event):
+    """A Claude Code subagent's call: `agent_type` names the agent, its transcript holds the assignment."""
+    tool, tool_input = event.get('tool_name'), event.get('tool_input') or {}
+    agent = tool in (*FILE_TOOLS, 'Bash') and read_only(event.get('agent_type'))
+    if not agent:
+        return
+    cwd = event.get('cwd') or os.getcwd()
+    # The session's transcripts hold the assignment that widens what the agent may write, so it never writes them.
+    transcript = event.get('transcript_path') or ''
+    sessions = Path(os.path.realpath(transcript[:-len('.jsonl')])) if transcript.endswith('.jsonl') else None
+    try:
+        paths = (shell_writes(tool_input.get('command') or '', cwd) if tool == 'Bash'
+                 else [tool_input.get(FILE_TOOLS[tool]) or ''])
+        root, assigned, written = (protected(paths, cwd, sessions, lambda: assigned_worktree(event)) if paths
+                                   else (None, None, []))
+    except Exception as error:  # A check that cannot run denies the call.
+        deny(f'{event["agent_type"]} is read-only (writes: none) and this write could not be checked: {error}')
+        return
+    if written:
+        deny(refusal(event['agent_type'], root, assigned, written, "its session's transcripts") +
+             f' ({ROOT}/agents/{agent}.md).')
+
+
+def child_task(event):
+    """The task name of the Codex child making the call: its rollout's session_meta `agent_path` (`/root/<task>`)
+    when that meta is the child's own; None when unreadable or nested deeper."""
+    try:
+        with open(event['transcript_path']) as rows:
+            meta = json.loads(next(rows))['payload']
+    except (OSError, ValueError, StopIteration, KeyError, TypeError):
+        return None
+    path = meta.get('agent_path') or '' if meta.get('id') == event['agent_id'] else ''
+    task = path[len('/root/'):] if path.startswith('/root/') else ''
+    return task if TASK.fullmatch(task) else None
+
+
+def codex(event):
+    """A Codex native child's Bash call (the payload carries `agent_id`), judged by the assignment its parent
+    recorded under <main>/.scratch/codex-children/<session id>/; a session without that directory is not checked."""
+    tool, command = event.get('tool_name'), (event.get('tool_input') or {}).get('command') or ''
+    session = event.get('session_id') or ''
+    if not event.get('agent_id') or tool != 'Bash' or not re.fullmatch(r'[0-9A-Za-z-]+', session):
+        return
+    cwd = event.get('cwd') or os.getcwd()
+    name = f'Codex child {event["agent_id"]}'
+    try:
+        main = yield_gate.main_checkout(cwd)
+        records = main and Path(os.path.realpath(main / RECORDS))
+        if not (records and (records / session).is_dir()):
+            return
+        task = child_task(event)
+        name = f'Codex child {task or event["agent_id"]}'
+        try:
+            record = json.loads((records / session / f'{task}.json').read_text()) if task else None
+        except (OSError, ValueError):
+            record = None
+        definition = isinstance(record, dict) and agent_defs.load(ROOT)['agents'].get(record.get('agent'))
+        if 'codex-assign' in command:
+            deny(f'{name} may not run codex-assign: only its parent records assignments.')
+            return
+        paths = shell_writes(command, cwd)
+        if definition and definition.get('writes') != 'none':
+            written = [path for path in paths
+                       if Path(os.path.realpath(os.path.join(cwd, path))).is_relative_to(records)]
+            if written:
+                deny(f'{name} never writes the assignment records under {records}; {", ".join(written)} is there.')
+            return
+        worktree = definition and record.get('worktree')
+        root, assigned, written = protected(paths, cwd, records, lambda: worktree and Path(worktree))
+    except Exception as error:  # A check that cannot run denies the call.
+        deny(f'{name} is held read-only (writes: none) and this write could not be checked: {error}')
+        return
+    if written:
+        agent = (f'({ROOT}/agents/{record["agent"]}.md).' if definition else
+                 f'(no assignment record in {records / session}).')
+        deny(refusal(name, root, assigned, written, f'the assignment records under {records}') + f' {agent}')
 
 
 def assign(args):
@@ -231,24 +315,7 @@ def main():
         event = json.load(sys.stdin)
     except ValueError:
         return
-    tool, tool_input = event.get('tool_name'), event.get('tool_input') or {}
-    agent = tool in (*FILE_TOOLS, 'Bash') and read_only(event.get('agent_type'))
-    if not agent:
-        return
-    cwd = event.get('cwd') or os.getcwd()
-    try:
-        paths = (shell_writes(tool_input.get('command') or '', cwd) if tool == 'Bash'
-                 else [tool_input.get(FILE_TOOLS[tool]) or ''])
-        root, assigned, written = protected(paths, cwd, event) if paths else (None, None, [])
-    except Exception as error:  # A check that cannot run denies the call.
-        deny(f'{event["agent_type"]} is read-only (writes: none) and this write could not be checked: {error}')
-        return
-    if written:
-        own = f' and in its assigned worktree {assigned}' if assigned else ''
-        where = f'its report under {root}/.scratch/<slug>/reports/{own}' if root else 'no file'
-        deny(f'{event["agent_type"]} is read-only (writes: none): inside the checkouts it writes only {where}, '
-             f'and never its session\'s transcripts; {", ".join(written)} is outside that '
-             f'({ROOT}/agents/{agent}.md).')
+    (codex if sys.argv[1:2] == ['codex'] else claude)(event)
 
 
 def deny(reason):

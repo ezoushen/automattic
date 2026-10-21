@@ -278,5 +278,76 @@ class CodexChildren(Checkouts):
         self.assertEqual(sorted(path.name for path in self.records.iterdir()), ['review_1.json'])
 
 
+    def run_codex(self, tool, tool_input, agent_id='c1', task='review_1', session='s1', cwd=None):
+        """The guard's decision for one Codex PreToolUse call, shaped as Codex 0.163 sends it: a child's payload
+        carries `agent_id` and its own rollout, whose session_meta names its task path; agent_id None is the parent."""
+        rollout = self.tmp / 'codex' / f'rollout-{agent_id or session}.jsonl'
+        rollout.parent.mkdir(exist_ok=True)
+        meta = {'id': agent_id or session, 'agent_path': f'/root/{task}' if agent_id else None}
+        rollout.write_text(json.dumps({'type': 'session_meta', 'payload': meta}) + '\n')
+        payload = {'session_id': session, 'turn_id': 't1', 'transcript_path': str(rollout),
+                   'cwd': str(cwd or self.worktree), 'hook_event_name': 'PreToolUse', 'model': 'm',
+                   'permission_mode': 'bypassPermissions', 'tool_name': tool, 'tool_input': tool_input,
+                   'tool_use_id': 'u1', **({'agent_id': agent_id, 'agent_type': 'default'} if agent_id else {})}
+        result = subprocess.run([sys.executable, str(HOOK), 'codex'], input=json.dumps(payload), capture_output=True,
+                                text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)['hookSpecificOutput'] if result.stdout.strip() else None
+
+    def test_a_recorded_read_only_child_writes_only_its_reports_and_its_worktree(self):
+        # Rule (T15 R2'): a child whose record names a `writes: none` agent gets the Claude guard's decisions:
+        # the reports and its recorded worktree allowed, the rest of the checkout family denied, outside allowed.
+        other = self.main / '.worktrees/review-2'
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        for path in (other / 'a.py', self.main / 'src/app.py'):
+            with self.subTest(path=path):
+                decision = self.run_codex('Bash', {'command': f'echo x > {quote(str(path))}'})
+                self.assert_denied(decision, path, 'Codex child review_1')
+                self.assertIn(f'its assigned worktree {self.worktree}', decision['permissionDecisionReason'])
+        for path in (self.worktree / 'a.py', self.reports / '03.md', self.tmp / 'copy/a.py'):
+            with self.subTest(path=path):
+                self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(path))}'}))
+
+    def test_a_child_without_a_record_in_a_recording_session_is_held_read_only(self):
+        # Rule (T15 R2'): in a session that has records, a child with none (or whose rollout cannot be read) may
+        # write only the reports inside the checkout family: fail closed.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        mine = self.worktree / 'a.py'
+        decision = self.run_codex('Bash', {'command': f'echo x > {quote(str(mine))}'}, task='review_9')
+        self.assert_denied(decision, mine, 'Codex child review_9')
+        self.assertIn(f'no assignment record in {self.records}', decision['permissionDecisionReason'])
+        self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(self.reports / "03.md"))}'},
+                                         task='review_9'))
+
+    def test_sessions_without_records_and_the_parent_itself_are_not_checked(self):
+        # Rule (T15 R2'): a session with no record directory (Codex used without Automattic dispatch) and every call
+        # of the parent (no agent_id) are allowed, wherever they write.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        tracked = {'command': f'echo x > {quote(str(self.main / "src/app.py"))}'}
+        self.assertIsNone(self.run_codex('Bash', tracked, session='s2'))
+        self.assertIsNone(self.run_codex('Bash', tracked, agent_id=None))
+        self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(self.records / "x.json"))}'},
+                                         agent_id=None))
+
+    def test_no_child_writes_the_records_or_records_an_assignment(self):
+        # Rule (T15 R2'): the record directory widens what a child may write, so every child, a recorded writer
+        # included, is denied writing under it and running the record command; a writer is otherwise unchecked.
+        self.assertEqual(self.record('build_1', self.agents / 'builder.md', self.worktree).returncode, 0)
+        self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(self.main / "src/app.py"))}'},
+                                         task='build_1'))
+        forged = self.records / 'build_1.json'
+        # The records directory has the shape of <main>/.scratch/<slug>/reports/ too; it is never a report.
+        lookalike = self.main / '.scratch/codex-children/reports/x.json'
+        commands = {f'echo x > {quote(str(forged))}': str(forged), f'echo x > {quote(str(lookalike))}': str(lookalike),
+                    f'python3 {HOOK} codex-assign --task build_2 --agent-file x': 'codex-assign'}
+        for task in ('build_1', 'review_9'):
+            for command, named in commands.items():
+                with self.subTest(task=task, command=command):
+                    decision = self.run_codex('Bash', {'command': command}, task=task)
+                    self.assertEqual((decision or {}).get('permissionDecision'), 'deny', command)
+                    self.assertIn(named, decision['permissionDecisionReason'])
+
+
 if __name__ == '__main__':
     unittest.main()
