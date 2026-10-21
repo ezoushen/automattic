@@ -278,12 +278,13 @@ class CodexChildren(Checkouts):
         self.assertEqual(sorted(path.name for path in self.records.iterdir()), ['review_1.json'])
 
 
-    def run_codex(self, tool, tool_input, agent_id='c1', task='review_1', session='s1', cwd=None):
+    def run_codex(self, tool, tool_input, agent_id='c1', task='review_1', session='s1', cwd=None, meta_id=None):
         """The guard's decision for one Codex PreToolUse call, shaped as Codex 0.163 sends it: a child's payload
-        carries `agent_id` and its own rollout, whose session_meta names its task path; agent_id None is the parent."""
+        carries `agent_id` and its own rollout, whose session_meta names its task path; agent_id None is the parent.
+        meta_id: the rollout's own id, when it is not the payload's."""
         rollout = self.tmp / 'codex' / f'rollout-{agent_id or session}.jsonl'
         rollout.parent.mkdir(exist_ok=True)
-        meta = {'id': agent_id or session, 'agent_path': f'/root/{task}' if agent_id else None}
+        meta = {'id': meta_id or agent_id or session, 'agent_path': f'/root/{task}' if agent_id else None}
         rollout.write_text(json.dumps({'type': 'session_meta', 'payload': meta}) + '\n')
         payload = {'session_id': session, 'turn_id': 't1', 'transcript_path': str(rollout),
                    'cwd': str(cwd or self.worktree), 'hook_event_name': 'PreToolUse', 'model': 'm',
@@ -330,24 +331,35 @@ class CodexChildren(Checkouts):
         self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(self.records / "x.json"))}'},
                                          agent_id=None))
 
-    def test_no_child_writes_the_records_or_records_an_assignment(self):
-        # Rule (T15 R2'): the record directory widens what a child may write, so every child, a recorded writer
-        # included, is denied writing under it and running the record command; a writer is otherwise unchecked.
+    def test_no_child_writes_the_records_and_no_record_is_rewritten(self):
+        # Rule (T15 R2', review F4): the record directory widens what a child may write, so every child, a recorded
+        # writer included, is denied writing under it; a writer is otherwise unchecked. A record is never
+        # overwritten, so a child cannot rewrite its own once its parent recorded it before spawning; merely naming
+        # codex-assign (grep, a patch to a doc) is no write.
         self.assertEqual(self.record('build_1', self.agents / 'builder.md', self.worktree).returncode, 0)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
         self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(self.main / "src/app.py"))}'},
                                          task='build_1'))
         forged = self.records / 'build_1.json'
         # The records directory has the shape of <main>/.scratch/<slug>/reports/ too; it is never a report.
         lookalike = self.main / '.scratch/codex-children/reports/x.json'
-        commands = {f'echo x > {quote(str(forged))}': str(forged), f'echo x > {quote(str(lookalike))}': str(lookalike),
-                    f'python3 {HOOK} codex-assign --task build_2 --agent-file x': 'codex-assign'}
         for task in ('build_1', 'review_9'):
-            for command, named in commands.items():
-                with self.subTest(task=task, command=command):
-                    decision = self.run_codex('Bash', {'command': command}, task=task)
-                    self.assertEqual((decision or {}).get('permissionDecision'), 'deny', command)
-                    self.assertIn(named, decision['permissionDecisionReason'])
-
+            for path in (forged, lookalike):
+                with self.subTest(task=task, path=path):
+                    decision = self.run_codex('Bash', {'command': f'echo x > {quote(str(path))}'}, task=task)
+                    self.assertEqual((decision or {}).get('permissionDecision'), 'deny', path)
+                    self.assertIn(str(path), decision['permissionDecisionReason'])
+        rewrite = self.record('review_1', self.agents / 'builder.md', self.worktree, thread=None)
+        self.assertNotEqual(rewrite.returncode, 0, rewrite.stdout)
+        self.assertIn('already recorded', rewrite.stderr)
+        self.assertEqual(json.loads((self.records / 'review_1.json').read_text()),
+                         {'agent': 'reviewer', 'worktree': str(self.worktree)})
+        doc = self.worktree / 'hosts/codex/workers.md'
+        mention = self.patch(f'*** Update File: {doc}', '@@', '-old', '+run codex-assign first')
+        self.assertIsNone(self.run_codex('apply_patch', {'command': mention}, task='build_1'))
+        for task in ('build_1', 'review_1'):
+            with self.subTest(task=task):
+                self.assertIsNone(self.run_codex('Bash', {'command': 'git diff | grep -n codex-assign'}, task=task))
 
     def test_a_read_only_childs_relative_target_is_denied_since_codex_hides_the_workdir(self):
         # Rule (T15 R3'): Codex's Bash payload omits exec_command's `workdir`, so a read-only child's relative
@@ -444,6 +456,20 @@ class CodexChildren(Checkouts):
                                 input=json.dumps(payload), capture_output=True, text=True, timeout=20)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)['hookSpecificOutput']['permissionDecision'], 'deny')
+
+
+    def test_a_failed_checkout_lookup_before_any_record_is_found_allows_the_call(self):
+        # Rule (T15 review F1): the guard fails closed only once the session's record directory is known to exist. A
+        # call that writes nothing is allowed, and so is one whose checkout lookup fails first (a removed turn cwd, a
+        # repository git cannot read), so Codex sessions without records are never blocked.
+        broken = self.tmp / 'broken'
+        subprocess.run(['git', 'init', '-q', str(broken)], check=True)
+        (broken / '.git/config').write_text('[core\nbroken')
+        outside = {'command': f'echo x > {quote(str(self.tmp / "copy/a.py"))}'}
+        for cwd in (self.tmp / 'gone', broken):
+            for tool_input in ({'command': 'ls'}, outside):
+                with self.subTest(cwd=cwd, command=tool_input['command']):
+                    self.assertIsNone(self.run_codex('Bash', tool_input, cwd=cwd))
 
 
 if __name__ == '__main__':

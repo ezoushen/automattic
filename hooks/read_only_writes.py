@@ -192,15 +192,14 @@ def assigned_worktree(event):
     return Path(os.path.realpath(match.group(1))) if match else None
 
 
-def protected(paths, cwd, guarded, assigned):
+def protected(paths, cwd, guarded, assigned, main):
     """(main checkout, assigned worktree, the paths a read-only agent may not write): those under `guarded`, which
-    holds what widens its allowance, and those inside the main checkout or one of its worktrees, outside its reports
-    and the worktree `assigned()` names. The reports and paths outside those checkouts are decided first, so no later
+    holds what widens its allowance, and those inside `main` (None: outside any checkout) or one of its worktrees,
+    outside its reports and the worktree `assigned()` names. The reports and paths outside those checkouts are decided first, so no later
     lookup can deny them."""
     resolved = [os.path.realpath(os.path.join(cwd, os.path.expanduser(path))) for path in paths]
     own = [path for path in resolved if guarded and Path(path).is_relative_to(guarded)]
     resolved = [path for path in resolved if path not in own]
-    main = yield_gate.main_checkout(cwd)
     if main is None:
         return None, None, own  # A session outside any checkout protects none of them.
     held = [path for path in resolved if not in_reports(path, main)]
@@ -233,8 +232,8 @@ def claude(event):
     try:
         paths = (shell_writes(tool_input.get('command') or '', cwd) if tool == 'Bash'
                  else [tool_input.get(FILE_TOOLS[tool]) or ''])
-        root, assigned, written = (protected(paths, cwd, sessions, lambda: assigned_worktree(event)) if paths
-                                   else (None, None, []))
+        root, assigned, written = (protected(paths, cwd, sessions, lambda: assigned_worktree(event),
+                                             yield_gate.main_checkout(cwd)) if paths else (None, None, []))
     except Exception as error:  # A check that cannot run denies the call.
         deny(f'{event["agent_type"]} is read-only (writes: none) and this write could not be checked: {error}')
         return
@@ -256,21 +255,33 @@ def child_task(event):
     return task if TASK.fullmatch(task) else None
 
 
+def recording_checkout(session, cwd):
+    """The main checkout holding the session's record directory, found from the turn's cwd; None when there is none
+    or no checkout can be found (a removed cwd, a repository git cannot read, no git), so such a call is unchecked."""
+    try:
+        main = yield_gate.main_checkout(cwd)
+    except Exception:
+        return None
+    return main if main and (main / RECORDS / session).is_dir() else None
+
+
 def codex(event):
     """A Codex native child's Bash or apply_patch call (the payload carries `agent_id`), judged by the assignment
     its parent recorded under <main>/.scratch/codex-children/<session id>/; a session without that directory is not
-    checked."""
+    checked, and the guard fails closed only once it is found."""
     tool, command = event.get('tool_name'), (event.get('tool_input') or {}).get('command') or ''
     session = event.get('session_id') or ''
     if not event.get('agent_id') or tool not in ('Bash', 'apply_patch') or not re.fullmatch(r'[0-9A-Za-z-]+', session):
         return
     cwd = event.get('cwd') or os.getcwd()
+    paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
+             else [os.path.join(cwd, path) for path in patch_paths(command)])  # The patch tool's cwd is the turn's.
+    main = paths and recording_checkout(session, cwd)
+    if not main:
+        return
     name = f'Codex child {event["agent_id"]}'
     try:
-        main = yield_gate.main_checkout(cwd)
-        records = main and Path(os.path.realpath(main / RECORDS))
-        if not (records and (records / session).is_dir()):
-            return
+        records = Path(os.path.realpath(main / RECORDS))
         task = child_task(event)
         name = f'Codex child {task or event["agent_id"]}'
         try:
@@ -278,11 +289,6 @@ def codex(event):
         except (OSError, ValueError):
             record = None
         definition = isinstance(record, dict) and agent_defs.load(ROOT)['agents'].get(record.get('agent'))
-        if 'codex-assign' in command:
-            deny(f'{name} may not run codex-assign: only its parent records assignments.')
-            return
-        paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
-                 else [os.path.join(cwd, path) for path in patch_paths(command)])  # The patch tool's cwd is the turn's.
         if definition and definition.get('writes') != 'none':
             written = [path for path in paths
                        if Path(os.path.realpath(os.path.join(cwd, path))).is_relative_to(records)]
@@ -295,8 +301,8 @@ def codex(event):
                  f'pass the shell workdir to hooks, so write to an absolute path.')
             return
         worktree = definition and record.get('worktree')
-        root, assigned, written = protected(paths, cwd, records, lambda: worktree and Path(worktree))
-    except Exception as error:  # A check that cannot run denies the call.
+        root, assigned, written = protected(paths, cwd, records, lambda: worktree and Path(worktree), main)
+    except Exception as error:  # Once the session's records exist, a check that cannot run denies the call.
         deny(f'{name} is held read-only (writes: none) and this write could not be checked: {error}')
         return
     if written:
@@ -330,7 +336,13 @@ def assign(args):
         return 2
     path = main / RECORDS / session / f'{options.task}.json'
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({'agent': agent, **({'worktree': str(worktree)} if worktree else {})}) + '\n')
+    try:
+        with open(path, 'x') as record:  # Never overwritten: a spawned child cannot rewrite its own record.
+            record.write(json.dumps({'agent': agent, **({'worktree': str(worktree)} if worktree else {})}) + '\n')
+    except FileExistsError:
+        print(f'codex-assign: task {options.task} is already recorded at {path}; spawn it under a new task name.',
+              file=sys.stderr)
+        return 2
     print(path)
     return 0
 
