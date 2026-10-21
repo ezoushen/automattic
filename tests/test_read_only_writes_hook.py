@@ -544,7 +544,9 @@ class CodexChildren(Checkouts):
         # outside Codex's ids ([0-9A-Za-z-]) is never looked up (the call is unchecked) and never recorded.
         self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
         tracked = {'command': f'echo x > {quote(str(self.main / "src/app.py"))}'}
-        self.assertIsNone(self.run_codex('Bash', tracked, session='.'))
+        for session in ('.', 's1/'):
+            with self.subTest(session=session):
+                self.assertIsNone(self.run_codex('Bash', tracked, session=session))
         result = self.record('review_2', self.agents / 'reviewer.md', self.worktree, session='../s1', thread=None)
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn('session id', result.stderr)
@@ -648,6 +650,16 @@ class CodexChildren(Checkouts):
         self.assertIsNone(self.run_codex('Bash', {'command': 'echo x > a.py'}, task='build_b', cwd=theirs))
         decision = self.run_codex('Bash', {'command': 'echo x > a.py'}, task='build_b')
         self.assertIn('a.py is relative', (decision or {}).get('permissionDecisionReason', ''))
+
+
+    def test_records_are_found_from_the_turn_cwds_checkout_when_the_index_is_elsewhere(self):
+        # Rule (T15 review G1): the index may sit in another state directory than the hook reads (another
+        # XDG_STATE_HOME), so the turn cwd's checkout, found from its `.git` without git, is searched too.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        self.env['XDG_STATE_HOME'] = str(self.tmp / 'elsewhere')
+        tracked = self.main / 'src/app.py'
+        self.assert_denied(self.run_codex('Bash', {'command': f'echo x > {quote(str(tracked))}'}), tracked,
+                           'Codex child review_1')
 
 
 if __name__ == '__main__':
