@@ -398,6 +398,12 @@ def checkout_change(baseline, now):
     note = '; untracked files were not recorded at registration' if legacy else ''
     if now['head'] != baseline['head']:
         return f'HEAD moved from {baseline["head"]} to {now["head"]}{note}', True
+    # A submodule is compared before the tracked changes its own changes also show in, so the reason names it.
+    for link in sorted(set(baseline.get('submodules', {})) | set(now['submodules'])
+                       if 'submodules' in baseline else ()):
+        found = checkout_change(baseline['submodules'].get(link), now['submodules'].get(link))
+        if found:
+            return f'in submodule {link}: {found[0]}', found[1]
     if now['changes'] != baseline['changes']:
         return f'tracked files differ from their state at registration{note}', True
     if legacy:
@@ -418,19 +424,35 @@ def refusal(change):
     return f'Collection requires an unchanged worktree for a read-only agent ({reason}); {way_out}'
 
 
-def worktree_state(worktree):
-    """HEAD, a digest of tracked changes against it and a digest of each untracked file the ignore rules leave
-    visible, or None outside a readable Git checkout. A snapshot check may start from a dirty tree, so a
-    read-only agent is held to the state it was given."""
+def worktree_state(worktree, own=False):
+    """HEAD, a digest of tracked changes against it, a digest of each untracked file the ignore rules leave
+    visible and the state of each submodule, or None outside a readable Git checkout (with `own`, outside one
+    whose top is worktree itself). A snapshot check may start from a dirty tree, so a read-only agent is held to
+    the state it was given."""
     run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL)
+    if own and not own_checkout(worktree):
+        return None
     head, diff = run('rev-parse', 'HEAD'), run('diff', '--no-ext-diff', '--no-textconv', '--no-color', '--binary', 'HEAD')
-    untracked = run('ls-files', '--others', '--exclude-standard', '-z')
-    if head.returncode or diff.returncode or untracked.returncode:
+    untracked, index = run('ls-files', '--others', '--exclude-standard', '-z'), run('ls-files', '--stage', '-z')
+    if head.returncode or diff.returncode or untracked.returncode or index.returncode:
         return None
     names = [os.fsdecode(name) for name in untracked.stdout.split(b'\0') if name]
     digests = {name: content_digest(Path(worktree, name)) for name in names}
+    # A submodule is a gitlink (mode 160000) in the index; its own files are snapshotted by the same rules.
+    links = {os.fsdecode(entry.split(b'\t', 1)[1]) for entry in index.stdout.split(b'\0') if entry.startswith(b'160000 ')}
     return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
-            'untracked': {name: digest for name, digest in digests.items() if digest is not None}}
+            'untracked': {name: digest for name, digest in digests.items() if digest is not None},
+            'submodules': {link: worktree_state(str(Path(worktree, link)), own=True) for link in sorted(links)}}
+
+
+def own_checkout(path):
+    """Whether path is the top of a Git checkout of its own, reached without a symlink: an uninitialized
+    submodule or a broken repository is not, and Git would read the checkout around it instead."""
+    found = subprocess.run(['git', '-C', str(path), 'rev-parse', '--show-toplevel'], capture_output=True,
+                           stdin=subprocess.DEVNULL)
+    path = Path(path)
+    return (found.returncode == 0 and not path.is_symlink() and path.resolve() == path.parent.resolve() / path.name
+            and Path(os.fsdecode(found.stdout.strip())).resolve() == path.resolve())
 
 
 def content_digest(path):

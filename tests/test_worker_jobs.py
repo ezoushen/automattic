@@ -432,7 +432,7 @@ sys.exit(process.returncode)
         report = self.review(head)
         self.fake_git()
         self.cli('collect', '--attempt', 'review-1/1', '--input', self.collect_request(head, report))
-        listings = [call for call in self.git_log.read_text().splitlines() if 'ls-files' in call]
+        listings = [call for call in self.git_log.read_text().splitlines() if 'ls-files --others' in call]
         self.assertEqual(len(listings), 1, listings)
 
     def test_collect_reads_a_read_only_worktree_before_it_takes_the_write_lock(self):
@@ -440,7 +440,7 @@ sys.exit(process.returncode)
         report = self.review(head)
         self.fake_git(probe_lock=True)
         self.cli('collect', '--attempt', 'review-1/1', '--input', self.collect_request(head, report))
-        listings = [call for call in self.git_log.read_text().splitlines() if 'ls-files' in call]
+        listings = [call for call in self.git_log.read_text().splitlines() if 'ls-files --others' in call]
         self.assertEqual([call.rsplit(' [', 1)[1] for call in listings], ['write lock free]'])
 
     def test_a_read_only_agent_outside_a_git_checkout_cannot_be_verified(self):
@@ -453,6 +453,58 @@ sys.exit(process.returncode)
         gate = self.cli('gate', '--attempt', 'review-1/1', '--stage', 'accept', '--revision', 'head-1', code=1)
         self.assertEqual(gate['missing'], ['unchanged worktree for a read-only agent (not a readable Git checkout '
                                            'at registration; read-only work cannot be verified)'])
+
+    def with_submodule(self):
+        """A checkout whose `sub` is a submodule of one commit; returns the checkout's and the submodule's HEAD."""
+        source = self.root / 'source'
+        source.mkdir()
+        run = lambda path, *args: subprocess.run(['git', '-C', str(path), '-c', 'user.name=t', '-c', 'user.email=t@t',
+                                                  '-c', 'protocol.file.allow=always', *args],
+                                                 check=True, capture_output=True, text=True).stdout.strip()
+        run(source, 'init', '-q')
+        (source / 'a.txt').write_text('a\n')
+        (source / 'b.txt').write_text('b\n')
+        run(source, 'add', '-A')
+        run(source, 'commit', '-qm', 'sub base')
+        self.checkout()
+        run(self.worktree, 'submodule', 'add', '-q', str(source), 'sub')
+        run(self.worktree, 'commit', '-qm', 'add sub')
+        self.sub_git = lambda *args: run(self.worktree / 'sub', *args)
+        return self.git('rev-parse', 'HEAD'), self.sub_git('rev-parse', 'HEAD')
+
+    def test_a_change_inside_a_submodule_is_refused_naming_the_submodule(self):
+        head, sub_head = self.with_submodule()
+        sub = self.worktree / 'sub'
+        for number, change in enumerate(('edit', 'commit', 'untracked', 'dirty-edit'), 1):
+            with self.subTest(change=change):
+                attempt = f'review-{number}/1'
+                if change == 'dirty-edit':
+                    # Dirty at registration: a further edit leaves the superproject's view (`-dirty`) as it was.
+                    (sub / 'a.txt').write_text('dirty before the agent started\n')
+                report = self.review(head, attempt, f'native-{number}')
+                if change == 'untracked':
+                    (sub / 'notes.txt').write_text('scratch\n')
+                elif change == 'dirty-edit':
+                    (sub / 'b.txt').write_text('edited by the agent\n')
+                else:
+                    (sub / 'a.txt').write_text('edited by the agent\n')
+                if change == 'commit':
+                    self.sub_git('commit', '-qam', 'reviewer edit')
+                reason = {'edit': 'tracked files differ from their state at registration',
+                          'commit': f'HEAD moved from {sub_head} to {self.sub_git("rev-parse", "HEAD")}',
+                          'untracked': 'an untracked file appeared: notes.txt',
+                          'dirty-edit': 'tracked files differ from their state at registration'}[change]
+                request = self.collect_request(head, report)
+                error = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
+                self.assertIn('Collection requires an unchanged worktree for a read-only agent '
+                              f'(in submodule sub: {reason}); restore it and collect again', error)
+                # Once the submodule is as registered, the same result collects.
+                self.sub_git('reset', '-q', '--hard', sub_head)
+                self.sub_git('clean', '-fdq')
+                if change == 'dirty-edit':
+                    (sub / 'a.txt').write_text('dirty before the agent started\n')
+                self.cli('collect', '--attempt', attempt, '--input', request)
+                self.sub_git('reset', '-q', '--hard', sub_head)
 
     def test_the_collect_doc_says_what_the_check_covers_and_how_to_get_past_a_refusal(self):
         doc = ' '.join((support.ROOT / 'runtime/workers/collect.md').read_text().split())
