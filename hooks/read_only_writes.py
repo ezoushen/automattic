@@ -255,14 +255,24 @@ def child_task(event):
     return task if TASK.fullmatch(task) else None
 
 
-def recording_checkout(session, cwd):
-    """The main checkout holding the session's record directory, found from the turn's cwd; None when there is none
-    or no checkout can be found (a removed cwd, a repository git cannot read, no git), so such a call is unchecked."""
-    try:
-        main = yield_gate.main_checkout(cwd)
-    except Exception:
-        return None
-    return main if main and (main / RECORDS / session).is_dir() else None
+def recording_checkout(session, cwd, paths):
+    """The main checkout holding the session's record directory, found from the turn's cwd or from an absolute path
+    the call writes (the payload has no workdir, and the turn cwd may lie outside the checkout); None when there is
+    none or no checkout can be found (a removed cwd, a repository git cannot read, no git): such a call is unchecked."""
+    places = []
+    for place in (cwd, *(path for path in paths if os.path.isabs(path))):
+        place = Path(os.path.realpath(place))
+        while not place.is_dir() and place != place.parent:
+            place = place.parent  # The nearest directory that exists.
+        places += [place] if place not in places else []
+    for place in places:
+        try:
+            main = yield_gate.main_checkout(place)
+        except Exception:
+            continue
+        if main and (main / RECORDS / session).is_dir():
+            return main
+    return None
 
 
 def codex(event):
@@ -276,7 +286,7 @@ def codex(event):
     cwd = event.get('cwd') or os.getcwd()
     paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
              else [os.path.join(cwd, path) for path in patch_paths(command)])  # The patch tool's cwd is the turn's.
-    main = paths and recording_checkout(session, cwd)
+    main = paths and recording_checkout(session, cwd, paths)
     if not main:
         return
     name = f'Codex child {event["agent_id"]}'

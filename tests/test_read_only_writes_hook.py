@@ -490,5 +490,22 @@ class CodexChildren(Checkouts):
                     self.assertIn(str(rollout), decision['permissionDecisionReason'])
 
 
+    def test_records_are_found_from_a_written_path_when_the_turn_cwd_is_outside_the_checkout(self):
+        # Rule (T15 review F5): the payload has no workdir and the turn cwd may lie outside any checkout, so the
+        # session's records are also looked up from the checkout of each absolute path the call writes.
+        other = self.main / '.worktrees/review-2'
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        outside = self.tmp / 'elsewhere'
+        outside.mkdir()
+        tracked = self.main / 'src/app.py'
+        self.assert_denied(self.run_codex('Bash', {'command': f'echo x > {quote(str(tracked))}'}, cwd=outside),
+                           tracked, 'Codex child review_1')
+        self.assert_denied(self.run_codex('apply_patch', {'command': self.patch(f'*** Add File: {other}/x.py', '+x')},
+                                          cwd=outside), other / 'x.py', 'Codex child review_1')
+        self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(self.worktree / "a.py"))}'},
+                                         cwd=outside))
+
+
 if __name__ == '__main__':
     unittest.main()
