@@ -20,11 +20,15 @@ path inside the family denies the call.
 Codex (argument `codex`, Bash and apply_patch): a native child's payload carries `agent_id` and its own rollout,
 but its task message is stored encrypted, so its parent records the assignment first (`codex-assign`) in
 <main>/.scratch/codex-children/<CODEX_SESSION_ID>/<task_name>.json: the agent its agent_file names and its worktree.
-The task name is the child's rollout session_meta `agent_path` (`/root/<task_name>`). A recorded `writes: none`
-agent gets the decisions above; a child with no record, in a session that has records, is held to the reports; a
-session without records and the parent's own calls are not checked. No child writes the records or runs
-`codex-assign`. The Bash payload omits exec_command's `workdir`, so a read-only child's relative target is denied;
-the paths an apply_patch adds, updates, deletes or moves to, through the tool or a shell heredoc, are writes.
+A record is never overwritten, which is what holds a spawned child to it; codex-assign's own refusal of a child
+rests on CODEX_THREAD_ID, which a child's command can set, so it is advisory. The task name is the child's rollout
+session_meta `agent_path` (`/root/<task_name>`) when that meta's id is the payload's `agent_id`. Records are looked
+up under the main checkout of the turn's cwd and of each absolute path the call writes (the payload has no
+workdir); a call that writes nothing, a session without records there, a failed lookup and the parent's own calls
+are not checked. Once the records are found the check fails closed: a recorded `writes: none` agent gets the
+decisions above; a child with no record, or a corrupt one, is held to the reports; no child writes the records or
+its own rollout. A read-only child's relative target is denied; the paths an apply_patch adds, updates, deletes or
+moves to, through the tool or a shell heredoc, are writes.
 
 Not caught: a target known only at run time (`$VAR`, `$(...)`, globs), `>&` to a file, `<>`, escaped spaces, `#`
 inside a word, a shell's `-c` string, `sudo tee` or `xargs tee`, a `cd` that does not run (`false && cd x`), a symlink
@@ -328,8 +332,9 @@ def codex(event):
 
 def assign(args):
     """`codex-assign --task <task_name> --agent-file <abs> [--worktree <abs>]`: the Codex parent records a native
-    child's assignment before `spawn_agent`, since the child's task message is stored encrypted. Run from the
-    repository; refused from a child's shell, where CODEX_THREAD_ID is not the root session's id."""
+    child's assignment before `spawn_agent`, since the child's task message is stored encrypted. Run from inside the
+    checkout the child works in. An existing record is never overwritten. The refusal of a child's shell, where
+    CODEX_THREAD_ID is not the root session's id, is advisory: a child's command can set that variable."""
     parser = argparse.ArgumentParser(prog='read_only_writes.py codex-assign')
     parser.add_argument('--task', required=True)
     parser.add_argument('--agent-file', required=True)
