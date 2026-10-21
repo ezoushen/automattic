@@ -555,5 +555,30 @@ class CodexChildren(Checkouts):
                 self.assertLess(time.monotonic() - started, 1.5)
 
 
+    def test_the_codex_guard_never_exits_non_zero(self):
+        # Rule (T15 review G2): Codex treats a hook that exits non-zero as not blocking, so the guard always exits 0:
+        # once the session's records are known any error denies (a path too long to stat beside a write into another
+        # worktree, a record whose worktree is not a path), before that it allows (an index entry that cannot be
+        # read), and a payload that is not a JSON object is no call to check.
+        other = self.main / '.worktrees/review-2'
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        self.assertEqual(self.record('review_2', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        (self.records / 'review_2.json').write_text(json.dumps({'agent': 'reviewer', 'worktree': 5}))
+        long = '/tmp/' + 'a' * 300
+        decision = self.run_codex('Bash', {'command': f'echo x > {quote(str(other / "a.py"))}; echo y > {long}'})
+        self.assert_denied(decision, other / 'a.py', 'Codex child review_1')
+        mine = {'command': f'echo x > {quote(str(self.worktree / "a.py"))}'}
+        self.assertEqual(self.run_codex('Bash', mine, task='review_2')['permissionDecision'], 'deny')
+        (self.tmp / 'state/automattic/codex-children/s3/broken').mkdir(parents=True)
+        self.assertIsNone(self.run_codex('Bash', mine, session='s3', cwd=self.tmp))
+        for payload in ('[1]', '"x"', json.dumps({'tool_name': 'Bash', 'agent_id': 'c1', 'session_id': 's1',
+                                                  'tool_input': 'echo', 'cwd': str(self.main)})):
+            with self.subTest(payload=payload):
+                result = subprocess.run([sys.executable, str(HOOK), 'codex'], input=payload, capture_output=True,
+                                        text=True, timeout=20, env=self.env)
+                self.assertEqual((result.returncode, result.stdout), (0, ''), result.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()

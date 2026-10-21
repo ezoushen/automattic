@@ -399,7 +399,8 @@ def main():
         event = json.load(sys.stdin)
     except ValueError:
         return
-    (codex if sys.argv[1:2] == ['codex'] else claude)(event)
+    if isinstance(event, dict):  # Anything else is no tool call; a hook that crashed would not block either.
+        (codex if sys.argv[1:2] == ['codex'] else claude)(event)
 
 
 def deny(reason):
