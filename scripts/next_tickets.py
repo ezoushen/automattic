@@ -268,6 +268,13 @@ def report_problems(text):
     return problems
 
 
+def report_branch(slug, nn, text):
+    """(branch, recorded): the branch a ticket report's header names under `branch:`, else feat/<slug>-<NN>."""
+    header = text.split("\n## ", 1)[0]
+    recorded = re.search(r"^branch:\s*`?([^\s`]+)`?\s*$", header, re.M)
+    return (recorded.group(1), True) if recorded else (f"feat/{slug}-{nn}", False)
+
+
 def accept(tickets, name):
     """Deterministic verify node: the report exists in the main checkout with its evidence, and the branch moved."""
     slug, nn = name.split("/")
@@ -278,9 +285,7 @@ def accept(tickets, name):
     text = report.read_text()
     problems = report_problems(text)
     base = re.search(r"^base:\s*`?([0-9a-f]{40})", text, re.M)
-    header = text.split("\n## ", 1)[0]
-    recorded = re.search(r"^branch:\s*`?([^\s`]+)`?\s*$", header, re.M)
-    branch = recorded.group(1) if recorded else f"feat/{slug}-{nn}"
+    branch, recorded = report_branch(slug, nn, text)
     ref = branch_ref(branch) if recorded else f"refs/heads/{branch}"
     if base and ref is None:
         problems.append(f"branch {branch} is not an existing branch")
@@ -370,9 +375,10 @@ def tool_changes(fm, entries, allowed, ref, base):
     """(problems, notes) for tickets that changed files an entry lists in `paths`.
 
     A delegated ticket is compared with the merge-base with its effort branch (main when the effort has none): that
-    excludes what it merged in from the effort, and a builder cannot hide an edit by moving `base:`. A ticket on the
-    effort branch itself (inline) has only the report's `base:`. Only `allows: <metric> tool` with its ledger citation
-    excuses an entry; the file names go in the problem or note.
+    excludes what it merged in from the effort, and a builder cannot hide an edit by moving `base:`. A stacked ticket
+    changed a file only when it also differs from each dependency head its head contains, so a dependency's own change
+    waits for that ticket's own acceptance. A ticket on the effort branch itself (inline) has only the report's `base:`.
+    Only `allows: <metric> tool` with its ledger citation excuses an entry; the file names go in the problem or note.
     """
     slug = spec_of(fm["ticket"])
     effort = branch_ref(effort_branch(slug)) or "refs/heads/main"
@@ -383,8 +389,10 @@ def tool_changes(fm, entries, allowed, ref, base):
             return [f"no effort branch ({effort_branch(slug)}) or main exists to compare "
                     f"{ref.removeprefix('refs/heads/')} with"], []
         start = fork.stdout.strip()
-    changed = set(subprocess.run(["git", "-C", str(ROOT), "diff", "--name-only", "--no-renames", "-z", start, ref],
-                                 capture_output=True, text=True, check=True).stdout.split("\0"))
+    changed = changed_files(start, ref)
+    if ref != effort:
+        for head in dependency_heads(fm, ref):
+            changed &= changed_files(head, ref)
     problems, notes = [], []
     for entry in entries:
         touched = sorted({f for f in changed for p in entry.get("paths", []) if f == p or f.startswith(p + "/")})
@@ -395,6 +403,33 @@ def tool_changes(fm, entries, allowed, ref, base):
             problems.append(f"{label}: the ticket changed what measures {entry['metric']} ({', '.join(touched)}); "
                             f"that needs allows: {entry['metric']} tool citing a ledger row")
     return problems, notes
+
+
+def changed_files(start, ref):
+    """Paths whose content differs between start and ref; a rename counts as both of its paths."""
+    return set(subprocess.run(["git", "-C", str(ROOT), "diff", "--name-only", "--no-renames", "-z", start, ref],
+                              capture_output=True, text=True, check=True).stdout.split("\0"))
+
+
+def dependency_heads(fm, ref):
+    """The branch heads of the ticket's same-effort `blocked_by` tickets that ref contains and is not: a stacked ticket
+    forks from them. Each branch is the one its report names, else feat/<slug>-<NN>."""
+    slug = spec_of(fm["ticket"])
+    own = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", f"{ref}^{{commit}}"],
+                         capture_output=True, text=True).stdout.strip()
+    heads = []
+    for dependency in fm.get("blocked_by", []):
+        if spec_of(dependency) != slug:
+            continue
+        nn = dependency.split("/")[1]
+        report = ISSUES / slug / "reports" / f"{nn}.md"
+        head = branch_ref(report_branch(slug, nn, report.read_text() if report.is_file() else "")[0])
+        commit = head and subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", f"{head}^{{commit}}"],
+                                         capture_output=True, text=True).stdout.strip()
+        if commit and commit != own and subprocess.run(
+                ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", commit, ref], capture_output=True).returncode == 0:
+            heads.append(commit)
+    return heads
 
 
 def evidence_dir(slug, ticket_number, head):

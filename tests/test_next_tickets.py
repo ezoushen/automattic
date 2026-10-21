@@ -187,8 +187,8 @@ class BoardCLI(unittest.TestCase):
         self.git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', message)
         return self.git('rev-parse', 'HEAD')
 
-    def write_report(self, base, branch=None, commits=(), body=''):
-        report = self.root / '.scratch/inline/reports/01.md'
+    def write_report(self, base, branch=None, commits=(), body='', number='01'):
+        report = self.root / f'.scratch/inline/reports/{number}.md'
         report.parent.mkdir(parents=True, exist_ok=True)
         branch_line = f'branch: {branch}\n' if branch else ''
         listed = ''.join(f'- Commit: {sha}\n' for sha in commits)
@@ -685,6 +685,75 @@ class BoardCLI(unittest.TestCase):
         self.record_measurement('sh measure.sh', paths=['measure.sh'])
         self.write_report(fork, 'feat/inline-01', [self.git('-C', str(worktree), 'rev-parse', 'HEAD')])
         assert 'carry the evidence' in self.cli('inline', '--accept', 'inline/01').stdout
+
+    def stacked_tickets(self):
+        """inline/01 (A) edits measure.sh on its branch; inline/02 (B), blocked by A, forks from A's head and edits src.txt.
+
+        Both forks start from feat/inline, which holds neither change. Returns (A's worktree, B's worktree).
+        """
+        self.write_ticket('inline/01', 'implementing')
+        self.write_ticket('inline/02', 'implementing', touches='docs', blocked='inline/01')
+        self.write_files({'measure.sh': 'echo recall 100\n', 'src.txt': 'x\n'})
+        self.commit_gitignore()
+        self.commit('base')
+        self.git('branch', 'feat/inline')
+        fork = self.git('rev-parse', 'HEAD')
+        a, b = self.root / '.worktrees/inline-01', self.root / '.worktrees/inline-02'
+        self.git('worktree', 'add', '-q', '-b', 'feat/inline-01', str(a), 'feat/inline')
+        self.worktree_commit(a, {'measure.sh': 'echo recall 100 # A changes the tool\n'}, 'A: tool change')
+        self.write_report(fork, 'feat/inline-01', [self.git('-C', str(a), 'rev-parse', 'HEAD')])
+        self.git('worktree', 'add', '-q', '-b', 'feat/inline-02', str(b), 'feat/inline-01')
+        a_head = self.git('-C', str(a), 'rev-parse', 'HEAD')
+        self.worktree_commit(b, {'src.txt': 'B work\n'}, 'B: its own work')
+        self.write_report(a_head, 'feat/inline-02', [self.git('-C', str(b), 'rev-parse', 'HEAD')], number='02')
+        self.record_measurement('sh measure.sh', paths=['measure.sh'])
+        return a, b
+
+    def worktree_commit(self, worktree, files, message):
+        for name, text in files.items():
+            (worktree / name).write_text(text)
+        self.git('-C', str(worktree), 'add', *files)
+        self.git('-C', str(worktree), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', message)
+        return self.git('-C', str(worktree), 'rev-parse', 'HEAD')
+
+    def test_a_stacked_ticket_is_not_blamed_for_its_dependencys_tool_change_but_is_for_its_own(self):
+        # Rule (T12.1): B's change is what differs at B's head from both its fork with the effort branch and the head of
+        # each same-effort blocked_by ticket that B's head contains; A's tool change is judged at A's own --accept.
+        a, b = self.stacked_tickets()
+        blamed = ("inline/{}: measurement 'recall tool': the ticket changed what measures recall (measure.sh); "
+                  "that needs allows: recall tool citing a ledger row\n")
+        accepted = self.cli('inline', '--accept', 'inline/02').stdout
+        assert accepted == "inline/02: report and branch carry the evidence; judge the content now\n", accepted
+        assert self.refusal('inline/01') == blamed.format('01'), self.refusal('inline/01')
+        # A's branch is the one A's report names; without that report it is feat/inline-01.
+        self.git('branch', '-m', 'feat/inline-01', 'feat/stack-a')
+        assert self.refusal('inline/02') == blamed.format('02'), self.refusal('inline/02')
+        a_head = self.git('rev-parse', 'feat/stack-a')
+        self.write_report(self.git('rev-parse', 'feat/inline'), 'feat/stack-a', [a_head])
+        self.cli('inline', '--accept', 'inline/02')
+        (self.root / '.scratch/inline/reports/01.md').unlink()
+        assert self.refusal('inline/02') == blamed.format('02'), self.refusal('inline/02')
+        self.git('branch', '-m', 'feat/stack-a', 'feat/inline-01')
+        self.cli('inline', '--accept', 'inline/02')
+        # A dependency head is a commit B's head strictly contains: a report naming B's own branch excuses nothing.
+        self.write_report(self.git('rev-parse', 'feat/inline'), 'feat/inline-02', [a_head])
+        assert self.refusal('inline/02') == blamed.format('02'), self.refusal('inline/02')
+        self.write_report(self.git('rev-parse', 'feat/inline'), 'feat/inline-01', [a_head])
+        # Only a blocked_by ticket of the same effort counts.
+        self.write_ticket('other/01', 'done', touches='other')
+        for blocked in ('', 'other/01'):
+            self.write_ticket('inline/02', 'implementing', touches='docs', blocked=blocked)
+            assert self.refusal('inline/02') == blamed.format('02'), (blocked, self.refusal('inline/02'))
+        self.write_ticket('inline/02', 'implementing', touches='docs', blocked='inline/01')
+        self.cli('inline', '--accept', 'inline/02')
+        # A's head must be an ancestor of B's head: once A moves on, B is blamed again.
+        self.worktree_commit(a, {'src.txt': 'A moves on\n'}, 'A: later work')
+        assert self.refusal('inline/02') == blamed.format('02'), self.refusal('inline/02')
+        self.git('-C', str(a), 'reset', '-q', '--hard', 'HEAD~1')
+        self.cli('inline', '--accept', 'inline/02')
+        # A file B changes again after A is still B's change.
+        self.worktree_commit(b, {'measure.sh': 'echo recall 100 # B changes it again\n'}, 'B: tool change')
+        assert self.refusal('inline/02') == blamed.format('02'), self.refusal('inline/02')
 
     def test_a_measurement_that_leaves_the_worktree_dirty_is_refused_naming_the_files(self):
         # The committed head scores 83; a command that rewrites score.txt to 100 measured a tree that is not the head.

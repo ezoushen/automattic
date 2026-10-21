@@ -68,8 +68,10 @@ has the ticket branch checked out. Each log is kept under
 - a ticket whose diff touches an entry's `paths`. A delegated ticket is compared with the
   merge-base with the effort branch (`feat/<slug>`, or the one `spec-review.md` records; `main`
   when it does not exist). An inline ticket, on the effort branch itself, has only the report's
-  `base:` line, which the orchestrator writes. A stacked ticket accepted before its base ticket
-  is integrated is blamed for that ticket's tool change;
+  `base:` line, which the orchestrator writes. A stacked ticket's file counts only when it also
+  differs from the head of each same-effort `blocked_by` ticket its head contains (that ticket's
+  branch is the one its report names, else `feat/<slug>-<NN>`); that ticket's own change is
+  judged at its own `--accept`;
 - a missing value: no such line, more than one, not a finite number, or a command that exits
   non-zero or times out. The runner also stops processes left in the command's process group and
   returns 125, which is refused; a child that starts its own session is not caught;
