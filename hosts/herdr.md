@@ -94,7 +94,7 @@ Retirement closes the pane, which closes the tab; closure is recorded only once
 Bind each prompt, independent wait and collected result to its registered attempt
 under [worker attempts](../runtime/workers/prepare.md) and [waits](../runtime/workers/wait.md). Resume from its pending
 receipts and native worker state; rearm consumed waits after reconciliation.
-Register each pane before its first prompt: the plugin logs every `herdr agent start`,
+Register each pane right after its startup probe, before the assignment: the plugin logs every `herdr agent start`,
 and the stop check names a launch into `.worktrees/`, or a live agent there, that no
 attempt registers, even after its pane closed. Dismiss a launch that failed, with its
 reason, as the worker attempts doc describes.
