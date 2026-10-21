@@ -13,12 +13,16 @@ attempts retain their own report snapshots. Other evidence links and live runtim
 gates remain under the shared acceptance contract.
 A `completed` result also owes its job's `returns` report sections (real headings,
 outside code blocks) and, for a `writes: none` agent, the same HEAD, tracked changes
-and untracked files (their content too) it was registered with; a gitignored file is
-not a change. Untracked files inside submodules, nested repositories and unreadable
-directories are not checked, and an unreadable file only for its presence.
-`collect` refuses a worktree that differs and names the change. Restore a moved HEAD,
-a tracked change or a new untracked file, then collect again. An edited or deleted
-untracked file, or a worktree whose state cannot be read, cannot be restored: record
+and untracked files (their content too) it was registered with, in the worktree and,
+by the same rules, in each submodule and each nested repository (an untracked directory
+that is a Git checkout of its own); a gitignored file is not a change. An unreadable
+file is checked only for its presence. A directory Git cannot open, and a submodule with
+no checkout, is held to its own status (permissions, entries added or removed directly
+in it), and `collect` names it in `partly_checked` even when nothing changed.
+`collect` refuses a worktree that differs and names the change, and the submodule or
+nested repository it is in. Restore a moved HEAD, a tracked change or a new untracked
+file, then collect again. An edited or deleted untracked file, a changed status, or a
+worktree whose state cannot be read, cannot be restored: record
 the result with `record` (kind `result`), which keeps the gap on it, then collect
 again; acceptance stays refused. Any other gap, and a difference recorded through
 `result`, goes on the result; then `gate --stage accept` fails and recording

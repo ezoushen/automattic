@@ -621,8 +621,11 @@ sys.exit(process.returncode)
 
     def test_the_collect_doc_says_what_the_check_covers_and_how_to_get_past_a_refusal(self):
         doc = ' '.join((support.ROOT / 'runtime/workers/collect.md').read_text().split())
-        self.assertIn('Untracked files inside submodules, nested repositories and unreadable directories are not '
-                      'checked, and an unreadable file only for its presence', doc)
+        self.assertIn('by the same rules, in each submodule and each nested repository (an untracked directory '
+                      'that is a Git checkout of its own)', doc)
+        self.assertIn('A directory Git cannot open, and a submodule with no checkout, is held to its own status', doc)
+        self.assertIn('`collect` names it in `partly_checked` even when nothing changed', doc)
+        self.assertNotIn('are not checked', doc)
         self.assertIn('Restore a moved HEAD, a tracked change or a new untracked file, then collect again', doc)
         self.assertIn('record the result with `record` (kind `result`), which keeps the gap on it, then collect again', doc)
 
