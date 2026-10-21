@@ -304,7 +304,7 @@ def accept(tickets, name):
             problems.append(f"no listed commit under ## Implemented is past base on {branch}")
     notes = []
     if not problems:
-        problems, notes = measurement_results(tickets[name], ref)
+        problems, notes = measurement_results(tickets[name], ref, text)
     for p in problems:
         print(f"{name}: {p}", file=sys.stderr)
     if not problems:
@@ -314,7 +314,7 @@ def accept(tickets, name):
     return not problems
 
 
-def measurement_results(fm, ref):
+def measurement_results(fm, ref, report):
     """Run the effort's standing measurements at the ticket head; (problems, notes on what the ticket's `allows` excused).
 
     A ticket may not change what measures a metric (its entry's `paths`) nor make a metric worse than its baseline,
@@ -339,7 +339,7 @@ def measurement_results(fm, ref):
     if problem:
         return [problem], []
     allowed = allowance_pairs(str(fm["allows"])) if "allows" in fm else {}
-    problems, notes = tool_changes(fm, entries, allowed, ref)
+    problems, notes = tool_changes(fm, entries, allowed, ref, report)
     if problems:
         return problems, notes
     head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", f"{ref}^{{commit}}"],
@@ -373,15 +373,16 @@ def measurement_results(fm, ref):
     return problems, notes
 
 
-def tool_changes(fm, entries, allowed, ref):
+def tool_changes(fm, entries, allowed, ref, report):
     """(problems, notes) for tickets that changed files an entry lists in `paths`.
 
     A delegated ticket is compared with the merge-base with its effort branch (main when the effort has none): that
     excludes what it merged in from the effort, and a builder cannot hide an edit by moving `base:`. A stacked ticket
     changed a file only when it also differs from each dependency head its head contains, so a dependency's own change
     waits for that ticket's own acceptance. A ticket on the effort branch itself (inline) is compared from the `start:`
-    recorded when it moved into implementing, which the effort branch must contain. Only `allows: <metric> tool` with
-    its ledger citation excuses an entry; the file names go in the problem or note.
+    recorded when it moved into implementing, which the effort branch must contain, with a commit the report lists
+    past it. Only `allows: <metric> tool` with its ledger citation excuses an entry; the file names go in the problem
+    or note.
     """
     slug = spec_of(fm["ticket"])
     effort = branch_ref(effort_branch(slug)) or "refs/heads/main"
@@ -393,6 +394,9 @@ def tool_changes(fm, entries, allowed, ref):
             ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", start, ref], capture_output=True).returncode == 0):
         return [f"start: {start} is not an ancestor of {ref.removeprefix('refs/heads/')}; delete that line from the "
                 f"ticket, then {fix}"], []
+    if ref == effort and not listed_commit_on(report, start, ref):
+        return [f"no commit listed under ## Implemented is past start: {start} on {ref.removeprefix('refs/heads/')}; "
+                "a start recorded after the ticket's commits would hide them"], []
     if ref != effort:
         fork = subprocess.run(["git", "-C", str(ROOT), "merge-base", effort, ref], capture_output=True, text=True)
         if fork.returncode:

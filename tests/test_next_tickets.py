@@ -851,6 +851,31 @@ class BoardCLI(unittest.TestCase):
         self.write_ticket('inline/01', 'implementing', extra=f'start: {base}\n')
         self.cli('inline', '--accept', 'inline/01')
 
+    def test_an_inline_ticket_lists_a_commit_past_its_start(self):
+        # Review 1 of T12.2: a start recorded after the ticket's own commits would hide them, so --accept needs a commit
+        # listed under ## Implemented that is past start on the effort branch.
+        self.write_ticket('inline/01')
+        self.write_files({'measure.sh': 'echo recall 100\n'})
+        self.commit_gitignore()
+        base = self.commit('base')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        self.cli('inline', '--set', 'inline/01', 'status=implementing')
+        self.write_files({'measure.sh': 'echo recall 100 # this ticket\n'})
+        work = self.commit('the ticket edits the tool')
+        self.record_measurement('sh measure.sh', paths=['measure.sh'])
+        self.write_report(base, 'feat/inline', [work])
+        assert self.refusal() == ("inline/01: measurement 'recall tool': the ticket changed what measures recall "
+                                  "(measure.sh); that needs allows: recall tool citing a ledger row\n"), self.refusal()
+        path = self.root / '.scratch/inline/issues/01-task.md'
+        path.write_text(re.sub(r'^start: .*$', f'start: {work}', path.read_text(), flags=re.M))
+        hidden = (f"inline/01: no commit listed under ## Implemented is past start: {work} on feat/inline; a start "
+                  "recorded after the ticket's commits would hide them\n")
+        assert self.refusal() == hidden, self.refusal()
+        later = self.commit('later work, not listed')
+        assert self.refusal() == hidden, self.refusal()
+        self.write_report(base, 'feat/inline', [work, later])
+        self.cli('inline', '--accept', 'inline/01')
+
     def stacked_tickets(self):
         """inline/01 (A) edits measure.sh on its branch; inline/02 (B), blocked by A, forks from A's head and edits src.txt.
 
