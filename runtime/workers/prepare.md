@@ -110,12 +110,9 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    ```json
    {
      "native": "/absolute/native-session-evidence",
-     "argv": ["installed-bridge", "activity-gated-prompt-and-wait", "worker", "assignment"],
-     "timeout": 300,
-     "notify": {
-       "argv": ["herdr", "--session", "owned-session", "agent", "prompt", "parent-name", "{receipt}"],
-       "timeout": 30
-     }
+     "argv": ["herdr", "agent", "prompt", "worker", "assignment", "--wait",
+              "--until", "working", "--until", "blocked", "--timeout", "45000"],
+     "timeout": 60
    }
    ```
 
@@ -156,9 +153,10 @@ After preparing an attempt, [wait](wait.md), [collect](collect.md) and [retire](
    Submission reobserves controls, checks design holds and reserves one productive
    invocation per attempt before starting an independent durable wait. A mismatch,
    unknown requested control, wrong session/worktree or incomplete record exits 2
-   without invoking the command. The submit `argv` must succeed only once the worker
-   shows activity on the prompt, as Herdr's `agent prompt --wait` does; its exit 0
-   then records `submitted` with the wait log as evidence. Any other exit leaves
+   without invoking the command. The submit `argv` must return once the worker shows
+   activity on the prompt, as Herdr's `--wait --until working` does; submit refuses a
+   Herdr prompt without it. Exit 0 records `submitted` with the wait log as evidence;
+   reconcile it, then wait for completion with `watch`. Any other exit leaves
    the attempt unsubmitted: inspect the worker and record `submitted` only with
    evidence of activity. Reconciliation never authorizes resubmitting the
    same attempt; inspect the native worker and use `watch` for continued monitoring.

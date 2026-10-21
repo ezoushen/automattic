@@ -99,6 +99,13 @@ and the stop check names a launch into `.worktrees/`, or a live agent there, tha
 attempt registers, even after its pane closed. Dismiss a launch that failed, with its
 reason, as the worker attempts doc describes.
 
+Submit the assignment with `herdr agent prompt <worker> <assignment> --wait --until working
+--until blocked --timeout 45000`, which returns once the worker starts its turn; plain
+`--wait` holds until the turn settles, and `submit` refuses it. Acknowledge its receipt and
+record `reconciled` ([collect](../runtime/workers/collect.md)), then arm `watch` with
+`herdr --session <session> agent wait <worker> --timeout <ms>` and `notify` for the
+completion; it returns at once when the turn has already settled.
+
 Read the installed skill's completion section and current command-group help
 before the first wait. Use its default settled-state operation, with a bounded
 timeout; `idle` can be a completed turn. Reserve state filters for a specific

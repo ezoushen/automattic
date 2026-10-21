@@ -16,8 +16,8 @@ Arm `notify` in that same request for background waits. Its literal `argv` must
 contain one whole `{receipt}` argument; the helper replaces it with a JSON message
 containing the stable event ID, assignment/attempt, input head, state path and
 receipt. No shell expansion occurs. Use the installed native channel to the
-actual available parent; the Herdr example in
-[submit](prepare.md) reports prompt acceptance, not
+actual available parent; Herdr's `herdr --session <session> agent prompt <parent>
+{receipt}`, with no `--wait`, reports prompt acceptance, not
 an acknowledged or completed parent turn. The channel must return once the parent
 accepts the message: waiting for the parent's turn outlasts the callback timeout
 and records a failed delivery. Before the first wait on a channel, and again after

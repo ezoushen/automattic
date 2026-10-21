@@ -314,6 +314,16 @@ class TabRecipe(unittest.TestCase):
         for text in (guide, shared):
             self.assertNotIn('pane split', text)
 
+    def test_the_herdr_guide_submits_until_working_and_reconciles_before_the_completion_wait(self):
+        # Rule: submit returns once the worker is working, and the completion wait is armed only after its
+        # receipt is reconciled, since watch refuses a monitor that awaits reconciliation.
+        guide = ' '.join((support.ROOT / 'hosts/herdr.md').read_text().split())
+        position = 0
+        for step in ('--wait --until working --until blocked --timeout 45000', 'record `reconciled`',
+                     'then arm `watch` with `herdr --session <session> agent wait <worker>'):
+            position = guide.find(step, position)
+            self.assertNotEqual(position, -1, f'{step!r} in order in hosts/herdr.md')
+
 
 if __name__ == '__main__':
     unittest.main()

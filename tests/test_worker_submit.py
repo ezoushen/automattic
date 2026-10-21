@@ -468,6 +468,73 @@ class Submission(WorkerLifecycleCase):
         # The host inspects the worker and records acceptance itself.
         self.record('submitted', evidence=['native.jsonl:2:accepted prompt'])
 
+    def herdr_prompt_request(self, *flags, options=('--session', 's1')):
+        """A submit request whose argv is Herdr's prompt, run by a stand-in herdr that records its call."""
+        native = self.root / 'native.jsonl'
+        native.write_text(json.dumps({'type': 'assistant', 'sessionId': 'native-1', 'cwd': str(self.root),
+                                      'message': {'model': 'sonnet'}, 'effort': 'high'}) + '\n')
+        directory = self.root / 'bin'
+        directory.mkdir(exist_ok=True)
+        herdr = directory / 'herdr'
+        herdr.write_text('#!' + sys.executable + '\n'
+                         f'from pathlib import Path; Path({str(self.root / "prompted")!r}).write_text("ran")\n')
+        herdr.chmod(0o700)
+        request = self.root / 'submit.json'
+        request.write_text(json.dumps({'native': str(native), 'timeout': 2,
+                                       'argv': [str(herdr), *options, 'agent', 'prompt', 'builder-1',
+                                                'assignment', *flags]}))
+        return request
+
+    def test_submit_refuses_a_herdr_prompt_that_would_wait_for_the_whole_turn(self):
+        # Rule: a Herdr submit returns once the worker is working; plain --wait holds until its turn settles.
+        self.register()
+        for flags in (['--wait', '--timeout', '3600000'], ['--until', 'working', '--timeout', '45000'],
+                      ['--wait', '--until', 'blocked', '--timeout', '45000']):
+            with self.subTest(flags=flags):
+                request = self.herdr_prompt_request(*flags)
+                error = self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
+                self.assertIn('--wait --until working', error)
+                self.assertIn('herdr agent wait', error)
+                self.assertFalse((self.root / 'prompted').exists())
+                self.assertNotIn('submitted', self.cli('status')['attempts'][0])
+        # Global options before the command, such as another machine's, do not exempt the prompt.
+        for options in (['--machine', 'remote1'], ['--remote', 'host', '--session', 's1']):
+            with self.subTest(options=options):
+                request = self.herdr_prompt_request('--wait', '--timeout', '3600000', options=options)
+                error = self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request), code=2)
+                self.assertIn('--wait --until working', error)
+                self.assertFalse((self.root / 'prompted').exists())
+
+    def test_submit_reports_a_malformed_herdr_argv_as_invalid_input(self):
+        # Rule: an argv that is not literal text gets the usual validation error, not a crash.
+        self.register()
+        request = self.herdr_prompt_request('--wait')
+        data = json.loads(request.read_text())
+        data['argv'][1] = None
+        request.write_text(json.dumps(data))
+        self.assertIn('Wait requires literal argv',
+                      self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request), code=2))
+
+    def test_submit_runs_a_herdr_prompt_that_returns_once_the_worker_is_working(self):
+        # Rule: --wait --until working is the accepted Herdr form, and its success records the submission.
+        self.register()
+        request = self.herdr_prompt_request('--wait', '--until', 'working', '--until', 'blocked',
+                                            '--timeout', '45000')
+        self.assertEqual(self.cli('submit', '--attempt', 'ticket-1/1', '--input', str(request))['exit_code'], 0)
+        self.assertEqual((self.root / 'prompted').read_text(), 'ran')
+        # The documented handoff: reconcile the submit receipt, then arm the completion wait.
+        self.acknowledge()
+        self.record('reconciled', evidence=['submit log: worker working'])
+        wait = self.root / 'wait.json'
+        wait.write_text(json.dumps({'timeout': 2, 'argv': [json.loads(request.read_text())['argv'][0], '--session',
+                                                           's1', 'agent', 'wait', 'builder-1', '--timeout', '1000']}))
+        self.assertEqual(self.cli('watch', '--attempt', 'ticket-1/1', '--input', str(wait))['exit_code'], 0)
+        self.acknowledge()
+        self.record('reconciled', evidence=['native.jsonl:3:idle after prompt'])
+        # Collection completes only for a recorded submission; nothing was recorded by hand.
+        self.collect()
+        self.assertEqual(self.cli('status')['attempts'][0]['result']['status'], 'completed')
+
     def test_submit_refuses_opencode_provider_error_even_when_settings_match(self):
         self.execution.write_text(json.dumps({'harness': 'opencode', 'agent': 'builder', 'job': 'ticket',
                                              'settings': {'model': 'opencode/muse-spark-1.3-contributor-free'}}))
