@@ -393,6 +393,16 @@ class BoardCLI(unittest.TestCase):
         path.write_text(json.dumps([good]))
         self.cli('inline', '--accept', 'inline/01')
 
+    def test_a_metric_name_with_a_comma_makes_the_measurements_file_unusable(self):
+        # Review 1 of T12.3: `allows:` separates its pairs with commas, so a metric holding one could never be excused.
+        self.measured_ticket('echo recall,x 100', metric='recall,x')
+        for metric in ('recall,x', ',recall', 'recall,'):
+            self.record_measurement(f'echo {metric} 100', metric=metric)
+            assert self.refusal() == ("inline/01: measurements.json is unusable: entry 1 needs a metric without a "
+                                      "comma, which separates the pairs of allows:\n"), (metric, self.refusal())
+        self.record_measurement('echo recall.x 100', metric='recall.x')
+        self.cli('inline', '--accept', 'inline/01')
+
     def write_ledger(self):
         ledger = self.root / '.scratch/inline/ledger.md'
         ledger.parent.mkdir(parents=True, exist_ok=True)

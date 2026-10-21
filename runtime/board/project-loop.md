@@ -53,8 +53,9 @@ the command at the effort's branch base.
   "baseline": 100, "direction": "higher", "paths": ["tools/measure-recall.mjs", "tools/fixtures"]}]
 ```
 
-`command` goes to `sh -c` and prints one `<metric> <number>` line; `direction` names the
-better way, `higher` or `lower`. `timeout_seconds` (optional, default 600) bounds the run.
+`command` goes to `sh -c` and prints one `<metric> <number>` line; the metric holds no space or
+comma. `direction` names the better way, `higher` or `lower`. `timeout_seconds` (optional,
+default 600) bounds the run.
 `paths` (optional) lists the tool and its fixtures as repository-relative paths, none absolute
 or containing `..`; a directory covers what is under it. The command must leave the tree
 clean, so declare its outputs in `.gitignore`.

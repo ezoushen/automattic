@@ -532,6 +532,8 @@ def read_measurements(path):
                 and math.isfinite(entry["baseline"]) and entry.get("direction") in ("higher", "lower")):
             raise ValueError(f"entry {number} needs a name, command, metric without spaces, "
                              "numeric baseline and a direction of higher or lower")
+        if "," in entry["metric"]:
+            raise ValueError(f"entry {number} needs a metric without a comma, which separates the pairs of allows:")
         timeout = entry.get("timeout_seconds", 1)
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout < math.inf:
             raise ValueError(f"entry {number} needs timeout_seconds to be a positive number")
