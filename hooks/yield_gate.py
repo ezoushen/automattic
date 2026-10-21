@@ -270,9 +270,10 @@ def readable(record):
 
 
 def unregistered(root, pane, session, siblings=True):
-    """Name each Herdr worker that no attempt in any run (of this host session, when both know one) and no dismissal
-    of this coordinator accounts for: each launch it logged into a ticket worktree or an unknown cwd, with `siblings`
-    each other live agent in a ticket worktree of its Herdr workspace; and each unreadable log line."""
+    """Name each Herdr worker that no attempt in any run and no dismissal of this coordinator accounts for: each
+    launch it logged into a ticket worktree or an unknown cwd (an attempt of another host session never accounts for
+    it when both know one), with `siblings` each other live agent in a ticket worktree of its Herdr workspace; and
+    each unreadable log line."""
     module, attempts = None, []
     for state in root.glob('.scratch/*/reports/workers.sqlite'):
         module = module or lifecycle()
@@ -283,9 +284,7 @@ def unregistered(root, pane, session, siblings=True):
             attempts += [dict(saved, registered_at=registered.get(saved['attempt'])) for saved in module.attempts(db)]
         finally:
             db.close()
-    # A live agent is accounted for by an attempt this host session registered, when both know one.
-    workers = {handle for saved in attempts if not (session and saved.get('session') not in (None, session))
-               for handle in handles(saved['worker'])}
+    workers = {handle for saved in attempts for handle in handles(saved['worker'])}
     log, worktrees = root / LAUNCHES, (root / '.worktrees').resolve()
     records, unreadable = [], []
     for number, line in enumerate(log.read_text().splitlines() if log.is_file() else [], 1):

@@ -605,17 +605,19 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.register('builder-2', 'ticket-2/1')
         self.assertEqual(self.check(), [])
 
-    def test_a_live_agent_registered_by_another_host_session_is_still_a_gap(self):
-        # Rule (T11): only an attempt this coordinator's host session registered accounts for a live agent of its
-        # workspace, when both know a session; one registered without a session still does, as before.
-        other, third = self.repo / '.worktrees/ticket-2', self.repo / '.worktrees/ticket-3'
-        self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', other),
-                           self.agent('builder-3', 'w1:p7', third)])
-        self.register('builder-1', 'ticket-1/1', session='host-2')
-        self.register('builder-2', 'ticket-2/1', session='host-1')
-        self.register('builder-3', 'ticket-3/1')
-        self.assertEqual(self.check(session='host-1'), [self.live('builder-1', 'w1:p5', self.worktree)])
-        self.assertEqual(self.check(session='host-2'), [self.live('builder-2', 'w1:p6', other)])
+    def test_a_live_agent_registered_by_any_host_session_is_accounted_for(self):
+        # Rule (T11 review): a live-agent gap is an agent nobody registered, so a registration from any session
+        # clears it; only a launch the coordinator itself logged is scoped to its session. Review probes: the same
+        # pane's restarted session, and a second coordinator's worker in the same workspace.
+        other = self.repo / '.worktrees/ticket-2'
+        other.mkdir()
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', session='host-1')
+        self.register('builder-1', 'ticket-1/1', session='host-1')
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p6', pane='w1:p9', session='host-2')
+        self.register('builder-2', 'ticket-2/1', pane='w1:p9', worktree=other, session='host-2')
+        self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', other)])
+        self.assertEqual(self.check(session='host-2'), [])
+        self.assertEqual(self.check(session='host-1'), [])
         self.assertEqual(self.check(), [])
 
     def test_only_other_live_agents_in_the_coordinators_workspace_and_worktrees_count(self):

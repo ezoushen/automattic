@@ -72,9 +72,9 @@ Every session is also held for each Herdr launch it logged ([launch log](prepare
 (`AUTOMATTIC_WORKER`, as [prepare](prepare.md) says) and inside Herdr, for each other live
 agent of its workspace whose cwd is in `.worktrees/` (none asked when the checkout has no
 `.worktrees/`), when no attempt names that pane or agent (alone or in a
-`<session>/<pane>/<name>` handle; never one another host session registered, when it and the
-launch's coordinator, or for a live agent the stopping session, both know one; else, for a launch,
-an attempt registered from its pane, or after it when it was made outside Herdr) and none of its
+`<session>/<pane>/<name>` handle; for a launch, never one another host session registered when it
+and the launch's coordinator both know one, else one registered from its pane, or after it when it
+was made outside Herdr; a live agent nobody launched here is cleared by any registration) and none of its
 dismissals accounts for it, however old the run. A launch, like the dispatch binding
 (`--coordinate`), belongs to the host session that ran it when both sides know one, whatever
 pane either reports (a Codex session's `HERDR_PANE_ID` can come from another pane, through its
