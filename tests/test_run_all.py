@@ -78,12 +78,14 @@ class RunAll(unittest.TestCase):
         (root / 'tests').mkdir()
         (root / 'tmp').mkdir()
         shutil.copy(RUNNER, root / 'tests/run_all.py')
-        (root / 'tests/test_slow.py').write_text('import time\ntime.sleep(30)\n')
+        started = root / 'started'
+        (root / 'tests/test_slow.py').write_text(f'import time\nopen({str(started)!r}, "w").close()\ntime.sleep(30)\n')
         subprocess.run(['git', 'init', '-q', str(root)], check=True)
         runner = subprocess.Popen([sys.executable, str(root / 'tests/run_all.py')], start_new_session=True,
                                   env=dict(os.environ, PYTHON=sys.executable, TMPDIR=str(root / 'tmp')))
         deadline = time.monotonic() + 10
-        while not list((root / 'tmp').glob('*/test_slow.log')):
+        # The runner opens a script's log before starting it; wait for the script itself, which killpg then stops.
+        while not (started.exists() and list((root / 'tmp').glob('*/test_slow.log'))):
             self.assertLess(time.monotonic(), deadline, 'the run never started')
             time.sleep(0.05)
         runner.send_signal(signal.SIGTERM)
