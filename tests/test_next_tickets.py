@@ -430,6 +430,65 @@ class BoardCLI(unittest.TestCase):
             assert refused == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100 "
                                "(higher is better)\n"), (allows, refused)
 
+    def test_an_allowance_may_excuse_several_metrics_each_pair_only_its_own(self):
+        # Rule (T12.3): `allows:` takes comma-separated `<metric> <bound>` or `<metric> tool` pairs under one source.
+        self.write_ledger()
+        self.measured_ticket('echo recall 83', tracked={'measure.sh': 'echo recall 83\n'},
+                             edits={'measure.sh': 'echo recall 83 # edited\n'})
+        entries = [{'name': 'recall tool', 'command': 'echo recall 83', 'metric': 'recall', 'baseline': 100,
+                    'direction': 'higher', 'paths': ['measure.sh']},
+                   {'name': 'latency tool', 'command': 'echo latency 120', 'metric': 'latency', 'baseline': 100,
+                    'direction': 'lower'}]
+        (self.root / '.scratch/inline/measurements.json').write_text(json.dumps(entries))
+        allow = lambda value: self.write_ticket('inline/01', 'implementing', extra=f'allows: {value}\nallows_source: U3\n')
+        allow('recall tool, latency 130')
+        refused = self.refusal()
+        assert refused == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100 "
+                           "(higher is better)\n"), refused
+        entries[0]['paths'] = []
+        (self.root / '.scratch/inline/measurements.json').write_text(json.dumps(entries))
+        allow('recall 80,latency 130')
+        accepted = self.cli('inline', '--accept', 'inline/01').stdout
+        assert accepted == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100; "
+                            "allowed down to 80 by ledger row U3\n"
+                            "inline/01: measurement 'latency tool': latency is 120, worse than baseline 100; "
+                            "allowed up to 130 by ledger row U3\n"
+                            "inline/01: report and branch carry the evidence; judge the content now\n"), accepted
+        allow('latency 130, recall 85')
+        refused = self.refusal()
+        assert refused == ("inline/01: measurement 'recall tool': recall is 83, worse than baseline 100 "
+                           "and past the bound 85 that ledger row U3 allows\n"), refused
+        allow('recall 80')
+        refused = self.refusal()
+        assert refused == ("inline/01: measurement 'latency tool': latency is 120, worse than baseline 100 "
+                           "(lower is better)\n"), refused
+        entries[0]['paths'] = ['measure.sh']
+        entries[0]['command'] = 'echo recall 100'
+        (self.root / '.scratch/inline/measurements.json').write_text(json.dumps(entries))
+        allow('latency tool, recall 80')
+        refused = self.refusal()
+        assert refused == ("inline/01: measurement 'recall tool': the ticket changed what measures recall (measure.sh); "
+                           "that needs allows: recall tool citing a ledger row\n"), refused
+        allow('latency 130, recall tool')
+        accepted = self.cli('inline', '--accept', 'inline/01').stdout
+        assert accepted == ("inline/01: measurement 'recall tool': tool change (measure.sh) allowed by ledger row U3\n"
+                            "inline/01: measurement 'latency tool': latency is 120, worse than baseline 100; "
+                            "allowed up to 130 by ledger row U3\n"
+                            "inline/01: report and branch carry the evidence; judge the content now\n"), accepted
+
+    def test_an_allowance_naming_a_metric_twice_or_holding_an_empty_or_malformed_pair_is_refused(self):
+        self.write_ledger()
+        self.measured_ticket('echo recall 100')
+        for value in ('recall 80,', ',recall 80', 'recall 80,,latency 130', 'recall 80, ', 'recall 80, latency',
+                      'recall 80 latency 130', 'recall 80; latency 130', 'recall 80, latency high', ','):
+            self.write_ticket('inline/01', 'implementing', extra=f'allows: {value}\nallows_source: U3\n')
+            assert self.refusal() == (f"inline/01: allows {value.strip()!r} must read `<metric> <number>` or "
+                                      "`<metric> tool`\n"), (value, self.refusal())
+        for value in ('recall 80, recall tool', 'recall 80, latency 130, recall 90'):
+            self.write_ticket('inline/01', 'implementing', extra=f'allows: {value}\nallows_source: U3\n')
+            assert self.refusal() == f"inline/01: allows {value!r} names recall more than once\n", \
+                (value, self.refusal())
+
     def refusal(self, ticket='inline/01'):
         return self.cli('inline', '--accept', ticket, code=1).stderr
 

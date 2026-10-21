@@ -79,9 +79,11 @@ has the ticket branch checked out. Each log is kept under
   returns 125, which is refused; a child that starts its own session is not caught;
 - a value worse than its baseline.
 
-A ticket may excuse one metric with front matter `allows: <metric> <bound>` (the worst value
-it tolerates) or `allows: <metric> tool` (it may change that entry's `paths`), plus
-`allows_source: <row id>`, such as `U3`, a row of `.scratch/<slug>/ledger.md`. The row must
+A ticket may excuse metrics with front matter `allows:` holding one or more comma-separated
+pairs, each `<metric> <bound>` (the worst value it tolerates) or `<metric> tool` (it may change
+that entry's `paths`) and excusing only its own metric, such as `allows: recall 80, latency tool`;
+a metric named twice or an empty or malformed pair is refused. One
+`allows_source: <row id>`, such as `U3`, cites a row of `.scratch/<slug>/ledger.md`. The row must
 record the user's decision, and the orchestrator judging acceptance checks that it does. When a
 ticket with an allowed drop is integrated, the orchestrator sets that entry's baseline to the
 new value and cites the same row. An effort without the file is accepted without measuring.

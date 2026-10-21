@@ -338,7 +338,7 @@ def measurement_results(fm, ref):
     problem = allowance_problem(fm, slug)
     if problem:
         return [problem], []
-    allowed = str(fm.get("allows", "")).split()
+    allowed = allowance_pairs(str(fm["allows"])) if "allows" in fm else {}
     problems, notes = tool_changes(fm, entries, allowed, ref)
     if problems:
         return problems, notes
@@ -361,13 +361,14 @@ def measurement_results(fm, ref):
         sign = 1 if entry["direction"] == "higher" else -1
         if sign * value < sign * entry["baseline"]:
             worse = f"{label} is {text}, worse than baseline {entry['baseline']}"
-            bound = finite_number(allowed[1]) if allowed[:1] == [entry["metric"]] else None
+            bound = finite_number(allowed.get(entry["metric"], "tool"))
             if bound is None:
                 problems.append(f"{worse} ({entry['direction']} is better)")
             elif sign * value < sign * bound:
-                problems.append(f"{worse} and past the bound {allowed[1]} that ledger row {fm['allows_source']} allows")
+                problems.append(f"{worse} and past the bound {allowed[entry['metric']]} that ledger row "
+                                f"{fm['allows_source']} allows")
             else:
-                notes.append(f"{worse}; allowed {'down' if sign > 0 else 'up'} to {allowed[1]} "
+                notes.append(f"{worse}; allowed {'down' if sign > 0 else 'up'} to {allowed[entry['metric']]} "
                              f"by ledger row {fm['allows_source']}")
     return problems, notes
 
@@ -406,7 +407,7 @@ def tool_changes(fm, entries, allowed, ref):
     for entry in entries:
         touched = sorted({f for f in changed for p in entry.get("paths", []) if f == p or f.startswith(p + "/")})
         label = f"measurement {entry['name']!r}"
-        if touched and allowed == [entry["metric"], "tool"]:
+        if touched and allowed.get(entry["metric"]) == "tool":
             notes.append(f"{label}: tool change ({', '.join(touched)}) allowed by ledger row {fm['allows_source']}")
         elif touched:
             problems.append(f"{label}: the ticket changed what measures {entry['metric']} ({', '.join(touched)}); "
@@ -483,13 +484,27 @@ def allowance_problem(fm, slug):
     if "allows" not in fm:
         return None
     ledger = f".scratch/{slug}/ledger.md"
-    words = str(fm["allows"]).split()
     if not fm.get("allows_source"):
         return f"allows: {fm['allows']} needs allows_source naming a row of {ledger}"
     if not ledger_row(slug, str(fm["allows_source"])):
         return f"allows_source {fm['allows_source']} is not a row of {ledger}"
-    if len(words) != 2 or (words[1] != "tool" and finite_number(words[1]) is None):
-        return f"allows {fm['allows']!r} must read `<metric> <number>` or `<metric> tool`"
+    try:
+        allowance_pairs(str(fm["allows"]))
+    except ValueError as error:
+        return f"allows {fm['allows']!r} {error}"
+
+
+def allowance_pairs(text):
+    """{metric: bound or "tool"} from `allows: <metric> <bound or tool>[, ...]`; ValueError says what is wrong."""
+    pairs = {}
+    for pair in text.split(","):
+        words = pair.split()
+        if len(words) != 2 or (words[1] != "tool" and finite_number(words[1]) is None):
+            raise ValueError("must read `<metric> <number>` or `<metric> tool`")
+        if words[0] in pairs:
+            raise ValueError(f"names {words[0]} more than once")
+        pairs[words[0]] = words[1]
+    return pairs
 
 
 def ledger_row(slug, row):
