@@ -5,8 +5,8 @@ checkouts unchanged.
 Claude Code names the subagent a tool call runs in (`agent_type`). For `automattic:<agent>`, or a generated
 `automattic-<agent>-<digest>` profile, whose agent declares `writes: none`, it denies an Edit, Write or
 NotebookEdit of a file inside the main checkout or one of its worktrees (the session cwd's git common dir family),
-except under the main checkout's .scratch/<slug>/reports/ and in the `worktree:` the subagent's assignment names,
-whose temporary experiment edits collection's restored-worktree check guards. The assignment is the first user
+except under the main checkout's .scratch/<slug>/reports/ and in the `worktree:` the subagent's assignment names
+(outside any `.git` there), whose temporary experiment edits collection's restored-worktree check guards. The assignment is the first user
 message of the subagent's own transcript, <session transcript without .jsonl>/subagents/agent-<agent_id>.jsonl,
 present from its first tool call, so a write before registration is judged the same; anything under that session
 directory is always denied, so the agent cannot widen its own assignment. Anything else outside the family (/tmp,
@@ -25,8 +25,8 @@ record, and the hook denies writing records, the index or the child's own rollou
 `rm`, `mv` or an interpreter can still remove a record and record it anew, and codex-assign's refusal of a child
 rests on CODEX_THREAD_ID, which a child's command can set, so neither holds against a child that sets out to evade.
 The task name is the child's rollout session_meta `agent_path` (`/root/<task_name>`) when that meta's id is the
-payload's `agent_id`. A session is checked only when the index or the turn cwd's `.git` (read without git) leads to
-a record directory; else the call is allowed before any parsing, as is every call of the parent. Once found, each
+payload's `agent_id`. A session is checked only when the index or the turn cwd's `.git` (read without git, each
+source on its own, a `.git` naming no git directory passed over) leads to a record directory; else the call is allowed before any parsing, as is every call of the parent. Once found, each
 written path is judged by the record in the checkout it lands in: a `writes: none` agent gets the decisions above,
 a child with no record there, or a corrupt one, is held to the reports, a relative target is denied unless the
 child writes in its turn cwd's checkout. The hook always exits 0: before the records are found an error allows,

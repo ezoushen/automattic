@@ -47,9 +47,9 @@ worktree it is a `status` warning. A child's task message is stored encrypted, s
 child's redirects, `tee` and `apply_patch`, not `rm`, `mv` or an interpreter, and codex-assign's refusal of a
 child rests on `CODEX_THREAD_ID`, which a child can set. In a session with records, each path a child writes is
 judged by the record in its checkout: a child of a `writes: none` agent, or one with no record there, writes
-inside the checkouts only to its reports and its recorded worktree, by absolute path; the hook sees redirects,
-`tee` and `apply_patch`, not files an interpreter or tool opens itself. A builder still relies on `--accept`'s
-check of its ticket branch.
+inside the checkouts only to its reports and its recorded worktree (no `.git` path), by absolute path; the hook
+sees redirects, `tee` and `apply_patch`, not files an interpreter or tool opens itself. A builder still relies on
+`--accept`'s check of its ticket branch.
 After session loss, inspect saved IDs; reconstruct absent agents from surviving
 files/worktrees and record replacement IDs.
 
