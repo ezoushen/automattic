@@ -36,6 +36,7 @@ the same command creates, an interpreter or tool that opens files itself (`pytho
 MCP tools.
 """
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -260,74 +261,94 @@ def child_task(event):
     return task if TASK.fullmatch(task) else None
 
 
-def recording_checkout(session, cwd, paths):
-    """The main checkout holding the session's record directory, found from the turn's cwd or from an absolute path
-    the call writes (the payload has no workdir, and the turn cwd may lie outside the checkout); None when there is
-    none or no checkout can be found (a removed cwd, a repository git cannot read, no git): such a call is unchecked."""
-    places = []
-    for place in (cwd, *(path for path in paths if os.path.isabs(path))):
-        place = Path(os.path.realpath(place))
-        while not place.is_dir() and place != place.parent:
-            place = place.parent  # The nearest directory that exists.
-        places += [place] if place not in places else []
-    for place in places:
-        try:
-            main = yield_gate.main_checkout(place)
-        except Exception:
-            continue
-        if main and (main / RECORDS / session).is_dir():
-            return main
+def state_index(session):
+    """<Automattic state>/codex-children/<session>/: codex-assign leaves one file there per checkout holding the
+    session's records, naming its main checkout, so a session without records is told apart without parsing."""
+    state = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state').expanduser()
+    return state / 'automattic/codex-children' / session
+
+
+def git_main(directory):
+    """The main checkout of the repository holding a directory, read from its `.git` without running git (a linked
+    worktree's `.git` file names its git directory, whose `commondir` leads to the main one); None outside any."""
+    for place in (directory, *directory.parents):
+        dot = place / '.git'
+        if dot.is_dir():
+            return place
+        if dot.is_file():
+            gitdir = place / dot.read_text().split('gitdir:', 1)[1].strip()
+            common = gitdir / 'commondir'
+            return Path(os.path.realpath(gitdir / common.read_text().strip() if common.is_file() else gitdir)).parent
     return None
+
+
+def recording_mains(session, cwd):
+    """The main checkouts holding the session's record directory: those its index names, and the turn cwd's, found
+    without git (the index may lie in another state directory); only those whose record directory exists."""
+    index = state_index(session)
+    named = [Path(os.path.realpath(entry.read_text().strip())) for entry in index.iterdir()] if index.is_dir() else []
+    mains = [*named, git_main(Path(os.path.realpath(cwd)))]
+    return list(dict.fromkeys(main for main in mains if main and (main / RECORDS / session).is_dir()))
+
+
+def judge(event, command, cwd, session, mains):
+    """The deny reason for a Codex child's call in a session whose records lie under `mains`, else None."""
+    tool, main = event['tool_name'], mains[0]
+    paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
+             else [os.path.join(cwd, path) for path in patch_paths(command)])  # The patch tool's cwd is the turn's.
+    records = Path(os.path.realpath(main / RECORDS))
+    # The rollout names the child's task, which picks its record, so no child writes it.
+    rollout = event.get('transcript_path')
+    guarded = [records] + ([Path(os.path.realpath(rollout))] if rollout else [])
+    never = f'the assignment records under {records} or its rollout {rollout}'
+    task = child_task(event)
+    name = f'Codex child {task or event["agent_id"]}'
+    try:
+        record = json.loads((records / session / f'{task}.json').read_text()) if task else None
+    except (OSError, ValueError):
+        record = None
+    definition = isinstance(record, dict) and agent_defs.load(ROOT)['agents'].get(record.get('agent'))
+    if definition and definition.get('writes') != 'none':
+        written = [path for path in paths if os.path.isabs(path) and
+                   any(Path(os.path.realpath(path)).is_relative_to(place) for place in guarded)]
+        return f'{name} never writes {never}; {", ".join(written)} is there.' if written else None
+    relative = [path[len(WORKDIR) + 1:] for path in paths if not os.path.isabs(path)]
+    if relative:
+        return (f'{name} is held read-only (writes: none) and {", ".join(relative)} is relative: Codex does not '
+                f'pass the shell workdir to hooks, so write to an absolute path.')
+    worktree = definition and record.get('worktree')
+    root, assigned, written = protected(paths, cwd, guarded, lambda: worktree and Path(worktree), main)
+    if not written:
+        return None
+    agent = (f'({ROOT}/agents/{record["agent"]}.md).' if definition else
+             f'(no assignment record in {records / session}).')
+    return refusal(name, root, assigned, written, never) + f' {agent}'
 
 
 def codex(event):
     """A Codex native child's Bash or apply_patch call (the payload carries `agent_id`), judged by the assignment
-    its parent recorded under <main>/.scratch/codex-children/<session id>/; a session without that directory is not
-    checked, and the guard fails closed only once it is found."""
-    tool, command = event.get('tool_name'), (event.get('tool_input') or {}).get('command') or ''
+    its parent recorded under <main>/.scratch/codex-children/<session id>/. A session without that directory is
+    not checked; the guard fails closed only once it is found."""
+    tool, tool_input = event.get('tool_name'), event.get('tool_input')
+    command = tool_input.get('command') if isinstance(tool_input, dict) else None
     session = event.get('session_id') or ''
-    if not event.get('agent_id') or tool not in ('Bash', 'apply_patch') or not SESSION.fullmatch(session):
+    if (not event.get('agent_id') or tool not in ('Bash', 'apply_patch') or not isinstance(command, str)
+            or not SESSION.fullmatch(session)):
         return
     cwd = event.get('cwd') or os.getcwd()
-    paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
-             else [os.path.join(cwd, path) for path in patch_paths(command)])  # The patch tool's cwd is the turn's.
-    main = paths and recording_checkout(session, cwd, paths)
-    if not main:
-        return
-    name = f'Codex child {event["agent_id"]}'
     try:
-        records = Path(os.path.realpath(main / RECORDS))
-        # The rollout names the child's task, which picks its record, so no child writes it.
-        rollout = event.get('transcript_path')
-        guarded = [records] + ([Path(os.path.realpath(rollout))] if rollout else [])
-        never = f'the assignment records under {records} or its rollout {rollout}'
-        task = child_task(event)
-        name = f'Codex child {task or event["agent_id"]}'
-        try:
-            record = json.loads((records / session / f'{task}.json').read_text()) if task else None
-        except (OSError, ValueError):
-            record = None
-        definition = isinstance(record, dict) and agent_defs.load(ROOT)['agents'].get(record.get('agent'))
-        if definition and definition.get('writes') != 'none':
-            written = [path for path in paths if os.path.isabs(path) and
-                       any(Path(os.path.realpath(path)).is_relative_to(place) for place in guarded)]
-            if written:
-                deny(f'{name} never writes {never}; {", ".join(written)} is there.')
-            return
-        relative = [path[len(WORKDIR) + 1:] for path in paths if not os.path.isabs(path)]
-        if relative:
-            deny(f'{name} is held read-only (writes: none) and {", ".join(relative)} is relative: Codex does not '
-                 f'pass the shell workdir to hooks, so write to an absolute path.')
-            return
-        worktree = definition and record.get('worktree')
-        root, assigned, written = protected(paths, cwd, guarded, lambda: worktree and Path(worktree), main)
-    except Exception as error:  # Once the session's records exist, a check that cannot run denies the call.
-        deny(f'{name} is held read-only (writes: none) and this write could not be checked: {error}')
+        mains = recording_mains(session, cwd)
+    except Exception:  # Before the session's records are known, a lookup that fails leaves the call unchecked.
         return
-    if written:
-        agent = (f'({ROOT}/agents/{record["agent"]}.md).' if definition else
-                 f'(no assignment record in {records / session}).')
-        deny(refusal(name, root, assigned, written, never) + f' {agent}')
+    if not mains:
+        return
+    try:
+        reason = judge(event, command, cwd, session, mains)
+    except Exception as error:  # Once they are known, a check that cannot run denies the call.
+        reason = (f'Codex child {event["agent_id"]} is held read-only (writes: none) and this call could not be '
+                  f'checked: {error}')
+    if reason:
+        deny(reason)
 
 
 def assign(args):
@@ -357,6 +378,9 @@ def assign(args):
         return 2
     path = main / RECORDS / session / f'{options.task}.json'
     path.parent.mkdir(parents=True, exist_ok=True)
+    index = state_index(session)
+    index.mkdir(parents=True, exist_ok=True)
+    (index / hashlib.sha256(str(main).encode()).hexdigest()[:16]).write_text(f'{main}\n')
     try:
         with open(path, 'x') as record:  # Never overwritten: a spawned child cannot rewrite its own record.
             record.write(json.dumps({'agent': agent, **({'worktree': str(worktree)} if worktree else {})}) + '\n')

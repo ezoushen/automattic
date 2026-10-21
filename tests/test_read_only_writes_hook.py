@@ -7,6 +7,7 @@ from shlex import quote
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 import support
@@ -242,11 +243,14 @@ class CodexChildren(Checkouts):
         super().setUp()
         self.records = self.main / '.scratch/codex-children/s1'
         self.agents = support.ROOT / 'agents'
+        # The Automattic state directory, where codex-assign also indexes each session's recording checkouts.
+        self.env = dict({key: value for key, value in os.environ.items() if not key.startswith('CODEX_')},
+                        XDG_STATE_HOME=str(self.tmp / 'state'))
 
     def record(self, task, agent_file, worktree=None, session='s1', thread='s1', cwd=None):
         """Run the parent's record command as Codex runs a shell command: CODEX_SESSION_ID is the root session,
         CODEX_THREAD_ID the thread running it."""
-        env = {key: value for key, value in os.environ.items() if not key.startswith('CODEX_')}
+        env = dict(self.env)
         env.update({key: value for key, value in (('CODEX_SESSION_ID', session), ('CODEX_THREAD_ID', thread))
                     if value})
         command = [sys.executable, str(HOOK), 'codex-assign', '--task', task, '--agent-file', str(agent_file)]
@@ -291,7 +295,7 @@ class CodexChildren(Checkouts):
                    'permission_mode': 'bypassPermissions', 'tool_name': tool, 'tool_input': tool_input,
                    'tool_use_id': 'u1', **({'agent_id': agent_id, 'agent_type': 'default'} if agent_id else {})}
         result = subprocess.run([sys.executable, str(HOOK), 'codex'], input=json.dumps(payload), capture_output=True,
-                                text=True, timeout=20)
+                                text=True, timeout=30, env=self.env)
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)['hookSpecificOutput'] if result.stdout.strip() else None
 
@@ -453,7 +457,7 @@ class CodexChildren(Checkouts):
                    'hook_event_name': 'PreToolUse', 'tool_name': 'apply_patch',
                    'tool_input': {'command': self.patch(f'*** Add File: {self.main}/x.py', '+x')}}
         result = subprocess.run(command.replace('${PLUGIN_ROOT}', str(support.ROOT)), shell=True,
-                                input=json.dumps(payload), capture_output=True, text=True, timeout=20)
+                                input=json.dumps(payload), capture_output=True, text=True, timeout=20, env=self.env)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)['hookSpecificOutput']['permissionDecision'], 'deny')
 
@@ -534,6 +538,21 @@ class CodexChildren(Checkouts):
         self.assertNotEqual(result.returncode, 0, result.stdout)
         self.assertIn('session id', result.stderr)
         self.assertFalse((self.main / '.scratch/s1').exists())
+
+
+    def test_a_session_without_records_is_decided_without_parsing_the_call(self):
+        # Rule (T15 review G1): a call in a session with no records costs near-constant time, whatever its size: a
+        # 64 KB multi-line commit message, a patch updating 400 files in 400 directories.
+        body = ('x' * 79 + '\n') * 820
+        for index in range(400):
+            (self.main / f'src/pkg{index}').mkdir(parents=True)
+        patch = self.patch(*(line for index in range(400)
+                             for line in (f'*** Update File: src/pkg{index}/m.py', '@@', '-a', '+b')))
+        for tool, tool_input in (('Bash', {'command': f"git commit -m '{body}'"}), ('apply_patch', {'command': patch})):
+            with self.subTest(tool=tool):
+                started = time.monotonic()
+                self.assertIsNone(self.run_codex(tool, tool_input, session='s9', cwd=self.main))
+                self.assertLess(time.monotonic() - started, 1.5)
 
 
 if __name__ == '__main__':
