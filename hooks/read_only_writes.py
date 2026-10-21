@@ -36,12 +36,14 @@ the same command creates, an interpreter or tool that opens files itself (`pytho
 MCP tools.
 """
 import argparse
+import contextlib
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shlex
+import signal
 import subprocess
 import sys
 
@@ -60,7 +62,23 @@ RECORDS = Path('.scratch/codex-children')  # <main>/<RECORDS>/<Codex session id>
 TASK = re.compile(r'[a-z0-9_]+')  # The characters Codex allows in a spawn_agent task name.
 SESSION = re.compile(r'[0-9A-Za-z-]+')  # A Codex session id (a UUID); it is a path segment of the records.
 PATCH_HEADERS = ('*** Add File: ', '*** Delete File: ', '*** Update File: ', '*** Move to: ')  # Lines trimmed.
+BUDGET = 5  # Seconds to judge one call, well under the 10 s hook timeouts past which it would run unchecked.
 WORKDIR = '<workdir>'  # Codex's Bash payload omits exec_command's workdir, so relative targets stay unresolved.
+
+
+@contextlib.contextmanager
+def deadline(seconds=BUDGET):
+    """Raise TimeoutError in the block once it has run `seconds`: a command shlex cannot lex in time (one huge
+    word costs it quadratic time) is denied rather than left to the hook timeout."""
+    def expire(signum, frame):
+        raise TimeoutError(f'judging it took over {seconds} s')
+    previous = signal.signal(signal.SIGALRM, expire)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 def read_only(agent_type):
@@ -105,16 +123,44 @@ def tokens(command):
             end = next((i for i in range(index, len(lines)) if lines[i].strip() == match.group(2)), None)
             if end is not None:
                 index = end + 1
-    found, pending = [], ''
+    found, group, quote = [], [], None
     for line in kept:
-        lexer = shlex.shlex(pending + line, posix=False, punctuation_chars=True)
+        group.append(line)
+        # An open quote continues on the next line; the lines are lexed together once it closes, each line once.
+        quote = open_quote(line, quote)
+        if quote:
+            continue
+        lexer = shlex.shlex('\n'.join(group), posix=False, punctuation_chars=True)
         lexer.whitespace_split = True
         try:
             found += list(lexer) + [';']
-            pending = ''
+            group = []
         except ValueError:
-            pending += line + '\n'  # An open quote continues on the next line.
+            pass  # The scan and shlex disagree; keep the lines together as before.
     return found
+
+
+def open_quote(line, quote):
+    """The quote still open at the end of a line, given the one open at its start, by the rules `tokens` lexes with
+    (shlex, not POSIX): a quote opens only where a token starts, `#` there comments out the rest of the line."""
+    state = ' '
+    for char in line:
+        if quote:
+            if char == quote:
+                quote, state = None, ' '
+        elif char in ' \t\r':
+            state = ' '
+        elif char in '();<>|&':
+            state = 'c'
+        elif state == 'a':
+            continue  # Inside a word, quotes and `#` are word characters.
+        elif char == '#':
+            break
+        elif char in '\'"':
+            quote = char
+        else:
+            state = 'a'
+    return quote
 
 
 def directory(words, cwd):
@@ -236,10 +282,11 @@ def claude(event):
     transcript = event.get('transcript_path') or ''
     sessions = [Path(os.path.realpath(transcript[:-len('.jsonl')]))] if transcript.endswith('.jsonl') else []
     try:
-        paths = (shell_writes(tool_input.get('command') or '', cwd) if tool == 'Bash'
-                 else [tool_input.get(FILE_TOOLS[tool]) or ''])
-        root, assigned, written = (protected(paths, cwd, sessions, lambda: assigned_worktree(event),
-                                             yield_gate.main_checkout(cwd)) if paths else (None, None, []))
+        with deadline():
+            paths = (shell_writes(tool_input.get('command') or '', cwd) if tool == 'Bash'
+                     else [tool_input.get(FILE_TOOLS[tool]) or ''])
+            root, assigned, written = (protected(paths, cwd, sessions, lambda: assigned_worktree(event),
+                                                 yield_gate.main_checkout(cwd)) if paths else (None, None, []))
     except Exception as error:  # A check that cannot run denies the call.
         deny(f'{event["agent_type"]} is read-only (writes: none) and this write could not be checked: {error}')
         return
@@ -291,7 +338,7 @@ def recording_mains(session, cwd):
     return list(dict.fromkeys(main for main in mains if main and (main / RECORDS / session).is_dir()))
 
 
-def judge(event, command, cwd, session, mains):
+def judge(event, command, cwd, session, mains, task):
     """The deny reason for a Codex child's call in a session whose records lie under `mains`, else None."""
     tool, main = event['tool_name'], mains[0]
     paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
@@ -301,7 +348,6 @@ def judge(event, command, cwd, session, mains):
     rollout = event.get('transcript_path')
     guarded = [records] + ([Path(os.path.realpath(rollout))] if rollout else [])
     never = f'the assignment records under {records} or its rollout {rollout}'
-    task = child_task(event)
     name = f'Codex child {task or event["agent_id"]}'
     try:
         record = json.loads((records / session / f'{task}.json').read_text()) if task else None
@@ -343,10 +389,15 @@ def codex(event):
     if not mains:
         return
     try:
-        reason = judge(event, command, cwd, session, mains)
+        task = child_task(event)
+    except Exception:
+        task = None  # An odd rollout names no task: no record applies.
+    try:
+        with deadline():
+            reason = judge(event, command, cwd, session, mains, task)
     except Exception as error:  # Once they are known, a check that cannot run denies the call.
-        reason = (f'Codex child {event["agent_id"]} is held read-only (writes: none) and this call could not be '
-                  f'checked: {error}')
+        reason = (f'Codex child {task or event["agent_id"]} is held read-only (writes: none) and this call could '
+                  f'not be checked: {error}')
     if reason:
         deny(reason)
 

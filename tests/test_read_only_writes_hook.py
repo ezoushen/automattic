@@ -235,6 +235,15 @@ class ReadOnlyWrites(Checkouts):
             self.assertEqual(json.loads(result.stdout)['hookSpecificOutput']['permissionDecision'], 'deny', tool)
 
 
+    def test_a_long_multi_line_command_is_judged_well_within_the_hook_timeout(self):
+        # Rule (T15 review G3): the shell parser is linear, so a write beside a 64 KB multi-line quoted commit
+        # message is still denied well within the 10 s hook timeout (hooks/hooks.json), not let through by it.
+        body = ('x' * 79 + '\n') * 820
+        started = time.monotonic()
+        decision = self.run_hook('Bash', {'command': f"echo x > src/app.py; git commit -m '{body}'"})
+        self.assertLess(time.monotonic() - started, 3)
+        self.assert_denied(decision, self.worktree / 'src/app.py')
+
 class CodexChildren(Checkouts):
     """A Codex parent session s1 whose native children run in the worktree; Codex names a child only by `agent_id`,
     its rollout (`transcript_path`) and the parent's `session_id`, so the parent records each assignment first."""
@@ -578,6 +587,38 @@ class CodexChildren(Checkouts):
                 result = subprocess.run([sys.executable, str(HOOK), 'codex'], input=payload, capture_output=True,
                                         text=True, timeout=20, env=self.env)
                 self.assertEqual((result.returncode, result.stdout), (0, ''), result.stderr)
+
+
+    def test_a_recorded_childs_long_multi_line_command_is_judged_within_the_hook_timeout(self):
+        # Rule (T15 review G3): a recorded reviewer's write into another worktree beside a 64 KB multi-line quoted
+        # commit message is denied well within Codex's 10 s hook timeout, past which the call would run unchecked.
+        other = self.main / '.worktrees/review-2'
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        body = ('x' * 79 + '\n') * 820
+        started = time.monotonic()
+        decision = self.run_codex('Bash', {'command': f"echo x > {quote(str(other / 'a.py'))}; git commit -m '{body}'"})
+        self.assertLess(time.monotonic() - started, 3)
+        self.assert_denied(decision, other / 'a.py', 'Codex child review_1')
+
+
+    def test_a_command_too_large_to_judge_in_time_is_denied_before_the_hook_timeout(self):
+        # Rule (T15 review G3 backstop): judging a call is bounded well under the 10 s hook timeouts; a recorded
+        # child's or a Claude read-only agent's command that cannot be judged in that time (one 1 MB quoted word,
+        # which shlex lexes in quadratic time) is denied, not left to the timeout that would let it run.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        command = {'command': "git commit -m '" + ('x' * 79 + '\n') * 13108 + "'"}
+        claude = ReadOnlyWrites(methodName='run_hook')
+        claude.tmp, claude.worktree, claude.transcript = self.tmp, self.worktree, self.tmp / 'session.jsonl'
+        for name, run in (('Codex child review_1', lambda: self.run_codex('Bash', command)),
+                          ('automattic:reviewer', lambda: claude.run_hook('Bash', command))):
+            with self.subTest(name=name):
+                started = time.monotonic()
+                decision = run()
+                self.assertLess(time.monotonic() - started, 9)
+                self.assertEqual((decision or {}).get('permissionDecision'), 'deny', name)
+                self.assertIn(f'{name} is', decision['permissionDecisionReason'])
+                self.assertIn('took over 5 s', decision['permissionDecisionReason'])
 
 
 if __name__ == '__main__':
