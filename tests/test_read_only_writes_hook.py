@@ -244,6 +244,15 @@ class ReadOnlyWrites(Checkouts):
         self.assertLess(time.monotonic() - started, 3)
         self.assert_denied(decision, self.worktree / 'src/app.py')
 
+    def test_a_read_only_agent_never_writes_a_git_path_in_its_assigned_worktree(self):
+        # Rule (T15 review G6): a `.git` file or directory is never a reviewer's experiment edit, and a junk one can
+        # mislead whoever reads the checkout's layout, so the assigned worktree allows no path through `.git`.
+        self.assign('a1', f'worktree: {self.worktree}\n')
+        for path in (self.worktree / '.git', self.worktree / 'sub/.git/config'):
+            with self.subTest(path=path):
+                self.assert_denied(self.run_hook('Write', {'file_path': str(path), 'content': 'x'}), path)
+        self.assertIsNone(self.run_hook('Write', {'file_path': str(self.worktree / 'a.git.py'), 'content': 'x'}))
+
 class CodexChildren(Checkouts):
     """A Codex parent session s1 whose native children run in the worktree; Codex names a child only by `agent_id`,
     its rollout (`transcript_path`) and the parent's `session_id`, so the parent records each assignment first."""
@@ -687,6 +696,17 @@ class CodexChildren(Checkouts):
                 with self.subTest(state=state, cwd=cwd):
                     decision = self.run_codex('Bash', forbidden, cwd=cwd)
                     self.assert_denied(decision, other / 'a.py', 'Codex child review_1')
+
+
+    def test_a_recorded_read_only_child_never_writes_a_git_path_in_its_worktree(self):
+        # Rule (T15 review G6): the turn cwd's `.git` is one way the hook finds the records, and a `.git` is never a
+        # reviewer's edit, so a read-only child writes no path through `.git` even in its recorded worktree.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        for path in (self.worktree / '.git', self.worktree / 'sub/.git'):
+            with self.subTest(path=path):
+                self.assert_denied(self.run_codex('Bash', {'command': f'echo junk > {quote(str(path))}'}), path,
+                                   'Codex child review_1')
+        self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(self.worktree / "a.py"))}'}))
 
 
 if __name__ == '__main__':

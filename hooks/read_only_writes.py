@@ -263,12 +263,15 @@ def protected(paths, cwd, guarded, assigned, main):
     assigned = assigned() if held else None
     if assigned not in family[1:]:  # Only a worktree of the family, never the main checkout itself.
         assigned = None
-    return main, assigned, own + [path for path in held if not (assigned and Path(path).is_relative_to(assigned))]
+    # A `.git` is never an experiment edit, and a junk one would mislead the Codex mode's search for records.
+    mine = [path for path in held if assigned and Path(path).is_relative_to(assigned)
+            and '.git' not in Path(path).relative_to(assigned).parts]
+    return main, assigned, own + [path for path in held if path not in mine]
 
 
 def refusal(name, root, assigned, written, guarded):
     """The deny reason for a read-only agent's writes outside what it may write."""
-    own = f' and in its assigned worktree {assigned}' if assigned else ''
+    own = f' and in its assigned worktree {assigned}, outside any .git' if assigned else ''
     where = f'its report under {root}/.scratch/<slug>/reports/{own}' if root else 'no file'
     return (f'{name} is read-only (writes: none): inside the checkouts it writes only {where}, and never '
             f'{guarded}; {", ".join(written)} is outside that')
