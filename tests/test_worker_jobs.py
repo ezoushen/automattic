@@ -509,8 +509,9 @@ sys.exit(process.returncode)
     def test_a_change_inside_a_nested_repository_is_refused_naming_it(self):
         head = self.checkout()
         nested = self.worktree / 'nested'
-        nested_git = lambda *args: subprocess.run(['git', '-C', str(nested), '-c', 'user.name=t', '-c', 'user.email=t@t',
-                                                   *args], check=True, capture_output=True, text=True).stdout.strip()
+        nested_git = lambda *args: subprocess.run(['git', '-C', str(nested), '-c', 'user.name=t', '-c',
+                                                   'user.email=t@t', *args],
+                                                  check=True, capture_output=True, text=True).stdout.strip()
         nested.mkdir()
         nested_git('init', '-q')
         (nested / 'a.txt').write_text('a\n')
@@ -551,6 +552,72 @@ sys.exit(process.returncode)
                 empty_git('rm', '-q', '--cached', '--ignore-unmatch', 'notes.txt')
                 (self.worktree / 'empty' / 'notes.txt').unlink(missing_ok=True)
                 self.cli('collect', '--attempt', attempt, '--input', request)
+
+    def test_an_uninitialized_submodule_is_named_partly_checked_and_held_to_its_directory(self):
+        head, _ = self.with_submodule()
+        self.git('submodule', 'deinit', '-f', 'sub')
+        for number, change in enumerate((None, 'written'), 1):
+            with self.subTest(change=change):
+                attempt = f'review-{number}/1'
+                report = self.review(head, attempt, f'native-{number}')
+                request = self.collect_request(head, report)
+                if change is None:
+                    collected = self.cli('collect', '--attempt', attempt, '--input', request)
+                    self.assertEqual(collected['result']['partly_checked'], ['sub/'])
+                    continue
+                # Git sees no file in a submodule directory it has no checkout for.
+                (self.worktree / 'sub' / 'notes.txt').write_text('scratch\n')
+                error = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
+                self.assertIn('Collection requires an unchanged worktree for a read-only agent (submodule sub is not '
+                              'the checkout it was at registration); record the result with its gap', error)
+
+    def test_a_submodule_replaced_by_a_symlink_is_not_followed(self):
+        head, _ = self.with_submodule()
+        # Git reads no submodule it is told to ignore, so it lets a symlink stand where the submodule was.
+        self.git('config', 'submodule.sub.ignore', 'all')
+        report = self.review(head)
+        # A link back to the checkout itself: followed, the snapshot would never end.
+        shutil.rmtree(self.worktree / 'sub')
+        (self.worktree / 'sub').symlink_to('.')
+        error = self.cli('collect', '--attempt', 'review-1/1', '--input', self.collect_request(head, report), code=2)
+        self.assertIn('Collection requires an unchanged worktree for a read-only agent (submodule sub is not '
+                      'the checkout it was at registration); record the result with its gap', error)
+
+    def lock(self, directory):
+        """Make an untracked directory, with a file in it, that Git cannot open."""
+        directory.mkdir(parents=True)
+        (directory / 'inside.txt').write_text('unseen\n')
+        directory.chmod(0)
+        self.addCleanup(directory.chmod, 0o700)
+
+    @unittest.skipIf(os.geteuid() == 0, 'root reads any directory')
+    def test_an_unreadable_directory_is_named_partly_checked_and_held_to_what_can_be_read(self):
+        head = self.checkout()
+        self.lock(self.worktree / 'locked')
+        self.lock(self.worktree / 'plain' / 'deep')
+        subprocess.run(['git', 'init', '-q', str(self.worktree / 'nested')], check=True)
+        self.lock(self.worktree / 'nested' / 'locked')
+        for number, change in enumerate((None, 'entered', 'appeared'), 1):
+            with self.subTest(change=change):
+                attempt = f'review-{number}/1'
+                report = self.review(head, attempt, f'native-{number}')
+                if change == 'entered':
+                    # Opened, written and locked again: only its record shows it.
+                    (self.worktree / 'locked').chmod(0o700)
+                    (self.worktree / 'locked' / 'added.txt').write_text('scratch\n')
+                    (self.worktree / 'locked').chmod(0)
+                elif change == 'appeared':
+                    self.lock(self.worktree / 'late')
+                request = self.collect_request(head, report)
+                if change is None:
+                    collected = self.cli('collect', '--attempt', attempt, '--input', request)
+                    self.assertEqual(collected['result']['partly_checked'],
+                                     ['locked/', 'nested/locked/', 'plain/deep/'])
+                    continue
+                error = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
+                reason = {'entered': 'an unreadable directory changed: locked/); record the result with its gap',
+                          'appeared': 'an untracked file appeared: late/); restore it'}[change]
+                self.assertIn(f'Collection requires an unchanged worktree for a read-only agent ({reason}', error)
 
     def test_the_collect_doc_says_what_the_check_covers_and_how_to_get_past_a_refusal(self):
         doc = ' '.join((support.ROOT / 'runtime/workers/collect.md').read_text().split())

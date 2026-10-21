@@ -401,9 +401,12 @@ def checkout_change(baseline, now):
     # A submodule is compared before the tracked changes its own changes also show in, so the reason names it.
     for link in sorted(set(baseline.get('submodules', {})) | set(now['submodules'])
                        if 'submodules' in baseline else ()):
-        found = checkout_change(baseline['submodules'].get(link), now['submodules'].get(link))
-        if found:
-            return f'in submodule {link}: {found[0]}', found[1]
+        old, new = baseline['submodules'].get(link), now['submodules'].get(link)
+        if old == new:
+            continue
+        found = is_checkout(old) and is_checkout(new) and checkout_change(old, new)
+        return ((f'in submodule {link}: {found[0]}', found[1]) if found
+                else (f'submodule {link} is not the checkout it was at registration', False))
     if now['changes'] != baseline['changes']:
         return f'tracked files differ from their state at registration{note}', True
     if legacy:
@@ -414,11 +417,23 @@ def checkout_change(baseline, now):
     if deleted := sorted(set(before) - set(after)):
         return f'an untracked file was deleted: {deleted[0]}', False
     for name in sorted(name for name in before if after[name] != before[name]):
-        found = (isinstance(before[name], dict) and isinstance(after[name], dict)
-                 and checkout_change(before[name], after[name]))
+        found = is_checkout(before[name]) and is_checkout(after[name]) and checkout_change(before[name], after[name])
         if found:
             return f'in nested repository {name}: {found[0]}', found[1]
-        return f'an untracked file changed: {name}', False
+        return f'an {"unreadable directory" if name.endswith("/") else "untracked file"} changed: {name}', False
+
+
+def is_checkout(entry):
+    """Whether a snapshot entry is a nested checkout's state, not a file's digest or a directory's record."""
+    return isinstance(entry, dict) and 'head' in entry
+
+
+def partly_checked(state, prefix=''):
+    """The directories, by path, a snapshot holds only to what can be read of them."""
+    entries = [*state.get('untracked', {}).items(), *((link + '/', entry) for link, entry
+                                                      in state.get('submodules', {}).items())]
+    return sorted(found for name, entry in entries if isinstance(entry, dict)
+                  for found in (partly_checked(entry, prefix + name) if is_checkout(entry) else [prefix + name]))
 
 
 def refusal(change):
@@ -430,18 +445,21 @@ def refusal(change):
 
 def worktree_state(worktree, own=False):
     """HEAD, a digest of tracked changes against it, a digest of each untracked file the ignore rules leave
-    visible (the state of a nested repository) and the state of each submodule, or None outside a readable Git
-    checkout (with `own`, outside one whose top is worktree itself). A snapshot check may start from a dirty tree,
-    so a read-only agent is held to the state it was given."""
-    run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL)
+    visible (the state of a nested repository, the record of a directory Git cannot open) and the state of each
+    submodule, or None outside a readable Git checkout (with `own`, outside one whose top is worktree itself). A
+    snapshot check may start from a dirty tree, so a read-only agent is held to the state it was given."""
+    # Git's warnings are parsed, so they are read untranslated.
+    run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL,
+                                       env=dict(os.environ, LC_ALL='C'))
     if own and not own_checkout(worktree):
         return None
-    head = run('rev-parse', '--verify', '-q', 'HEAD')
-    if head.returncode == 0:
+    found = run('rev-parse', '--show-prefix', '--verify', '-q', 'HEAD')
+    prefix, _, head = found.stdout.partition(b'\n')
+    if found.returncode == 0:
         base = 'HEAD'
     elif run('symbolic-ref', '-q', 'HEAD').returncode == 0:
         # A repository with no commit yet: its tracked changes are those against the empty tree.
-        head.stdout, base = b'unborn', run('hash-object', '-t', 'tree', '--stdin').stdout.decode().strip()
+        head, base = b'unborn', run('hash-object', '-t', 'tree', '--stdin').stdout.decode().strip()
     else:
         return None
     diff = run('diff', '--no-ext-diff', '--no-textconv', '--no-color', '--binary', base)
@@ -450,14 +468,36 @@ def worktree_state(worktree, own=False):
         return None
     names = [os.fsdecode(name) for name in untracked.stdout.split(b'\0') if name]
     # Git lists a nested repository as its directory; its own files are snapshotted by the same rules.
-    digests = {name: (name.endswith('/') and worktree_state(str(Path(worktree, name)), own=True))
-               or content_digest(Path(worktree, name)) for name in names}
+    digests = {name: checkout_or_directory(Path(worktree, name)) if name.endswith('/')
+               else content_digest(Path(worktree, name)) for name in names}
+    # Git warns of an untracked directory it cannot open, named from the top of the checkout, and leaves it out.
+    for name in re.findall(rb"^warning: could not open directory '(.*/)': [^'\n]*$", untracked.stderr, re.M):
+        if name.startswith(prefix):
+            name = os.fsdecode(name[len(prefix):])
+            digests[name] = directory_record(Path(worktree, name))
     # A submodule is a gitlink (mode 160000) in the index; its own files are snapshotted by the same rules.
     links = {os.fsdecode(entry.split(b'\t', 1)[1]) for entry in index.stdout.split(b'\0')
              if entry.startswith(b'160000 ')}
-    return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
+    return {'head': head.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
             'untracked': {name: digest for name, digest in digests.items() if digest is not None},
-            'submodules': {link: worktree_state(str(Path(worktree, link)), own=True) for link in sorted(links)}}
+            'submodules': {link: checkout_or_directory(Path(worktree, link)) for link in sorted(links)}}
+
+
+def checkout_or_directory(path):
+    """The state of a checkout nested at path, or, where Git cannot read one there (an uninitialized submodule),
+    the record of its directory."""
+    return worktree_state(str(path), own=True) or directory_record(path)
+
+
+def directory_record(path):
+    """What can still be read of a directory without listing it: its status, a symlink's own, or why not.
+    Adding, removing or renaming an entry in it, or changing its permissions, changes the record."""
+    try:
+        found = os.lstat(path)
+    except OSError as error:
+        return {'directory': f'unreadable:{errno.errorcode.get(error.errno, error.errno)}'}
+    return {'directory': [found.st_mode, found.st_ino, found.st_nlink, found.st_uid, found.st_gid, found.st_size,
+                          found.st_mtime_ns, found.st_ctime_ns]}
 
 
 def own_checkout(path):
@@ -472,8 +512,7 @@ def own_checkout(path):
 
 def content_digest(path):
     """A digest of a file's bytes, or of a symlink's target. What cannot be read, such as a file without
-    permission or a nested repository (Git lists it as its directory), is held to a marker naming why; a file
-    that vanished since it was listed is None."""
+    permission, is held to a marker naming why; a file that vanished since it was listed is None."""
     try:
         data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
     except FileNotFoundError:
@@ -785,7 +824,12 @@ def record(db, data, refuse_changes=False):
             capacity.release(state_path(db), attempt)
         except (OSError, ValueError, sqlite3.Error):
             pass  # A lease of a finished attempt is reclaimed by the next acquisition.
+    # A directory held only to what can be read of it is named even when nothing changed.
+    partly = now and [*partly_checked(now['worktree'] or {}),
+                      *(os.path.join(checkout, name) for checkout, state in now['checkouts'].items()
+                        for name in partly_checked(state or {}))]
     return {'event_id': event_id, 'attempt': attempt, 'verified': saved['verified'],
+            **({'partly_checked': partly} if partly else {}),
             **({'journal': journal} if journal else {}), **({'repairs': repaired} if repaired else {}),
             **({'ledger': unrecorded} if unrecorded else {})}
 
