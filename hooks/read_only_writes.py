@@ -339,36 +339,46 @@ def recording_mains(session, cwd):
 
 
 def judge(event, command, cwd, session, mains, task):
-    """The deny reason for a Codex child's call in a session whose records lie under `mains`, else None."""
-    tool, main = event['tool_name'], mains[0]
-    paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
+    """The deny reason for a Codex child's call in a session whose records lie under `mains`, else None. Each path
+    is judged by the record in the checkout it lands in; no child writes the records, their index or its rollout."""
+    paths = (shell_writes(command, WORKDIR) if event['tool_name'] == 'Bash'
              else [os.path.join(cwd, path) for path in patch_paths(command)])  # The patch tool's cwd is the turn's.
-    records = Path(os.path.realpath(main / RECORDS))
+    name = f'Codex child {task or event["agent_id"]}'
     # The rollout names the child's task, which picks its record, so no child writes it.
     rollout = event.get('transcript_path')
-    guarded = [records] + ([Path(os.path.realpath(rollout))] if rollout else [])
-    never = f'the assignment records under {records} or its rollout {rollout}'
-    name = f'Codex child {task or event["agent_id"]}'
-    try:
-        record = json.loads((records / session / f'{task}.json').read_text()) if task else None
-    except (OSError, ValueError):
-        record = None
-    definition = isinstance(record, dict) and agent_defs.load(ROOT)['agents'].get(record.get('agent'))
-    if definition and definition.get('writes') != 'none':
-        written = [path for path in paths if os.path.isabs(path) and
-                   any(Path(os.path.realpath(path)).is_relative_to(place) for place in guarded)]
-        return f'{name} never writes {never}; {", ".join(written)} is there.' if written else None
+    guarded = [Path(os.path.realpath(place)) for place in
+               (*(main / RECORDS for main in mains), state_index(session), *([rollout] if rollout else []))]
+    never = f'the assignment records, their index {state_index(session)} or its rollout {rollout}'
+    written = [path for path in paths if os.path.isabs(path) and
+               any(Path(os.path.realpath(path)).is_relative_to(place) for place in guarded)]
+    if written:
+        return f'{name} never writes {never}; {", ".join(written)} is there.'
+    records = {}
+    for main in mains:
+        try:
+            record = json.loads((main / RECORDS / session / f'{task}.json').read_text()) if task else None
+        except (OSError, ValueError):
+            record = None
+        definition = isinstance(record, dict) and agent_defs.load(ROOT)['agents'].get(record.get('agent'))
+        records[main] = (record, definition) if definition else (None, None)
+    writer = {main for main, (record, definition) in records.items()
+              if definition and definition.get('writes') != 'none'}
     relative = [path[len(WORKDIR) + 1:] for path in paths if not os.path.isabs(path)]
-    if relative:
+    if relative and git_main(Path(os.path.realpath(cwd))) not in writer:
         return (f'{name} is held read-only (writes: none) and {", ".join(relative)} is relative: Codex does not '
                 f'pass the shell workdir to hooks, so write to an absolute path.')
-    worktree = definition and record.get('worktree')
-    root, assigned, written = protected(paths, cwd, guarded, lambda: worktree and Path(worktree), main)
-    if not written:
-        return None
-    agent = (f'({ROOT}/agents/{record["agent"]}.md).' if definition else
-             f'(no assignment record in {records / session}).')
-    return refusal(name, root, assigned, written, never) + f' {agent}'
+    reasons = []
+    for main, (record, definition) in records.items():
+        if main in writer:
+            continue
+        worktree = record and record.get('worktree')
+        root, assigned, held = protected([path for path in paths if os.path.isabs(path)], cwd, [],
+                                         lambda: worktree and Path(worktree), main)
+        if held:
+            agent = (f'({ROOT}/agents/{record["agent"]}.md).' if record else
+                     f'(no assignment record in {main / RECORDS / session}).')
+            reasons.append(refusal(name, root, assigned, held, never) + f' {agent}')
+    return ' '.join(reasons) or None
 
 
 def codex(event):

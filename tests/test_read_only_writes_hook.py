@@ -356,8 +356,10 @@ class CodexChildren(Checkouts):
         forged = self.records / 'build_1.json'
         # The records directory has the shape of <main>/.scratch/<slug>/reports/ too; it is never a report.
         lookalike = self.main / '.scratch/codex-children/reports/x.json'
+        # The index naming the session's recording checkouts (codex-assign keeps it in the state directory).
+        [index] = (self.tmp / 'state/automattic/codex-children/s1').iterdir()
         for task in ('build_1', 'review_9'):
-            for path in (forged, lookalike):
+            for path in (forged, lookalike, index):
                 with self.subTest(task=task, path=path):
                     decision = self.run_codex('Bash', {'command': f'echo x > {quote(str(path))}'}, task=task)
                     self.assertEqual((decision or {}).get('permissionDecision'), 'deny', path)
@@ -619,6 +621,33 @@ class CodexChildren(Checkouts):
                 self.assertEqual((decision or {}).get('permissionDecision'), 'deny', name)
                 self.assertIn(f'{name} is', decision['permissionDecisionReason'])
                 self.assertIn('took over 5 s', decision['permissionDecisionReason'])
+
+
+    def test_each_written_path_is_judged_by_the_records_of_the_checkout_it_lands_in(self):
+        # Rule (T15 review G5): a session may record children in several checkouts; each path a child writes is
+        # judged against the records of the checkout it lands in, whatever its turn cwd: review_b, recorded in B as
+        # a reviewer of B's worktree, is held there and, having no record in A, to A's reports.
+        other = self.tmp / 'other'
+        subprocess.run(['git', 'init', '-q', str(other)], check=True)
+        subprocess.run(['git', '-C', str(other), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c',
+                        'commit.gpgsign=false', 'commit', '-q', '--allow-empty', '-m', 'init'], check=True)
+        theirs = other / '.worktrees/review-b'
+        subprocess.run(['git', '-C', str(other), 'worktree', 'add', '-q', '--detach', str(theirs)], check=True)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        self.assertEqual(self.record('review_b', self.agents / 'reviewer.md', theirs, cwd=other).returncode, 0)
+        for path in (other / 'src.py', self.main / 'src.py', self.worktree / 'a.py'):
+            with self.subTest(path=path):
+                decision = self.run_codex('Bash', {'command': f'echo x > {quote(str(path))}'}, task='review_b')
+                self.assertEqual((decision or {}).get('permissionDecision'), 'deny', path)
+                self.assertIn(str(path), decision['permissionDecisionReason'])
+        for path in (theirs / 'a.py', self.reports / '03.md'):
+            with self.subTest(path=path):
+                self.assertIsNone(self.run_codex('Bash', {'command': f'echo x > {quote(str(path))}'}, task='review_b'))
+        # A relative target is a writer's only in the checkout of its turn cwd, where the record makes it one.
+        self.assertEqual(self.record('build_b', self.agents / 'builder.md', theirs, cwd=other).returncode, 0)
+        self.assertIsNone(self.run_codex('Bash', {'command': 'echo x > a.py'}, task='build_b', cwd=theirs))
+        decision = self.run_codex('Bash', {'command': 'echo x > a.py'}, task='build_b')
+        self.assertIn('a.py is relative', (decision or {}).get('permissionDecisionReason', ''))
 
 
 if __name__ == '__main__':
