@@ -412,6 +412,11 @@ def checkout_change(baseline, now):
     if legacy:
         return None
     before, after = baseline['untracked'], now['untracked']
+    if 'submodules' not in baseline:
+        # Recorded before nested checkouts and directories Git cannot open were: a nested checkout was a marker and
+        # such a directory was left out, so they are compared that way.
+        after = {name: 'unreadable:EISDIR' if isinstance(entry, dict) else entry for name, entry in after.items()
+                 if not isinstance(entry, dict) or is_checkout(entry) or name in before}
     if appeared := sorted(set(after) - set(before)):
         return f'an untracked file appeared: {appeared[0]}', True
     if deleted := sorted(set(before) - set(after)):
@@ -433,7 +438,8 @@ def partly_checked(state, prefix=''):
     entries = [*state.get('untracked', {}).items(), *((link + '/', entry) for link, entry
                                                       in state.get('submodules', {}).items())]
     return sorted(found for name, entry in entries if isinstance(entry, dict)
-                  for found in (partly_checked(entry, prefix + name) if is_checkout(entry) else [prefix + name]))
+                  for found in (partly_checked(entry, prefix + name) if is_checkout(entry)
+                                else [prefix + name if name != './' else prefix or name]))
 
 
 def refusal(change):
@@ -443,16 +449,14 @@ def refusal(change):
     return f'Collection requires an unchanged worktree for a read-only agent ({reason}); {way_out}'
 
 
-def worktree_state(worktree, own=False):
+def worktree_state(worktree):
     """HEAD, a digest of tracked changes against it, a digest of each untracked file the ignore rules leave
     visible (the state of a nested repository, the record of a directory Git cannot open) and the state of each
-    submodule, or None outside a readable Git checkout (with `own`, outside one whose top is worktree itself). A
-    snapshot check may start from a dirty tree, so a read-only agent is held to the state it was given."""
+    submodule, or None outside a readable Git checkout. A snapshot check may start from a dirty tree, so a
+    read-only agent is held to the state it was given."""
     # Git's warnings are parsed, so they are read untranslated.
     run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL,
                                        env=dict(os.environ, LC_ALL='C'))
-    if own and not own_checkout(worktree):
-        return None
     found = run('rev-parse', '--show-prefix', '--verify', '-q', 'HEAD')
     prefix, _, head = found.stdout.partition(b'\n')
     if found.returncode == 0:
@@ -468,25 +472,31 @@ def worktree_state(worktree, own=False):
         return None
     names = [os.fsdecode(name) for name in untracked.stdout.split(b'\0') if name]
     # Git lists a nested repository as its directory; its own files are snapshotted by the same rules.
-    digests = {name: checkout_or_directory(Path(worktree, name)) if name.endswith('/')
+    digests = {name: checkout_or_directory(worktree, name) if name.endswith('/')
                else content_digest(Path(worktree, name)) for name in names}
     # Git warns of an untracked directory it cannot open, named from the top of the checkout, and leaves it out.
     for name in re.findall(rb"^warning: could not open directory '(.*/)': [^'\n]*$", untracked.stderr, re.M):
         if name.startswith(prefix):
             name = os.fsdecode(name[len(prefix):])
             digests[name] = directory_record(Path(worktree, name))
+    # A top Git can search but not list hides every untracked file; it is held to its status, as `./`.
+    try:
+        os.scandir(worktree).close()
+    except OSError:
+        digests['./'] = directory_record(Path(worktree))
     # A submodule is a gitlink (mode 160000) in the index; its own files are snapshotted by the same rules.
     links = {os.fsdecode(entry.split(b'\t', 1)[1]) for entry in index.stdout.split(b'\0')
              if entry.startswith(b'160000 ')}
     return {'head': head.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
             'untracked': {name: digest for name, digest in digests.items() if digest is not None},
-            'submodules': {link: checkout_or_directory(Path(worktree, link)) for link in sorted(links)}}
+            'submodules': {link: checkout_or_directory(worktree, link) for link in sorted(links)}}
 
 
-def checkout_or_directory(path):
-    """The state of a checkout nested at path, or, where Git cannot read one there (an uninitialized submodule),
-    the record of its directory."""
-    return worktree_state(str(path), own=True) or directory_record(path)
+def checkout_or_directory(worktree, name):
+    """The state of a checkout nested at name below worktree, or, where Git cannot read one there (an
+    uninitialized submodule) or it is reached through a symlink, the record of its directory."""
+    path = Path(worktree, name)
+    return own_checkout(worktree, name) and worktree_state(str(path)) or directory_record(path)
 
 
 def directory_record(path):
@@ -500,13 +510,14 @@ def directory_record(path):
                           found.st_mtime_ns, found.st_ctime_ns]}
 
 
-def own_checkout(path):
-    """Whether path is the top of a Git checkout of its own, reached without a symlink: an uninitialized
+def own_checkout(worktree, name):
+    """Whether name below worktree is the top of a Git checkout of its own, reached through no symlink in any
+    component (so each nested snapshot is a real subdirectory, and the recursion ends): an uninitialized
     submodule or a broken repository is not, and Git would read the checkout around it instead."""
+    path = Path(worktree, name)
     found = subprocess.run(['git', '-C', str(path), 'rev-parse', '--show-toplevel'], capture_output=True,
                            stdin=subprocess.DEVNULL)
-    path = Path(path)
-    return (found.returncode == 0 and not path.is_symlink() and path.resolve() == path.parent.resolve() / path.name
+    return (found.returncode == 0 and path.resolve() == Path(worktree).resolve() / name
             and Path(os.fsdecode(found.stdout.strip())).resolve() == path.resolve())
 
 
