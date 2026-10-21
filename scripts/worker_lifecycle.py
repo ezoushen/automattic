@@ -34,6 +34,8 @@ LOOKUP_SECONDS = 5  # Registration's wait on each Herdr call.
 # Native write-scope controls: a launch requests them (its `verify`) and startup observes them.
 SCOPE = ('permission_mode', 'sandbox', 'approval', 'filesystem', 'tools', 'permissions')
 TOP_LEVEL = ('claude', 'codex', 'opencode', 'pi')  # Runtimes whose own process the resolver gives launch controls.
+# What Claude Code, Codex and Pi export to the coordinator's shell as its host session ID.
+SESSION_VARIABLES = ('CLAUDE_CODE_SESSION_ID', 'CODEX_SESSION_ID', 'PI_SESSION_ID')
 
 
 def require(value, message):
@@ -573,6 +575,9 @@ def record(db, data, refuse_changes=False):
             if os.environ.get('HERDR_PANE_ID'):
                 # The registering host's pane; the yield hooks hold only that host for this worker.
                 saved['coordinator'] = os.environ['HERDR_PANE_ID']
+            session = next((os.environ[name] for name in SESSION_VARIABLES if os.environ.get(name)), None)
+            if session:
+                saved['session'] = session  # The registering host session, which decides before the pane.
             if 'journal' in data:
                 require(text(data['journal']) and Path(data['journal']).is_absolute(),
                         'journal must be an absolute decisions journal path')

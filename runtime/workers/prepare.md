@@ -13,8 +13,8 @@ The hooks also append each `herdr agent start` a session runs, including behind 
 `env` or a shell's `-c` string, to the main checkout's `.scratch/herdr-launches.jsonl`
 (time, agent name, pane, the session's Herdr pane and host session, and the pane's cwd
 when Herdr reports it). A launch is named at stop, even after its pane closed, until an
-attempt names its pane or agent: one registered from the launching Herdr pane or, for a
-launch made outside Herdr, one registered outside Herdr after it. A launch inside a
+attempt names its pane or agent and, as [wait](wait.md) says, comes from its coordinator:
+registration records the registering Herdr pane and host session. A launch inside a
 heredoc or backticks is not logged, and a pane or name from a loop variable is logged as
 typed; the live-agent check still names such a worker.
 A launch or live agent that needs no attempt (it failed, its pane was closed at a trust

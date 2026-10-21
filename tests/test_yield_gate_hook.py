@@ -97,11 +97,11 @@ else:
         env['PATH'] = f"{self.bin}{os.pathsep}{env['PATH']}"
         return dict(env, **({'HERDR_PANE_ID': pane, 'HERDR_WORKSPACE_ID': 'w1'} if pane else {}), **values)
 
-    def lifecycle(self, kind, attempt='ticket-1/1', pane='w1:p1', **fields):
+    def lifecycle(self, kind, attempt='ticket-1/1', pane='w1:p1', env=None, **fields):
         event = self.state.parent / 'event.json'
         event.write_text(json.dumps(dict(kind=kind, attempt=attempt, **fields)))
         subprocess.run([sys.executable, '-B', str(LIFECYCLE), 'record', '--state', str(self.state),
-                        '--input', str(event)], check=True, capture_output=True, env=self.env(pane))
+                        '--input', str(event)], check=True, capture_output=True, env=self.env(pane, **(env or {})))
 
     def stop(self, cwd=None, active=False, env=None, pane='w1:p1', host='claude', session=None):
         payload = {'hook_event_name': 'Stop', 'cwd': str(cwd or self.repo), 'stop_hook_active': active,
@@ -289,10 +289,11 @@ class UnregisteredWorkers(GateRepo):
         self.worktree.mkdir(parents=True)
         self.serve(panes={'default': {'w1:p5': {'pane_id': 'w1:p5', 'cwd': str(self.worktree)}}})
 
-    def register(self, worker, attempt, native_session=None, pane='w1:p1', worktree=None):
+    def register(self, worker, attempt, native_session=None, pane='w1:p1', worktree=None, session=None):
         """Register `worker` for an attempt in the run's workers.sqlite, as prepare.md has the coordinator in
-        Herdr pane `pane` (None: outside Herdr) do."""
-        self.lifecycle('register', attempt, pane, assignment=attempt.split('/')[0], repo=str(self.repo),
+        Herdr pane `pane` (None: outside Herdr) do, from a Claude Code host exporting `session` when given."""
+        self.lifecycle('register', attempt, pane, env={'CLAUDE_CODE_SESSION_ID': session} if session else None,
+                       assignment=attempt.split('/')[0], repo=str(self.repo),
                        worktree=str(worktree or self.worktree), head='head-1', execution=str(self.execution), runtime='claude',
                        worker=worker, native_session=native_session or f'native-{attempt}', owned=True,
                        packet=str(support.assignment_file(self.execution.parent, 'ticket')))
@@ -487,6 +488,24 @@ console.log(JSON.stringify([await call('bash', 'herdr agent start builder-1 --ki
         self.assertEqual(self.check(session='host-1'), missing)
         self.assertEqual(self.check(pane=None, session='host-1'), missing)
 
+    def test_a_registration_from_another_host_session_does_not_clear_a_launch(self):
+        # Rule (T11): a registration records its host session, and where it and the launch's coordinator both know
+        # one, the session alone decides whether it accounts for the launch, as for whose launch it is (T10). Review
+        # probes: a later registration from another session, in the launching pane or outside Herdr.
+        self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', pane='w1:p1', session='host-1')
+        self.launch('herdr agent start builder-2 --kind codex --pane w1:p6', pane=None, session='host-1')
+        self.launch('herdr agent start builder-3 --kind codex --pane w1:p7', pane='w1:p17', session='host-1')
+        self.launch('herdr agent start builder-4 --kind codex --pane w1:p8', pane='w1:p1', session='host-1')
+        self.serve()
+        time.sleep(1.1)  # The log keeps whole seconds: the registrations come strictly later.
+        self.register('builder-1', 'ticket-1/1', pane='w1:p1', session='host-2')
+        self.register('builder-2', 'ticket-2/1', pane=None, session='host-2')
+        self.register('builder-3', 'ticket-3/1', pane='w2:p1', session='host-1')  # A stale pane: the session decides.
+        self.register('builder-4', 'ticket-4/1', pane='w1:p1', session='host-1')
+        missing = [self.gap('builder-1', 'w1:p5'), self.gap('builder-2', 'w1:p6')]
+        self.assertEqual(self.check(session='host-1'), missing)
+        self.assertEqual(self.check(pane=None, session='host-1'), missing)
+
     def test_a_session_pane_name_handle_clears_a_launch_matching_its_pane_or_its_name(self):
         # Decision 2: the lifecycle also accepts `<session>/<pane>/<name>` as a worker handle.
         self.serve(panes={'default': {pane: {'pane_id': pane, 'cwd': str(self.worktree)}
@@ -584,6 +603,19 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
         self.assertIn(f"- {self.live('builder-1', 'w1:p5', self.worktree)}\n", decision['reason'])
         self.register('w1:p5', 'ticket-1/1')
         self.register('builder-2', 'ticket-2/1')
+        self.assertEqual(self.check(), [])
+
+    def test_a_live_agent_registered_by_another_host_session_is_still_a_gap(self):
+        # Rule (T11): only an attempt this coordinator's host session registered accounts for a live agent of its
+        # workspace, when both know a session; one registered without a session still does, as before.
+        other, third = self.repo / '.worktrees/ticket-2', self.repo / '.worktrees/ticket-3'
+        self.serve(agents=[self.agent('builder-1', 'w1:p5', self.worktree), self.agent('builder-2', 'w1:p6', other),
+                           self.agent('builder-3', 'w1:p7', third)])
+        self.register('builder-1', 'ticket-1/1', session='host-2')
+        self.register('builder-2', 'ticket-2/1', session='host-1')
+        self.register('builder-3', 'ticket-3/1')
+        self.assertEqual(self.check(session='host-1'), [self.live('builder-1', 'w1:p5', self.worktree)])
+        self.assertEqual(self.check(session='host-2'), [self.live('builder-2', 'w1:p6', other)])
         self.assertEqual(self.check(), [])
 
     def test_only_other_live_agents_in_the_coordinators_workspace_and_worktrees_count(self):
