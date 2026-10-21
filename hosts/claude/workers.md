@@ -124,9 +124,13 @@ the read-only worktree check at collection. It is not launched through Herdr.
 Register it with its `agentId` as `native_session` and record startup with `native`, its
 transcript (`subagents/agent-<agentId>.jsonl` in the session's directory). Every row there
 carries the coordinator's session directory, not the subagent's own `cd`, so outside the
-assigned worktree it is a `status` warning, not a refusal. A read-only subagent's writes outside
-its registered worktree are not detected: what holds is the agent's absolute-path rule and, for a
-builder, `--accept`'s check of its ticket branch.
+assigned worktree it is a `status` warning, not a refusal. A `PreToolUse` hook
+(`hooks/read_only_writes.py`) denies a `writes: none` subagent (named in the call's `agent_type`)
+an Edit, Write or NotebookEdit outside the main checkout's `.scratch/<slug>/reports/`, and a Bash
+`>`, `>>`, `&>` or `tee` to a literal path outside them. Only what it cannot see goes undetected: a path
+known only at run time (`$VAR`, `$(...)`), a shell's `-c` string, a program that opens files itself
+(`python -c`, `sed -i`, `cp`, `git`) and MCP tools. Against those, what holds is the agent's
+absolute-path rule and, for a builder, `--accept`'s check of its ticket branch.
 
 A Claude worker started as its own process takes a route's `launch.argv` after `--`, and only a
 non-Claude coordinator (Codex, Pi or OpenCode, resolving with its own `--harness` and
