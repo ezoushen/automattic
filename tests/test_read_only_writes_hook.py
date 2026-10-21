@@ -507,5 +507,34 @@ class CodexChildren(Checkouts):
                                          cwd=outside))
 
 
+    def test_a_record_or_rollout_that_cannot_be_trusted_holds_the_child_read_only(self):
+        # Rule (T15 R2', review F6): in a session with records, a corrupt or unreadable record, or a rollout whose
+        # own id is not the payload's agent_id, gives no assignment: the child may write only the reports.
+        for task, agent in (('build_1', 'builder'), ('build_2', 'builder'), ('review_1', 'reviewer')):
+            self.assertEqual(self.record(task, self.agents / f'{agent}.md', self.worktree).returncode, 0)
+        (self.records / 'build_1.json').write_text('{not json\n')
+        (self.records / 'build_2.json').chmod(0)
+        self.addCleanup((self.records / 'build_2.json').chmod, 0o644)
+        tracked, mine = self.main / 'src/app.py', self.worktree / 'a.py'
+        for task, meta_id, path in (('build_1', None, tracked), ('build_2', None, tracked),
+                                    ('review_1', 'c8', mine)):
+            with self.subTest(task=task, meta_id=meta_id):
+                decision = self.run_codex('Bash', {'command': f'echo x > {quote(str(path))}'}, task=task,
+                                          meta_id=meta_id)
+                self.assert_denied(decision, path, 'Codex child')
+                self.assertIn(f'no assignment record in {self.records}', decision['permissionDecisionReason'])
+
+    def test_a_session_id_codex_would_not_issue_names_no_records(self):
+        # Rule (T15 R1', R2', review F6): a session id is a path segment of the records, so one with characters
+        # outside Codex's ids ([0-9A-Za-z-]) is never looked up (the call is unchecked) and never recorded.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        tracked = {'command': f'echo x > {quote(str(self.main / "src/app.py"))}'}
+        self.assertIsNone(self.run_codex('Bash', tracked, session='.'))
+        result = self.record('review_2', self.agents / 'reviewer.md', self.worktree, session='../s1', thread=None)
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('session id', result.stderr)
+        self.assertFalse((self.main / '.scratch/s1').exists())
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -53,6 +53,7 @@ SKIPS_NEXT = {'<', '<<', '<<-', '<<<', '>&', '<&', '<>'}
 ASSIGNED = re.compile(r'^worktree:[ \t]*(.+?)[ \t]*$', re.M)
 RECORDS = Path('.scratch/codex-children')  # <main>/<RECORDS>/<Codex session id>/<task name>.json
 TASK = re.compile(r'[a-z0-9_]+')  # The characters Codex allows in a spawn_agent task name.
+SESSION = re.compile(r'[0-9A-Za-z-]+')  # A Codex session id (a UUID); it is a path segment of the records.
 PATCH_HEADERS = ('*** Add File: ', '*** Delete File: ', '*** Update File: ', '*** Move to: ')  # Lines trimmed.
 WORKDIR = '<workdir>'  # Codex's Bash payload omits exec_command's workdir, so relative targets stay unresolved.
 
@@ -281,7 +282,7 @@ def codex(event):
     checked, and the guard fails closed only once it is found."""
     tool, command = event.get('tool_name'), (event.get('tool_input') or {}).get('command') or ''
     session = event.get('session_id') or ''
-    if not event.get('agent_id') or tool not in ('Bash', 'apply_patch') or not re.fullmatch(r'[0-9A-Za-z-]+', session):
+    if not event.get('agent_id') or tool not in ('Bash', 'apply_patch') or not SESSION.fullmatch(session):
         return
     cwd = event.get('cwd') or os.getcwd()
     paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
@@ -340,6 +341,7 @@ def assign(args):
     worktree = options.worktree and Path(os.path.realpath(options.worktree))
     problem = (
         'run it from the Codex parent session\'s own shell' if not session or thread not in (None, session) else
+        f'session id {session!r} is not a Codex session id' if not SESSION.fullmatch(session) else
         f'task name {options.task!r} is not one Codex accepts ([a-z0-9_])' if not TASK.fullmatch(options.task) else
         f'{options.agent_file} is not an Automattic agent file'
         if not (Path(options.agent_file).is_file() and agent in agent_defs.load(ROOT)['agents']) else
