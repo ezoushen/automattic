@@ -43,12 +43,13 @@ Record a child's startup with `native`, its rollout (its `session_meta` names th
 worktree it is a `status` warning. A child's task message is stored encrypted, so before each
 `spawn_agent` record its assignment, from inside the checkout the child works in, with `python3
 <plugin_root>/hooks/read_only_writes.py codex-assign --task <task_name> --agent-file <agent_file> --worktree
-<worktree>`; only when it succeeds, spawn it with that `task_name`, new for each child. A record is never
-overwritten, which is what holds a spawned child to it (codex-assign's own refusal of a child rests on
-`CODEX_THREAD_ID`, which a child can set). The hook finds records under that checkout from the child's turn cwd or the absolute paths it writes.
-Once found, a child of a `writes: none` agent, or one with no record, writes inside the checkouts only to its
-reports and its recorded worktree, by absolute path; the hook sees redirects, `tee` and `apply_patch`, not files
-an interpreter or tool opens itself. A builder still relies on `--accept`'s check of its ticket branch.
+<worktree>`; only when it succeeds, spawn it with that `task_name`, new for each child. The record survives a
+child's redirects, `tee` and `apply_patch`, not `rm`, `mv` or an interpreter, and codex-assign's refusal of a
+child rests on `CODEX_THREAD_ID`, which a child can set. In a session with records, each path a child writes is
+judged by the record in its checkout: a child of a `writes: none` agent, or one with no record there, writes
+inside the checkouts only to its reports and its recorded worktree, by absolute path; the hook sees redirects,
+`tee` and `apply_patch`, not files an interpreter or tool opens itself. A builder still relies on `--accept`'s
+check of its ticket branch.
 After session loss, inspect saved IDs; reconstruct absent agents from surviving
 files/worktrees and record replacement IDs.
 

@@ -19,16 +19,19 @@ path inside the family denies the call.
 
 Codex (argument `codex`, Bash and apply_patch): a native child's payload carries `agent_id` and its own rollout,
 but its task message is stored encrypted, so its parent records the assignment first (`codex-assign`) in
-<main>/.scratch/codex-children/<CODEX_SESSION_ID>/<task_name>.json: the agent its agent_file names and its worktree.
-A record is never overwritten, which is what holds a spawned child to it; codex-assign's own refusal of a child
-rests on CODEX_THREAD_ID, which a child's command can set, so it is advisory. The task name is the child's rollout
-session_meta `agent_path` (`/root/<task_name>`) when that meta's id is the payload's `agent_id`. Records are looked
-up under the main checkout of the turn's cwd and of each absolute path the call writes (the payload has no
-workdir); a call that writes nothing, a session without records there, a failed lookup and the parent's own calls
-are not checked. Once the records are found the check fails closed: a recorded `writes: none` agent gets the
-decisions above; a child with no record, or a corrupt one, is held to the reports; no child writes the records or
-its own rollout. A read-only child's relative target is denied; the paths an apply_patch adds, updates, deletes or
-moves to, through the tool or a shell heredoc, are writes.
+<main>/.scratch/codex-children/<CODEX_SESSION_ID>/<task_name>.json, the agent its agent_file names and its worktree,
+and indexes that checkout in <XDG state>/automattic/codex-children/<session>/. codex-assign never overwrites a
+record, and the hook denies writing records, the index or the child's own rollout by redirect, `tee` or apply_patch;
+`rm`, `mv` or an interpreter can still remove a record and record it anew, and codex-assign's refusal of a child
+rests on CODEX_THREAD_ID, which a child's command can set, so neither holds against a child that sets out to evade.
+The task name is the child's rollout session_meta `agent_path` (`/root/<task_name>`) when that meta's id is the
+payload's `agent_id`. A session is checked only when the index or the turn cwd's `.git` (read without git) leads to
+a record directory; else the call is allowed before any parsing, as is every call of the parent. Once found, each
+written path is judged by the record in the checkout it lands in: a `writes: none` agent gets the decisions above,
+a child with no record there, or a corrupt one, is held to the reports, a relative target is denied unless the
+child writes in its turn cwd's checkout. The hook always exits 0: before the records are found an error allows,
+after it denies, as does a call it cannot judge within 5 s. apply_patch paths (the tool's or a shell heredoc's) are
+writes.
 
 Not caught: a target known only at run time (`$VAR`, `$(...)`, globs), `>&` to a file, `<>`, escaped spaces, `#`
 inside a word, a shell's `-c` string, `sudo tee` or `xargs tee`, a `cd` that does not run (`false && cd x`), a symlink
@@ -414,8 +417,9 @@ def codex(event):
 
 def assign(args):
     """`codex-assign --task <task_name> --agent-file <abs> [--worktree <abs>]`: the Codex parent records a native
-    child's assignment before `spawn_agent`, since the child's task message is stored encrypted. Run from inside the
-    checkout the child works in. An existing record is never overwritten. The refusal of a child's shell, where
+    child's assignment before `spawn_agent`, since the child's task message is stored encrypted, and indexes the
+    checkout under the session in the Automattic state directory. Run from inside the checkout the child works in.
+    An existing record is never overwritten, though `rm` can remove it. The refusal of a child's shell, where
     CODEX_THREAD_ID is not the root session's id, is advisory: a child's command can set that variable."""
     parser = argparse.ArgumentParser(prog='read_only_writes.py codex-assign')
     parser.add_argument('--task', required=True)
