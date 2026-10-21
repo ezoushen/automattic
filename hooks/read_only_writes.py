@@ -344,10 +344,11 @@ def recording_mains(session, cwd):
     """The main checkouts holding the session's record directory: those its index names, and the turn cwd's, found
     without git (the index may lie in another state directory); only those whose record directory exists. Each
     source is read on its own, so a bad one hides none of the others."""
-    index, found = state_index(session), []
+    found = []
     try:
+        index = state_index(session)
         entries = list(index.iterdir()) if index.is_dir() else []
-    except OSError:
+    except (OSError, RuntimeError):  # RuntimeError: no home directory to name the state directory from.
         entries = []
     for source in [*(entry.read_text for entry in entries), lambda: git_main(Path(os.path.realpath(cwd)))]:
         try:
