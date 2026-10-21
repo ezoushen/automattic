@@ -415,8 +415,8 @@ def checkout_change(baseline, now):
     if 'submodules' not in baseline:
         # Recorded before nested checkouts and directories Git cannot open were: a nested checkout was a marker and
         # such a directory was left out, so they are compared that way.
-        after = {name: 'unreadable:EISDIR' if isinstance(entry, dict) else entry for name, entry in after.items()
-                 if not isinstance(entry, dict) or is_checkout(entry) or name in before}
+        after = {name: 'unreadable:EISDIR' if is_checkout(entry) else entry for name, entry in after.items()
+                 if not isinstance(entry, dict) or is_checkout(entry)}
     if appeared := sorted(set(after) - set(before)):
         return f'an untracked file appeared: {appeared[0]}', True
     if deleted := sorted(set(before) - set(after)):

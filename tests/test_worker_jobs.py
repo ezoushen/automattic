@@ -607,7 +607,7 @@ sys.exit(process.returncode)
         head = self.checkout()
         self.lock(self.worktree / 'locked')
         subprocess.run(['git', 'init', '-q', str(self.worktree / 'nested')], check=True)
-        for number, added in enumerate((None, 'notes.txt'), 1):
+        for number, added in enumerate((None, 'notes.txt', 'locked nested'), 1):
             with self.subTest(added=added):
                 attempt = f'review-{number}/1'
                 report = self.review(head, attempt, f'native-{number}')
@@ -618,15 +618,20 @@ sys.exit(process.returncode)
                     del baseline['submodules'], baseline['untracked']['locked/']
                     baseline['untracked']['nested/'] = 'unreadable:EISDIR'
                     db.execute('UPDATE attempts SET data = ? WHERE id = ?', (json.dumps(data), attempt))
-                if added:
+                if added == 'notes.txt':
                     (self.worktree / added).write_text('scratch\n')
+                elif added:
+                    # Git cannot open it now, so it leaves the listing, as it did for the older code.
+                    (self.worktree / 'nested').chmod(0)
+                    self.addCleanup((self.worktree / 'nested').chmod, 0o700)
                 request = self.collect_request(head, report)
                 if not added:
                     self.cli('collect', '--attempt', attempt, '--input', request)
                     continue
                 error = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
-                self.assertIn('Collection requires an unchanged worktree for a read-only agent (an untracked file '
-                              'appeared: notes.txt); restore it and collect again', error)
+                reason = {'notes.txt': 'an untracked file appeared: notes.txt); restore it and collect again',
+                          'locked nested': 'an untracked file was deleted: nested/); record the result with its gap'}
+                self.assertIn(f'Collection requires an unchanged worktree for a read-only agent ({reason[added]}', error)
 
     @unittest.skipIf(os.geteuid() == 0, 'root reads any directory')
     def test_a_checkout_whose_top_cannot_be_listed_is_named_partly_checked_and_held_to_its_status(self):
