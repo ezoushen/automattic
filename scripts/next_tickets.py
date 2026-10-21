@@ -5,8 +5,9 @@
 
 No action: JSON candidates. No slug: all efforts. Other efforts still hold locks.
 Actions: --board, --counts, --check, --accept TICKET,
-         --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID), --coordinate.
---set TICKET status=blocked also needs blocker=REASON, which the ticket's front matter keeps.
+         --can-verify TICKET, --delivery, --set TICKET status=VALUE (or worker=ID, start=SHA), --coordinate.
+--set TICKET status=blocked also needs blocker=REASON, which the ticket's front matter keeps. Entering implementing
+records start: (the effort branch head) when the ticket has none; start never changes once recorded.
 Only --set may be combined with --counts. --accept also runs the effort's standing measurements
 (.scratch/<slug>/measurements.json) at the ticket head, in a clean checkout, and refuses a missing or worse value.
 --delivery names each failing field. --coordinate [--autofix] records the calling session (its Herdr pane and host
@@ -303,7 +304,7 @@ def accept(tickets, name):
             problems.append(f"no listed commit under ## Implemented is past base on {branch}")
     notes = []
     if not problems:
-        problems, notes = measurement_results(tickets[name], ref, base.group(1))
+        problems, notes = measurement_results(tickets[name], ref)
     for p in problems:
         print(f"{name}: {p}", file=sys.stderr)
     if not problems:
@@ -313,7 +314,7 @@ def accept(tickets, name):
     return not problems
 
 
-def measurement_results(fm, ref, base):
+def measurement_results(fm, ref):
     """Run the effort's standing measurements at the ticket head; (problems, notes on what the ticket's `allows` excused).
 
     A ticket may not change what measures a metric (its entry's `paths`) nor make a metric worse than its baseline,
@@ -338,7 +339,7 @@ def measurement_results(fm, ref, base):
     if problem:
         return [problem], []
     allowed = str(fm.get("allows", "")).split()
-    problems, notes = tool_changes(fm, entries, allowed, ref, base)
+    problems, notes = tool_changes(fm, entries, allowed, ref)
     if problems:
         return problems, notes
     head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", f"{ref}^{{commit}}"],
@@ -371,18 +372,26 @@ def measurement_results(fm, ref, base):
     return problems, notes
 
 
-def tool_changes(fm, entries, allowed, ref, base):
+def tool_changes(fm, entries, allowed, ref):
     """(problems, notes) for tickets that changed files an entry lists in `paths`.
 
     A delegated ticket is compared with the merge-base with its effort branch (main when the effort has none): that
     excludes what it merged in from the effort, and a builder cannot hide an edit by moving `base:`. A stacked ticket
     changed a file only when it also differs from each dependency head its head contains, so a dependency's own change
-    waits for that ticket's own acceptance. A ticket on the effort branch itself (inline) has only the report's `base:`.
-    Only `allows: <metric> tool` with its ledger citation excuses an entry; the file names go in the problem or note.
+    waits for that ticket's own acceptance. A ticket on the effort branch itself (inline) is compared from the `start:`
+    recorded when it moved into implementing, which the effort branch must contain. Only `allows: <metric> tool` with
+    its ledger citation excuses an entry; the file names go in the problem or note.
     """
     slug = spec_of(fm["ticket"])
     effort = branch_ref(effort_branch(slug)) or "refs/heads/main"
-    start = base
+    start = str(fm.get("start") or "")
+    fix = f"record the effort branch commit it started from with --set {fm['ticket']} start=<sha>"
+    if ref == effort and not start:
+        return [f"an inline ticket is compared from its start:, and it has none; {fix}"], []
+    if ref == effort and not (re.fullmatch("[0-9a-f]{40}", start) and subprocess.run(
+            ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", start, ref], capture_output=True).returncode == 0):
+        return [f"start: {start} is not an ancestor of {ref.removeprefix('refs/heads/')}; delete that line from the "
+                f"ticket, then {fix}"], []
     if ref != effort:
         fork = subprocess.run(["git", "-C", str(ROOT), "merge-base", effort, ref], capture_output=True, text=True)
         if fork.returncode:
@@ -553,6 +562,13 @@ def uncommitted(checkout):
     return sorted(line[3:] for line in status.stdout.splitlines())
 
 
+def commit_of(rev):
+    """The 40-hex commit rev names, else None."""
+    named = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", "--quiet", "--end-of-options",
+                            f"{rev}^{{commit}}"], capture_output=True, text=True)
+    return named.stdout.strip() if named.returncode == 0 else None
+
+
 def checkout_of(ref):
     """The worktree, the main checkout included, that has ref checked out, else None."""
     listing = subprocess.run(["git", "-C", str(ROOT), "worktree", "list", "--porcelain"],
@@ -578,16 +594,30 @@ def listed_commit_on(text, base, ref):
 
 
 def set_field(tickets, name, assignments):
-    """Write each `key=value` to the ticket's front matter; a blocked ticket keeps its reason as `blocker`."""
+    """Write each `key=value` to the ticket's front matter; a blocked ticket keeps its reason as `blocker`.
+
+    A ticket moving into implementing from a status that is not live records `start:`, the effort head it starts
+    from, unless it has one; `start` is written once and never changed.
+    """
     fields = {}
     for assignment in assignments:
         key, equals, value = assignment.partition("=")
-        if not equals or key not in {"status", "worker", "blocker"} or any(c in value for c in "\r\n"):
-            sys.exit(f"{name}: --set accepts one-line status=, worker= or blocker= only")
+        if not equals or key not in {"status", "worker", "blocker", "start"} or any(c in value for c in "\r\n"):
+            sys.exit(f"{name}: --set accepts one-line status=, worker=, blocker= or start= only")
         fields[key] = value.strip() if key == "blocker" else value
     if "status" in fields and fields["status"] not in STATUSES:
         sys.exit(f"{name}: status {fields['status']!r} is not one of {sorted(STATUSES)}")
     fm = tickets[name]
+    if "start" in fields:
+        if fm.get("start"):
+            sys.exit(f"{name}: start is {fm['start']} already and never changes")
+        if not re.fullmatch("[0-9a-f]{40}", fields["start"]) or commit_of(fields["start"]) != fields["start"]:
+            sys.exit(f"{name}: start={fields['start']} is not a 40-hex commit of this repository")
+    elif fields.get("status") == "implementing" and not fm.get("start") and fm.get("status") not in LIVE:
+        effort = effort_branch(spec_of(name))
+        fields["start"] = commit_of(branch_ref(effort) or "refs/heads/main")
+        if not fields["start"]:
+            sys.exit(f"{name}: no effort branch ({effort}) or main to record the start of implementing from")
     if fields.get("status") == "blocked" and not fields.get("blocker"):
         stored = f", even with one stored ({fm['blocker']!r})" if fm.get("blocker") else ""
         sys.exit(f"{name}: status=blocked needs the reason too{stored}: "
@@ -602,7 +632,7 @@ def set_field(tickets, name, assignments):
         pattern = re.compile(rf"^({re.escape(key)}:).*$", re.M)
         if pattern.search(head):
             head = pattern.sub(lambda match: f"{match[1]} {value}", head, count=1)
-        elif key in ('status', 'blocker'):
+        elif key in ('status', 'blocker', 'start'):
             head += f'\n{key}: {value}'
         else:
             sys.exit(f"{name}: no front-matter key {key!r}")

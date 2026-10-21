@@ -100,6 +100,9 @@ class BoardCLI(unittest.TestCase):
         subprocess.run(['git', 'init', '-q', '-b', 'main', str(self.root)], check=True)
 
     def write_ticket(self, name, status='ready', touches='runtime', blocked='', devices='', extra=''):
+        # inline/01 of a measured effort keeps the start measured_ticket recorded, as --set would have.
+        if name == 'inline/01' and getattr(self, 'inline_start', None) and 'start:' not in extra:
+            extra += f'start: {self.inline_start}\n'
         slug, number = name.split('/')
         path = self.root / '.scratch' / slug / 'issues' / f'{number}-task.md'
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -178,6 +181,55 @@ class BoardCLI(unittest.TestCase):
         self.cli('active', '--set', 'active/01', 'status=ready')
         fm = nt.parse_front_matter(path.read_text())
         assert (fm['status'], 'blocker' in fm) == ('ready', False), fm
+
+    def test_a_ticket_moved_into_implementing_records_the_effort_head_it_starts_from(self):
+        # Rule (T12.2): the first move into implementing records `start:`, the effort branch head (main when the effort
+        # has none); a recorded start never changes, and a ticket already live is not given one.
+        start = lambda path: nt.parse_front_matter(path.read_text()).get('start')
+        first = self.write_ticket('active/01')
+        before = first.read_text()
+        refused = self.cli('active', '--set', 'active/01', 'status=implementing', code=1).stderr
+        assert refused == ('active/01: no effort branch (feat/active) or main to record the start of implementing '
+                           'from\n'), refused
+        assert first.read_text() == before
+        on_main = self.commit('main head')
+        self.cli('active', '--set', 'active/01', 'status=implementing')
+        assert start(first) == on_main, first.read_text()
+        self.git('switch', '-q', '-c', 'feat/active')
+        effort_head = self.commit('effort head')
+        self.git('switch', '-q', 'main')
+        self.commit('main moves on')
+        for status in ('ready', 'blocked'):
+            path = self.write_ticket('active/02', status, touches='docs', extra='blocker: waits\n')
+            self.cli('active', '--set', 'active/02', 'status=implementing')
+            assert start(path) == effort_head, (status, path.read_text())
+        self.cli('active', '--set', 'active/02', 'status=reviewing')
+        self.cli('active', '--set', 'active/02', 'status=implementing')
+        assert start(path) == effort_head, path.read_text()
+        self.cli('active', '--set', 'active/02', 'status=ready')
+        self.git('switch', '-q', 'feat/active')
+        self.commit('the effort moves on')
+        self.cli('active', '--set', 'active/02', 'status=implementing')
+        assert start(path) == effort_head, path.read_text()
+        for status in ('reviewing', 'fixing', 'implementing'):
+            live = self.write_ticket('active/03', status, touches='tests')
+            self.cli('active', '--set', 'active/03', 'status=implementing')
+            assert start(live) is None, (status, live.read_text())
+
+    def test_start_is_set_by_hand_only_while_absent_and_only_to_a_commit(self):
+        # Rule (T12.2): `--set start=<sha>` records a missing start; changing a recorded one is refused, file unchanged.
+        path = self.write_ticket('active/01', 'reviewing')
+        first, second = self.commit('first'), self.commit('second')
+        for value in ('main', first[:7], first.upper(), '-' + first[1:], 'f' * 40, ''):
+            refused = self.cli('active', '--set', 'active/01', f'start={value}', code=1).stderr
+            assert refused == f'active/01: start={value} is not a 40-hex commit of this repository\n', (value, refused)
+        self.cli('active', '--set', 'active/01', f'start={first}')
+        recorded = path.read_text()
+        assert nt.parse_front_matter(recorded)['start'] == first, recorded
+        for value in (second, first):
+            refused = self.cli('active', '--set', 'active/01', f'start={value}', code=1).stderr
+            assert refused == f'active/01: start is {first} already and never changes\n', (value, refused)
+            assert path.read_text() == recorded
 
     def git(self, *args):
         return subprocess.run(['git', '-C', str(self.root), *args], check=True,
@@ -258,10 +310,10 @@ class BoardCLI(unittest.TestCase):
 
         `tracked` files are committed at the base; the ticket commit edits `edits`.
         """
-        self.write_ticket('inline/01', 'implementing', extra=extra)
         self.write_files(tracked)
         self.commit_gitignore()
-        base = self.commit('base')
+        base = self.inline_start = self.commit('base')
+        self.write_ticket('inline/01', 'implementing', extra=extra)
         self.git('switch', '-q', '-c', 'feat/inline')
         self.record_measurement(command, **entry)
         self.write_files(edits)
@@ -685,6 +737,50 @@ class BoardCLI(unittest.TestCase):
         self.record_measurement('sh measure.sh', paths=['measure.sh'])
         self.write_report(fork, 'feat/inline-01', [self.git('-C', str(worktree), 'rev-parse', 'HEAD')])
         assert 'carry the evidence' in self.cli('inline', '--accept', 'inline/01').stdout
+
+    def test_an_inline_ticket_is_compared_from_its_recorded_start_not_from_the_reports_base(self):
+        # Rule (T12.2): on the effort branch itself the diff runs from the `start:` recorded when the ticket moved into
+        # implementing; a base: moved past a tool edit hides nothing, and an earlier ticket's edit is not this one's.
+        self.write_ticket('inline/01')
+        self.write_files({'measure.sh': 'echo recall 100\n', 'src.txt': 'x\n'})
+        self.commit_gitignore()
+        base = self.commit('base')
+        self.git('switch', '-q', '-c', 'feat/inline')
+        self.write_files({'measure.sh': 'echo recall 100 # an earlier ticket\n'})
+        self.commit('an earlier ticket on the effort branch')
+        self.cli('inline', '--set', 'inline/01', 'status=implementing')
+        self.write_files({'src.txt': 'the ticket work\n'})
+        work = self.commit('ticket work')
+        self.record_measurement('sh measure.sh', paths=['measure.sh'])
+        self.write_report(base, 'feat/inline', [work])
+        accepted = self.cli('inline', '--accept', 'inline/01').stdout
+        assert accepted == "inline/01: report and branch carry the evidence; judge the content now\n", accepted
+        self.write_files({'measure.sh': 'echo recall 100 # this ticket\n'})
+        moved = self.commit('the ticket edits the tool')
+        self.write_report(moved, 'feat/inline', [self.commit('later work')])
+        assert self.refusal() == ("inline/01: measurement 'recall tool': the ticket changed what measures recall "
+                                  "(measure.sh); that needs allows: recall tool citing a ledger row\n"), self.refusal()
+
+    def test_an_inline_ticket_without_a_start_on_its_branch_is_refused_naming_the_fix(self):
+        # Rule (T12.2): no `start:`, or one the effort branch does not contain, leaves nothing to compare from.
+        self.write_ticket('inline/01', 'implementing')
+        self.commit_gitignore()
+        base = self.commit('base')
+        self.git('switch', '-q', '-c', 'side')
+        aside = self.commit('never on the effort branch')
+        self.git('switch', '-q', '-c', 'feat/inline', base)
+        self.record_measurement('echo recall 100', paths=['measure.sh'])
+        self.write_report(base, 'feat/inline', [self.commit('ticket work')])
+        assert self.refusal() == ("inline/01: an inline ticket is compared from its start:, and it has none; record "
+                                  "the effort branch commit it started from with --set inline/01 start=<sha>\n"), \
+            self.refusal()
+        for start in (aside, 'abc', '-h', 'f' * 40):
+            self.write_ticket('inline/01', 'implementing', extra=f'start: {start}\n')
+            assert self.refusal() == (f"inline/01: start: {start} is not an ancestor of feat/inline; delete that line "
+                                      "from the ticket, then record the effort branch commit it started from with "
+                                      "--set inline/01 start=<sha>\n"), (start, self.refusal())
+        self.write_ticket('inline/01', 'implementing', extra=f'start: {base}\n')
+        self.cli('inline', '--accept', 'inline/01')
 
     def stacked_tickets(self):
         """inline/01 (A) edits measure.sh on its branch; inline/02 (B), blocked by A, forks from A's head and edits src.txt.
