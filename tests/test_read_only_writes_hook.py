@@ -662,5 +662,32 @@ class CodexChildren(Checkouts):
                            'Codex child review_1')
 
 
+    def test_one_bad_source_does_not_hide_the_records_the_other_names(self):
+        # Rule (T15 review G6): the index entries and the turn cwd's `.git` are read independently, a bad one skipped
+        # and the walk up continuing past a `.git` that names no git directory, so a forbidden write stays denied with
+        # a directory or non-UTF-8 index entry, or a junk `.git` in the child's own worktree or a directory under it,
+        # with the index present or in another state directory.
+        other = self.main / '.worktrees/review-2'
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        forbidden = {'command': f'echo x > {quote(str(other / "a.py"))}'}
+        index = self.tmp / 'state/automattic/codex-children/s1'
+        (index / 'x').mkdir()
+        (index / 'y').write_bytes(b'\xff\xfe')
+        self.assert_denied(self.run_codex('Bash', forbidden), other / 'a.py', 'Codex child review_1')
+        (self.worktree / 'sub').mkdir()
+        (self.worktree / 'sub/.git').write_text('\n')
+        dot = self.worktree / '.git'
+        saved = dot.read_text()
+        self.addCleanup(dot.write_text, saved)
+        dot.write_text('junk\n')
+        for state in ('state', 'elsewhere'):
+            self.env['XDG_STATE_HOME'] = str(self.tmp / state)
+            for cwd in (self.worktree, self.worktree / 'sub'):
+                with self.subTest(state=state, cwd=cwd):
+                    decision = self.run_codex('Bash', forbidden, cwd=cwd)
+                    self.assert_denied(decision, other / 'a.py', 'Codex child review_1')
+
+
 if __name__ == '__main__':
     unittest.main()

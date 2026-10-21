@@ -320,13 +320,17 @@ def state_index(session):
 
 def git_main(directory):
     """The main checkout of the repository holding a directory, read from its `.git` without running git (a linked
-    worktree's `.git` file names its git directory, whose `commondir` leads to the main one); None outside any."""
+    worktree's `.git` file names its git directory, whose `commondir` leads to the main one); a `.git` file that
+    names no git directory is passed over, as junk a child may write; None outside any repository."""
     for place in (directory, *directory.parents):
         dot = place / '.git'
         if dot.is_dir():
             return place
-        if dot.is_file():
-            gitdir = place / dot.read_text().split('gitdir:', 1)[1].strip()
+        try:
+            gitdir = place / dot.read_text().split('gitdir:', 1)[1].strip() if dot.is_file() else None
+        except (OSError, ValueError, IndexError):
+            continue
+        if gitdir and gitdir.is_dir():
             common = gitdir / 'commondir'
             return Path(os.path.realpath(gitdir / common.read_text().strip() if common.is_file() else gitdir)).parent
     return None
@@ -334,11 +338,22 @@ def git_main(directory):
 
 def recording_mains(session, cwd):
     """The main checkouts holding the session's record directory: those its index names, and the turn cwd's, found
-    without git (the index may lie in another state directory); only those whose record directory exists."""
-    index = state_index(session)
-    named = [Path(os.path.realpath(entry.read_text().strip())) for entry in index.iterdir()] if index.is_dir() else []
-    mains = [*named, git_main(Path(os.path.realpath(cwd)))]
-    return list(dict.fromkeys(main for main in mains if main and (main / RECORDS / session).is_dir()))
+    without git (the index may lie in another state directory); only those whose record directory exists. Each
+    source is read on its own, so a bad one hides none of the others."""
+    index, found = state_index(session), []
+    try:
+        entries = list(index.iterdir()) if index.is_dir() else []
+    except OSError:
+        entries = []
+    for source in [*(entry.read_text for entry in entries), lambda: git_main(Path(os.path.realpath(cwd)))]:
+        try:
+            named = source()
+            main = named and Path(os.path.realpath(str(named).strip()))
+            if main and (main / RECORDS / session).is_dir():
+                found.append(main)
+        except (OSError, ValueError):
+            continue
+    return list(dict.fromkeys(found))
 
 
 def judge(event, command, cwd, session, mains, task):
