@@ -7,10 +7,11 @@ NotebookEdit of a file inside the main checkout or one of its worktrees (the ses
 except under the main checkout's .scratch/<slug>/reports/ and in the `worktree:` the subagent's assignment names,
 whose temporary experiment edits collection's restored-worktree check guards. The assignment is the first user
 message of the subagent's own transcript, <session transcript without .jsonl>/subagents/agent-<agent_id>.jsonl,
-present from its first tool call, so a write before registration is judged the same. Anything outside the family
-(/tmp, the scratchpad, an isolated copy) is allowed, and so is everything for a session outside any checkout. It
+present from its first tool call, so a write before registration is judged the same; anything under that session
+directory is always denied, so the agent cannot widen its own assignment. Anything else outside the family (/tmp,
+the scratchpad, an isolated copy) is allowed, and so is it all for a session outside any checkout. It
 also denies a Bash command that clearly writes such a file: a `>`, `>>`, `>|`, `&>` or `&>>` redirect, or `tee`, to
-a literal path, relative ones following the command's own `cd`, real paths resolved. Collection's read-only worktree
+a literal path, relative ones following the command's own `cd`, `pushd` or `builtin cd`, real paths resolved. Collection's read-only worktree
 check cannot see a write outside the worktree, since a subagent's transcript carries its coordinator's directory.
 The reports and paths outside the family are decided before anything else is read; a check that cannot run for a
 path inside the family denies the call.
@@ -95,6 +96,18 @@ def tokens(command):
     return found
 
 
+def directory(words, cwd):
+    """The directory a `cd` or `pushd` moves to, past its flags and `--`; None when unknown (`cd -`, a stack entry)."""
+    args = words[1:]
+    while args and args[0].startswith('-') and args[0] != '-':
+        flag, args = args[0], args[1:]
+        if flag == '--':
+            break
+    if not args:
+        return None if words[0] == 'pushd' else literal('~', cwd)  # A bare pushd swaps the top two entries.
+    return None if args[0] == '-' or args[0].startswith('+') else literal(args[0], cwd)
+
+
 def shell_writes(command, cwd):
     """The literal paths a Bash command writes by redirection or `tee`, following its own `cd`."""
     written, words, subshells, at, items = [], [], [], 0, tokens(command)
@@ -115,8 +128,12 @@ def shell_writes(command, cwd):
             words = pr_body.unwrap(words)
             while words and pr_body.ASSIGNMENT.match(words[0]):
                 words = pr_body.unwrap(words[1:])
-            if words[:1] == ['cd']:
-                cwd = literal(words[1] if len(words) > 1 else '~', cwd)
+            if words[:1] == ['builtin']:
+                words = words[1:]
+            if words[:1] in (['cd'], ['pushd']):
+                cwd = directory(words, cwd)
+            elif words[:1] == ['popd']:
+                cwd = None  # Back to a directory the command may not show.
             elif words and Path(words[0]).name == 'tee':
                 written += [literal(word, cwd) for word in words[1:] if not word.startswith('-')]
             words = []
@@ -156,17 +173,22 @@ def protected(paths, cwd, event):
     """(main checkout, assigned worktree, the paths a read-only agent may not write): those inside the main checkout or
     one of its worktrees, outside its reports and the assigned worktree. The reports and paths outside those checkouts
     are decided first, so no later lookup can deny them."""
+    resolved = [os.path.realpath(os.path.join(cwd, os.path.expanduser(path))) for path in paths]
+    # The session's transcripts hold the assignment that widens what the agent may write, so it never writes them.
+    transcript = event.get('transcript_path') or ''
+    sessions = Path(os.path.realpath(transcript[:-len('.jsonl')])) if transcript.endswith('.jsonl') else None
+    own = [path for path in resolved if sessions and Path(path).is_relative_to(sessions)]
+    resolved = [path for path in resolved if path not in own]
     main = yield_gate.main_checkout(cwd)
     if main is None:
-        return None, None, []  # A session outside any checkout protects none.
-    resolved = [os.path.realpath(os.path.join(cwd, os.path.expanduser(path))) for path in paths]
+        return None, None, own  # A session outside any checkout protects none of them.
     held = [path for path in resolved if not in_reports(path, main)]
     family = checkouts(main) if held else []
     held = [path for path in held if any(Path(path).is_relative_to(checkout) for checkout in family)]
     assigned = assigned_worktree(event) if held else None
     if assigned not in family[1:]:  # Only a worktree of the family, never the main checkout itself.
         assigned = None
-    return main, assigned, [path for path in held if not (assigned and Path(path).is_relative_to(assigned))]
+    return main, assigned, own + [path for path in held if not (assigned and Path(path).is_relative_to(assigned))]
 
 
 def main():
@@ -188,8 +210,9 @@ def main():
         return
     if written:
         own = f' and in its assigned worktree {assigned}' if assigned else ''
-        deny(f'{event["agent_type"]} is read-only (writes: none): inside the checkouts it writes only its report under '
-             f'{root}/.scratch/<slug>/reports/{own}, and {", ".join(written)} is outside them '
+        where = f'its report under {root}/.scratch/<slug>/reports/{own}' if root else 'no file'
+        deny(f'{event["agent_type"]} is read-only (writes: none): inside the checkouts it writes only {where}, '
+             f'and never its session\'s transcripts; {", ".join(written)} is outside that '
              f'({ROOT}/agents/{agent}.md).')
 
 

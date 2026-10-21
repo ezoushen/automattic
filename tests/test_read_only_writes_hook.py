@@ -109,9 +109,32 @@ class ReadOnlyWrites(unittest.TestCase):
             self.assertIn(f'its assigned worktree {self.worktree}', decision['permissionDecisionReason'])
         self.assert_denied(self.run_hook('Bash', {'command': f'echo x > {quote(str(tracked))}'}), tracked)
         self.assert_denied(self.run_hook('Edit', {'file_path': str(tracked), **edit}, agent_id='a4'), tracked)
+        # Rule (T11 re-review): `cd` with flags, `pushd` and `builtin cd` move the command like `cd`, so a relative
+        # write after them leaves the assigned worktree.
+        main = quote(str(self.main))
+        for command in (f'cd -P {main}; echo x > src/app.py', f'cd -- {main}; echo x > src/app.py',
+                        f'cd -L -P -- {main} && echo x > src/app.py', f'pushd {main} && echo x > src/app.py',
+                        f'builtin cd {main} && echo x > src/app.py'):
+            with self.subTest(command=command):
+                self.assert_denied(self.run_hook('Bash', {'command': command}), tracked)
         unassigned = self.run_hook('Edit', {'file_path': str(mine), **edit}, agent_id='a3')
         self.assert_denied(unassigned, mine)
         self.assertNotIn('assigned worktree', unassigned['permissionDecisionReason'])
+
+    def test_a_read_only_agent_never_rewrites_its_sessions_transcripts(self):
+        # Rule (T11 re-review): the assignment that widens the allowance is read from the session's transcript
+        # directory (`transcript_path` without `.jsonl`), so a read-only agent may not write anything under it, from
+        # inside a checkout or outside any.
+        own = self.assign('a1', f'worktree: {self.worktree}\n')
+        sibling = self.tmp / 'session/subagents/agent-a2.jsonl'
+        for path in (own, sibling):
+            with self.subTest(path=path):
+                self.assert_denied(self.run_hook('Write', {'file_path': str(path), 'content': 'x'}), path)
+                self.assert_denied(self.run_hook('Bash', {'command': f'echo x >> {quote(str(path))}'}), path)
+                decision = self.run_hook('Edit', {'file_path': str(path), 'old_string': 'a', 'new_string': 'b'},
+                                         cwd=Path('/'))
+                self.assertEqual((decision or {}).get('permissionDecision'), 'deny', path)
+                self.assertIn(str(path), decision['permissionDecisionReason'])
 
     def test_writes_to_the_reports_or_outside_the_checkouts_never_fail_on_an_unrelated_lookup(self):
         # Rule (T11 review): the reports and paths outside the checkout family are decided before the assignment is
@@ -141,6 +164,7 @@ class ReadOnlyWrites(unittest.TestCase):
             'tee -a out.log < /dev/null': log,
             f'cd {quote(str(self.worktree / "src"))} && echo x >app.py': app,
             'npm test &> out.log': log,
+            'cd -- -x && echo x > a.py': self.worktree / '-x/a.py',  # After `--`, `-x` is the directory.
             f'cat <<EOF > {quote(str(app))}\nx\nEOF': app,
             f'git -C {quote(str(self.worktree))} status; echo x > "{app}"': app,
             f'echo x > {quote("/dev/.." + str(app))}': app,  # Resolved before any device is exempt.
