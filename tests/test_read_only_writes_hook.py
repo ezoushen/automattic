@@ -11,7 +11,6 @@ import unittest
 import support
 
 HOOK = support.HOOKS / 'read_only_writes.py'
-LIFECYCLE = support.ROOT / 'scripts' / 'worker_lifecycle.py'
 
 
 class ReadOnlyWrites(unittest.TestCase):
@@ -20,20 +19,32 @@ class ReadOnlyWrites(unittest.TestCase):
     def setUp(self):
         tmp = tempfile.TemporaryDirectory(prefix='automattic read-only ')
         self.addCleanup(tmp.cleanup)
-        self.main = Path(tmp.name).resolve() / 'project'
+        self.tmp = Path(tmp.name).resolve()
+        self.main = self.tmp / 'project'
         self.main.mkdir()
-        git = ['git', '-C', str(self.main), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+        self.git = ['git', '-C', str(self.main), '-c', 'user.name=t', '-c', 'user.email=t@t',
+                    '-c', 'commit.gpgsign=false']
         subprocess.run(['git', 'init', '-q', str(self.main)], check=True)
-        subprocess.run(git + ['commit', '-q', '--allow-empty', '-m', 'init'], check=True)
+        subprocess.run(self.git + ['commit', '-q', '--allow-empty', '-m', 'init'], check=True)
         self.worktree = self.main / '.worktrees/review-1'
-        subprocess.run(git + ['worktree', 'add', '-q', '--detach', str(self.worktree)], check=True)
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(self.worktree)], check=True)
         self.reports = self.main / '.scratch/effort/reports'
         self.reports.mkdir(parents=True)
+        # The coordinator's transcript; a subagent's own lies beside it, in <session>/subagents/agent-<agentId>.jsonl.
+        self.transcript = self.tmp / 'session.jsonl'
+
+    def assign(self, agent_id, text):
+        """Write a subagent's transcript whose first user message is its assignment, as Claude Code records it."""
+        path = self.tmp / 'session/subagents' / f'agent-{agent_id}.jsonl'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({'type': 'user', 'isSidechain': True, 'agentId': agent_id,
+                                    'message': {'role': 'user', 'content': text}}) + '\n')
+        return path
 
     def run_hook(self, tool, tool_input, agent='automattic:reviewer', cwd=None, agent_id='a1'):
         """The hook's decision for one tool call a subagent of type `agent` (None: the main session) makes."""
         payload = {'hook_event_name': 'PreToolUse', 'tool_name': tool, 'tool_input': tool_input,
-                   'cwd': str(cwd or self.worktree), 'session_id': 'host-1',
+                   'cwd': str(cwd or self.worktree), 'session_id': 'host-1', 'transcript_path': str(self.transcript),
                    **({'agent_type': agent, 'agent_id': agent_id} if agent else {})}
         result = subprocess.run([sys.executable, str(HOOK)], input=json.dumps(payload), capture_output=True,
                                 text=True, timeout=20)
@@ -47,19 +58,21 @@ class ReadOnlyWrites(unittest.TestCase):
         for words in (agent, 'writes: none', str(path), f'{self.main}/.scratch/<slug>/reports/'):
             self.assertIn(words, reason)
 
-    def test_a_read_only_agent_edits_only_files_under_the_main_checkouts_reports(self):
+    def test_a_read_only_agent_without_an_assignment_writes_in_the_checkouts_only_under_the_reports(self):
         # Rule (T11): Edit, Write and NotebookEdit from a `writes: none` agent (reviewer, verifier, under its plugin
-        # name or a generated profile) are denied outside <main>/.scratch/<slug>/reports/; its report is allowed.
+        # name or a generated profile) are denied inside the main checkout and its worktrees, wherever they lie,
+        # except under <main>/.scratch/<slug>/reports/; outside that family (/tmp, an isolated copy) they are allowed.
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(self.tmp / 'elsewhere-wt')], check=True)
         inside = self.worktree / 'src/app.py'
         report = self.reports / '03.md'
         notebook = self.worktree / 'n.ipynb'
-        elsewhere = Path('/private/var/tmp/automattic-probe.txt')
+        family = self.tmp / 'elsewhere-wt/src/app.py'
+        edit = {'old_string': 'a', 'new_string': 'b'}
         for agent in ('automattic:reviewer', 'automattic:verifier', 'automattic-reviewer-0123456789ab'):
             with self.subTest(agent=agent):
-                self.assert_denied(self.run_hook('Edit', {'file_path': str(inside), 'old_string': 'a',
-                                                          'new_string': 'b'}, agent), inside, agent)
-                self.assert_denied(self.run_hook('Write', {'file_path': str(elsewhere), 'content': 'x'}, agent),
-                                   elsewhere, agent)
+                self.assert_denied(self.run_hook('Edit', {'file_path': str(inside), **edit}, agent), inside, agent)
+                self.assert_denied(self.run_hook('Write', {'file_path': str(family), 'content': 'x'}, agent),
+                                   family, agent)
                 self.assert_denied(self.run_hook('NotebookEdit', {'notebook_path': str(notebook), 'new_source': 'x'},
                                                  agent), notebook, agent)
                 # The reports directory itself, and a look-alike path that only starts with it, are not a report.
@@ -67,36 +80,24 @@ class ReadOnlyWrites(unittest.TestCase):
                 self.assert_denied(self.run_hook('Write', {'file_path': str(lookalike), 'content': 'x'}, agent),
                                    lookalike, agent)
                 escape = f'{self.reports}/../../../src/app.py'
-                self.assert_denied(self.run_hook('Edit', {'file_path': escape, 'old_string': 'a', 'new_string': 'b'},
-                                                 agent), self.main / 'src/app.py', agent)
-                self.assertIsNone(self.run_hook('Edit', {'file_path': str(report), 'old_string': 'a',
-                                                         'new_string': 'b'}, agent))
+                self.assert_denied(self.run_hook('Edit', {'file_path': escape, **edit}, agent),
+                                   self.main / 'src/app.py', agent)
+                self.assertIsNone(self.run_hook('Edit', {'file_path': str(report), **edit}, agent))
                 self.assertIsNone(self.run_hook('Write', {'file_path': str(self.reports / 'notes/run.log'),
                                                           'content': 'x'}, agent))
+                for outside in (self.tmp / 'copy/src/app.py', Path('/private/var/tmp/automattic-probe.txt')):
+                    self.assertIsNone(self.run_hook('Write', {'file_path': str(outside), 'content': 'x'}, agent))
 
-    def register(self, native_session, worktree):
-        """Register a reviewer attempt for `worktree` whose native session is `native_session`, as the coordinator
-        registers a Claude subagent by its agentId."""
-        execution = self.reports / 'execution.json'
-        execution.write_text(json.dumps({'agent': 'reviewer', 'job': 'reproduce', 'settings': {'model': 'sonnet'}}))
-        event = self.reports / 'register.json'
-        event.write_text(json.dumps({
-            'kind': 'register', 'attempt': f'review-{native_session}/1', 'assignment': f'review-{native_session}',
-            'repo': str(self.main), 'worktree': str(worktree), 'head': 'head-1', 'execution': str(execution),
-            'runtime': 'claude', 'worker': native_session, 'native_session': native_session, 'owned': True,
-            'packet': str(support.assignment_file(self.reports, 'reproduce'))}))
-        subprocess.run([sys.executable, '-B', str(LIFECYCLE), 'record', '--state', str(self.reports / 'workers.sqlite'),
-                        '--input', str(event)], check=True, capture_output=True)
-
-    def test_a_registered_read_only_agent_also_writes_in_its_own_worktree_only(self):
-        # Rule (T11, coordinator's decision): a reviewer keeps its temporary experiment edits, which collection's
-        # restored-worktree check guards, so the attempt whose native_session is the subagent's agent_id adds its
-        # registered worktree; another worktree and the main checkout stay denied, and an agent with no registered
-        # attempt gets the reports only.
+    def test_a_read_only_agent_also_writes_in_the_worktree_its_assignment_names(self):
+        # Rule (T11 review): a reviewer keeps its temporary experiment edits, which collection's restored-worktree
+        # check guards, in the `worktree:` its assignment (the first user message of its own transcript) names, before
+        # registration too; another worktree and the main checkout stay denied, and so does an assignment naming the
+        # main checkout; an agent with no readable assignment gets the reports only.
         other = self.main / '.worktrees/review-2'
-        subprocess.run(['git', '-C', str(self.main), 'worktree', 'add', '-q', '--detach', str(other)], check=True)
-        self.register('a1', self.worktree)
-        self.register('a2', other)
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
+        self.assign('a1', f'job_file: /plugin/skills/review/jobs/reproduce.md\nworktree: {self.worktree}\n'
+                          f'report: {self.reports}/03.md\n')
+        self.assign('a4', f'worktree: {self.main}\n')
         mine, theirs, tracked = self.worktree / 'src/app.py', other / 'src/app.py', self.main / 'src/app.py'
         edit = {'old_string': 'a', 'new_string': 'b'}
         self.assertIsNone(self.run_hook('Edit', {'file_path': str(mine), **edit}))
@@ -105,11 +106,29 @@ class ReadOnlyWrites(unittest.TestCase):
         for path in (tracked, theirs):
             decision = self.run_hook('Edit', {'file_path': str(path), **edit})
             self.assert_denied(decision, path)
-            self.assertIn(f'its registered worktree {self.worktree}', decision['permissionDecisionReason'])
+            self.assertIn(f'its assigned worktree {self.worktree}', decision['permissionDecisionReason'])
         self.assert_denied(self.run_hook('Bash', {'command': f'echo x > {quote(str(tracked))}'}), tracked)
-        unregistered = self.run_hook('Edit', {'file_path': str(mine), **edit}, agent_id='a3')
-        self.assert_denied(unregistered, mine)
-        self.assertNotIn('registered worktree', unregistered['permissionDecisionReason'])
+        self.assert_denied(self.run_hook('Edit', {'file_path': str(tracked), **edit}, agent_id='a4'), tracked)
+        unassigned = self.run_hook('Edit', {'file_path': str(mine), **edit}, agent_id='a3')
+        self.assert_denied(unassigned, mine)
+        self.assertNotIn('assigned worktree', unassigned['permissionDecisionReason'])
+
+    def test_writes_to_the_reports_or_outside_the_checkouts_never_fail_on_an_unrelated_lookup(self):
+        # Rule (T11 review): the reports and paths outside the checkout family are decided before the assignment is
+        # read, so a corrupt transcript denies neither; a session outside any checkout protects none.
+        self.assign('a5', 'not json').write_text('{not json\n')
+        report, scratch = self.reports / '03.md', self.tmp / 'scratch/notes.txt'
+        for agent_id, cwd in (('a5', None), ('a1', Path('/'))):
+            with self.subTest(agent_id=agent_id, cwd=cwd):
+                self.assertIsNone(self.run_hook('Write', {'file_path': str(report), 'content': 'x'},
+                                                cwd=cwd, agent_id=agent_id))
+                self.assertIsNone(self.run_hook('Write', {'file_path': str(scratch), 'content': 'x'},
+                                                cwd=cwd, agent_id=agent_id))
+                self.assertIsNone(self.run_hook('Bash', {'command': f'echo x > {quote(str(scratch))}'},
+                                                cwd=cwd, agent_id=agent_id))
+        # A corrupt assignment is no assignment: its worktree stays denied.
+        self.assert_denied(self.run_hook('Edit', {'file_path': str(self.worktree / 'a.py'), 'old_string': 'a',
+                                                  'new_string': 'b'}, agent_id='a5'), self.worktree / 'a.py')
 
     def test_a_read_only_agents_shell_redirects_and_tee_only_into_the_reports(self):
         # Rule (T11): a Bash command from a `writes: none` agent that clearly writes a literal path by `>`, `>>`,
@@ -124,6 +143,7 @@ class ReadOnlyWrites(unittest.TestCase):
             'npm test &> out.log': log,
             f'cat <<EOF > {quote(str(app))}\nx\nEOF': app,
             f'git -C {quote(str(self.worktree))} status; echo x > "{app}"': app,
+            f'echo x > {quote("/dev/.." + str(app))}': app,  # Resolved before any device is exempt.
         }
         for command, path in denied.items():
             with self.subTest(command=command):

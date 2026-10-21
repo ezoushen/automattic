@@ -59,8 +59,8 @@ Codex and Pi list it.
 - **Hooks.** SessionStart loads `bootstrap.md` and the host's session part. In Claude,
   PreToolUse checks require each Agent call to name a model and carry its job's inputs
   (`hooks/agent_model.py`), let `gh pr create|edit` publish only a linted body
-  (`hooks/pr_body.py`) and keep a read-only subagent's writes to its reports and
-  registered worktree (`hooks/read_only_writes.py`); a Stop check keeps the session alive while a worker could
+  (`hooks/pr_body.py`) and keep a read-only subagent's writes in the checkouts to its
+  reports and assigned worktree (`hooks/read_only_writes.py`); a Stop check keeps the session alive while a worker could
   finish unseen or a Herdr worker it launched is unregistered (`hooks/yield_gate.py`, fed
   by `hooks/herdr_launch.py`, which logs each `herdr agent start`; Pi and Codex apply the
   same gate). There is

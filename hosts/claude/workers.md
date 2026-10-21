@@ -125,13 +125,15 @@ Register it with its `agentId` as `native_session` and record startup with `nati
 transcript (`subagents/agent-<agentId>.jsonl` in the session's directory). Every row there
 carries the coordinator's session directory, not the subagent's own `cd`, so outside the
 assigned worktree it is a `status` warning, not a refusal. A `PreToolUse` hook
-(`hooks/read_only_writes.py`) denies a `writes: none` subagent (named in the call's `agent_type`)
-an Edit, Write or NotebookEdit outside the main checkout's `.scratch/<slug>/reports/` and the worktree
-of the attempt registered with its `agentId` as `native_session` (none without one; collection checks
-that worktree is restored), and a Bash `>`, `>>`, `&>` or `tee` to a literal path outside them. Only what it cannot see goes undetected: a path
-known only at run time (`$VAR`, `$(...)`), a shell's `-c` string, a program that opens files itself
-(`python -c`, `sed -i`, `cp`, `git`) and MCP tools. Against those, what holds is the agent's
-absolute-path rule and, for a builder, `--accept`'s check of its ticket branch.
+(`hooks/read_only_writes.py`) denies a `writes: none` subagent (its `agent_type`) Edit, Write,
+NotebookEdit and a Bash `>`, `>>`, `&>` or `tee` to a literal path in the main checkout or its
+worktrees, except `.scratch/<slug>/reports/` and the `worktree:` its assignment names (that
+transcript's first user message, even before registration; collection checks it is restored);
+writes elsewhere (`/tmp`) pass. Undetected: run-time paths (`$VAR`, `$(...)`),
+`<>`, escaped spaces, `#` in a word, `sh -c`, `sudo` or `xargs tee`, a `cd` that never runs,
+a symlink the command makes, programs that open files (`python -c`, `sed -i`, `cp`) and
+MCP tools; against those hold the agent's absolute-path rule and, for a builder, `--accept`'s check of
+its ticket branch.
 
 A Claude worker started as its own process takes a route's `launch.argv` after `--`, and only a
 non-Claude coordinator (Codex, Pi or OpenCode, resolving with its own `--harness` and
