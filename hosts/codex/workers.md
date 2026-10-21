@@ -40,9 +40,13 @@ user decisions and exact failure evidence. Children read the adapter, agent file
 file, then verify worktree and branch. Pass paths instead of copied conversations.
 Record a child's startup with `native`, its rollout (its `session_meta` names the child's
 `agent_path`): a child inherits its parent's `turn_context.cwd`, so outside the child's
-worktree it is a `status` warning. A read-only child's writes outside its registered worktree
-are not detected: what holds is the agent's absolute-path rule and, for a builder, `--accept`'s
-check of its ticket branch.
+worktree it is a `status` warning. A child's task message is stored encrypted, so before each
+`spawn_agent` record its assignment from the repository with `python3 <plugin_root>/hooks/read_only_writes.py
+codex-assign --task <task_name> --agent-file <agent_file> --worktree <worktree>`, then spawn it with that
+`task_name`. Once a session has records, the plugin's hook lets a child of a `writes: none` agent, or one
+with no record, write inside the checkouts only to its reports and its recorded worktree, by absolute path;
+it sees redirects, `tee` and `apply_patch`, not files an interpreter or tool opens itself. A builder still
+relies on `--accept`'s check of its ticket branch.
 After session loss, inspect saved IDs; reconstruct absent agents from surviving
 files/worktrees and record replacement IDs.
 

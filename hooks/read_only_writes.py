@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: an Automattic read-only subagent in Claude Code leaves the user's checkouts unchanged.
+"""PreToolUse hook: an Automattic read-only subagent in Claude Code, or native child in Codex, leaves the user's
+checkouts unchanged.
 
 Claude Code names the subagent a tool call runs in (`agent_type`). For `automattic:<agent>`, or a generated
 `automattic-<agent>-<digest>` profile, whose agent declares `writes: none`, it denies an Edit, Write or
@@ -15,6 +16,15 @@ a literal path, relative ones following the command's own `cd`, `pushd` or `buil
 check cannot see a write outside the worktree, since a subagent's transcript carries its coordinator's directory.
 The reports and paths outside the family are decided before anything else is read; a check that cannot run for a
 path inside the family denies the call.
+
+Codex (argument `codex`, Bash and apply_patch): a native child's payload carries `agent_id` and its own rollout,
+but its task message is stored encrypted, so its parent records the assignment first (`codex-assign`) in
+<main>/.scratch/codex-children/<CODEX_SESSION_ID>/<task_name>.json: the agent its agent_file names and its worktree.
+The task name is the child's rollout session_meta `agent_path` (`/root/<task_name>`). A recorded `writes: none`
+agent gets the decisions above; a child with no record, in a session that has records, is held to the reports; a
+session without records and the parent's own calls are not checked. No child writes the records or runs
+`codex-assign`. The Bash payload omits exec_command's `workdir`, so a read-only child's relative target is denied;
+the paths an apply_patch adds, updates, deletes or moves to, through the tool or a shell heredoc, are writes.
 
 Not caught: a target known only at run time (`$VAR`, `$(...)`, globs), `>&` to a file, `<>`, escaped spaces, `#`
 inside a word, a shell's `-c` string, `sudo tee` or `xargs tee`, a `cd` that does not run (`false && cd x`), a symlink
