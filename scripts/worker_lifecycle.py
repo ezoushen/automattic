@@ -413,8 +413,12 @@ def checkout_change(baseline, now):
         return f'an untracked file appeared: {appeared[0]}', True
     if deleted := sorted(set(before) - set(after)):
         return f'an untracked file was deleted: {deleted[0]}', False
-    if edited := sorted(name for name in before if after[name] != before[name]):
-        return f'an untracked file changed: {edited[0]}', False
+    for name in sorted(name for name in before if after[name] != before[name]):
+        found = (isinstance(before[name], dict) and isinstance(after[name], dict)
+                 and checkout_change(before[name], after[name]))
+        if found:
+            return f'in nested repository {name}: {found[0]}', found[1]
+        return f'an untracked file changed: {name}', False
 
 
 def refusal(change):
@@ -426,20 +430,31 @@ def refusal(change):
 
 def worktree_state(worktree, own=False):
     """HEAD, a digest of tracked changes against it, a digest of each untracked file the ignore rules leave
-    visible and the state of each submodule, or None outside a readable Git checkout (with `own`, outside one
-    whose top is worktree itself). A snapshot check may start from a dirty tree, so a read-only agent is held to
-    the state it was given."""
+    visible (the state of a nested repository) and the state of each submodule, or None outside a readable Git
+    checkout (with `own`, outside one whose top is worktree itself). A snapshot check may start from a dirty tree,
+    so a read-only agent is held to the state it was given."""
     run = lambda *args: subprocess.run(['git', '-C', worktree, *args], capture_output=True, stdin=subprocess.DEVNULL)
     if own and not own_checkout(worktree):
         return None
-    head, diff = run('rev-parse', 'HEAD'), run('diff', '--no-ext-diff', '--no-textconv', '--no-color', '--binary', 'HEAD')
+    head = run('rev-parse', '--verify', '-q', 'HEAD')
+    if head.returncode == 0:
+        base = 'HEAD'
+    elif run('symbolic-ref', '-q', 'HEAD').returncode == 0:
+        # A repository with no commit yet: its tracked changes are those against the empty tree.
+        head.stdout, base = b'unborn', run('hash-object', '-t', 'tree', '--stdin').stdout.decode().strip()
+    else:
+        return None
+    diff = run('diff', '--no-ext-diff', '--no-textconv', '--no-color', '--binary', base)
     untracked, index = run('ls-files', '--others', '--exclude-standard', '-z'), run('ls-files', '--stage', '-z')
-    if head.returncode or diff.returncode or untracked.returncode or index.returncode:
+    if diff.returncode or untracked.returncode or index.returncode:
         return None
     names = [os.fsdecode(name) for name in untracked.stdout.split(b'\0') if name]
-    digests = {name: content_digest(Path(worktree, name)) for name in names}
+    # Git lists a nested repository as its directory; its own files are snapshotted by the same rules.
+    digests = {name: (name.endswith('/') and worktree_state(str(Path(worktree, name)), own=True))
+               or content_digest(Path(worktree, name)) for name in names}
     # A submodule is a gitlink (mode 160000) in the index; its own files are snapshotted by the same rules.
-    links = {os.fsdecode(entry.split(b'\t', 1)[1]) for entry in index.stdout.split(b'\0') if entry.startswith(b'160000 ')}
+    links = {os.fsdecode(entry.split(b'\t', 1)[1]) for entry in index.stdout.split(b'\0')
+             if entry.startswith(b'160000 ')}
     return {'head': head.stdout.decode().strip(), 'changes': hashlib.sha256(diff.stdout).hexdigest(),
             'untracked': {name: digest for name, digest in digests.items() if digest is not None},
             'submodules': {link: worktree_state(str(Path(worktree, link)), own=True) for link in sorted(links)}}

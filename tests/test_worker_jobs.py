@@ -506,6 +506,52 @@ sys.exit(process.returncode)
                 self.cli('collect', '--attempt', attempt, '--input', request)
                 self.sub_git('reset', '-q', '--hard', sub_head)
 
+    def test_a_change_inside_a_nested_repository_is_refused_naming_it(self):
+        head = self.checkout()
+        nested = self.worktree / 'nested'
+        nested_git = lambda *args: subprocess.run(['git', '-C', str(nested), '-c', 'user.name=t', '-c', 'user.email=t@t',
+                                                   *args], check=True, capture_output=True, text=True).stdout.strip()
+        nested.mkdir()
+        nested_git('init', '-q')
+        (nested / 'a.txt').write_text('a\n')
+        nested_git('add', '-A')
+        nested_git('commit', '-qm', 'nested base')
+        nested_head = nested_git('rev-parse', 'HEAD')
+        (self.worktree / 'empty').mkdir()
+        empty_git = lambda *args: subprocess.run(['git', '-C', str(self.worktree / 'empty'), *args], check=True)
+        empty_git('init', '-q')  # A repository with no commit yet.
+        for number, change in enumerate(('edit', 'commit', 'untracked', 'unborn-untracked', 'unborn-added'), 1):
+            with self.subTest(change=change):
+                attempt = f'review-{number}/1'
+                report = self.review(head, attempt, f'native-{number}')
+                if change in ('edit', 'commit'):
+                    (nested / 'a.txt').write_text('edited by the agent\n')
+                elif change == 'untracked':
+                    (nested / 'notes.txt').write_text('scratch\n')
+                else:
+                    (self.worktree / 'empty' / 'notes.txt').write_text('scratch\n')
+                if change == 'commit':
+                    nested_git('commit', '-qam', 'reviewer edit')
+                if change == 'unborn-added':
+                    empty_git('add', 'notes.txt')
+                reason = {'edit': 'in nested repository nested/: tracked files differ from their state at registration',
+                          'commit': f'in nested repository nested/: HEAD moved from {nested_head} to '
+                                    f'{nested_git("rev-parse", "HEAD")}',
+                          'untracked': 'in nested repository nested/: an untracked file appeared: notes.txt',
+                          'unborn-untracked': 'in nested repository empty/: an untracked file appeared: notes.txt',
+                          'unborn-added': 'in nested repository empty/: tracked files differ from their state at '
+                                          'registration'}[change]
+                request = self.collect_request(head, report)
+                error = self.cli('collect', '--attempt', attempt, '--input', request, code=2)
+                self.assertIn(f'Collection requires an unchanged worktree for a read-only agent ({reason}); '
+                              'restore it and collect again', error)
+                # Once the nested repository is as registered, the same result collects.
+                nested_git('reset', '-q', '--hard', nested_head)
+                nested_git('clean', '-fdq')
+                empty_git('rm', '-q', '--cached', '--ignore-unmatch', 'notes.txt')
+                (self.worktree / 'empty' / 'notes.txt').unlink(missing_ok=True)
+                self.cli('collect', '--attempt', attempt, '--input', request)
+
     def test_the_collect_doc_says_what_the_check_covers_and_how_to_get_past_a_refusal(self):
         doc = ' '.join((support.ROOT / 'runtime/workers/collect.md').read_text().split())
         self.assertIn('Untracked files inside submodules, nested repositories and unreadable directories are not '
