@@ -177,6 +177,10 @@ class ReadOnlyWrites(Checkouts):
             f'cat <<EOF > {quote(str(app))}\nx\nEOF': app,
             f'git -C {quote(str(self.worktree))} status; echo x > "{app}"': app,
             f'echo x > {quote("/dev/.." + str(app))}': app,  # Resolved before any device is exempt.
+            # Rule (T15 review G7, G8): the open-quote scan follows shlex's comment rule, `#` outside quotes, inside a
+            # word too, so a quote after it opens nothing and the lines around it are still lexed.
+            "# the 'old path\necho x > src/app.py": app,
+            "echo x >> a#b | cat \"\n) x\n'\" > f": self.worktree / 'a',
         }
         for command, path in denied.items():
             with self.subTest(command=command):

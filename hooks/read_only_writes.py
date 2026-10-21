@@ -145,20 +145,21 @@ def tokens(command):
 
 def open_quote(line, quote):
     """The quote still open at the end of a line, given the one open at its start, by the rules `tokens` lexes with
-    (shlex, not POSIX): a quote opens only where a token starts, `#` there comments out the rest of the line."""
+    (shlex, not POSIX): `#` outside quotes, inside a word too, comments out the rest of the line, and a quote opens
+    only where a token starts."""
     state = ' '
     for char in line:
         if quote:
             if char == quote:
                 quote, state = None, ' '
+        elif char == '#':
+            break
         elif char in ' \t\r':
             state = ' '
         elif char in '();<>|&':
             state = 'c'
         elif state == 'a':
-            continue  # Inside a word, quotes and `#` are word characters.
-        elif char == '#':
-            break
+            continue  # Inside a word, a quote is a word character.
         elif char in '\'"':
             quote = char
         else:
