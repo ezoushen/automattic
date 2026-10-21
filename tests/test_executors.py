@@ -87,7 +87,7 @@ class Executors(unittest.TestCase):
                 omitted = resolve(host, choice={'executor': {'type': 'subagent'}})
                 assert omitted == resolve(host, choice=native)
             skill = instance('skill', {'skill': 'herdr', 'instruction': 'Run the assigned review with Codex.'})
-            named = instance('subagent', {'agent': 'codex:codex-rescue'})
+            named = instance('subagent', {'agent': 'plugin:delegate'})
             program = instance('bash', {'argv': ['bash', '/some/worker.sh']})
             for value in (native, skill, named, program):
                 result = resolve(choice=value)

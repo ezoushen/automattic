@@ -34,10 +34,10 @@ reviewer's entry for reproduce only. The agent entry covers every other job.
 To use another execution path, replace only that agent's `executor` object with
 one of the following. Executor selection and model policy are separate choices.
 
-**Named sub-agent**, for example the official Codex plugin's delegate in Claude:
+**Named sub-agent**, for example another plugin's delegate agent in Claude:
 
 ```json
-{"type":"subagent","config":{"agent":"codex:codex-rescue"}}
+{"type":"subagent","config":{"agent":"<plugin>:<agent>"}}
 ```
 
 **Skill** ([contract](skill-executor.md)), with the instruction supplied after selecting the installed skill:

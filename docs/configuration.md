@@ -16,7 +16,7 @@ setting, name it directly (`show`, `set`, `reset`); the same command skips the t
 /automattic:setup Disable recovery decisions for this session only.
 /automattic:setup set reviewer --route executor=subagent mode=inherit
 /automattic:setup show reviewer --route
-/automattic:setup Configure this project's reviewer to use the subagent codex:codex-rescue and inherit its destination settings.
+/automattic:setup Configure this project's reviewer to use the subagent <plugin>:<agent> and inherit its destination settings.
 /automattic:setup Reset only the reviewer's thinking override; keep its executor and model.
 ```
 

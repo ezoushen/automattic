@@ -23,8 +23,8 @@ profile that would replace the chosen agent. Use its supported controls, preserv
 its tools and restrictions, or report that the requested settings cannot be applied.
 Settings expressed only as prose are not runtime overrides.
 
-Inspect the installed bridge contract before launching. For example, Claude's
-`codex:codex-rescue` is an Agent selection, not a skill. Its supported model/effort
+Inspect the installed bridge contract before launching. For example, a Claude
+plugin's forwarding delegate is an Agent selection, not a skill. Its supported model/effort
 flags belong to the forwarded request; its wrapper must only forward and return
 the result. Supply a fresh, explicitly scoped read-only request for review work.
 Pi's external profiles are also named sub-agent selections, but may suppress
