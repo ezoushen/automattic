@@ -16,9 +16,11 @@ outside code blocks) and, for a `writes: none` agent, the same HEAD, tracked cha
 and untracked files (their content too) it was registered with, in the worktree and,
 by the same rules, in each submodule and each nested repository (an untracked directory
 that is a Git checkout of its own); a gitignored file is not a change. An unreadable
-file is checked only for its presence. A directory Git cannot open, and a submodule with
-no checkout, is held to its own status (permissions, entries added or removed directly
-in it), and `collect` names it in `partly_checked` even when nothing changed.
+file is checked only for its presence. A directory Git cannot open (a checkout's top too,
+named `./` in it), and a submodule with no checkout, is held to its own status
+(permissions, entries added or removed directly in it), and `collect` names it in
+`partly_checked` even when nothing changed. A nested checkout reached through a symlink
+is held to its directory instead.
 `collect` refuses a worktree that differs and names the change, and the submodule or
 nested repository it is in. Restore a moved HEAD, a tracked change or a new untracked
 file, then collect again. An edited or deleted untracked file, a changed status, or a
