@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """A Claude PreToolUse hook keeps an Automattic `writes: none` subagent's writes inside the reports."""
 import json
+import os
 from pathlib import Path
 from shlex import quote
 import subprocess
@@ -13,8 +14,8 @@ import support
 HOOK = support.HOOKS / 'read_only_writes.py'
 
 
-class ReadOnlyWrites(unittest.TestCase):
-    """A main checkout with a ticket worktree; the coordinator's cwd is the worktree, as a subagent's payload shows."""
+class Checkouts(unittest.TestCase):
+    """A main checkout with a ticket worktree and an effort's reports directory."""
 
     def setUp(self):
         tmp = tempfile.TemporaryDirectory(prefix='automattic read-only ')
@@ -30,6 +31,20 @@ class ReadOnlyWrites(unittest.TestCase):
         subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(self.worktree)], check=True)
         self.reports = self.main / '.scratch/effort/reports'
         self.reports.mkdir(parents=True)
+
+    def assert_denied(self, decision, path, agent='automattic:reviewer'):
+        self.assertIsNotNone(decision, path)
+        self.assertEqual(decision['permissionDecision'], 'deny')
+        reason = decision['permissionDecisionReason']
+        for words in (agent, 'writes: none', str(path), f'{self.main}/.scratch/<slug>/reports/'):
+            self.assertIn(words, reason)
+
+
+class ReadOnlyWrites(Checkouts):
+    """A Claude subagent; the coordinator's cwd is the worktree, as a subagent's payload shows."""
+
+    def setUp(self):
+        super().setUp()
         # The coordinator's transcript; a subagent's own lies beside it, in <session>/subagents/agent-<agentId>.jsonl.
         self.transcript = self.tmp / 'session.jsonl'
 
@@ -50,13 +65,6 @@ class ReadOnlyWrites(unittest.TestCase):
                                 text=True, timeout=20)
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)['hookSpecificOutput'] if result.stdout.strip() else None
-
-    def assert_denied(self, decision, path, agent='automattic:reviewer'):
-        self.assertIsNotNone(decision, path)
-        self.assertEqual(decision['permissionDecision'], 'deny')
-        reason = decision['permissionDecisionReason']
-        for words in (agent, 'writes: none', str(path), f'{self.main}/.scratch/<slug>/reports/'):
-            self.assertIn(words, reason)
 
     def test_a_read_only_agent_without_an_assignment_writes_in_the_checkouts_only_under_the_reports(self):
         # Rule (T11): Edit, Write and NotebookEdit from a `writes: none` agent (reviewer, verifier, under its plugin
@@ -224,6 +232,50 @@ class ReadOnlyWrites(unittest.TestCase):
                                     input=json.dumps(payload), capture_output=True, text=True, timeout=20)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout)['hookSpecificOutput']['permissionDecision'], 'deny', tool)
+
+
+class CodexChildren(Checkouts):
+    """A Codex parent session s1 whose native children run in the worktree; Codex names a child only by `agent_id`,
+    its rollout (`transcript_path`) and the parent's `session_id`, so the parent records each assignment first."""
+
+    def setUp(self):
+        super().setUp()
+        self.records = self.main / '.scratch/codex-children/s1'
+        self.agents = support.ROOT / 'agents'
+
+    def record(self, task, agent_file, worktree=None, session='s1', thread='s1', cwd=None):
+        """Run the parent's record command as Codex runs a shell command: CODEX_SESSION_ID is the root session,
+        CODEX_THREAD_ID the thread running it."""
+        env = {key: value for key, value in os.environ.items() if not key.startswith('CODEX_')}
+        env.update({key: value for key, value in (('CODEX_SESSION_ID', session), ('CODEX_THREAD_ID', thread))
+                    if value})
+        command = [sys.executable, str(HOOK), 'codex-assign', '--task', task, '--agent-file', str(agent_file)]
+        return subprocess.run(command + (['--worktree', str(worktree)] if worktree else []), env=env,
+                              cwd=str(cwd or self.worktree), stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                              timeout=20)
+
+    def test_the_parent_records_a_childs_agent_and_worktree_before_spawning_it(self):
+        # Rule (T15 R1'): the Codex parent records the assignment at
+        # <main>/.scratch/codex-children/<its session id>/<task_name>.json: the agent its agent_file names and the
+        # worktree, real path. A child (CODEX_THREAD_ID is not the session), a shell outside Codex, an unknown agent,
+        # a task name Codex would refuse, or a worktree outside the checkout's family records nothing.
+        result = self.record('review_1', self.agents / 'reviewer.md', self.worktree)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads((self.records / 'review_1.json').read_text()),
+                         {'agent': 'reviewer', 'worktree': str(self.worktree)})
+        refused = {
+            'child': self.record('review_2', self.agents / 'reviewer.md', self.worktree, thread='c1'),
+            'outside Codex': self.record('review_3', self.agents / 'reviewer.md', self.worktree, session=None,
+                                         thread=None),
+            'unknown agent': self.record('review_4', self.tmp / 'agents' / 'janitor.md', self.worktree),
+            'task name': self.record('Review-5', self.agents / 'reviewer.md', self.worktree),
+            'worktree': self.record('review_6', self.agents / 'reviewer.md', self.tmp),
+        }
+        for case, result in refused.items():
+            with self.subTest(case=case):
+                self.assertNotEqual(result.returncode, 0, result.stdout)
+                self.assertTrue(result.stderr.strip(), case)
+        self.assertEqual(sorted(path.name for path in self.records.iterdir()), ['review_1.json'])
 
 
 if __name__ == '__main__':

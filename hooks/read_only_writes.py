@@ -21,6 +21,7 @@ inside a word, a shell's `-c` string, `sudo tee` or `xargs tee`, a `cd` that doe
 the same command creates, an interpreter or tool that opens files itself (`python -c`, `sed -i`, `cp`, `git`), and
 MCP tools.
 """
+import argparse
 import json
 import os
 from pathlib import Path
@@ -40,6 +41,8 @@ REDIRECTS = {'>', '>>', '>|', '&>', '&>>'}
 # Operators whose next word is not a file this command writes: input, heredoc delimiters and fd copies.
 SKIPS_NEXT = {'<', '<<', '<<-', '<<<', '>&', '<&', '<>'}
 ASSIGNED = re.compile(r'^worktree:[ \t]*(.+?)[ \t]*$', re.M)
+RECORDS = Path('.scratch/codex-children')  # <main>/<RECORDS>/<Codex session id>/<task name>.json
+TASK = re.compile(r'[a-z0-9_]+')  # The characters Codex allows in a spawn_agent task name.
 
 
 def read_only(agent_type):
@@ -191,7 +194,39 @@ def protected(paths, cwd, event):
     return main, assigned, own + [path for path in held if not (assigned and Path(path).is_relative_to(assigned))]
 
 
+def assign(args):
+    """`codex-assign --task <task_name> --agent-file <abs> [--worktree <abs>]`: the Codex parent records a native
+    child's assignment before `spawn_agent`, since the child's task message is stored encrypted. Run from the
+    repository; refused from a child's shell, where CODEX_THREAD_ID is not the root session's id."""
+    parser = argparse.ArgumentParser(prog='read_only_writes.py codex-assign')
+    parser.add_argument('--task', required=True)
+    parser.add_argument('--agent-file', required=True)
+    parser.add_argument('--worktree')
+    options = parser.parse_args(args)
+    session, thread = os.environ.get('CODEX_SESSION_ID'), os.environ.get('CODEX_THREAD_ID')
+    agent = Path(options.agent_file).stem
+    main = yield_gate.main_checkout(os.getcwd())
+    worktree = options.worktree and Path(os.path.realpath(options.worktree))
+    problem = (
+        'run it from the Codex parent session\'s own shell' if not session or thread not in (None, session) else
+        f'task name {options.task!r} is not one Codex accepts ([a-z0-9_])' if not TASK.fullmatch(options.task) else
+        f'{options.agent_file} is not an Automattic agent file'
+        if not (Path(options.agent_file).is_file() and agent in agent_defs.load(ROOT)['agents']) else
+        'run it from inside the repository' if main is None else
+        f'{options.worktree} is not a worktree of {main}' if worktree and worktree not in checkouts(main)[1:] else None)
+    if problem:
+        print(f'codex-assign: {problem}; nothing recorded.', file=sys.stderr)
+        return 2
+    path = main / RECORDS / session / f'{options.task}.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({'agent': agent, **({'worktree': str(worktree)} if worktree else {})}) + '\n')
+    print(path)
+    return 0
+
+
 def main():
+    if sys.argv[1:2] == ['codex-assign']:
+        sys.exit(assign(sys.argv[2:]))
     try:
         event = json.load(sys.stdin)
     except ValueError:
