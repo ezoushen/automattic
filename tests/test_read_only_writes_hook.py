@@ -349,5 +349,25 @@ class CodexChildren(Checkouts):
                     self.assertIn(named, decision['permissionDecisionReason'])
 
 
+    def test_a_read_only_childs_relative_target_is_denied_since_codex_hides_the_workdir(self):
+        # Rule (T15 R3'): Codex's Bash payload omits exec_command's `workdir`, so a read-only child's relative
+        # redirect target cannot be resolved; inside the checkout family it is denied, the reason saying to write
+        # an absolute path. A target after an absolute `cd` is resolved as usual; a writer child is not checked.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        self.assertEqual(self.record('build_1', self.agents / 'builder.md', self.worktree).returncode, 0)
+        for command in ('echo x > a.py', 'make test | tee -a out.log', 'cd src && echo x > a.py'):
+            with self.subTest(command=command):
+                decision = self.run_codex('Bash', {'command': command})
+                self.assertEqual((decision or {}).get('permissionDecision'), 'deny', command)
+                reason = decision['permissionDecisionReason']
+                for words in ('Codex child review_1', 'relative', 'workdir', 'absolute path'):
+                    self.assertIn(words, reason)
+                self.assertIsNone(self.run_codex('Bash', {'command': command}, task='build_1'))
+        mine, theirs = quote(str(self.worktree)), quote(str(self.main))
+        self.assertIsNone(self.run_codex('Bash', {'command': f'cd {mine} && echo x > a.py'}))
+        self.assert_denied(self.run_codex('Bash', {'command': f'cd {theirs} && echo x > a.py'}), self.main / 'a.py',
+                           'Codex child review_1')
+
+
 if __name__ == '__main__':
     unittest.main()

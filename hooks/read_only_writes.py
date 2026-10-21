@@ -43,6 +43,7 @@ SKIPS_NEXT = {'<', '<<', '<<-', '<<<', '>&', '<&', '<>'}
 ASSIGNED = re.compile(r'^worktree:[ \t]*(.+?)[ \t]*$', re.M)
 RECORDS = Path('.scratch/codex-children')  # <main>/<RECORDS>/<Codex session id>/<task name>.json
 TASK = re.compile(r'[a-z0-9_]+')  # The characters Codex allows in a spawn_agent task name.
+WORKDIR = '<workdir>'  # Codex's Bash payload omits exec_command's workdir, so relative targets stay unresolved.
 
 
 def read_only(agent_type):
@@ -260,12 +261,17 @@ def codex(event):
         if 'codex-assign' in command:
             deny(f'{name} may not run codex-assign: only its parent records assignments.')
             return
-        paths = shell_writes(command, cwd)
+        paths = shell_writes(command, WORKDIR)
         if definition and definition.get('writes') != 'none':
             written = [path for path in paths
                        if Path(os.path.realpath(os.path.join(cwd, path))).is_relative_to(records)]
             if written:
                 deny(f'{name} never writes the assignment records under {records}; {", ".join(written)} is there.')
+            return
+        relative = [path[len(WORKDIR) + 1:] for path in paths if not os.path.isabs(path)]
+        if relative:
+            deny(f'{name} is held read-only (writes: none) and {", ".join(relative)} is relative: Codex does not '
+                 f'pass the shell workdir to hooks, so write to an absolute path.')
             return
         worktree = definition and record.get('worktree')
         root, assigned, written = protected(paths, cwd, records, lambda: worktree and Path(worktree))
