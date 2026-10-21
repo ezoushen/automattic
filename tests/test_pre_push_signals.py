@@ -80,6 +80,26 @@ class PrePushSignals(HookRepo):
         self.assertEqual(early.returncode, 0, early.stdout + early.stderr)
         self.assertEqual(self.temporary_worktrees().count(tree), 1, 'not removed from under running checks')
 
+    def test_a_live_check_group_is_found_when_ps_exits_non_zero_after_printing_it(self):
+        # A live group is decided by the group itself, not by how `ps` exits: a stub that prints the whole table,
+        # this group included, and then exits 1 must not get the worktree removed from under running checks.
+        bin_dir = self.base / 'bin'
+        bin_dir.mkdir()
+        (bin_dir / 'ps').write_text('#!/bin/sh\nif [ "$*" = "-A -o pgid=" ]; then\n'
+                                    '  /bin/ps -A -o pgid=; exit 1\nfi\n'
+                                    'exec /bin/ps "$@"\n')
+        (bin_dir / 'ps').chmod(0o755)
+        hook = self.start_hook()
+        [tree] = self.temporary_worktrees()
+        hook.kill()
+        hook.wait(timeout=10)
+        self.slow.unlink()
+        self.assertTrue(any(self.alive(pid) for pid in self.suite_pids()), 'its checks are still running')
+        self.env['PATH'] = f'{bin_dir}:{self.env["PATH"]}'
+        early = self.push('main')
+        self.assertEqual(early.returncode, 0, early.stdout + early.stderr)
+        self.assertEqual(self.temporary_worktrees().count(tree), 1, 'not removed from under running checks')
+
     def test_a_worktree_left_by_a_killed_hook_is_reclaimed_once_its_checks_are_gone(self):
         hook = self.start_hook()
         [tree] = self.temporary_worktrees()
