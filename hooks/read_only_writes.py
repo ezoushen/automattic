@@ -3,8 +3,10 @@
 
 Claude Code names the subagent a tool call runs in (`agent_type`). For `automattic:<agent>`, or a generated
 `automattic-<agent>-<digest>` profile, whose agent declares `writes: none`, it denies an Edit, Write or
-NotebookEdit of a file outside the main checkout's .scratch/<slug>/reports/, and a Bash command that clearly writes
-such a file: a `>`, `>>`, `>|`, `&>` or `&>>` redirect, or `tee`, to a literal path, relative ones following the
+NotebookEdit of a file outside the main checkout's .scratch/<slug>/reports/ and, for a subagent registered as an
+attempt's native_session (its agent_id) in a workers.sqlite there, that attempt's worktree, whose temporary
+experiment edits collection's restored-worktree check guards. It also denies a Bash command that clearly writes such
+a file: a `>`, `>>`, `>|`, `&>` or `&>>` redirect, or `tee`, to a literal path, relative ones following the
 command's own `cd`. Collection's read-only worktree check cannot see a write outside the worktree, since a
 subagent's transcript carries its coordinator's directory. A check that cannot run denies the call.
 
@@ -16,6 +18,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import sqlite3
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -116,13 +119,32 @@ def shell_writes(command, cwd):
     return [path for path in written if path and not path.startswith('/dev/')]
 
 
-def outside(paths, cwd):
-    """The paths, resolved against cwd, that lie outside the main checkout's reports."""
+def registered_worktrees(main, agent_id):
+    """The worktrees of the attempts registered with this subagent's agent_id as their native_session, read-only."""
+    if not agent_id:
+        return []
+    found = []
+    for state in sorted(main.glob('.scratch/*/reports/workers.sqlite')):
+        db = sqlite3.connect(f'{state.as_uri()}?mode=ro', uri=True, timeout=5)
+        try:
+            found += [saved['worktree'] for saved in yield_gate.lifecycle().attempts(db)
+                      if saved.get('native_session') == agent_id]
+        finally:
+            db.close()
+    return sorted(set(found))
+
+
+def outside(paths, cwd, agent_id):
+    """(main checkout, the subagent's registered worktrees, the paths resolved against cwd that lie outside both the
+    main checkout's reports and those worktrees)."""
     main = yield_gate.main_checkout(cwd)
     if main is None:
         raise RuntimeError(f'{cwd} is in no git checkout, so its reports cannot be located')
+    worktrees = registered_worktrees(main, agent_id)
+    allowed = [Path(os.path.realpath(worktree)) for worktree in worktrees]
     resolved = [os.path.realpath(os.path.join(cwd, os.path.expanduser(path))) for path in paths]
-    return main, [path for path in resolved if not in_reports(path, main)]
+    return main, worktrees, [path for path in resolved if not in_reports(path, main)
+                             and not any(Path(path).is_relative_to(worktree) for worktree in allowed)]
 
 
 def main():
@@ -138,13 +160,15 @@ def main():
     try:
         paths = (shell_writes(tool_input.get('command') or '', cwd) if tool == 'Bash'
                  else [tool_input.get(FILE_TOOLS[tool]) or ''])
-        root, written = outside(paths, cwd) if paths else (None, [])
+        root, worktrees, written = outside(paths, cwd, event.get('agent_id')) if paths else (None, [], [])
     except Exception as error:  # A check that cannot run denies the call.
         deny(f'{event["agent_type"]} is read-only (writes: none) and this write could not be checked: {error}')
         return
     if written:
+        own = ''.join(f' and its registered worktree {worktree}' for worktree in worktrees)
         deny(f'{event["agent_type"]} is read-only (writes: none): it writes only its report under '
-             f'{root}/.scratch/<slug>/reports/, and {", ".join(written)} is outside it ({ROOT}/agents/{agent}.md).')
+             f'{root}/.scratch/<slug>/reports/{own}, and {", ".join(written)} is outside them '
+             f'({ROOT}/agents/{agent}.md).')
 
 
 def deny(reason):
