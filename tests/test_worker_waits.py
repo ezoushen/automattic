@@ -349,6 +349,57 @@ class Waits(WorkerLifecycleCase):
                 watcher.kill()
                 watcher.communicate()
 
+    def test_a_monitor_killed_as_its_wait_starts_under_a_busy_state_database_never_loses_the_wait(self):
+        # Rule: a wait that is running is always recorded as owned (monitor.wait_pid), so a rearm can see it.
+        self.register()
+        self.ready()
+        pidfile = self.root / 'wait.pid'
+        command = self.root / 'wait.json'
+        command.write_text(json.dumps({'argv': [sys.executable, '-c',
+            f'import os,time; open({str(pidfile)!r}, "w").write(str(os.getpid())); time.sleep(30)'], 'timeout': 40}))
+        watcher = subprocess.Popen([sys.executable, '-B', str(SCRIPT), 'watch', '--state', str(self.state),
+                                    '--attempt', 'ticket-1/1', '--input', str(command)], stdout=subprocess.PIPE, text=True)
+        lock = sqlite3.connect(self.state, timeout=10, isolation_level=None)
+        logs = self.state.parent / (self.state.name + '.logs')
+        wait_pid = None
+        try:
+            # Hold the database's write lock from the moment the monitor has launched (its log exists).
+            deadline = time.monotonic() + 10
+            while not (logs.is_dir() and any(logs.iterdir())) and time.monotonic() < deadline:
+                pass
+            lock.execute('BEGIN IMMEDIATE')
+            # Kill the monitor as soon as its wait process has started, before the lock is released.
+            deadline = time.monotonic() + 1.5
+            while not pidfile.exists() and time.monotonic() < deadline:
+                time.sleep(.005)
+            if pidfile.exists():
+                watcher.kill()
+                watcher.communicate(timeout=5)
+            lock.execute('ROLLBACK')
+            deadline = time.monotonic() + 5
+            while not pidfile.exists() and time.monotonic() < deadline:
+                time.sleep(.02)
+            self.assertTrue(pidfile.exists())
+            wait_pid = int(pidfile.read_text())
+            if watcher.poll() is None:
+                watcher.kill()
+                watcher.communicate(timeout=5)
+            attempt = self.cli('status')['attempts'][0]
+            self.assertEqual(attempt['monitor']['wait_pid'], wait_pid)
+            self.assertIn('reconcile wait with native worker and report', attempt['attention'])
+        finally:
+            lock.close()
+            if watcher.poll() is None:
+                watcher.kill()
+                watcher.communicate()
+            if wait_pid is None and pidfile.exists():
+                wait_pid = int(pidfile.read_text())
+            if wait_pid is not None:
+                try:
+                    os.killpg(wait_pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
     def test_abrupt_monitor_loss_blocks_rearm_until_owned_wait_is_stopped(self):
         self.register()
         self.ready()
@@ -365,6 +416,9 @@ class Waits(WorkerLifecycleCase):
                 time.sleep(.02)
             self.assertTrue(pidfile.exists())
             wait_pid = int(pidfile.read_text())
+            # Kill the monitor only once its wait is recorded as owned: the situation this test is about.
+            while 'wait_pid' not in self.cli('status')['attempts'][0].get('monitor', {}) and time.monotonic() < deadline:
+                time.sleep(.02)
             watcher.kill()
             watcher.communicate(timeout=5)
             attempt = self.cli('status')['attempts'][0]

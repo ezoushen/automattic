@@ -1068,10 +1068,11 @@ def watch(db, state, attempt, request, *, productive=False):
     previous_handler = signal.signal(signal.SIGTERM, interrupted)
     try:
         with log.open('x') as output:
-            process = subprocess.Popen(argv, cwd=saved['worktree'], stdout=output,
-                                       stderr=subprocess.STDOUT, start_new_session=True)
+            # Take the write lock before spawning, so recording the wait's pid never waits behind another writer.
             with db:
                 db.execute('BEGIN IMMEDIATE')
+                process = subprocess.Popen(argv, cwd=saved['worktree'], stdout=output,
+                                           stderr=subprocess.STDOUT, start_new_session=True)
                 saved = get(db, attempt)
                 saved['monitor']['wait_pid'] = process.pid
                 save(db, saved)
