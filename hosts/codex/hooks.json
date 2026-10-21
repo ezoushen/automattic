@@ -22,6 +22,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/hooks/read_only_writes.py\" codex",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Stop": [

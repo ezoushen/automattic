@@ -43,6 +43,7 @@ SKIPS_NEXT = {'<', '<<', '<<-', '<<<', '>&', '<&', '<>'}
 ASSIGNED = re.compile(r'^worktree:[ \t]*(.+?)[ \t]*$', re.M)
 RECORDS = Path('.scratch/codex-children')  # <main>/<RECORDS>/<Codex session id>/<task name>.json
 TASK = re.compile(r'[a-z0-9_]+')  # The characters Codex allows in a spawn_agent task name.
+PATCH_HEADERS = ('*** Add File: ', '*** Delete File: ', '*** Update File: ', '*** Move to: ')  # Lines trimmed.
 WORKDIR = '<workdir>'  # Codex's Bash payload omits exec_command's workdir, so relative targets stay unresolved.
 
 
@@ -140,12 +141,20 @@ def shell_writes(command, cwd):
                 cwd = None  # Back to a directory the command may not show.
             elif words and Path(words[0]).name == 'tee':
                 written += [literal(word, cwd) for word in words[1:] if not word.startswith('-')]
+            elif words and Path(words[0]).name in ('apply_patch', 'applypatch'):  # Codex applies the patch itself.
+                written += [os.path.join(cwd, path) for path in patch_paths(command) if cwd or os.path.isabs(path)]
             words = []
             if '(' in token:
                 subshells.append(cwd)
             elif ')' in token and subshells:
                 cwd = subshells.pop()  # A `cd` inside a subshell ends with it.
     return [path for path in written if path]
+
+
+def patch_paths(patch):
+    """The files a Codex apply_patch text adds, updates, deletes or moves to, as written in it."""
+    return [line.strip()[len(header):] for line in patch.splitlines() for header in PATCH_HEADERS
+            if line.strip().startswith(header)]
 
 
 def checkouts(main):
@@ -238,11 +247,12 @@ def child_task(event):
 
 
 def codex(event):
-    """A Codex native child's Bash call (the payload carries `agent_id`), judged by the assignment its parent
-    recorded under <main>/.scratch/codex-children/<session id>/; a session without that directory is not checked."""
+    """A Codex native child's Bash or apply_patch call (the payload carries `agent_id`), judged by the assignment
+    its parent recorded under <main>/.scratch/codex-children/<session id>/; a session without that directory is not
+    checked."""
     tool, command = event.get('tool_name'), (event.get('tool_input') or {}).get('command') or ''
     session = event.get('session_id') or ''
-    if not event.get('agent_id') or tool != 'Bash' or not re.fullmatch(r'[0-9A-Za-z-]+', session):
+    if not event.get('agent_id') or tool not in ('Bash', 'apply_patch') or not re.fullmatch(r'[0-9A-Za-z-]+', session):
         return
     cwd = event.get('cwd') or os.getcwd()
     name = f'Codex child {event["agent_id"]}'
@@ -261,7 +271,8 @@ def codex(event):
         if 'codex-assign' in command:
             deny(f'{name} may not run codex-assign: only its parent records assignments.')
             return
-        paths = shell_writes(command, WORKDIR)
+        paths = (shell_writes(command, WORKDIR) if tool == 'Bash'
+                 else [os.path.join(cwd, path) for path in patch_paths(command)])  # The patch tool's cwd is the turn's.
         if definition and definition.get('writes') != 'none':
             written = [path for path in paths
                        if Path(os.path.realpath(os.path.join(cwd, path))).is_relative_to(records)]

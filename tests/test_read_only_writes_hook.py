@@ -369,5 +369,82 @@ class CodexChildren(Checkouts):
                            'Codex child review_1')
 
 
+    @staticmethod
+    def patch(*hunks):
+        """A patch in the grammar of Codex's apply_patch tool (codex-rs/apply-patch/src/parser.rs)."""
+        return '\n'.join(['*** Begin Patch', *hunks, '*** End Patch'])
+
+    def test_a_read_only_childs_patch_gets_the_same_decisions(self):
+        # Rule (T15 R4'): Codex fires PreToolUse for its patch tool as `apply_patch` with the patch text as
+        # `command`; every Add, Update, Delete and Move-to path (relative ones from the call's cwd, where the tool
+        # resolves them) gets the shell write's decision.
+        other = self.main / '.worktrees/review-2'
+        subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        self.assertEqual(self.record('build_1', self.agents / 'builder.md', self.worktree).returncode, 0)
+        update = ['*** Update File: src/app.py', '@@', '-a', '+b']
+        denied = {
+            self.patch(f'*** Add File: {other}/new.py', '+x'): other / 'new.py',
+            self.patch(f'  *** Delete File: {self.main}/src/app.py'): self.main / 'src/app.py',
+            self.patch(f'*** Update File: {self.worktree}/a.py', f'*** Move to: {self.main}/moved.py', '@@', '-a',
+                       '+b'): self.main / 'moved.py',
+            self.patch(*update, f'*** Add File: {self.reports}/../../../x.py', '+x'): self.main / 'x.py',
+        }
+        for patch, path in denied.items():
+            with self.subTest(patch=patch):
+                self.assert_denied(self.run_codex('apply_patch', {'command': patch}), path, 'Codex child review_1')
+        for patch in (self.patch(*update), self.patch(f'*** Add File: {self.reports}/03.md', '+x'),
+                      self.patch(f'*** Add File: {self.tmp}/copy/a.py', '+x')):
+            with self.subTest(patch=patch):
+                self.assertIsNone(self.run_codex('apply_patch', {'command': patch}))
+        # Without a record the child's own worktree is denied too; a writer and the parent are not checked.
+        self.assert_denied(self.run_codex('apply_patch', {'command': self.patch(*update)}, task='review_9'),
+                           self.worktree / 'src/app.py', 'Codex child review_9')
+        tracked = self.patch(f'*** Update File: {self.main}/src/app.py', '@@', '-a', '+b')
+        self.assertIsNone(self.run_codex('apply_patch', {'command': tracked}, task='build_1'))
+        self.assertIsNone(self.run_codex('apply_patch', {'command': tracked}, agent_id=None))
+        forged = self.patch(f'*** Add File: {self.records}/build_2.json', '+{}')
+        self.assertEqual(self.run_codex('apply_patch', {'command': forged}, task='build_1')['permissionDecision'],
+                         'deny')
+
+    def test_a_read_only_childs_shell_apply_patch_gets_the_same_decisions(self):
+        # Rule (T15 R4'): `apply_patch <<'EOF'` through the shell, which Codex intercepts and applies itself, arrives
+        # as Bash: its patch paths are writes, relative ones unresolved like any relative shell target.
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        tracked = self.main / 'src/app.py'
+        body = self.patch(f'*** Update File: {tracked}', '@@', '-a', '+b')
+        self.assert_denied(self.run_codex('Bash', {'command': f"apply_patch <<'EOF'\n{body}\nEOF\n"}), tracked,
+                           'Codex child review_1')
+        relative = self.patch('*** Update File: src/app.py', '@@', '-a', '+b')
+        decision = self.run_codex('Bash', {'command': f"cd src && apply_patch <<'EOF'\n{relative}\nEOF\n"})
+        self.assertIn('src/src/app.py is relative', decision['permissionDecisionReason'])
+        mine = self.patch(f'*** Update File: {self.worktree}/a.py', '@@', '-a', '+b')
+        self.assertIsNone(self.run_codex('Bash', {'command': f"applypatch <<'EOF'\n{mine}\nEOF\n"}))
+
+    def test_codex_runs_the_check_before_every_shell_and_patch_call(self):
+        # Rule (T15 R4'): hosts/codex/hooks.json registers `read_only_writes.py codex` as a PreToolUse hook whose
+        # matcher (exact names joined by `|`, as Codex reads them) selects both Bash and apply_patch, after the
+        # trusted launch hook, whose position keeps its trust; the registered command denies a reviewer's patch.
+        config = json.loads((support.ROOT / 'hosts/codex/hooks.json').read_text())['hooks']['PreToolUse']
+        self.assertTrue(config[0]['hooks'][0]['command'].endswith('hooks/herdr_launch.py"'), config[0])
+        found = [(entry['matcher'].split('|'), hook['command']) for entry in config for hook in entry['hooks']
+                 if hook['command'].endswith('hooks/read_only_writes.py" codex')]
+        self.assertEqual(len(found), 1, config)
+        [(names, command)] = found
+        self.assertLessEqual({'Bash', 'apply_patch'}, set(names))
+        self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
+        rollout = self.tmp / 'codex/rollout-c1.jsonl'
+        rollout.parent.mkdir(exist_ok=True)
+        meta = {'id': 'c1', 'agent_path': '/root/review_1'}
+        rollout.write_text(json.dumps({'type': 'session_meta', 'payload': meta}))
+        payload = {'session_id': 's1', 'agent_id': 'c1', 'transcript_path': str(rollout), 'cwd': str(self.worktree),
+                   'hook_event_name': 'PreToolUse', 'tool_name': 'apply_patch',
+                   'tool_input': {'command': self.patch(f'*** Add File: {self.main}/x.py', '+x')}}
+        result = subprocess.run(command.replace('${PLUGIN_ROOT}', str(support.ROOT)), shell=True,
+                                input=json.dumps(payload), capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['hookSpecificOutput']['permissionDecision'], 'deny')
+
+
 if __name__ == '__main__':
     unittest.main()
