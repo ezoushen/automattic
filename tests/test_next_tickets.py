@@ -910,6 +910,31 @@ class BoardCLI(unittest.TestCase):
         self.worktree_commit(b, {'measure.sh': 'echo recall 100 # B changes it again\n'}, 'B: tool change')
         assert self.refusal('inline/02') == blamed.format('02'), self.refusal('inline/02')
 
+    def test_a_dependency_head_the_fork_already_contains_excuses_no_revert(self):
+        # Review 1 of T12.1: a blocked_by head the effort branch already holds (integrated and never deleted, or a
+        # report naming main) is not a stacked base; B reverting the tool to that head's version is still B's change.
+        self.write_ticket('inline/01', 'done')
+        self.write_ticket('inline/02', 'implementing', touches='docs', blocked='inline/01')
+        self.write_files({'measure.sh': 'echo recall 100 # v1\n'})
+        self.commit_gitignore()
+        base = self.commit('base')
+        self.git('branch', 'feat/inline-01')   # A's branch, integrated long ago and never deleted
+        self.git('switch', '-q', '-c', 'feat/inline')
+        self.write_files({'measure.sh': 'echo recall 100 # v2, an approved tool change\n'})
+        fork = self.commit('an approved tool change on the effort branch')
+        self.git('switch', '-q', 'main')
+        b = self.root / '.worktrees/inline-02'
+        self.git('worktree', 'add', '-q', '-b', 'feat/inline-02', str(b), 'feat/inline')
+        head = self.worktree_commit(b, {'measure.sh': 'echo recall 100 # v1\n'}, 'B: reverts the tool')
+        self.write_report(fork, 'feat/inline-02', [head], number='02')
+        self.record_measurement('sh measure.sh', paths=['measure.sh'])
+        blamed = ("inline/02: measurement 'recall tool': the ticket changed what measures recall (measure.sh); "
+                  "that needs allows: recall tool citing a ledger row\n")
+        assert self.refusal('inline/02') == blamed, self.refusal('inline/02')
+        self.git('branch', '-D', 'feat/inline-01')
+        self.write_report(base, 'main', [base])   # A's report names main
+        assert self.refusal('inline/02') == blamed, self.refusal('inline/02')
+
     def test_a_measurement_that_leaves_the_worktree_dirty_is_refused_naming_the_files(self):
         # The committed head scores 83; a command that rewrites score.txt to 100 measured a tree that is not the head.
         self.ticket_worktree(83)

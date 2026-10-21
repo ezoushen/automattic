@@ -72,8 +72,9 @@ has the ticket branch checked out. Each log is kept under
   enters implementing from a status that is not live (`--set <ticket> start=<sha>` records a
   missing one; a recorded one never changes); it is refused without one, or with one its branch
   does not contain. A stacked ticket's file counts only when it also differs from the head of
-  each same-effort `blocked_by` ticket its head contains (that ticket's branch is the one its
-  report names, else `feat/<slug>-<NN>`); that ticket's own change is judged at its own `--accept`;
+  each same-effort `blocked_by` ticket its head contains and its merge-base does not (that
+  ticket's branch is the one its report names, else `feat/<slug>-<NN>`); that ticket's own
+  change is judged at its own `--accept`;
 - a missing value: no such line, more than one, not a finite number, or a command that exits
   non-zero or times out. The runner also stops processes left in the command's process group and
   returns 125, which is refused; a child that starts its own session is not caught;

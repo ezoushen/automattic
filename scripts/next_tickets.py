@@ -401,7 +401,7 @@ def tool_changes(fm, entries, allowed, ref):
         start = fork.stdout.strip()
     changed = changed_files(start, ref)
     if ref != effort:
-        for head in dependency_heads(fm, ref):
+        for head in dependency_heads(fm, ref, start):
             changed &= changed_files(head, ref)
     problems, notes = [], []
     for entry in entries:
@@ -421,9 +421,10 @@ def changed_files(start, ref):
                               capture_output=True, text=True, check=True).stdout.split("\0"))
 
 
-def dependency_heads(fm, ref):
-    """The branch heads of the ticket's same-effort `blocked_by` tickets that ref contains and is not: a stacked ticket
-    forks from them. Each branch is the one its report names, else feat/<slug>-<NN>."""
+def dependency_heads(fm, ref, fork):
+    """The branch heads of the ticket's same-effort `blocked_by` tickets that ref contains and is not, and that its fork
+    with the effort branch does not contain: a stacked ticket forks from them. Each branch is the one its report names,
+    else feat/<slug>-<NN>."""
     slug = spec_of(fm["ticket"])
     own = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", f"{ref}^{{commit}}"],
                          capture_output=True, text=True).stdout.strip()
@@ -436,8 +437,9 @@ def dependency_heads(fm, ref):
         head = branch_ref(report_branch(slug, nn, report.read_text() if report.is_file() else "")[0])
         commit = head and subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--verify", f"{head}^{{commit}}"],
                                          capture_output=True, text=True).stdout.strip()
-        if commit and commit != own and subprocess.run(
-                ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", commit, ref], capture_output=True).returncode == 0:
+        if commit and commit != own and all(subprocess.run(
+                ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", *pair], capture_output=True).returncode == want
+                                            for pair, want in (((commit, ref), 0), ((commit, fork), 1))):
             heads.append(commit)
     return heads
 
