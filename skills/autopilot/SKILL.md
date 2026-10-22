@@ -81,8 +81,8 @@ Record exactly one terminal state, with its evidence, in the card's State sectio
 
 - `delivered`: the PR is open, its required checks pass, and review and E2E evidence is
   current for its head. Never record `delivered` while any acceptance criterion lacks passing evidence.
-- `delivered-local`: the same, in a repository with no PR host: the effort branch and
-  its delivery report are ready.
+- `delivered-local`: the same, in a repository with no PR host, or for an effort the user
+  ran directly on `main`, where a PR is not applicable: the branch and its delivery report are ready.
 - `merged`: only with `--auto-merge`. It merges only through the repository's normal path, once required checks
   and the [approval path](../../runtime/board/approval-path.md) are satisfied, never by admin override or self-approval.
 - `waiting-on-user`: a pause-list action is needed.

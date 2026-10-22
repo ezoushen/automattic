@@ -35,6 +35,10 @@ class RunCard(unittest.TestCase):
         # Seen live on Codex: "no new files" in the goal kept the card out of .scratch/ and it lived only in chat.
         self.assertIn('a principle about the project\'s files never keeps them out of `.scratch/`', prose(SKILL))
 
+    def test_the_goal_form_runs_aligns_interview_before_the_card(self):
+        start = ' '.join(SKILL.read_text().split('## Start', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('**`autopilot <goal>`:** run [align](../align/SKILL.md) on the goal, with its interview', start)
+
     def test_the_user_confirms_the_card_once_and_is_asked_nothing_after(self):
         text = prose(SKILL)
         self.assertIn('asks the user to confirm it once', text)
@@ -76,6 +80,10 @@ class ComposedPhases(unittest.TestCase):
                       'production changes', 'merging without `--auto-merge`', 'a missing approval',
                       'weakening a verify', 'narrowing a user decision'):
             self.assertIn(pause, pauses)
+
+    def test_an_effort_run_directly_on_main_ends_at_local_delivery(self):
+        local = next(line for line in SKILL.read_text().split('## Stop', 1)[1].split('\n- ') if line.startswith('`delivered-local`'))
+        self.assertIn('ran directly on `main`', ' '.join(local.split()))
 
     def test_choices_reserved_to_the_user_by_the_phases_are_never_decided(self):
         text = prose(SKILL)
@@ -122,6 +130,7 @@ class Flags(unittest.TestCase):
         self.assertIn('reuses accepted decisions, tickets and reports', text)
         self.assertIn('asks only the align questions still unsettled', text)
         self.assertIn('A confirmed card whose goal, criteria and grants are unchanged is not confirmed again', text)
+        self.assertIn('a card that ended `waiting-on-user` or `paused-allowance` resumes once its cause is gone', text)
         self.assertIn('moves its terminal state to `history:`, clears `terminal:` and restores the phase it stopped in', text)
         self.assertIn('history:', CARD.read_text().split('## State', 1)[1])
 
