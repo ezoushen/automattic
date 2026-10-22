@@ -8,7 +8,7 @@ import support
 
 SKILLS = support.ROOT / 'skills'
 # The phase skills the user types; a worker never invokes them on its own.
-RESERVED = {'align', 'brief', 'dispatch', 'huh', 'pr', 'refine', 'remediate', 'review', 'setup'}
+RESERVED = {'align', 'autopilot', 'brief', 'dispatch', 'huh', 'pr', 'refine', 'remediate', 'review', 'setup'}
 
 
 def reserved_by_skill_file(skill):

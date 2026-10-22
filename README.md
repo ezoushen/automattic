@@ -16,6 +16,7 @@ Typed as `/zloop:<name>` in Claude Code, `$zloop:<name>` in Codex and
 | `dispatch` | Implement the tickets, inline or in builder worktrees, then review; `--autofix` adds repairs and E2E |
 | `review` | Review a branch or PR; `review walkthrough <target>` explains it first |
 | `pr` | Open the PR once review and verification evidence is current |
+| `autopilot` | Settle the goal in one interview, confirm a run card with its stop condition, then refine, dispatch, review and open the PR hands-off; `--take-over` mid-session, `--auto-merge` to merge too |
 | `remediate` | Find, prove and repair tautological tests or misleading comments |
 | `setup` | Explain or change worker, routing and decision settings |
 | `brief` | Report progress; `brief map` shows which command fits |

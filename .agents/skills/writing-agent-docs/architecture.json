@@ -14,6 +14,9 @@
    "huh"
   ],
   [
+   "autopilot"
+  ],
+  [
    "dispatch",
    "remediate"
   ],
@@ -103,6 +106,11 @@
    ],
    "code": [
     "scripts/next_tickets.py"
+   ]
+  },
+  "autopilot": {
+   "docs": [
+    "skills/autopilot/**/*.md"
    ]
   },
   "brief": {

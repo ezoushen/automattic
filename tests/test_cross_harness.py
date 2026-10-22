@@ -158,7 +158,7 @@ class CrossHarness(unittest.TestCase):
         assert '$schema' not in portable, 'root plugin.json must not declare $schema'
         # Three invocation policies: commands only the user types, a skill only the agent loads by its trigger, and
         # skills both can start.
-        commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'remediate', 'setup', 'brief', 'huh'}
+        commands = {'align', 'refine', 'dispatch', 'review', 'pr', 'autopilot', 'remediate', 'setup', 'brief', 'huh'}
         implicit_skills = {'housekeeping'}
         both = {'diagnose', 'research', 'prototype', 'explain', 'tdd'}
         assert {path.parent.name for path in (PLUGIN / 'skills').glob('*/SKILL.md')} == commands | implicit_skills | both

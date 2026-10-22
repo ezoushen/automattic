@@ -10,8 +10,9 @@ Contents:
 - [Left to the human](#left-to-the-human)
 - [Delivery composition](#delivery-composition)
 
-The zloop plugin: nine commands, five of them in loop order (align, refine,
-dispatch, review, pr) plus remediate, setup, brief and huh, and five skills the user
+The zloop plugin: ten commands, five of them in loop order (align, refine,
+dispatch, review, pr) plus [`/zloop:autopilot`](../autopilot/SKILL.md), which runs that loop hands-off after
+one interview and a confirmed run card, and remediate, setup, brief and huh, and five skills the user
 types or the agent loads when a request matches (diagnose, research, prototype,
 explain, tdd); one artefact directory
 `.scratch/<slug>/`; one principle: the

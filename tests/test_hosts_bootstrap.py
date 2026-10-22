@@ -29,6 +29,7 @@ TRIGGERS = {
     r'HERDR_ENV=1': 'hosts/herdr.md',
     r'tracker': 'runtime/board/conventions.md',
     r'compaction': 'runtime/workers/long-sessions.md',
+    r'autopilot run card': 'skills/autopilot/SKILL.md',
     r'correction': 'runtime/interview/record.md',
     r'source comment': 'standards/code-comments.md',
 }
