@@ -231,11 +231,12 @@ class RunCheckTests(unittest.TestCase):
             parent = ('import subprocess,time; subprocess.Popen(' +
                       repr([sys.executable, str(LOCK), sys.executable, '-c', child]) + '); time.sleep(30)')
             runner = subprocess.Popen(
-                [sys.executable, str(RUNNER), '--timeout', '0.5', '--log', str(log), '--',
+                [sys.executable, str(RUNNER), '--timeout', '5', '--log', str(log), '--',
                  sys.executable, '-c', parent], env=env, start_new_session=True,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             try:
-                out, err = runner.communicate(timeout=5)
+                # The deadline leaves a loaded machine time to start the descendant it must stop.
+                out, err = runner.communicate(timeout=20)
                 self.assertEqual(runner.returncode, 124, err)
                 summary = json.loads(out)
                 self.assertTrue(summary['timed_out'])

@@ -668,23 +668,28 @@ class BoardCLI(unittest.TestCase):
                     pass
         self.addCleanup(stop_child)
         self.measured_ticket(f'{spawn}; sleep 30', timeout_seconds=1)
+        # Waiting for the escaped child would take its 20 s; 15 s leaves a loaded machine room without hiding that.
         started = time.monotonic()
         refused = self.refusal()
-        assert time.monotonic() - started < 8, 'acceptance waited for the escaped child'
+        assert time.monotonic() - started < 15, 'acceptance waited for the escaped child'
         assert self.logless(refused) == ("inline/01: measurement 'recall tool': recall has no value "
                                          "(its command timed out after 1 s); baseline 100\n"), refused
+        # On a loaded machine the escaped child may record itself only after the 1 s timeout has passed.
+        deadline = time.monotonic() + 20
+        while not pidfile.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
         stop_child()
         pidfile.unlink()
         self.record_measurement(f'{spawn}; echo recall 100')  # exits at once, its child still holds stdout
         started = time.monotonic()
         self.cli('inline', '--accept', 'inline/01')
-        assert time.monotonic() - started < 8, 'acceptance waited for the escaped child'
+        assert time.monotonic() - started < 15, 'acceptance waited for the escaped child'
 
     def test_a_command_that_leaves_a_process_behind_is_refused(self):
-        self.measured_ticket('sleep 12 >/dev/null 2>&1 & echo recall 100')
+        self.measured_ticket('sleep 30 >/dev/null 2>&1 & echo recall 100')
         started = time.monotonic()
         refused = self.logless(self.refusal())
-        assert time.monotonic() - started < 8, 'acceptance waited for the leftover process'
+        assert time.monotonic() - started < 15, 'acceptance waited for the leftover process'
         assert refused == ("inline/01: measurement 'recall tool': recall has no value "
                            "(its command exited 125); baseline 100\n"), refused
 

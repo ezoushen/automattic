@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run every tests/test_*.py regression script in parallel.
+"""Run every tests/test_*.py regression script in parallel, at most one per CPU at a time.
 
 usage: tests/run_all.py
 
@@ -14,6 +14,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parent.parent
 # A Git hook exports these; the tests' temporary repositories must not inherit them.
@@ -41,6 +42,9 @@ def main():
     with tempfile.TemporaryDirectory() as logs:
         jobs = []
         for test in sorted((ROOT / 'tests').glob('test_*.py')):
+            # One script per CPU: starting all of them at once starves those that assert a deadline.
+            while sum(process.poll() is None for _, _, process in jobs) >= (os.cpu_count() or 1):
+                time.sleep(0.05)
             log = open(Path(logs) / f'{test.stem}.log', 'w+', errors='replace')
             jobs.append((test.stem, log, subprocess.Popen([python, '-B', str(test)], stdin=subprocess.DEVNULL,
                                                           stdout=log, stderr=subprocess.STDOUT, env=env)))

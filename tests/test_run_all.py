@@ -93,6 +93,24 @@ class RunAll(unittest.TestCase):
         os.killpg(runner.pid, signal.SIGKILL)  # the sleeping test, as a hook's teardown would
         self.assertEqual(list((root / 'tmp').iterdir()), [])
 
+    def test_no_more_scripts_run_at_once_than_the_machine_has_cpus(self):
+        # Rule: starting every script at once starves the timing-sensitive ones, so at most one per CPU runs.
+        cpus = os.cpu_count()
+        running = Path(tempfile.mkdtemp(prefix='run all running '))
+        self.addCleanup(shutil.rmtree, running)
+        script = ('import os,time\nfrom pathlib import Path\n'
+                  f'running = Path({str(running)!r})\n'
+                  '(running / str(os.getpid())).touch()\n'
+                  'seen = sum(1 for path in running.iterdir() if not path.name.startswith("seen-"))\n'
+                  '(running / f"seen-{os.getpid()}").write_text(str(seen))\n'
+                  'time.sleep(0.5)\n'
+                  '(running / str(os.getpid())).unlink()\n')
+        result = self.suite({f'test_{index:02}.py': script for index in range(cpus + 4)})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        seen = [int(path.read_text()) for path in running.glob('seen-*')]
+        self.assertEqual(len(seen), cpus + 4)
+        self.assertLessEqual(max(seen), cpus)
+
     def test_scripts_do_not_inherit_the_git_hook_environment(self):
         result = self.suite({'test_env.py': 'import os\nraise SystemExit(1 if "GIT_DIR" in os.environ else 0)\n'})
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

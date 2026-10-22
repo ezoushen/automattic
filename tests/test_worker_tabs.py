@@ -101,12 +101,12 @@ class HerdrTabs(WorkerLifecycleCase):
         waiting.start()
         while not (self.root / 'herdr-waiting').exists() and time.monotonic() - started < 5:
             time.sleep(0.05)
-        before = time.monotonic()
         self.register('native/1', 'native', 'native-0', worker='ghost')
-        self.assertLess(time.monotonic() - before, 3)
+        # The other writer finished while the first registration was still waiting on Herdr: no lock was held.
+        self.assertNotIn('seconds', outcome)
         waiting.join(30)
         self.assertIn('Herdr did not answer agent get builder-1 within 5 s', outcome['error'])
-        self.assertLess(outcome['seconds'], 9)
+        self.assertLess(outcome['seconds'], 20)  # bounded by the 5 s wait, not the 30 s Herdr delay
         self.assertEqual([row['attempt'] for row in self.cli('status')['attempts']], ['native/1'])
 
     def test_a_tab_get_that_does_not_answer_is_refused_within_five_seconds(self):
@@ -115,7 +115,7 @@ class HerdrTabs(WorkerLifecycleCase):
         self.herdr_fixture(tab_delay=30)
         started = time.monotonic()
         error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
-        self.assertLess(time.monotonic() - started, 9)
+        self.assertLess(time.monotonic() - started, 20)  # bounded by the 5 s wait, not the 30 s Herdr delay
         self.assertIn('Herdr did not answer tab get tab-1 within 5 s', error)
         self.assertEqual(self.cli('status')['attempts'], [])
 

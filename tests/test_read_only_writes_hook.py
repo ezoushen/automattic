@@ -245,7 +245,7 @@ class ReadOnlyWrites(Checkouts):
         body = ('x' * 79 + '\n') * 820
         started = time.monotonic()
         decision = self.run_hook('Bash', {'command': f"echo x > src/app.py; git commit -m '{body}'"})
-        self.assertLess(time.monotonic() - started, 3)
+        self.assertLess(time.monotonic() - started, 8)
         self.assert_denied(decision, self.worktree / 'src/app.py')
 
     def test_a_read_only_agent_never_writes_a_git_path_in_its_assigned_worktree(self):
@@ -615,7 +615,7 @@ class CodexChildren(Checkouts):
         body = ('x' * 79 + '\n') * 820
         started = time.monotonic()
         decision = self.run_codex('Bash', {'command': f"echo x > {quote(str(other / 'a.py'))}; git commit -m '{body}'"})
-        self.assertLess(time.monotonic() - started, 3)
+        self.assertLess(time.monotonic() - started, 8)
         self.assert_denied(decision, other / 'a.py', 'Codex child review_1')
 
 

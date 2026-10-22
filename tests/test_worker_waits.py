@@ -207,7 +207,7 @@ class Waits(WorkerLifecycleCase):
         request.write_text(json.dumps({'argv': [sys.executable, '-c', 'print("settled")'],
             'timeout': 2, 'notify': {'argv': [sys.executable, '-c',
                 'import json,sys,time; json.loads(sys.argv[1])["kind"] == "channel-check" or time.sleep(30)',
-                '{receipt}'], 'timeout': .1}}))
+                '{receipt}'], 'timeout': 3}}))  # Long enough for the channel check to start on a loaded machine.
         receipt = self.cli('watch', '--attempt', 'ticket-1/1', '--input', str(request))
         self.assertEqual(receipt['exit_code'], 0)
         pending = self.cli('status')['pending'][0]
