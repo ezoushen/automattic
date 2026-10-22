@@ -44,13 +44,16 @@ class WorkerLifecycleCase(unittest.TestCase):
         path.write_text(json.dumps(dict(kind=kind, attempt=attempt, **fields)))
         return self.cli('record', '--input', str(path), code=code)
 
-    def register(self, attempt='ticket-1/1', assignment='ticket-1', session='native-1',
-                 worker='pane-1', code=0, owned=True, runtime='claude', **fields):
+    def registration(self, attempt='ticket-1/1', assignment='ticket-1', session='native-1',
+                     worker='pane-1', owned=True, runtime='claude', **fields):
+        """The register event's fields, as register records them."""
         fields.setdefault('packet', str(self.packet()))
-        return self.record('register', attempt, code=code, assignment=assignment,
-                           repo=str(self.root), worktree=str(self.root), head='head-1',
-                           execution=str(self.execution), runtime=runtime,
-                           worker=worker, native_session=session, owned=owned, **fields)
+        return dict(assignment=assignment, repo=str(self.root), worktree=str(self.root), head='head-1',
+                    execution=str(self.execution), runtime=runtime, worker=worker, native_session=session,
+                    owned=owned, **fields)
+
+    def register(self, attempt='ticket-1/1', *args, code=0, **fields):
+        return self.record('register', attempt, code=code, **self.registration(attempt, *args, **fields))
 
     def packet(self):
         """A complete assignment for the job the current execution names."""
@@ -145,8 +148,10 @@ class WorkerLifecycleCase(unittest.TestCase):
 
     def herdr_fixture(self, native_session='native-1', verify_error='pane_not_found', caller=None, tab_panes=1,
                       caller_tab='caller-tab', tab_survives=False, agent_tab='tab-1',
-                      agent_delay=0, tab_delay=0,
+                      agent_delay=0, tab_delay=0, during_delay=None,
                       agent_kind='claude', session_kind='id'):
+        # during_delay: an argv the fixture runs while a delayed call waits, recording its exit code in
+        # during-delay.json, so a test can act inside that wait without racing its own thread against it.
         directory = self.root / 'bin'
         directory.mkdir(exist_ok=True)
         executable = directory / 'herdr'
@@ -158,7 +163,12 @@ args=sys.argv[1:]
 assert args[:2]==['--session','fixture-session']
 for command,delay in ((['agent','get'],{agent_delay!r}),(['tab','get'],{tab_delay!r})):
     if args[2:4]==command and delay:
-        Path({str(self.root / 'herdr-waiting')!r}).touch();time.sleep(delay)
+        Path({str(self.root / 'herdr-waiting')!r}).touch()
+        if {during_delay!r}:
+            import subprocess
+            done=subprocess.run({during_delay!r},capture_output=True,text=True)
+            Path({str(self.root / 'during-delay.json')!r}).write_text(json.dumps({{'code':done.returncode,'output':done.stdout+done.stderr}}))
+        time.sleep(delay)
 if args[2:]==['pane','current','--current']:
     if {caller!r} is None:
         print(json.dumps({{'error':{{'code':'pane_not_found'}}}}),file=sys.stderr);sys.exit(1)

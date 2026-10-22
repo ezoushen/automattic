@@ -2,11 +2,12 @@
 """Each Herdr worker lives in a tab of its own: registration asks Herdr where it is; retire confirms the tab closed."""
 
 import json
+import sys
 import threading
 import time
 import unittest
 
-from lifecycle_case import WorkerLifecycleCase
+from lifecycle_case import SCRIPT, WorkerLifecycleCase
 import support
 
 
@@ -91,22 +92,21 @@ class HerdrTabs(WorkerLifecycleCase):
     def test_a_herdr_that_does_not_answer_holds_no_state_lock_and_is_refused_within_five_seconds(self):
         # Rule: Herdr is asked before the state's write lock is taken and waited on about 5 s per call, so a hung
         # Herdr blocks no other writer, and the registration still fails closed with a named reason.
-        self.herdr_fixture(agent_delay=30)
-        started, outcome = time.monotonic(), {}
-
-        def register():
-            outcome['error'] = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
-            outcome['seconds'] = time.monotonic() - started
-        waiting = threading.Thread(target=register)
-        waiting.start()
-        while not (self.root / 'herdr-waiting').exists() and time.monotonic() - started < 5:
-            time.sleep(0.05)
-        self.register('native/1', 'native', 'native-0', worker='ghost')
-        # The other writer finished while the first registration was still waiting on Herdr: no lock was held.
-        self.assertNotIn('seconds', outcome)
-        waiting.join(30)
-        self.assertIn('Herdr did not answer agent get builder-1 within 5 s', outcome['error'])
-        self.assertLess(outcome['seconds'], 20)  # bounded by the 5 s wait, not the 30 s Herdr delay
+        other = self.root / 'other-writer.json'
+        other.write_text(json.dumps(dict(kind='register', attempt='native/1',
+                                         **self.registration('native/1', 'native', 'native-0', worker='ghost'))))
+        # The other writer runs inside the Herdr call itself, so it overlaps the wait by construction.
+        self.herdr_fixture(agent_delay=30, during_delay=[sys.executable, '-B', str(SCRIPT), 'record',
+                                                         '--state', str(self.state), '--input', str(other)])
+        started = time.monotonic()
+        error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
+        seconds = time.monotonic() - started
+        written = self.root / 'during-delay.json'
+        self.assertTrue(written.exists(), 'the other writer did not finish while the registration waited on Herdr')
+        writer = json.loads(written.read_text())
+        self.assertEqual(writer['code'], 0, writer['output'])
+        self.assertIn('Herdr did not answer agent get builder-1 within 5 s', error)
+        self.assertLess(seconds, 20)  # bounded by the 5 s wait, not the 30 s Herdr delay
         self.assertEqual([row['attempt'] for row in self.cli('status')['attempts']], ['native/1'])
 
     def test_a_tab_get_that_does_not_answer_is_refused_within_five_seconds(self):
