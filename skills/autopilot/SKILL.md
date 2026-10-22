@@ -37,7 +37,7 @@ Then autopilot writes the [run card](run-card.md) to `.scratch/<slug>/autopilot.
 The card, ledger and reports are the workflow's state, not project changes: a principle about the project's files never keeps them out of `.scratch/`.
 Each acceptance criterion on the card has a Verify line that can tell success from
 failure. No phase after align starts before that confirmation, and an unrelated reply
-or silence is not one. Record the confirmation on the card, with the user's words. The confirmed card is the user's explicit request for every action it
+or silence is not one. Record the confirmation on the card, with the user's words. Waiting for this confirmation is not a terminal state: `terminal:` stays empty. The confirmed card is the user's explicit request for every action it
 grants, and it stands for the user's check of newly cut and split tickets that refine and
 dispatch would otherwise wait for.
 

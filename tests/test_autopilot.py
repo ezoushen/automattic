@@ -41,6 +41,8 @@ class RunCard(unittest.TestCase):
         self.assertIn('No phase after align starts before that confirmation', text)
         self.assertIn('After confirmation, ask the user nothing', text)
         self.assertIn('Record the confirmation on the card', text)
+        # Seen live on Codex: an unconfirmed card was marked `waiting-on-user`, which hides it from the bootstrap trigger.
+        self.assertIn('Waiting for this confirmation is not a terminal state: `terminal:` stays empty', text)
 
     def test_the_card_is_re_read_after_compaction(self):
         bootstrap = prose(ROOT / 'bootstrap.md')
