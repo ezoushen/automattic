@@ -73,7 +73,7 @@ Codex and Pi list it.
 | `skills/<skill>/` | One folder per skill: its procedure in `SKILL.md`, its other docs and its job files (`jobs/`) |
 | `bootstrap.md` | Session rules every host reads first, with the triggers table for rules that fire outside their owner |
 | `agents/` | The builder, reviewer and verifier agents; Claude loads them natively |
-| `standards/` | What good looks like: test-first development, module design, PR descriptions, code comments, documentation and the remediation kinds |
+| `standards/` | What good looks like: engineering judgment, test-first development, module design, PR descriptions, code comments, documentation and the remediation kinds |
 | `hosts/claude/`, `hosts/codex/`, `hosts/pi/`, `hosts/opencode/` | Each host's session part and worker part; OpenCode covers model settings only |
 | `hosts/herdr.md`, `hosts/executors/` | Herdr guidance; Bash, sub-agent and skill executors |
 | `runtime/interview/`, `board/`, `workers/`, `checks/`, `routing/`, `resources/`, `decisions/`, `config/`, `ask/` | Shared docs commands and agents read, each small enough for one read: the interview (authority, question filter, ledger record) and board procedures no command owns, then worker, check, routing, resource and decision rules; `config/` holds the configuration format; `ask/` how to ask the user and re-pitch what lost them |
