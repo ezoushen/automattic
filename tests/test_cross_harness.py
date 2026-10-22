@@ -448,6 +448,10 @@ class NativeHarnesses(unittest.TestCase):
         cli = Path(executable).resolve()
         if cli.name == 'mise':  # A mise shim resolves to mise itself; ask it for the real CLI.
             cli = Path(run('mise', 'which', 'pi').stdout.strip()).resolve()
+        managed = cli.parent.parent / 'install'
+        if (managed / 'current-version').is_file():  # Pi's managed launcher runs the release current-version names.
+            release = managed / 'releases' / (managed / 'current-version').read_text().strip()
+            cli = (release / 'node_modules/.bin/pi').resolve()
         package = next((parent for parent in cli.parents
                         if (parent / 'package.json').is_file()
                         and json.loads((parent / 'package.json').read_text()).get('name', '').endswith('/pi-coding-agent')), None)

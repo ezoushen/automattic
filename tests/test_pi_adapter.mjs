@@ -36,8 +36,24 @@ try {
     assert.equal(extension.commands.size, 0);
     assert.deepEqual([...extension.handlers.keys()],
       ["before_agent_start", "agent_settled", "agent_before_settle", "tool_call", "tool_result"]);
+    // Every tool_call handler runs in order on the same input until one blocks, as Pi's runner does.
+    const call = async (event, ctx) => {
+      let verdict;
+      for (const handler of extension.handlers.get("tool_call")) {
+        verdict = (await handler(event, ctx)) ?? verdict;
+        if (verdict?.block) return verdict;
+      }
+      return verdict;
+    };
+    // A foreground bash call without a timeout stops after 120 s; an explicit timeout and other tools are kept.
+    const bounded = async (toolName, input) => {
+      await call({ type: "tool_call", toolCallId: `${pass}-timeout`, toolName, input }, {});
+      return input;
+    };
+    assert.deepEqual(await bounded("bash", { command: "find / -name x" }), { command: "find / -name x", timeout: 120 });
+    assert.deepEqual(await bounded("bash", { command: "make test", timeout: 900 }), { command: "make test", timeout: 900 });
+    assert.deepEqual(await bounded("bg_run", { command: "sleep 600" }), { command: "sleep 600" });
     // Loop guard: the same call returning the same result three times in a row is blocked next time.
-    const call = extension.handlers.get("tool_call")[0];
     const toolResult = extension.handlers.get("tool_result")[0];
     let id = 0;
     const step = async (command, output) => {
@@ -74,6 +90,7 @@ try {
     assert.ok(result.systemPrompt.includes(`${root}/hosts/pi/session.md`));
     assert.ok(!result.systemPrompt.includes("/hosts/claude/"));
     assert.ok(!result.systemPrompt.includes("/hosts/codex/"));
+    assert.ok(result.systemPrompt.includes("Shell commands given no timeout stop after 120 s"));
     const previousHerdr = process.env.HERDR_ENV;
     try {
       for (const value of ["", "0", "1"]) {
