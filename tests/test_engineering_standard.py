@@ -25,7 +25,7 @@ class EngineeringStandard(unittest.TestCase):
         # The traits listed in ticket autopilot/01, from the research synthesis.
         traits = {'reversibility': r'one-way', 'proof on the real artifact': r'real artifact',
                   'feedback loop before theory': r'feedback loop', 'root causes': r'root cause',
-                  'subtract before adding': r'[Ss]ubtract', 'idempotent operations': r'run twice.*converge',
+                  'subtract before adding': r'[Ss]ubtract', 'idempotent operations': r'run twice\.\S* [^.]*(?<!never )converge when retried',
                   'the full objective': r'full objective', 'budgeting effort': r'[Bb]udget',
                   'encoding lessons in checks': r'repeated (mistake|correction)', 'independent review': r'[Ii]ndependent review',
                   'honest status': r'not run', "the user's experience": r'user'}

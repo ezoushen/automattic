@@ -37,6 +37,7 @@ session: <the host's session ID where it exposes one in the environment, else un
 auto-merge: no | yes
 phase: align | refine | dispatch | pr | ended
 terminal: <state, once ended>
+history: <earlier terminal states, each with its date, kept on take-over>
 evidence: <commit, report, PR URL>
 resume: `autopilot --take-over` (plus `--auto-merge` when granted), after <what the user must do>
 ```

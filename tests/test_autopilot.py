@@ -50,10 +50,12 @@ class ComposedPhases(unittest.TestCase):
     def test_the_confirmed_card_stands_for_the_checks_the_phases_ask_of_the_user(self):
         text = prose(SKILL)
         self.assertIn("stands for the user's check of newly cut and split tickets", text)
-        self.assertIn('Candidate ADRs are not written', text)
+        self.assertIn('Candidate ADRs the user has not approved are not written', text)
+        self.assertIn('approved ones are written as dispatch says', text)
 
     def test_each_phase_runs_with_the_grants_the_loop_needs(self):
         run = SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0]
+        self.assertRegex(run, r'1\. \[refine\]\(\.\./refine/SKILL\.md\) the brief into tickets')
         self.assertRegex(run, r'\[dispatch\]\(\.\./dispatch/SKILL\.md\)[^\n]*`--autofix`')
         self.assertRegex(' '.join(run.split()), r'\[pr\]\(\.\./pr/SKILL\.md\).*push the effort branch and open the PR')
 
@@ -114,6 +116,8 @@ class Flags(unittest.TestCase):
         self.assertIn('reuses accepted decisions, tickets and reports', text)
         self.assertIn('asks only the align questions still unsettled', text)
         self.assertIn('A confirmed card whose goal, criteria and grants are unchanged is not confirmed again', text)
+        self.assertIn('moves its terminal state to `history:`, clears `terminal:` and restores the phase it stopped in', text)
+        self.assertIn('history:', CARD.read_text().split('## State', 1)[1])
 
     def test_late_questions_are_decided_reversibly_and_reported_first(self):
         text = prose(SKILL)

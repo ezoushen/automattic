@@ -29,7 +29,8 @@ that mentions it is not an invocation. It never widens native permissions.
 - **`autopilot --take-over`:** start from the session's current state. It reuses accepted decisions, tickets and reports,
   and asks only the align questions still unsettled; a phase already finished is not redone.
   With an existing card, it continues from the card's State. A confirmed card whose goal, criteria and grants are unchanged is not confirmed again;
-  a card that ended `waiting-on-user` or `paused-allowance` resumes once its cause is gone.
+  a card that ended `waiting-on-user` or `paused-allowance` resumes once its cause is gone. Taking over a card
+  moves its terminal state to `history:`, clears `terminal:` and restores the phase it stopped in.
 - **`--auto-merge`:** with either form, also grants merging once the PR is open; see [Stop](#stop).
 
 Then autopilot writes the [run card](run-card.md) to `.scratch/<slug>/autopilot.md` and asks the user to confirm it once.
@@ -54,7 +55,8 @@ Check the allowance at each phase boundary and before each worker launch with
 `python3 "<plugin_root>/scripts/allowance.py" status`. When it is `critical` for a provider this run uses,
 finish the step in progress, commit passing work and end `paused-allowance`.
 Update the card's State section as each phase ends, with the commit and report it reached.
-Candidate ADRs are not written: they need the user's yes, so the final report lists them among the user's actions.
+Candidate ADRs the user has not approved are not written: they need the user's yes, so the final
+report lists them among the user's actions; approved ones are written as dispatch says.
 
 ## Decide without asking
 
