@@ -35,8 +35,7 @@ that mentions it is not an invocation. It never widens native permissions.
 Then autopilot writes the [run card](run-card.md) to `.scratch/<slug>/autopilot.md` and asks the user to confirm it once.
 Each acceptance criterion on the card has a Verify line that can tell success from
 failure. No phase after align starts before that confirmation, and an unrelated reply
-or silence is not one. Record the confirmation on the card, with the user's words and
-this session's ID. The confirmed card is the user's explicit request for every action it
+or silence is not one. Record the confirmation on the card, with the user's words. The confirmed card is the user's explicit request for every action it
 grants, and it stands for the user's check of newly cut and split tickets that refine and
 dispatch would otherwise wait for.
 

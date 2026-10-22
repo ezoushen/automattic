@@ -41,7 +41,7 @@ class RunCard(unittest.TestCase):
     def test_the_card_is_re_read_after_compaction(self):
         bootstrap = prose(ROOT / 'bootstrap.md')
         self.assertIn('An autopilot run card with no terminal state', bootstrap)
-        self.assertIn('owned by this session', bootstrap)
+        self.assertIn('that this conversation created or took over', bootstrap)
         self.assertIn('unconfirmed card starts no phase', bootstrap)
         self.assertIn('](skills/autopilot/SKILL.md)', bootstrap)
 

@@ -33,7 +33,7 @@ Decisions made without the user are rows in `.scratch/<slug>/ledger.md`; open on
 
 ## State
 confirmed: no | <date> "<the user's words>"
-session: <ID of the session that owns the run>
+session: <the host's session ID where it exposes one in the environment, else unknown; never a path>
 auto-merge: no | yes
 phase: align | refine | dispatch | pr | ended
 terminal: <state, once ended>
