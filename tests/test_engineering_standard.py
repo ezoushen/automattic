@@ -25,7 +25,7 @@ class EngineeringStandard(unittest.TestCase):
         # The traits listed in ticket autopilot/01, from the research synthesis.
         traits = {'reversibility': r'one-way', 'proof on the real artifact': r'real artifact',
                   'feedback loop before theory': r'feedback loop', 'root causes': r'root cause',
-                  'subtract before adding': r'[Ss]ubtract', 'idempotent operations': r'twice',
+                  'subtract before adding': r'[Ss]ubtract', 'idempotent operations': r'run twice.*converge',
                   'the full objective': r'full objective', 'budgeting effort': r'[Bb]udget',
                   'encoding lessons in checks': r'repeated (mistake|correction)', 'independent review': r'[Ii]ndependent review',
                   'honest status': r'not run', "the user's experience": r'user'}
@@ -36,6 +36,14 @@ class EngineeringStandard(unittest.TestCase):
     def test_it_applies_to_every_platform_alike(self):
         text = ' '.join(STANDARD.read_text().split())
         self.assertIn('mobile, web, backend, devops and SRE alike', text)
+        self.assertIn('It names no platform, language or tool', text)
+        # No single platform, language or tool may become the standard's scope.
+        for word in ('iOS', 'Android', 'React', 'Kubernetes', 'AWS', 'Python', 'JavaScript', 'Swift', 'Docker', 'Terraform'):
+            self.assertNotRegex(text, rf'\b{word}\b', word)
+
+    def test_root_causes_are_searched_everywhere_but_fixed_within_scope(self):
+        root = next(p for p in principles() if p.startswith('- **Fix the root cause'))
+        self.assertIn('fix the instances in scope and report the rest as follow-ups', root)
 
     def test_docs_that_link_it_extend_it_and_never_override_it(self):
         text = ' '.join(STANDARD.read_text().split())

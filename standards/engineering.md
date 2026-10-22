@@ -27,10 +27,11 @@ decisions but never override or relax a principle.
   rollout and read the result; a worker's summary, a green proxy or "it compiles" is a
   claim, not proof — shown by: each claim cites its command, exit status and the
   identity of what it ran against.
-- **Fix the root cause and every instance of it.** Ask why until the cause is
-  structural, search for its siblings, and never bypass a check to get past it;
-  after a restart-only failure, suspect state before code — shown by: the change names
-  the cause and the search for other instances.
+- **Fix the root cause, and find every instance of it.** Ask why until the cause is
+  structural, search for its siblings, fix the instances in scope and report the rest as
+  follow-ups; never bypass a check to get past it, and after a restart-only failure
+  suspect state before code — shown by: the change names the cause and the search for
+  other instances.
 - **Subtract before adding.** Remove what is not needed before building more; design
   for observed use, not imagined cases; three similar lines beat a premature
   abstraction — shown by: no unused option, single-use layer or speculative branch in the diff.
@@ -39,14 +40,14 @@ decisions but never override or relax a principle.
   resource at a time — shown by: each mutating step states what a rerun or a crash
   halfway does.
 - **Prefer small, reversible steps.** Each change works on its own, keeps the system
-  releasable and can be rolled back — shown by: every step leaves the checks green and
-  names how to undo it.
+  releasable and can be rolled back — shown by: every integrated change leaves the
+  checks green and names how to undo it.
 - **Keep the full objective.** Never redefine success as the part that passes; an
   unmet criterion stays open until evidence closes it — shown by: a completion check
   maps every criterion to passing evidence.
-- **Budget effort and context.** Size the model, the thinking and the time to the
-  task, commit passing work before a budget runs out, and pass references rather than
-  payloads — shown by: each delegation states its size and budget.
+- **Budget effort and context.** Size the effort and time to the task, within the
+  configured routing, commit passing work before a budget runs out, and pass references
+  rather than payloads — shown by: each delegation states its size and budget.
 - **Turn a repeated mistake into a check.** A correction that recurs becomes a test,
   lint rule, hook or script, and the prose rule it replaces goes — shown by: the check
   that now catches it.

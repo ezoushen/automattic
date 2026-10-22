@@ -26,6 +26,9 @@ class RunCard(unittest.TestCase):
         for field in ('## Goal', '## Acceptance criteria', '## Stop condition', '## Granted actions',
                       '## Pause list', '## Assumptions', '## State'):
             self.assertIn(field, text)
+        state = text.split('## State', 1)[1]
+        for key in ('confirmed:', 'session:', 'auto-merge:', 'phase:', 'terminal:', 'resume:'):
+            self.assertIn(key, state)
         self.assertIn('.scratch/<slug>/autopilot.md', prose(SKILL))
 
     def test_the_user_confirms_the_card_once_and_is_asked_nothing_after(self):
@@ -33,11 +36,44 @@ class RunCard(unittest.TestCase):
         self.assertIn('asks the user to confirm it once', text)
         self.assertIn('No phase after align starts before that confirmation', text)
         self.assertIn('After confirmation, ask the user nothing', text)
+        self.assertIn('Record the confirmation on the card', text)
 
     def test_the_card_is_re_read_after_compaction(self):
         bootstrap = prose(ROOT / 'bootstrap.md')
         self.assertIn('An autopilot run card with no terminal state', bootstrap)
+        self.assertIn('owned by this session', bootstrap)
+        self.assertIn('unconfirmed card starts no phase', bootstrap)
         self.assertIn('](skills/autopilot/SKILL.md)', bootstrap)
+
+
+class ComposedPhases(unittest.TestCase):
+    def test_the_confirmed_card_stands_for_the_checks_the_phases_ask_of_the_user(self):
+        text = prose(SKILL)
+        self.assertIn("stands for the user's check of newly cut and split tickets", text)
+        self.assertIn('Candidate ADRs are not written', text)
+
+    def test_each_phase_runs_with_the_grants_the_loop_needs(self):
+        run = SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0]
+        self.assertRegex(run, r'\[dispatch\]\(\.\./dispatch/SKILL\.md\)[^\n]*`--autofix`')
+        self.assertRegex(' '.join(run.split()), r'\[pr\]\(\.\./pr/SKILL\.md\).*push the effort branch and open the PR')
+
+    def test_without_a_pr_host_the_run_ends_at_local_delivery_instead_of_publishing(self):
+        run = ' '.join(SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('In a repository with no PR host, publish nothing', run)
+        self.assertIn('end `delivered-local`', run)
+
+    def test_the_card_lists_every_pause(self):
+        pauses = ' '.join(CARD.read_text().split('## Pause list', 1)[1].split('\n## ', 1)[0].split()).lower()
+        for pause in ('login or permission prompts', 'credentials', 'spending money', 'deleting data',
+                      'production changes', 'merging without `--auto-merge`', 'a missing approval',
+                      'weakening a verify', 'narrowing a user decision'):
+            self.assertIn(pause, pauses)
+
+    def test_choices_reserved_to_the_user_by_the_phases_are_never_decided(self):
+        text = prose(SKILL)
+        self.assertIn('The pause list is never decided', text)
+        self.assertIn("weakening an acceptance criterion's Verify", text)
+        self.assertIn('narrowing a decision the user made', text)
 
 
 class StopCondition(unittest.TestCase):
@@ -60,12 +96,15 @@ class StopCondition(unittest.TestCase):
         text = prose(SKILL)
         self.assertIn('scripts/allowance.py" status', text)
         self.assertIn('`critical`', text)
+        self.assertIn('for a provider this run uses', text)
         self.assertIn('finish the step in progress, commit passing work and end `paused-allowance`', text)
 
 
 class Flags(unittest.TestCase):
     def test_auto_merge_merges_only_through_the_normal_path(self):
         text = prose(SKILL)
+        merged = next(line for line in SKILL.read_text().splitlines() if line.startswith('- `merged`'))
+        self.assertIn('only with `--auto-merge`', merged)
         self.assertIn("merges only through the repository's normal path", text)
         self.assertIn('never by admin override or self-approval', text)
 
@@ -74,9 +113,12 @@ class Flags(unittest.TestCase):
         self.assertIn('`autopilot --take-over`', text)
         self.assertIn('reuses accepted decisions, tickets and reports', text)
         self.assertIn('asks only the align questions still unsettled', text)
+        self.assertIn('A confirmed card whose goal, criteria and grants are unchanged is not confirmed again', text)
 
     def test_late_questions_are_decided_reversibly_and_reported_first(self):
         text = prose(SKILL)
+        self.assertIn('ends `blocked`', text)
+        self.assertIn('split tickets also fail twice', text)
         self.assertIn('prefer the reversible direction', text)
         self.assertIn('record its basis and reversibility in the ledger', text)
         self.assertIn('The final report leads with the open assumptions', text)

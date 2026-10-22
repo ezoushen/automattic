@@ -21,18 +21,22 @@ ready), `merged` (only with `--auto-merge`), `waiting-on-user`, `paused-allowanc
 
 ## Granted actions
 refine; dispatch with autofix (review, repairs, applicable E2E); push the effort branch;
-open the PR and watch its checks; merging through the normal path only with `--auto-merge`.
+open the PR and watch its checks; merging through the normal path only when `auto-merge: yes`.
 
 ## Pause list
 Login or permission prompts, credentials, spending money, deleting data, production
-changes, merging without `--auto-merge`, a missing approval, and anything not granted.
+changes, merging without `--auto-merge`, a missing approval, weakening a Verify,
+narrowing a user decision, and anything not granted.
 
 ## Assumptions
 Decisions made without the user are rows in `.scratch/<slug>/ledger.md`; open ones listed here.
 
 ## State
+confirmed: no | <date> "<the user's words>"
+session: <ID of the session that owns the run>
+auto-merge: no | yes
 phase: align | refine | dispatch | pr | ended
 terminal: <state, once ended>
 evidence: <commit, report, PR URL>
-resume: `autopilot --take-over`
+resume: `autopilot --take-over` (plus `--auto-merge` when granted), after <what the user must do>
 ```

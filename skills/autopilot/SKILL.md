@@ -28,13 +28,17 @@ that mentions it is not an invocation. It never widens native permissions.
   anything reserved to the user.
 - **`autopilot --take-over`:** start from the session's current state. It reuses accepted decisions, tickets and reports,
   and asks only the align questions still unsettled; a phase already finished is not redone.
+  With an existing card, it continues from the card's State. A confirmed card whose goal, criteria and grants are unchanged is not confirmed again;
+  a card that ended `waiting-on-user` or `paused-allowance` resumes once its cause is gone.
 - **`--auto-merge`:** with either form, also grants merging once the PR is open; see [Stop](#stop).
 
 Then autopilot writes the [run card](run-card.md) to `.scratch/<slug>/autopilot.md` and asks the user to confirm it once.
 Each acceptance criterion on the card has a Verify line that can tell success from
 failure. No phase after align starts before that confirmation, and an unrelated reply
-or silence is not one. The confirmed card is the user's explicit request for every
-action it grants.
+or silence is not one. Record the confirmation on the card, with the user's words and
+this session's ID. The confirmed card is the user's explicit request for every action it
+grants, and it stands for the user's check of newly cut and split tickets that refine and
+dispatch would otherwise wait for.
 
 ## Run
 
@@ -42,15 +46,16 @@ After confirmation, ask the user nothing. Re-read the card and the ledger before
 phase, and after every compaction or resume. Run each phase by its own procedure:
 
 1. [refine](../refine/SKILL.md) the brief into tickets;
-2. [dispatch](../dispatch/SKILL.md) them with `--autofix`, which includes review, repairs
-   and applicable E2E;
+2. [dispatch](../dispatch/SKILL.md) them with `--autofix`, which includes review, repairs and applicable E2E;
 3. [pr](../pr/SKILL.md): write the description, push the effort branch and open the PR,
-   then watch the required checks.
+   then watch the required checks. In a repository with no PR host, publish nothing:
+   pass the PR procedure's delivery gate, write the delivery report and end `delivered-local`.
 
 Check the allowance at each phase boundary and before each worker launch with
-`python3 "<plugin_root>/scripts/allowance.py" status`. When Claude or Codex is
-`critical`, finish the step in progress, commit passing work and end `paused-allowance`.
+`python3 "<plugin_root>/scripts/allowance.py" status`. When it is `critical` for a provider this run uses,
+finish the step in progress, commit passing work and end `paused-allowance`.
 Update the card's State section as each phase ends, with the commit and report it reached.
+Candidate ADRs are not written: they need the user's yes, so the final report lists them among the user's actions.
 
 ## Decide without asking
 
@@ -58,13 +63,15 @@ A question that would go to the user after confirmation is decided instead. Look
 facts up, apply the ledger's principles and [engineering judgment](../../standards/engineering.md),
 prefer the reversible direction, and record its basis and reversibility in the ledger.
 Continue with the decision. When no option fits the user's principles and the
-acceptance criteria, the run ends `blocked`. A blocker that survives the escalation
-rules' second attempt also ends `blocked`. The final report leads with the open assumptions.
+acceptance criteria, the run ends `blocked`. Dispatch splits a ticket after two failed
+attempts; when its split tickets also fail twice, the run ends `blocked`. The final
+report leads with the open assumptions.
 
 The pause list is never decided: a login or permission prompt, credentials, spending
-money, deleting data, a production change, merging without `--auto-merge`, or a
-missing approval. Reaching one ends `waiting-on-user` instead of deciding it. Leave the native prompt pending, record
-what is needed and the command that resumes the run (`autopilot --take-over`).
+money, deleting data, a production change, merging without `--auto-merge`, a missing
+approval the repository's approval path requires, weakening an acceptance criterion's
+Verify, or narrowing a decision the user made. Reaching one ends `waiting-on-user` instead of deciding it.
+Leave the native prompt pending, and record what is needed and the resume command on the card.
 
 ## Stop
 
@@ -78,7 +85,7 @@ Record exactly one terminal state, with its evidence, in the card's State sectio
   and the [approval path](../../runtime/board/approval-path.md) are satisfied, never by admin override or self-approval.
 - `waiting-on-user`: a pause-list action is needed.
 - `paused-allowance`: the allowance reached `critical`.
-- `blocked`: no option fits the principles, or a blocker outlived its retries.
+- `blocked`: no option fits the principles, or split tickets failed again.
 
 Then report in the conversation: the terminal state, the open assumptions first, the PR
 or branch, the decisive evidence and what the user must do next, if anything.

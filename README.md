@@ -86,7 +86,7 @@ Codex and Pi list it.
 The Markdown is layered so a reader follows links in one direction. Hooks and
 `bootstrap.md` sit on top: the session-start hook injects the bootstrap's path, so docs name
 it instead of linking it. Below them come the skills, what the user types or the agent loads
-(`skills/<command>/`: brief and huh; dispatch and remediate; pr; review; housekeeping; align,
+(`skills/<command>/`: brief and huh; autopilot; dispatch and remediate; pr; review; housekeeping; align,
 refine and setup; diagnose, research, prototype, explain and tdd). Under them sit the internal
 layers, `agents/`, `standards/`, `hosts/` and the `runtime/` modules
 (interview, board, workers, checks, routing, resources, decisions, config, ask, domain), and
