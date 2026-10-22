@@ -27,7 +27,7 @@ import outcomes  # noqa: E402
 
 DEFINITIONS = agent_defs.load()
 TAB_RECIPE = ('start the worker in a tab of its own: `herdr tab create --workspace <coordinator workspace> '
-              '--cwd <worktree> --label "<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> '
+              '--cwd <worktree> --label "<slug>/<assignment> <role>" --env ZLOOP_WORKER=<slug>/<assignment> '
               '--no-focus`, then `herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>`, '
               'then register it')
 LOOKUP_SECONDS = 5  # Registration's wait on each Herdr call.

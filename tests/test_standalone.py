@@ -54,7 +54,7 @@ class Standalone(unittest.TestCase):
         for camel in ('useMatt()', 'MattSkills', 'mattX', 'useMATT', 'matts', 'Matts'):
             with self.subTest(identifier=camel):
                 self.assertIsNotNone(EXTERNAL.search(camel))
-        for word in ('MATTER', 'Matter', 'FORMATTED', 'Automattic'):
+        for word in ('MATTER', 'Matter', 'FORMATTED', 'Mattress'):
             with self.subTest(word=word):
                 self.assertIsNone(EXTERNAL.search(word))
         self.assertIsNone(EXTERNAL.search('the output format matters'))
@@ -86,7 +86,7 @@ class Standalone(unittest.TestCase):
 
     def test_a_herdr_worker_keeps_the_plugins_its_assignment_invokes_and_the_herdr_identity_hook(self):
         self.assertIn('Session-local settings isolation must keep the plugins the assignment invokes, such as '
-                      "Automattic for its slash commands, and Herdr's native identity hook; verify both before "
+                      "zloop for its slash commands, and Herdr's native identity hook; verify both before "
                       'accepting the launch.', prose('hosts/herdr.md'))
 
     def test_a_situational_skill_keeps_its_invocation_policy(self):

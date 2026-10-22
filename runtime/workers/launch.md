@@ -31,7 +31,7 @@ explicit phase opt-ins. A decision-model worker router can use that backend;
 skill/profile routers retain their existing selection policy.
 
 Routing profile selection is explicit: `--config-profile <name>`, then
-`AUTOMATTIC_PROFILE`, then the configured router. Omitting the router uses
+`ZLOOP_PROFILE`, then the configured router. Omitting the router uses
 host judgment. Profile names do not establish Herdr or select the host.
 Caller-specific native routes continue to win over a Herdr bridge when available;
 Herdr routes still require `HERDR_ENV=1` and runtime preflight. A single routing
@@ -92,7 +92,7 @@ destination's native settings. Ticket `model: standard|deep` and legacy
 For a configured agent, omitted `models` means `{"mode":"inherit"}`:
 
 - **inherit** preserves the actual destination's model and reasoning settings.
-  Send no overrides, read no Automattic model preferences, and do not promote by
+  Send no overrides, read no zloop model preferences, and do not promote by
   workload. Bridges that discard destination settings cannot claim inheritance.
 - **override** uses only the agent's `models.model`/`models.thinking`, followed by
   explicit task `--model`/`--thinking`. Omitted fields retain destination defaults.

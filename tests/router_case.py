@@ -17,14 +17,14 @@ models = support.load_script('agent_models.py', 'models')
 
 class RouterCase(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic router ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop router ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.user = self.root / 'user.json'
-        self.project = self.root / '.automattic/executors.json'
+        self.project = self.root / '.zloop/executors.json'
         self.project.parent.mkdir()
-        env = patch.dict(os.environ, {'HERDR_ENV': '1', 'AUTOMATTIC_PROFILE': '',
-                                     'AUTOMATTIC_SESSION': '', 'XDG_STATE_HOME': str(self.root / 'state'),
+        env = patch.dict(os.environ, {'HERDR_ENV': '1', 'ZLOOP_PROFILE': '',
+                                     'ZLOOP_SESSION': '', 'XDG_STATE_HOME': str(self.root / 'state'),
                                      'CODEX_HOME': str(self.root / 'codex-home')})
         env.start()
         self.addCleanup(env.stop)

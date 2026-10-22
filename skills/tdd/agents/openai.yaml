@@ -1,5 +1,5 @@
 interface:
   short_description: "Build or fix test-first, one business rule at a time"
-  default_prompt: "Use $automattic:tdd <behavior or bug> to agree the seams, then work one failing test, the least code and a refactor per rule."
+  default_prompt: "Use $zloop:tdd <behavior or bug> to agree the seams, then work one failing test, the least code and a refactor per rule."
 policy:
   allow_implicit_invocation: true

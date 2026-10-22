@@ -123,7 +123,7 @@ class Profiles(RouterCase):
         self.save()
         self.assertEqual(self.resolve()['router']['type'], 'host')
         self.assertEqual(self.resolve(config_profile='herdr', target_runtime='codex')['candidate'], 'sol')
-        with patch.dict(os.environ, {'AUTOMATTIC_PROFILE': 'herdr'}):
+        with patch.dict(os.environ, {'ZLOOP_PROFILE': 'herdr'}):
             self.assertEqual(self.resolve(target_runtime='codex')['candidate'], 'sol')
 
     def test_router_and_profile_layering_and_session_resume(self):

@@ -59,9 +59,9 @@ class AgentModelHook(unittest.TestCase):
         self.assertIsNone(self.run_hook({'command': 'ls'}, tool='Bash'))
 
     def test_fork_and_definitions_that_pin_a_model_are_allowed(self):
-        self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
+        self.agent(self.home / '.claude/agents', 'zloop-builder-0123456789ab', 'sonnet')
         self.agent(self.cwd / '.claude/agents', 'project-reviewer', 'opus')
-        for subagent in ('fork', 'automattic-builder-0123456789ab', 'project-reviewer'):
+        for subagent in ('fork', 'zloop-builder-0123456789ab', 'project-reviewer'):
             with self.subTest(subagent=subagent):
                 self.assertIsNone(self.run_hook({'subagent_type': subagent, 'prompt': assignment()}))
 
@@ -80,14 +80,14 @@ class AgentModelHook(unittest.TestCase):
         self.assertIsNone(self.run_hook({'subagent_type': 'toolkit:code-reviewer'}))
         self.assertEqual(self.run_hook({'subagent_type': 'toolkit:silent'})['permissionDecision'], 'deny')
 
-    def test_bundled_automattic_agent_without_model_is_denied(self):
-        decision = self.run_hook({'subagent_type': 'automattic:builder', 'prompt': assignment()})
+    def test_bundled_zloop_agent_without_model_is_denied(self):
+        decision = self.run_hook({'subagent_type': 'zloop:builder', 'prompt': assignment()})
         self.assertEqual(decision['permissionDecision'], 'deny')
 
-    def test_automattic_launch_needs_its_job_file_and_inputs(self):
-        self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
+    def test_zloop_launch_needs_its_job_file_and_inputs(self):
+        self.agent(self.home / '.claude/agents', 'zloop-builder-0123456789ab', 'sonnet')
         review = support.ROOT / 'skills/review/jobs/diff-review.md'
-        for subagent, model in (('automattic:builder', 'sonnet'), ('automattic-builder-0123456789ab', None)):
+        for subagent, model in (('zloop:builder', 'sonnet'), ('zloop-builder-0123456789ab', None)):
             with self.subTest(subagent=subagent):
                 launch = {'subagent_type': subagent, **({'model': model} if model else {})}
                 for prompt, reason in (('Implement ticket 3.', 'No `job_file:` found'),
@@ -100,18 +100,18 @@ class AgentModelHook(unittest.TestCase):
                 self.assertIsNone(self.run_hook(dict(launch, prompt=assignment())))
 
     def test_the_denial_offers_only_the_job_location_that_resolves(self):
-        decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',
+        decision = self.run_hook({'subagent_type': 'zloop:builder', 'model': 'sonnet',
                                   'prompt': 'job_file: skills/dispatch/jobs/ticket.md'})
         reason = decision['permissionDecisionReason']
         self.assertIn('skills/<skill>/jobs/<job>.md', reason)
         self.assertNotIn('flows/', reason)
 
     def test_a_job_under_a_skill_folder_of_another_plugin_root_is_resolved(self):
-        self.agent(self.home / '.claude/agents', 'automattic-builder-0123456789ab', 'sonnet')
+        self.agent(self.home / '.claude/agents', 'zloop-builder-0123456789ab', 'sonnet')
         job = self.home.joinpath('plugin', 'skills', 'review', 'jobs', 'ticket.md')
         job.parent.mkdir(parents=True)
         job.write_text(TICKET.read_text())
-        launch = {'subagent_type': 'automattic-builder-0123456789ab'}
+        launch = {'subagent_type': 'zloop-builder-0123456789ab'}
         self.assertIsNone(self.run_hook(dict(launch, prompt=assignment(job))))
         decision = self.run_hook(dict(launch, prompt=assignment(job, drop=('worktree',))))
         self.assertEqual(decision['permissionDecision'], 'deny')
@@ -121,26 +121,26 @@ class AgentModelHook(unittest.TestCase):
         job = self.home / 'plugin/skills/dispatch/jobs/ticket.md'
         job.parent.mkdir(parents=True)
         job.write_text('---\nname: ticket\nagent: builder\n---\n')
-        decision = self.run_hook({'subagent_type': 'automattic:builder', 'model': 'sonnet',
+        decision = self.run_hook({'subagent_type': 'zloop:builder', 'model': 'sonnet',
                                   'prompt': f'job_file: {job}'})
         self.assertEqual(decision['permissionDecision'], 'deny')
         self.assertIn('declares no inputs list', decision['permissionDecisionReason'])
 
     def test_generated_profile_whose_tools_drifted_from_its_agent_is_denied(self):
         current = 'Read, Edit, Write, Bash, Grep, Glob, Skill, SendMessage, Monitor, TaskStop'
-        for name, tools in (('automattic-builder-0123456789ab', 'Read, Edit, Write, Bash, Grep, Glob, Skill'),
-                            ('automattic-builder-ba9876543210', current)):
+        for name, tools in (('zloop-builder-0123456789ab', 'Read, Edit, Write, Bash, Grep, Glob, Skill'),
+                            ('zloop-builder-ba9876543210', current)):
             (self.home / '.claude/agents' / f'{name}.md').write_text(
                 f'---\nname: {name}\ndescription: "x"\ntools: "{tools}"\nmodel: "sonnet"\n---\nBody\n')
-        launch = {'subagent_type': 'automattic-builder-0123456789ab', 'prompt': assignment()}
+        launch = {'subagent_type': 'zloop-builder-0123456789ab', 'prompt': assignment()}
         decision = self.run_hook(launch)
         self.assertEqual(decision['permissionDecision'], 'deny')
         for word in ('Monitor', 'SendMessage', 'TaskStop', 'agent_models.py'):
             self.assertIn(word, decision['permissionDecisionReason'])
-        self.assertIsNone(self.run_hook(dict(launch, subagent_type='automattic-builder-ba9876543210')))
+        self.assertIsNone(self.run_hook(dict(launch, subagent_type='zloop-builder-ba9876543210')))
 
     def test_opt_out_and_malformed_input_never_block(self):
-        self.assertIsNone(self.run_hook({'subagent_type': 'Explore'}, env={'AUTOMATTIC_AGENT_MODEL_HOOK': 'off'}))
+        self.assertIsNone(self.run_hook({'subagent_type': 'Explore'}, env={'ZLOOP_AGENT_MODEL_HOOK': 'off'}))
         result = subprocess.run([sys.executable, str(HOOK)], input='not json', capture_output=True, text=True,
                                 timeout=10)
         self.assertEqual((result.returncode, result.stdout), (0, ''))

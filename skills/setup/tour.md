@@ -56,8 +56,8 @@ Explain scope before saving a change:
 
 | Scope | Applies to | Save location |
 | --- | --- | --- |
-| User | Personal defaults across projects | `~/.config/automattic/executors.json` |
-| Project | Overrides for this canonical project | `<repo>/.automattic/executors.json` |
+| User | Personal defaults across projects | `~/.config/zloop/executors.json` |
+| Project | Overrides for this canonical project | `<repo>/.zloop/executors.json` |
 | Session | This root session and its resumes in this project | Resolver-managed session record |
 
 Show precedence from native defaults through user, project and session to explicit
@@ -84,5 +84,5 @@ Calibration runs and live worker probes are separate requests, not setup checks.
 Finish an explanation when the user's question is answered; no configuration change
 is required. Finish an edit with the saved path/scope, effective result and any
 remaining runtime check. If the user wants to begin work afterward, point to the
-appropriate phase in the pipeline map (`/automattic:brief map`) and carry existing
+appropriate phase in the pipeline map (`/zloop:brief map`) and carry existing
 authorization forward. A setup tour alone does not launch a workflow.

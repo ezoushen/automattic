@@ -26,7 +26,7 @@ class GateRepo(unittest.TestCase):
     """A repository whose sessions reach a stub `herdr` on PATH, never a live Herdr server."""
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic yield ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop yield ')
         self.addCleanup(self.tmp.cleanup)
         # Outcomes go to a ledger under the state home; keep the user's ledger out of tests.
         self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state')}))
@@ -93,7 +93,7 @@ else:
     def env(self, pane='w1:p1', **values):
         """The environment of a session in Herdr pane `pane` of workspace w1, or outside Herdr when None."""
         env = {key: value for key, value in os.environ.items()
-               if not key.startswith('HERDR_') and key not in ('AUTOMATTIC_WORKER', *SESSION_VARIABLES)}
+               if not key.startswith('HERDR_') and key not in ('ZLOOP_WORKER', *SESSION_VARIABLES)}
         env['PATH'] = f"{self.bin}{os.pathsep}{env['PATH']}"
         return dict(env, **({'HERDR_PANE_ID': pane, 'HERDR_WORKSPACE_ID': 'w1'} if pane else {}), **values)
 
@@ -178,7 +178,7 @@ class YieldGateHook(GateRepo):
         self.assertIn('workers/wait.md', decision['reason'])
         # A stop that a stop hook already continued is let through, so a gap the host cannot fix never loops.
         self.assertIsNone(self.stop(active=True))
-        self.assertIsNone(self.stop(env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
+        self.assertIsNone(self.stop(env={'ZLOOP_YIELD_HOOK': 'off'}))
 
     def test_an_unreadable_launch_log_line_is_named_and_hides_no_other_gap(self):
         # Review 6: a torn or hand-broken line is reported by number and ignored for matching; the lifecycle gaps and
@@ -647,10 +647,10 @@ console.log(JSON.stringify(await handlers.agent_before_settle(
                          [f'{self.state}: ticket-1/1: no armed wait', f'{self.state}: ticket-2/1: no armed wait'])
 
     def test_a_marked_worker_answers_for_its_own_launches_but_not_its_siblings_wherever_it_runs(self):
-        # Rule 4: AUTOMATTIC_WORKER skips only the live-sibling scan. Each marked session (in its worktree, at the
+        # Rule 4: ZLOOP_WORKER skips only the live-sibling scan. Each marked session (in its worktree, at the
         # checkout root, in its coordinator's inherited pane, outside Herdr) is held for the helper it launched,
         # even after the helper's pane closed (probe H), and never for its siblings or its coordinator's launches.
-        sibling, marked = self.repo / '.worktrees/ticket-2', {'AUTOMATTIC_WORKER': 'effort/ticket-1'}
+        sibling, marked = self.repo / '.worktrees/ticket-2', {'ZLOOP_WORKER': 'effort/ticket-1'}
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5', session='coord-1')
         workers = (('w1:p5', 'builder-session', self.worktree), ('w1:p7', 'other-session', self.repo),
                    ('w1:p1', 'worker-1', self.worktree), (None, 'worker-2', self.repo))
@@ -730,7 +730,7 @@ console.log(JSON.stringify((await handlers.agent_before_settle(
         self.register('w1:p6', 'ticket-2/1')
         self.serve(agents=[self.agent('builder-1', 'w1:p5', first), self.agent('builder-2', 'w1:p6', second)])
         self.assertEqual(self.check(cwd=first, pane='w1:p5', session='worker-session',
-                                    env={'AUTOMATTIC_WORKER': 'effort/ticket-1'}), [])
+                                    env={'ZLOOP_WORKER': 'effort/ticket-1'}), [])
         self.assertEqual(self.check(session='host-1'), [])
 
     def test_a_coordinator_inside_a_worktree_is_still_held(self):
@@ -754,7 +754,7 @@ console.log(JSON.stringify((await handlers.agent_before_settle(
         self.assertEqual(decision['decision'], 'block')
         self.assertIn(f'- {gap}\n', decision['reason'])
         self.assertIsNone(self.stop(active=True))
-        self.assertIsNone(self.stop(env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
+        self.assertIsNone(self.stop(env={'ZLOOP_YIELD_HOOK': 'off'}))
         # A session outside Herdr has no workspace to check, so a broken Herdr is no gap there.
         self.assertEqual(self.check(pane=None, session='host-1'), [])
         self.serve(hang=True)
@@ -766,14 +766,14 @@ console.log(JSON.stringify((await handlers.agent_before_settle(
         self.serve(fail='connection refused')
         reason = self.stop()['reason']
         self.assertIn('retry', reason)
-        self.assertIn('AUTOMATTIC_YIELD_HOOK=off', reason)
+        self.assertIn('ZLOOP_YIELD_HOOK=off', reason)
         self.assertNotIn('Register each launched worker', reason)
         self.assertNotIn('herdr_launch.py dismiss', reason)
         # With a real worker gap beside it, the worker advice stays.
         self.launch('herdr agent start builder-1 --kind codex --pane w1:p5')
         reason = self.stop(active=False)['reason']
         self.assertIn('Register each launched worker', reason)
-        self.assertIn('AUTOMATTIC_YIELD_HOOK=off', reason)
+        self.assertIn('ZLOOP_YIELD_HOOK=off', reason)
 
     def test_a_git_failure_is_a_named_gap_not_a_pass(self):
         # Rule 5: when git cannot name the session's checkout the gate says so; outside any repository is no checkout.
@@ -869,7 +869,7 @@ class DeliveryHold(GateRepo):
             # Review 6: a delivery-only hold carries its gap and command, without the worker-registration advice.
             self.assertEqual(decision['reason'], f'Stopping now leaves these gaps:\n- {self.gap()}\n')
             self.assertIsNone(self.stop(pane='w1:p1', host=host, active=True))
-        self.assertIsNone(self.stop(pane='w1:p1', env={'AUTOMATTIC_YIELD_HOOK': 'off'}))
+        self.assertIsNone(self.stop(pane='w1:p1', env={'ZLOOP_YIELD_HOOK': 'off'}))
         self.review(delivered=True)
         self.assertEqual(self.check(pane='w1:p1'), [])
 

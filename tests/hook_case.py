@@ -152,4 +152,4 @@ class HookRepo(unittest.TestCase):
     def temporary_worktrees(self):
         listed = git(self.root, 'worktree', 'list', '--porcelain')
         return [line.split(' ', 1)[1] for line in listed.splitlines()
-                if line.startswith('worktree ') and 'automattic-pre-push.' in line]
+                if line.startswith('worktree ') and 'zloop-pre-push.' in line]

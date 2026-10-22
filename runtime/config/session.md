@@ -1,13 +1,13 @@
 # Session scope
 
-`--session <root-session-id>` or `AUTOMATTIC_SESSION` enables the session layer.
+`--session <root-session-id>` or `ZLOOP_SESSION` enables the session layer.
 Use the real root session ID when available; otherwise create one stable ID when
 the first session override is requested and retain it in existing effort state.
 Pass that ID and canonical repository to descendants and resume messages. Workers
 use their actual host adapter; carrying the session ID does not pin the parent's host.
 Only the coordinator changes the shared override record.
 
-State lives under `${XDG_STATE_HOME:-~/.local/state}/automattic/sessions/`, keyed by
+State lives under `${XDG_STATE_HOME:-~/.local/state}/zloop/sessions/`, keyed by
 canonical repository and root session ID. The record includes both identities and
 `config`, using the same schema (including `executor_types`) as executors.json. Inspection does
 not create it. New sessions use durable defaults; resume with the same ID restores

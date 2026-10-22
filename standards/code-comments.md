@@ -47,7 +47,7 @@ references, examples and tool-recognized tags with existing project checks;
 do not invent runtime tests for prose. Remove obsolete claims in the changed
 scope. Report unavailable checks and unresolved contract questions honestly.
 
-The Automattic reviewer owns the documentation gate; writing docs does not certify
+The zloop reviewer owns the documentation gate; writing docs does not certify
 it. Leave unrelated problems as scoped follow-ups. For attribution questions, see
 [sources](code-comments-sources.md); project policy controls where those sources allow
 broader implementation commentary.

@@ -5,7 +5,7 @@ adds the host and Herdr specifics.
 
 Let the skill own its tools, launch syntax and lifecycle. For Herdr, use the
 installed Herdr skill, including its managed-session prerequisite, identity checks
-and output collection, plus [Automattic's environment guidance](../herdr.md);
+and output collection, plus [zloop's environment guidance](../herdr.md);
 do not maintain a second CLI manual here. Limit layout
 changes to those needed for the assignment, using the skill's caller context and
 returned identities. An output-recovery procedure requiring writes is unavailable

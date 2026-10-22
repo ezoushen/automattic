@@ -5,7 +5,7 @@ usage: tests/run_all.py
 
 Uses the plugin environment's .venv (the main checkout's, from a worktree) unless
 PYTHON names another interpreter. Prints each failing script's output tail and
-exits 1 when any script fails. Native checks (AUTOMATTIC_NATIVE=1) stay opt-in; see docs/development.md.
+exits 1 when any script fails. Native checks (ZLOOP_NATIVE=1) stay opt-in; see docs/development.md.
 """
 import os
 from pathlib import Path

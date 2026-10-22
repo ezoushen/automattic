@@ -54,7 +54,7 @@ A one-run request stays in the assignment, not a saved file.
 
 For default native workers, prepare generated profiles only when requested controls
 require them, preserving existing restrictions. Named sub-agents, skills and Bash
-executors use their own supported controls; never replace a named delegate with an
-Automattic profile. Changes apply to new workers; do not restart live workers or
+executors use their own supported controls; never replace a named delegate with a
+zloop profile. Changes apply to new workers; do not restart live workers or
 change the main model. Clean up only generated profiles proven unused by active or
 resumable assignments. Report required reloads and unverified capabilities.

@@ -102,7 +102,7 @@ closes. A deferred attempt asks for `record acceptance or decline` in `status` u
 after the session closed, and each excludes the other.
 
 Each collected attempt's outcome (result, acceptance or decline, reverts) also goes
-to a machine-wide ledger, `$XDG_STATE_HOME/automattic/outcomes.sqlite`, with its
+to a machine-wide ledger, `$XDG_STATE_HOME/zloop/outcomes.sqlite`, with its
 candidate, agent and job, whatever routed it. `scripts/outcomes.py summary [--agent <agent>]
 [--job <job>]` counts successes, failures and pending attempts per agent, job and
 candidate: an `acceptance: true` job succeeds when accepted, other jobs when completed; a decline, revert or failed

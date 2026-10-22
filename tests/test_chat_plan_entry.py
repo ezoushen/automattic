@@ -21,7 +21,7 @@ class ChatPlanEntry(unittest.TestCase):
                      "the user's words quoted verbatim", 'the plan as agreed as WHAT and HOW', 'open questions',
                      'Do not run align or re-ask what the conversation settled',
                      'ask only a material gap that blocks executable tickets',
-                     '`/automattic:align` stays available for a plan that needs it'):
+                     '`/zloop:align` stays available for a plan that needs it'):
             self.assertIn(rule, text)
         self.assertIn('[a plan agreed in chat](chat-plan.md)', prose(REFINE / 'SKILL.md'))
         self.assertIn('[a plan agreed in chat](../refine/chat-plan.md)', prose(DISPATCH / 'SKILL.md'))

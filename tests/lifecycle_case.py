@@ -22,7 +22,7 @@ SCRIPT = support.script('worker_lifecycle.py')
 
 class WorkerLifecycleCase(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic worker ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop worker ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         # Outcomes go to a ledger under the state home; keep the user's ledger out of tests.

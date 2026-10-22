@@ -110,7 +110,7 @@ def session_path(repo, session_id):
     state = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state').expanduser()
     if not state.is_absolute():
         raise ValueError('XDG_STATE_HOME must be an absolute directory for session state')
-    return state / 'automattic/sessions' / f'{digest}.json'
+    return state / 'zloop/sessions' / f'{digest}.json'
 
 
 def read_session(repo, session_id):

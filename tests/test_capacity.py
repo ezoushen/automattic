@@ -20,7 +20,7 @@ LIFECYCLE = support.script('worker_lifecycle.py')
 
 class Capacity(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic capacity ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop capacity ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'state')}))

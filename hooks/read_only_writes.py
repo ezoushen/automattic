@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: an Automattic read-only subagent in Claude Code, or native child in Codex, leaves the user's
+"""PreToolUse hook: a zloop read-only subagent in Claude Code, or native child in Codex, leaves the user's
 checkouts unchanged.
 
-Claude Code names the subagent a tool call runs in (`agent_type`). For `automattic:<agent>`, or a generated
-`automattic-<agent>-<digest>` profile, whose agent declares `writes: none`, it denies an Edit, Write or
+Claude Code names the subagent a tool call runs in (`agent_type`). For `zloop:<agent>`, or a generated
+`zloop-<agent>-<digest>` profile, whose agent declares `writes: none`, it denies an Edit, Write or
 NotebookEdit of a file inside the main checkout or one of its worktrees (the session cwd's git common dir family),
 except under the main checkout's .scratch/<slug>/reports/ and in the `worktree:` the subagent's assignment names
 (outside any `.git` there), whose temporary experiment edits collection's restored-worktree check guards. The assignment is the first user
@@ -20,7 +20,7 @@ path inside the family denies the call.
 Codex (argument `codex`, Bash and apply_patch): a native child's payload carries `agent_id` and its own rollout,
 but its task message is stored encrypted, so its parent records the assignment first (`codex-assign`) in
 <main>/.scratch/codex-children/<CODEX_SESSION_ID>/<task_name>.json, the agent its agent_file names and its worktree,
-and indexes that checkout in <XDG state>/automattic/codex-children/<session>/. codex-assign never overwrites a
+and indexes that checkout in <XDG state>/zloop/codex-children/<session>/. codex-assign never overwrites a
 record, and the hook denies writing records, the index or the child's own rollout by redirect, `tee` or apply_patch;
 `rm`, `mv` or an interpreter can still remove a record and record it anew, and codex-assign's refusal of a child
 rests on CODEX_THREAD_ID, which a child's command can set, so neither holds against a child that sets out to evade.
@@ -85,8 +85,8 @@ def deadline(seconds=BUDGET):
 
 
 def read_only(agent_type):
-    """The Automattic agent a subagent type names when that agent declares `writes: none`, else None."""
-    named = re.fullmatch(r'automattic(?::([a-z0-9-]+)|-([a-z0-9-]+)-[0-9a-f]{12})', agent_type or '')
+    """The zloop agent a subagent type names when that agent declares `writes: none`, else None."""
+    named = re.fullmatch(r'zloop(?::([a-z0-9-]+)|-([a-z0-9-]+)-[0-9a-f]{12})', agent_type or '')
     agent = named and (named.group(1) or named.group(2))
     definition = agent and agent_defs.load(ROOT)['agents'].get(agent)
     return agent if definition and definition.get('writes') == 'none' else None
@@ -316,10 +316,10 @@ def child_task(event):
 
 
 def state_index(session):
-    """<Automattic state>/codex-children/<session>/: codex-assign leaves one file there per checkout holding the
+    """<zloop state>/codex-children/<session>/: codex-assign leaves one file there per checkout holding the
     session's records, naming its main checkout, so a session without records is told apart without parsing."""
     state = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state').expanduser()
-    return state / 'automattic/codex-children' / session
+    return state / 'zloop/codex-children' / session
 
 
 def git_main(directory):
@@ -438,7 +438,7 @@ def codex(event):
 def assign(args):
     """`codex-assign --task <task_name> --agent-file <abs> [--worktree <abs>]`: the Codex parent records a native
     child's assignment before `spawn_agent`, since the child's task message is stored encrypted, and indexes the
-    checkout under the session in the Automattic state directory. Run from inside the checkout the child works in.
+    checkout under the session in the zloop state directory. Run from inside the checkout the child works in.
     An existing record is never overwritten, though `rm` can remove it. The refusal of a child's shell, where
     CODEX_THREAD_ID is not the root session's id, is advisory: a child's command can set that variable."""
     parser = argparse.ArgumentParser(prog='read_only_writes.py codex-assign')
@@ -454,7 +454,7 @@ def assign(args):
         'run it from the Codex parent session\'s own shell' if not session or thread not in (None, session) else
         f'session id {session!r} is not a Codex session id' if not SESSION.fullmatch(session) else
         f'task name {options.task!r} is not one Codex accepts ([a-z0-9_])' if not TASK.fullmatch(options.task) else
-        f'{options.agent_file} is not an Automattic agent file'
+        f'{options.agent_file} is not a zloop agent file'
         if not (Path(options.agent_file).is_file() and agent in agent_defs.load(ROOT)['agents']) else
         'run it from inside the repository' if main is None else
         f'{options.worktree} is not a worktree of {main}' if worktree and worktree not in checkouts(main)[1:] else None)

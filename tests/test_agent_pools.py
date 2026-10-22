@@ -24,17 +24,17 @@ def worker(model, default='medium', allowed=('medium', 'high'), executor=None):
 
 class Pools(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic pools ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop pools ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self.env = patch.dict(os.environ, {'AUTOMATTIC_PROFILE': '', 'HERDR_ENV': '',
-                                          'AUTOMATTIC_SESSION': '',
+        self.env = patch.dict(os.environ, {'ZLOOP_PROFILE': '', 'HERDR_ENV': '',
+                                          'ZLOOP_SESSION': '',
                                           'XDG_STATE_HOME': str(self.root / 'state'),
                                      'CODEX_HOME': str(self.root / 'codex-home')})
         self.env.start()
         self.addCleanup(self.env.stop)
         self.user = self.root / 'user.json'
-        self.project = self.root / '.automattic/executors.json'
+        self.project = self.root / '.zloop/executors.json'
         self.project.parent.mkdir()
         self.pool = {'candidates': {
             'luna': worker('luna', 'xhigh', ('xhigh', 'max')),
@@ -192,7 +192,7 @@ print(json.dumps({'assignment_id': request['assignment']['assignment_id'],
         other = self.root / 'another-repo'
         other.mkdir()
         self.assertNotEqual(models.session_path(other, 'first'), models.session_path(self.root, 'first'))
-        with patch.dict(os.environ, {'AUTOMATTIC_SESSION': 'first'}):
+        with patch.dict(os.environ, {'ZLOOP_SESSION': 'first'}):
             self.assertEqual(self.resolve()['settings']['model'], 'session-model')
             self.assertEqual(self.resolve(session_id='second')['status'], 'selection_required')
         self.assertEqual(self.resolve(session_id='first', choice=worker('pin'))['settings']['model'], 'pin')

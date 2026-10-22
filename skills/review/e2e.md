@@ -19,10 +19,10 @@ the push. Consumer-repository branches made for the effort are review targets as
 well. Review each against its own base. Record why operator-only pilots, production rollouts and post-merge checks
 fall outside this scope. If such an action is an explicit prerequisite within the
 accepted scope, retain it as a real blocker; never silently waive it or execute it
-without its authorization. No board or Automattic project file is required for
+without its authorization. No board or zloop project file is required for
 standalone review; use the repository's existing verification conventions.
 
-For a verified Automattic effort, the orchestrator integrates accepted local
+For a verified zloop effort, the orchestrator integrates accepted local
 repairs into the effort branch while no worker owns that worktree. Prefer
 fast-forward; review any new merge result or conflict resolution before E2E.
 Before expensive gates, reconcile the intended integration base and known required
@@ -83,7 +83,7 @@ heads for reused checks. Any unresolved failed check makes the aggregate `failed
 otherwise missing evidence/access or unresolved requirements make it `incomplete`.
 Keep every per-check failure and gap visible. Neither status certifies verification.
 Recheck the target/base and local repair head before finishing; any movement or
-new tracked edits reopens affected review and verification. For an Automattic
+new tracked edits reopens affected review and verification. For a zloop
 effort, apply the board's delivery gate after teardown (`--delivery` only for local
 tickets). Unimplemented required work or broader uncovered scope still blocks it.
 On later user follow-ups, reconcile the selected issues and report before continuing.

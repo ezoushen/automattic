@@ -23,7 +23,7 @@ OUTCOMES = support.script('outcomes.py')
 
 class OutcomeLedger(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic outcomes ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop outcomes ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'state')}))
@@ -194,7 +194,7 @@ class OutcomeLedger(unittest.TestCase):
 
     def test_rows_from_before_agents_and_jobs_are_not_counted(self):
         self.attempt('t1/1', acceptance={'decision': 'accepted', 'commit': 'm-1', 'evidence': ['git log m-1']})
-        with sqlite3.connect(Path(os.environ['XDG_STATE_HOME']) / 'automattic/outcomes.sqlite') as db:
+        with sqlite3.connect(Path(os.environ['XDG_STATE_HOME']) / 'zloop/outcomes.sqlite') as db:
             db.execute('INSERT INTO outcomes VALUES (?, ?)', ('old#1', json.dumps(
                 {'role': 'implementer', 'candidate': 'sonnet', 'status': 'failed'})))
         self.assertEqual(self.summary(), {'builder': {'ticket': {
@@ -202,7 +202,7 @@ class OutcomeLedger(unittest.TestCase):
 
     def test_reimporting_a_state_file_refreshes_its_rows(self):
         self.attempt('t1/1', acceptance={'decision': 'deferred', 'reason': 'gate running'})
-        with sqlite3.connect(Path(os.environ['XDG_STATE_HOME']) / 'automattic/outcomes.sqlite') as db:
+        with sqlite3.connect(Path(os.environ['XDG_STATE_HOME']) / 'zloop/outcomes.sqlite') as db:
             key, data = db.execute('SELECT key, data FROM outcomes').fetchone()
             row = json.loads(data)
             row.update(result=None, status='failed')  # As an earlier version wrote it.

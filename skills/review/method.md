@@ -20,7 +20,7 @@ Sources, in order of authority:
    instruction files (`AGENTS.md`, `CLAUDE.md` and equivalents), and conventions
    recorded in its docs or decisions. A change that contradicts an accepted ADR
    ([ADRs](../../runtime/domain/adr.md)) is a finding, cited with the ADR.
-2. Automattic's built-in rules, which a documented project rule overrides:
+2. zloop's built-in rules, which a documented project rule overrides:
    [code-comments](../../standards/code-comments.md) and
    [tautological-tests](../../standards/kinds/tautological-tests.md), applied as the
    [reviewer](../../agents/reviewer.md) agent describes.

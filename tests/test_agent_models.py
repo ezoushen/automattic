@@ -21,14 +21,14 @@ models = support.load_script('agent_models.py', 'agent_models')
 
 class Preferences(unittest.TestCase):
     def setUp(self):
-        tmp = tempfile.TemporaryDirectory(prefix='automattic models ')
+        tmp = tempfile.TemporaryDirectory(prefix='zloop models ')
         self.addCleanup(tmp.cleanup)
-        environment = patch.dict(os.environ, {'AUTOMATTIC_PROFILE': '', 'HERDR_ENV': ''})
+        environment = patch.dict(os.environ, {'ZLOOP_PROFILE': '', 'HERDR_ENV': ''})
         environment.start()
         self.addCleanup(environment.stop)
         self.root = Path(tmp.name)
         self.user = self.root / 'user/models.json'
-        self.project = self.root / '.automattic/models.json'
+        self.project = self.root / '.zloop/models.json'
 
     def resolve(self, harness='codex', agent='reviewer', **task):
         return models.resolve(self.root, self.user, harness, agent, task)
@@ -93,7 +93,7 @@ class Preferences(unittest.TestCase):
             profile = models.native_profile(result)
             text = profile['content']
             assert 'model: "opus"' in text and 'effort: "high"' in text
-            # The agent's own body is the system prompt; Automattic's keys stay out of Claude's frontmatter.
+            # The agent's own body is the system prompt; zloop's keys stay out of Claude's frontmatter.
             assert text.endswith(body) and '## Principles' in text
             assert '\nwrites:' not in text and '\ncore_skills:' not in text
             for line in source.splitlines():
@@ -180,10 +180,10 @@ def check_opencode_profile(root, env, name):
         opencode('service', 'stop')
 
 
-@unittest.skipUnless(os.environ.get('AUTOMATTIC_NATIVE') == '1', 'set AUTOMATTIC_NATIVE=1 to check installed CLIs')
+@unittest.skipUnless(os.environ.get('ZLOOP_NATIVE') == '1', 'set ZLOOP_NATIVE=1 to check installed CLIs')
 class NativeProfiles(unittest.TestCase):
     def test_claude_validates_and_opencode_loads_generated_profiles(self):
-        with tempfile.TemporaryDirectory(prefix='automattic native models ') as tmp:
+        with tempfile.TemporaryDirectory(prefix='zloop native models ') as tmp:
             root = Path(tmp)
             env = dict(os.environ)
             for key, directory in [('CLAUDE_CONFIG_DIR', 'claude-config'), ('XDG_CONFIG_HOME', 'config'),

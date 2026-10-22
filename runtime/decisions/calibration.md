@@ -43,8 +43,8 @@ Same fingerprint does not prove unchanged remote weights.
 Active decisions check the fingerprint without inference. After every `check_every`
 successful service responses, the helper replays the suite, stops starting cases
 after 30 seconds and caps request timeouts at the remaining replay budget.
-It records state under `$XDG_STATE_HOME/automattic/decisions` (default
-`~/.local/state/automattic/decisions`), locking concurrent checks without waiting.
+It records state under `$XDG_STATE_HOME/zloop/decisions` (default
+`~/.local/state/zloop/decisions`), locking concurrent checks without waiting.
 There is no background service and no calibration call during inspection/resume.
 Explicit calibration/check replays use the configured per-request timeout.
 

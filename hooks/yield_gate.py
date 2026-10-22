@@ -5,7 +5,7 @@ Reads every run's workers.sqlite under the main checkout's .scratch/*/reports/ t
 changed in the last day, without writing to it, and applies the lifecycle's yield
 gate. Every session is also held for each Herdr launch it logged (hooks/herdr_launch.py)
 into a ticket worktree that no attempt accounts for and it did not dismiss; one without
-AUTOMATTIC_WORKER, the marker every worker is launched with, also for each other such live
+ZLOOP_WORKER, the marker every worker is launched with, also for each other such live
 agent of its Herdr workspace. The session bound to coordinate an effort (next_tickets.py
 --coordinate; without one, the pane that registered the attempt) is held for each collected
 attempt, neither retained nor retired, whose Herdr tab is still open, and for an effort whose
@@ -15,7 +15,7 @@ main, E2E passed at a head in main). A
 check that cannot run, and a launch log line that is unreadable or malformed, are named gaps,
 never a pass. `claude` and `codex` speak their shared Stop
 hook protocol; `check <cwd> [session]` prints the gaps and the hold's message as JSON for other hosts. Set
-AUTOMATTIC_YIELD_HOOK=off to disable the check.
+ZLOOP_YIELD_HOOK=off to disable the check.
 """
 import calendar
 import importlib.util
@@ -86,8 +86,8 @@ def gaps(cwd, session=None):
             missing += [f'{state}: {gap}' for gap in module.yield_gaps(db, coordinated)]
         finally:
             db.close()
-    # Every session answers for its own launches; a worker (its launch set AUTOMATTIC_WORKER) not for its siblings.
-    return (missing + unregistered(root, pane, session, siblings=not os.environ.get('AUTOMATTIC_WORKER')),
+    # Every session answers for its own launches; a worker (its launch set ZLOOP_WORKER) not for its siblings.
+    return (missing + unregistered(root, pane, session, siblings=not os.environ.get('ZLOOP_WORKER')),
             stale_tabs(root, pane, session) + undelivered(root, pane, session))
 
 
@@ -349,12 +349,12 @@ def reason(workers, own, session=None):
                       + f'before stopping ({GUIDE}).')
     if failed:
         advice.append('A check that could not run clears when it runs again: retry the stop once Herdr (or git) is '
-                      'reachable, or run with `AUTOMATTIC_YIELD_HOOK=off` for this stop.')
+                      'reachable, or run with `ZLOOP_YIELD_HOOK=off` for this stop.')
     return message + ' '.join(advice)
 
 
 def main():
-    if os.environ.get('AUTOMATTIC_YIELD_HOOK') == 'off':
+    if os.environ.get('ZLOOP_YIELD_HOOK') == 'off':
         return 0
     if sys.argv[1:2] == ['check'] and len(sys.argv) in (3, 4):
         workers, own = checked(Path(sys.argv[2]), *sys.argv[3:])

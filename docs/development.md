@@ -31,7 +31,7 @@ with the plugin environment's `.venv` and exits 1 on any failure. Tests are
 `unittest` cases, so one file, class or test runs on its own. The default suite needs
 an installed `claude` for `test_claude_effort.py`, which runs it against a local fake
 API. `tests/support.py` locates and loads the scripts and builds an environment whose
-Automattic state, configuration and Codex home are temporary; use it for a new test
+zloop state, configuration and Codex home are temporary; use it for a new test
 that runs a script which writes machine state.
 
 Enable the Git hooks once per clone with `git config core.hooksPath .githooks`:
@@ -60,10 +60,10 @@ calls:
 .venv/bin/python -B tests/test_router_profiles.py
 .venv/bin/python -B -m unittest discover -s tests -t tests
 # Installed CLI discovery, OpenCode 2 and Claude profile readers:
-AUTOMATTIC_NATIVE=1 .venv/bin/python -B tests/test_cross_harness.py
-AUTOMATTIC_NATIVE=1 .venv/bin/python -B tests/test_agent_models.py
+ZLOOP_NATIVE=1 .venv/bin/python -B tests/test_cross_harness.py
+ZLOOP_NATIVE=1 .venv/bin/python -B tests/test_agent_models.py
 # Pi SDK discovery and bootstrap, isolated from user extensions:
-AUTOMATTIC_NATIVE_PI=1 .venv/bin/python -B tests/test_cross_harness.py
+ZLOOP_NATIVE_PI=1 .venv/bin/python -B tests/test_cross_harness.py
 ```
 
 They validate discovery, invocation metadata and registration. When this source is
@@ -101,9 +101,9 @@ waits, state reconciliation and automatic review continuation.
 The scheduler runs from any directory and is not used for remote trackers:
 
 ```sh
-python3 /path/to/automattic/scripts/next_tickets.py --repo /path/to/project feature-name --check
-python3 /path/to/automattic/scripts/next_tickets.py --repo /path/to/project feature-name --max-live 3
-python3 /path/to/automattic/scripts/next_tickets.py --repo /path/to/project feature-name --set feature-name/01 status=implementing --counts
+python3 /path/to/zloop/scripts/next_tickets.py --repo /path/to/project feature-name --check
+python3 /path/to/zloop/scripts/next_tickets.py --repo /path/to/project feature-name --max-live 3
+python3 /path/to/zloop/scripts/next_tickets.py --repo /path/to/project feature-name --set feature-name/01 status=implementing --counts
 ```
 
 Omit the slug for all efforts. An unknown slug or argument fails. Scope controls

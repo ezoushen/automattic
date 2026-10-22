@@ -7,7 +7,7 @@
 # once they end.
 set -uo pipefail
 zero=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
-prefix=automattic-pre-push
+prefix=zloop-pre-push
 tmp=${TMPDIR:-/tmp}
 tmp=${tmp%/}
 follow=2  # seconds after a signal before TERM follows it (script background jobs ignore INT and QUIT)
@@ -19,7 +19,7 @@ child=''
 alive() { ps -p "$1" >/dev/null 2>&1; }
 group_alive() { kill -0 -- "-$1" 2>/dev/null; }  # the group itself decides, not how a ps pipeline exits
 
-# A directory left by a run that is over: named automattic-pre-push.XXXXXX, holding the
+# A directory left by a run that is over: named zloop-pre-push.XXXXXX, holding the
 # numeric PID of a hook that is gone and, when recorded, a process group with no members.
 stale() {
   local owner group

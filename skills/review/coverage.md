@@ -29,7 +29,7 @@ from the start and verify report links resolve before accepting a result. A
 within its permissions. Experiments still execute in the assigned worktree.
 Pass the actual brief/spec when one exists; do not invent a spec or require tickets
 for someone else's PR. Apply the [implementation review method](method.md) once for
-the eligible implementation batch; preserve both axes while Automattic owns coverage,
+the eligible implementation batch; preserve both axes while zloop owns coverage,
 evidence and disposition.
 The diff-review job's documentation gate is mandatory: code comments and API docs
 are source contracts, including unchanged docs invalidated by the diff. Record

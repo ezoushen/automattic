@@ -31,7 +31,7 @@ class Diagnose(unittest.TestCase):
         source = (ROOT / DOC).read_text()
         self.assertNotIn('```', source)
         # The only code spans are the redaction marker, the bootstrap path every command first reads and the tdd skill.
-        self.assertEqual(set(re.findall(r'`([^`]+)`', source)), {'<REDACTED>', '../../bootstrap.md', '/automattic:tdd'})
+        self.assertEqual(set(re.findall(r'`([^`]+)`', source)), {'<REDACTED>', '../../bootstrap.md', '/zloop:tdd'})
         text = prose(DOC).lower()
         for tool in ('pytest', 'unittest', 'python', 'jest', 'node', 'npm', 'yarn', 'playwright', 'puppeteer', 'curl',
                      'cargo', 'go test', 'gradle', 'maven', 'dotnet', 'rspec', 'xcodebuild', 'swift test',
@@ -54,7 +54,7 @@ class Diagnose(unittest.TestCase):
         for rule in ('only after the confirmed cause',
                      'the shrunk case becomes the failing test at the seam where the defect occurs',
                      '](../../standards/tdd.md)',
-                     'with the user in place of the ticket, as `/automattic:tdd` works it',
+                     'with the user in place of the ticket, as `/zloop:tdd` works it',
                      'confirm the seam with the user before the test'):
             with self.subTest(rule=rule):
                 self.assertIn(rule, section)

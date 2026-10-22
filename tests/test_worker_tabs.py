@@ -193,7 +193,7 @@ class HerdrTabs(WorkerLifecycleCase):
         error = self.register(worker='builder-1', herdr={'session': 'fixture-session'}, code=2)
         self.assertIn('One worker per tab: tab-1 holds 2 panes', error)
         self.assertIn('herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label '
-                      '"<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> --no-focus', error)
+                      '"<slug>/<assignment> <role>" --env ZLOOP_WORKER=<slug>/<assignment> --no-focus', error)
         self.assertEqual(self.cli('status')['attempts'], [])
 
     def test_registration_fails_closed_when_herdr_cannot_report_the_workers_tab(self):
@@ -291,7 +291,7 @@ class HerdrTabs(WorkerLifecycleCase):
 
 class TabRecipe(unittest.TestCase):
     def test_the_herdr_guide_starts_each_worker_in_a_tab_of_its_own_then_registers_it(self):
-        # Rule: the Herdr guide holds the recipe (tab create with the AUTOMATTIC_WORKER marker, agent start in its
+        # Rule: the Herdr guide holds the recipe (tab create with the ZLOOP_WORKER marker, agent start in its
         # root pane, register) instead of a split of the caller's pane, and how to find the session; the shared
         # attempt doc names the registration field, how to find its session and the lookup's wait, but not the
         # Herdr recipe.
@@ -299,13 +299,13 @@ class TabRecipe(unittest.TestCase):
         position = 0
         for step in ('never as a split of your pane',
                      'herdr tab create --workspace <coordinator workspace> --cwd <worktree> '
-                     '--label "<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> --no-focus',
+                     '--label "<slug>/<assignment> <role>" --env ZLOOP_WORKER=<slug>/<assignment> --no-focus',
                      'herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>',
                      'register it', 'Retirement closes the pane, which closes the tab'):
             position = guide.find(step, position)
             self.assertNotEqual(position, -1, f'{step!r} in order in hosts/herdr.md')
         self.assertIn('herdr session list', guide)
-        self.assertIn("how Automattic's stop check tells a worker from its coordinator", guide)
+        self.assertIn("how zloop's stop check tells a worker from its coordinator", guide)
         shared = ' '.join((support.ROOT / 'runtime/workers/prepare.md').read_text().split())
         self.assertIn('"herdr": {"session"', shared)
         self.assertIn('herdr session list', shared)

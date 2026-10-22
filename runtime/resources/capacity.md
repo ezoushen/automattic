@@ -13,7 +13,7 @@ Keep known reservations until actual work ends or ownership is reconciled. Unkno
 account use is a capacity uncertainty for dependent fan-out, not proof that all
 work must stop; continue independent authorized work and establish the available
 budget with the current owner. Without a shared mechanism, report the coordination
-limit and avoid competing batches against the known account. Automattic's local
+limit and avoid competing batches against the known account. zloop's local
 board cannot enforce an account-wide ceiling across unrelated processes.
 
 On throttling or quota errors, apply availability recovery

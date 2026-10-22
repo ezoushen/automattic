@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Automattic scheduler. Run from any directory; state stays in the main checkout.
+"""zloop scheduler. Run from any directory; state stays in the main checkout.
 
   next_tickets.py --repo /path/to/repo [slug] [--max-live N] [action]
 

@@ -159,7 +159,7 @@ def main():
     parser.add_argument('--assignment-id', help='check: expected phase identity; use with --family and --repo')
     parser.add_argument('--cases', type=Path, help='reviewed replay cases array or worker scorecard manifest')
     parser.add_argument('--repo', type=Path, help='replay/check: canonical project scope')
-    parser.add_argument('--user-executors', type=Path, default=Path.home() / '.config/automattic/executors.json')
+    parser.add_argument('--user-executors', type=Path, default=Path.home() / '.config/zloop/executors.json')
     parser.add_argument('--session')
     parser.add_argument('--output', type=Path, help='new replay report or export-suite file')
     parser.add_argument('--source', action='append', choices=SOURCES,
@@ -196,7 +196,7 @@ def main():
                 raise ValueError('Direct annotations/checks do not accept record/replay inputs')
             if args.action == 'check':
                 if phase_check:
-                    session = args.session or os.environ.get('AUTOMATTIC_SESSION')
+                    session = args.session or os.environ.get('ZLOOP_SESSION')
                     trace = trace_config(args.journal, args.repo, args.assignment_id, session)
                     if args.stage is None:
                         raise ValueError('Phase check requires --stage')

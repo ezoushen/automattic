@@ -75,7 +75,7 @@ variable set for `opencode serve` ([config](https://opencode.ai/v2/docs/config),
 session creation (submit checks it), and whether `opencode auth` with the isolated
 `XDG_DATA_HOME` gives the server credentials.
 
-This adapter covers model configuration and profile selection. Full Automattic
+This adapter covers model configuration and profile selection. Full zloop
 native dispatch lifecycle/worktree integration in OpenCode is not implemented or verified;
 do not claim native end-to-end support or invent a substitute CLI. Configured
 external execution still needs its own capability checks and acceptance evidence.

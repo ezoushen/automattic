@@ -1,4 +1,4 @@
-# Automattic
+# zloop
 
 One workflow for Claude Code, Codex and Pi: **align → refine → dispatch → review → PR**.
 The plugin holds the procedures, agents, jobs and scripts; each effort's state lives in
@@ -6,7 +6,7 @@ the target repository under `.scratch/<slug>/`.
 
 ## Commands
 
-Typed as `/automattic:<name>` in Claude Code, `$automattic:<name>` in Codex and
+Typed as `/zloop:<name>` in Claude Code, `$zloop:<name>` in Codex and
 `/skill:<name>` in Pi. Each command's procedure is its `skills/<name>/SKILL.md`.
 
 | Command | Does |

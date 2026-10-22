@@ -1,5 +1,5 @@
 interface:
   short_description: "Prove and repair misleading tests and comments"
-  default_prompt: "Use $automattic:remediate for <tautological-tests|misleading-comments|goal> with --base <ref>, <paths> or --project to prove findings and repair only those confirmed."
+  default_prompt: "Use $zloop:remediate for <tautological-tests|misleading-comments|goal> with --base <ref>, <paths> or --project to prove findings and repair only those confirmed."
 policy:
   allow_implicit_invocation: false

@@ -52,7 +52,7 @@ Use catalog pools for runtime profiles; a complete instance with an opaque exter
 executor has no inferred worker runtime. `--target-runtime` requires a catalog
 reference or pool so the resolver can verify the requested binding.
 
-Profile selection precedence is `--config-profile`, then `AUTOMATTIC_PROFILE`,
+Profile selection precedence is `--config-profile`, then `ZLOOP_PROFILE`,
 then the configured `router`. Host/Herdr names never automatically select profiles.
 With several reachable worker runtimes, a profile alone does not choose the runtime.
 Use `--target-runtime` or let an assignment recommendation establish it. Partial

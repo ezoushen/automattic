@@ -79,6 +79,6 @@ from it and return to the user as this procedure describes. When they also asked
 the fix, this session owns the repair, and it starts only after the confirmed cause is
 reported: the shrunk case becomes the failing test at the seam where the defect occurs,
 and the fix follows [test-first development](../../standards/tdd.md) with the user in
-place of the ticket, as `/automattic:tdd` works it: confirm the seam with the user before
+place of the ticket, as `/zloop:tdd` works it: confirm the seam with the user before
 the test, and offer a refactor wider than the fix rather than making it. A fix the user
 did not ask for is offered, not applied.

@@ -178,14 +178,14 @@ class RunCheckTests(unittest.TestCase):
     def test_failed_gate_is_classified_in_shadow_when_given_a_journal(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            config = root / 'home/.config/automattic/executors.json'
+            config = root / 'home/.config/zloop/executors.json'
             config.parent.mkdir(parents=True)
             config.write_text(json.dumps({'decisions': {'enabled': ['failure-cause'], 'backend': {
                 'protocol': 'systemone', 'model': 'local/test', 'timeout_seconds': 1,
                 'endpoint': 'http://127.0.0.1:9/v1/systemone'}}}))
             journal = root / 'decisions.jsonl'
             env = dict(os.environ, HOME=str(root / 'home'), XDG_STATE_HOME=str(root / 'state'))
-            env.pop('AUTOMATTIC_SESSION', None)
+            env.pop('ZLOOP_SESSION', None)
 
             def run(name, code):
                 result = subprocess.run(

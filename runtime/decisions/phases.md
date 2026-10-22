@@ -5,7 +5,7 @@ Contents:
 - [Apply a checkpoint](#apply-a-checkpoint)
 - [Recovery](#recovery)
 
-Automattic owns the workflow, allowed actions and evidence requirements. An optional
+zloop owns the workflow, allowed actions and evidence requirements. An optional
 decision backend recommends one of the supplied choices or abstains. The host
 accepts or overrides that recommendation and records the source. The phase
 procedures continue to own planning, investigation and review; this interface adds no second

@@ -14,7 +14,7 @@ named type references contain only `type`. Accept natural-language setup request
 and structured JSON. Derive the skill
 instruction from the user's stated delegation goal or supported mode; keep it brief.
 Tool syntax, settings mapping and lifecycle belong to the selected skill; shared
-scope, review and recovery rules come from Automattic. Ask only if the target or goal is missing.
+scope, review and recovery rules come from zloop. Ask only if the target or goal is missing.
 Do not invent command paths, agent names or models. Optional model policy defaults
 to inherit. Explicit model/thinking choices select override;
 changing only the executor must not silently carry model overrides to a different
@@ -57,7 +57,7 @@ Construct edits from layers up to the requested scope: user only for a user edit
 user plus project for a project edit, and those layers plus the matching session
 for a session edit. Copy the affected effective object at that scope before a
 partial override; never copy a higher layer's values into a lower file. Inspect
-durable settings without `--session` and with `AUTOMATTIC_SESSION` unset; for user
+durable settings without `--session` and with `ZLOOP_SESSION` unset; for user
 edits, read the user file directly rather than treating project resolution as user
 defaults. Retain an active session's identity and show whether it still masks the
 saved change. Explicit profile selection changes the view, not the saved router.

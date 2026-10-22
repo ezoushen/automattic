@@ -3,12 +3,12 @@ import { realpathSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SECTION = "automattic_harness";
+const SECTION = "zloop_harness";
 // Pi's bash has no default timeout, so one forgotten search of / can hold a session for hours. Claude Code and
 // OpenCode stop a foreground command after 2 minutes; this gives Pi the same bound unless
-// AUTOMATTIC_BASH_TIMEOUT=off.
+// ZLOOP_BASH_TIMEOUT=off.
 const BASH_TIMEOUT_SECONDS = 120;
-const bashBounded = () => process.env.AUTOMATTIC_BASH_TIMEOUT !== "off";
+const bashBounded = () => process.env.ZLOOP_BASH_TIMEOUT !== "off";
 
 export default function (pi) {
   const root = resolve(dirname(realpathSync(fileURLToPath(import.meta.url))), "../..");
@@ -16,7 +16,7 @@ export default function (pi) {
     const herdr = process.env.HERDR_ENV === "1"
       ? ` Herdr environment detected: before delegation also read ${root}/hosts/herdr.md for routing, waits and cleanup.`
       : "";
-    const hint = `Automattic harness: pi. When using an Automattic skill, first read ${root}/bootstrap.md and ${root}/hosts/pi/session.md. Plugin root: ${root}. Load only this host session part; pass its absolute path and the agent and job files to workers.${bashBounded() ? ` Shell commands given no timeout stop after ${BASH_TIMEOUT_SECONDS} s: pass a timeout for a longer foreground command, or run it in the background.` : ""}${herdr}`;
+    const hint = `zloop harness: pi. When using a zloop skill, first read ${root}/bootstrap.md and ${root}/hosts/pi/session.md. Plugin root: ${root}. Load only this host session part; pass its absolute path and the agent and job files to workers.${bashBounded() ? ` Shell commands given no timeout stop after ${BASH_TIMEOUT_SECONDS} s: pass a timeout for a longer foreground command, or run it in the background.` : ""}${herdr}`;
     // Returning systemPrompt forces the prompt for this run only, so runs that
     // start without a typed prompt revert to the structured one and every switch
     // invalidates the server's prefix cache. A section is diffed by Pi instead.
@@ -36,7 +36,7 @@ export default function (pi) {
     continued = false;
   });
   pi.on("agent_before_settle", (event, ctx) => {
-    if (continued || event.outcome !== "completed" || process.env.AUTOMATTIC_YIELD_HOOK === "off") return undefined;
+    if (continued || event.outcome !== "completed" || process.env.ZLOOP_YIELD_HOOK === "off") return undefined;
     // pi-subagents hosts background children, which load this extension, in a runner it marks PI_SUBAGENT_CHILD=1;
     // a child must not stop for its coordinator's gaps. (A /fork sets the header's parentSession too: no signal.)
     if (process.env.PI_SUBAGENT_CHILD === "1") return undefined;
@@ -58,7 +58,7 @@ export default function (pi) {
       + `(${root}/runtime/workers/prepare.md). Arm a notified wait, recover the receipt or collect the result `
       + "(for a worker that is gone, a failed or cancelled result whose report says what was lost) "
       + `before stopping (${root}/runtime/workers/wait.md).`;
-    return { entries: [{ type: "custom_message", customType: "automattic_yield_gate", content, display: true }], continue: true };
+    return { entries: [{ type: "custom_message", customType: "zloop_yield_gate", content, display: true }], continue: true };
   });
 
   // First, so every later handler and the tool_result see the bounded input.
@@ -75,7 +75,7 @@ export default function (pi) {
   let last = { call: "", output: "", streak: 0, blocked: 0 };
   const guarded = new Set();
   pi.on("tool_call", (event) => {
-    if (process.env.AUTOMATTIC_LOOP_GUARD === "off") return undefined;
+    if (process.env.ZLOOP_LOOP_GUARD === "off") return undefined;
     const call = `${event.toolName}\u0000${JSON.stringify(event.input)}`;
     if (call !== last.call || last.streak < REPEATS) return undefined;
     last.blocked += 1;

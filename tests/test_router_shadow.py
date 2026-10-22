@@ -67,7 +67,7 @@ class ShadowAndCapacity(RouterCase):
         rollout.write_text(json.dumps({'type': 'event_msg', 'payload': {'type': 'token_count', 'rate_limits': {
             'limit_id': 'codex', 'primary': {'used_percent': 95.0, 'window_minutes': 300,
                                              'resets_at': now + 600}}}}) + '\n')
-        claude = self.root / 'state/automattic/claude-allowance.json'
+        claude = self.root / 'state/zloop/claude-allowance.json'
         claude.parent.mkdir(parents=True)
         claude.write_text(json.dumps({'recorded_at': now, 'rate_limits': {
             'five_hour': {'used_percentage': 10, 'resets_at': now + 600}}}))

@@ -358,7 +358,7 @@ def pi_responses(paths, unreadable):
     for path, entry in entries(paths, unreadable):
         message = entry.get('message') or {}
         if entry.get('type') == 'custom_message':
-            cause = 'yield-hook' if entry.get('customType') == 'automattic_yield_gate' else trigger(
+            cause = 'yield-hook' if entry.get('customType') == 'zloop_yield_gate' else trigger(
                 str(entry.get('content', '')))
             continue
         if entry.get('type') != 'message':

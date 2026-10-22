@@ -3,7 +3,7 @@
 For new per-agent setup, use the [executor configuration guide](../config/executors.md).
 This document covers existing models.json files and native control mappings.
 
-No file means no Automattic override. Keep the destination's native model and
+No file means no zloop override. Keep the destination's native model and
 thinking defaults; bundled agents do not pin them. Never create preferences
 during installation or infer them from task
 complexity. These settings affect delegated workers only, not the main session.
@@ -29,8 +29,8 @@ omit override parameters and use normal native behavior.
 
 ## Files and precedence
 
-Optional user file: `~/.config/automattic/models.json`.
-Optional project file: `<repo>/.automattic/models.json`.
+Optional user file: `~/.config/zloop/models.json`.
+Optional project file: `<repo>/.zloop/models.json`.
 For each field, strongest first: explicit task choice → project agent → project
 defaults → user agent → user defaults → native behavior.
 Removing a key reveals the lower layer; JSON `null` masks lower layers and restores

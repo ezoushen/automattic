@@ -1,6 +1,6 @@
 ---
 name: verifier
-description: Runs assigned Automattic checks and gates, records execution evidence and changes no code. Launched only by the Automattic orchestrator with an assignment.
+description: Runs assigned zloop checks and gates, records execution evidence and changes no code. Launched only by the zloop orchestrator with an assignment.
 writes: none
 core_skills: ["runtime/checks/plan.md", "runtime/checks/accept.md", "runtime/checks/run.md", "runtime/checks/evidence.md"]
 tools: Bash, Read, Edit, SendMessage, Monitor, TaskStop

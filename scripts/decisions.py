@@ -378,7 +378,7 @@ def monitor_path(policy, baseline):
     identity = digest({'baseline': str(Path(calibration['baseline']).expanduser().resolve()),
                        'content': baseline, 'check_every': calibration.get('check_every', 50),
                        'max_drop': calibration.get('max_accuracy_drop', .1)})
-    return state_root / 'automattic/decisions' / f'{identity}.json'
+    return state_root / 'zloop/decisions' / f'{identity}.json'
 
 
 def monitor(policy, *, context=None, transport=None, active=True):
@@ -744,8 +744,8 @@ def load_policy(repo, user_executors, session=None):
     if not repo.is_dir():
         raise ValueError('Repository directory does not exist')
     layers = [(path, executor_config.read_executors(path)) for path in
-              (Path(user_executors).expanduser(), repo / '.automattic/executors.json')]
-    session = session or os.environ.get('AUTOMATTIC_SESSION')
+              (Path(user_executors).expanduser(), repo / '.zloop/executors.json')]
+    session = session or os.environ.get('ZLOOP_SESSION')
     if session:
         layers.append((executor_config.session_path(repo, session), executor_config.read_session(repo, session)))
     router = next((data['router'] for _, data in reversed(layers) if 'router' in data), None)
@@ -757,7 +757,7 @@ def main():
     parser.add_argument('action', choices=('decide', 'checkpoint', 'classify-failure', 'classify-wake',
                                            'classify-test', 'calibrate', 'check', 'status'))
     parser.add_argument('--repo', type=Path, required=True)
-    parser.add_argument('--user-executors', type=Path, default=Path.home() / '.config/automattic/executors.json')
+    parser.add_argument('--user-executors', type=Path, default=Path.home() / '.config/zloop/executors.json')
     parser.add_argument('--session')
     parser.add_argument('--request', type=Path, help='Decision request JSON; decide or an unresolved checkpoint')
     parser.add_argument('--journal', type=Path, help='absolute session decision journal; decide/checkpoint only')
@@ -778,7 +778,7 @@ def main():
     args = parser.parse_args()
     try:
         repo = args.repo.expanduser().resolve()
-        session = args.session or os.environ.get('AUTOMATTIC_SESSION')
+        session = args.session or os.environ.get('ZLOOP_SESSION')
         policy, context = load_policy(repo, args.user_executors, session)
         if args.action == 'decide' and args.request is None:
             raise ValueError('decide requires --request')

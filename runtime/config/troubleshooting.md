@@ -7,15 +7,15 @@ in Codex or Pi.
 
 | Intent or problem | Action |
 |---|---|
-| Keep the executor, restore native model/thinking | `/automattic:setup reset <agent> --route` |
-| Clear only one override | `/automattic:setup reset <agent> --route thinking` or `model` |
+| Keep the executor, restore native model/thinking | `/zloop:setup reset <agent> --route` |
+| Clear only one override | `/zloop:setup reset <agent> --route thinking` or `model` |
 | Use the lower-layer configuration again | Ask the skill to remove the selected profile or shared agent entry |
 | Mask a personal executor selection for this project | Set the project agent entry to null; existing native preferences then apply |
 | Missing `jsonschema` | Use the prepared plugin Python environment, or run the [setup steps](executors.md#manual-setup-and-inspection) |
 | Named agent, skill or provider unavailable | Exclude the failed capability and use a suitable allowed pool candidate; report exhaustion if none remain |
 | Unsupported model, thinking or inheritance | Exclude that combination; recover within the pool without approximating settings or breaking user pins |
 | Settings appear ignored | Inspect with --route; configured agents bypass legacy models.json and active workers retain their launch settings |
-| Wrong profile selected | Inspect config_profile/profile_source; --config-profile takes precedence over AUTOMATTIC_PROFILE and the configured router |
+| Wrong profile selected | Inspect config_profile/profile_source; --config-profile takes precedence over ZLOOP_PROFILE and the configured router |
 
 ## Migration
 

@@ -31,7 +31,7 @@ and incremental invalidation. As implementation-review owner, apply the
 [implementation review method](../method.md) in this worker to the exact
 pinned range, spec, eligible coverage and standards supplied. If assigned only an
 axis/partition, execute that part of the method and return evidence without starting
-another full review. Preserve Standards and Spec. Explain the Automattic assignment: the changed
+another full review. Preserve Standards and Spec. Explain the zloop assignment: the changed
 range and demonstrated effects on its consumers are the review boundary, not all
 improvements the repository could use. Preserve complete axis reports even when
 the return summary is short. Missing spec → explicit limitation, never invented

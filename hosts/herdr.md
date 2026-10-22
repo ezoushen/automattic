@@ -10,7 +10,7 @@ Contents:
 Load alongside the current host adapter when `HERDR_ENV=1`. Herdr provides a
 transport; it does not replace the Claude, Codex, Pi or OpenCode host identity.
 Read the installed Herdr skill when using that transport. It owns CLI syntax,
-session prerequisites and identity checks; this file owns Automattic coordination.
+session prerequisites and identity checks; this file owns zloop coordination.
 
 ## Route before launching
 
@@ -42,7 +42,7 @@ Use a short native slash command for an authorized phase reserved for explicit
 user invocation; keep its longer scenario in a supplied file. Use the Skill tool
 only where the skill permits model invocation. Retain the actual source/result.
 Session-local settings isolation must keep the plugins the assignment invokes,
-such as Automattic for its slash commands, and Herdr's native identity hook;
+such as zloop for its slash commands, and Herdr's native identity hook;
 verify both before accepting the launch.
 Launch an OpenCode 2 worker as the full TUI (`opencode`); Herdr's integration
 reports only its activity and session, not `mini`'s. It attaches to a private server
@@ -72,9 +72,9 @@ to a file and validate that artifact; exit zero alone does not establish integri
 Start every worker in a tab of its own in your workspace, never as a split of your
 pane, whatever placement the installed skill defaults to:
 
-1. `herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label "<slug>/<assignment> <role>" --env AUTOMATTIC_WORKER=<slug>/<assignment> --no-focus`,
-   with your `HERDR_WORKSPACE_ID` as the workspace. `AUTOMATTIC_WORKER` is how
-   Automattic's stop check tells a worker from its coordinator.
+1. `herdr tab create --workspace <coordinator workspace> --cwd <worktree> --label "<slug>/<assignment> <role>" --env ZLOOP_WORKER=<slug>/<assignment> --no-focus`,
+   with your `HERDR_WORKSPACE_ID` as the workspace. `ZLOOP_WORKER` is how
+   zloop's stop check tells a worker from its coordinator.
 2. `herdr agent start <name> --kind <kind> --pane <returned root pane> -- <launch args>`,
    with the `.result.root_pane.pane_id` that step 1 returned. The launch args are the
    route's `launch.argv`; a Claude coordinator's Claude-runtime worker is a native subagent with no

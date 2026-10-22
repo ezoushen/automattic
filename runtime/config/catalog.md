@@ -59,7 +59,7 @@ A model may also state `cost` (`subscription`, `free` or `local`) and `data`
 uses prompts to train the provider's models, so it is unavailable unless a
 configuration layer sets top-level `"allow_training": true`: a pool lists it in
 `unavailable_candidates` with that reason, and an agent pinned to it fails. The last
-layer that sets `allow_training` wins; set it only in the `.automattic/executors.json`
+layer that sets `allow_training` wins; set it only in the `.zloop/executors.json`
 of a repository whose code may be used that way.
 
 `models.<name>.runtimes` lists supported worker runtimes: `claude`, `codex`, `pi`,
@@ -111,7 +111,7 @@ thinking policy move together; one runtime never borrows another's labels.
 Provider URLs, credentials, quantization and inference options stay in the owning
 runtime's configuration. Register local models there and reference their exact IDs.
 Omit thinking when no supported control is configured. Record serving versions with
-evidence when they affect comparisons; Automattic does not configure model servers.
+evidence when they affect comparisons; zloop does not configure model servers.
 
 ### Caller-specific skill routes
 

@@ -28,7 +28,7 @@ the dispatch adapter only maps its returned settings to native controls.
 Omitted settings retain native defaults. This plugin does not
 set API pricing, caching, service tiers or account limits.
 
-Automattic does not block Git commands. The orchestrator can perform authorized
+zloop does not block Git commands. The orchestrator can perform authorized
 publication and cleanup directly; workers retain their agent's permissions.
 Follow native permissions, and never route around a denial or treat Claude
 profile tool lists as Codex restrictions.

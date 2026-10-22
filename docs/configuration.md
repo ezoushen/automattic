@@ -2,7 +2,7 @@
 
 No configuration is required for the existing native workflow. To choose how a
 worker runs, its model, or its thinking level, use the **setup** command in chat
-(`/automattic:setup` in Claude, `$automattic:setup` in Codex, `/skill:setup` in Pi).
+(`/zloop:setup` in Claude, `$zloop:setup` in Codex, `/skill:setup` in Pi).
 With no arguments or a question it takes the [tour](../skills/setup/tour.md):
 available workers, launch routes, selection policy, decision opt-ins and which scope
 supplies each effective value. A tour is read-only and never starts a router or
@@ -11,18 +11,18 @@ session scope, with a focused diff and effective result. When you already know t
 setting, name it directly (`show`, `set`, `reset`); the same command skips the tour.
 
 ```text
-/automattic:setup
-/automattic:setup Why does this project use a different router from my user default?
-/automattic:setup Disable recovery decisions for this session only.
-/automattic:setup set reviewer --route executor=subagent mode=inherit
-/automattic:setup show reviewer --route
-/automattic:setup Configure this project's reviewer to use the subagent <plugin>:<agent> and inherit its destination settings.
-/automattic:setup Reset only the reviewer's thinking override; keep its executor and model.
+/zloop:setup
+/zloop:setup Why does this project use a different router from my user default?
+/zloop:setup Disable recovery decisions for this session only.
+/zloop:setup set reviewer --route executor=subagent mode=inherit
+/zloop:setup show reviewer --route
+/zloop:setup Configure this project's reviewer to use the subagent <plugin>:<agent> and inherit its destination settings.
+/zloop:setup Reset only the reviewer's thinking override; keep its executor and model.
 ```
 
 `--route` selects the per-agent configuration. The first `set` above selects the
 native reviewer and preserves its native model/thinking settings, bypassing older
-Automattic model overrides for that agent; other agents stay unchanged. The command
+zloop model overrides for that agent; other agents stay unchanged. The command
 prepares the isolated validator environment when needed, validates the configuration
 and reports where it was saved. The named delegate requires the official Codex plugin
 in Claude Code. Names and model controls must exist in the host where execution takes
@@ -49,8 +49,8 @@ the blocker. Pools can opt out with `fallback:false`. All hosts apply the shared
 resolver's model/thinking settings and keep native defaults for omitted fields;
 workload labels do not select models.
 
-Configuration lives in `.automattic/executors.json` or
-`~/.config/automattic/executors.json`; its schemas ship with this plugin. See
+Configuration lives in `.zloop/executors.json` or
+`~/.config/zloop/executors.json`; its schemas ship with this plugin. See
 [host selection](../runtime/workers/launch.md#host-selection) for precedence, the
 [configuration guide](../runtime/config/executors.md) for executor examples and
 manual setup, and [reset and troubleshooting](../runtime/config/troubleshooting.md).
@@ -78,7 +78,7 @@ judgment (the default), a skill, a built-in decision-model client, or a named pr
 `profiles.<name>.<agent>.<worker-runtime>.candidate/thinking`; omitted fields leave
 selection unchanged ([routers and sparse profiles](../runtime/config/routers.md#routers-and-sparse-profiles)).
 Select one with `router: {"type":"profile","profile":"balanced"}`,
-`--config-profile <name>` or `AUTOMATTIC_PROFILE`. With no router configured, the
+`--config-profile <name>` or `ZLOOP_PROFILE`. With no router configured, the
 host chooses by [model routing](../runtime/routing/model-routing.md) in its
 existing context (`router: {"type":"host"}`), without a separate model call.
 
@@ -90,7 +90,7 @@ model/effort pair and falls back to host judgment if unavailable or undecided. T
 [shared decision loop](../runtime/decisions/phases.md) uses the same backend for
 recovery and other explicitly enabled phase checkpoints; enable only the families
 you want. The [decision journal](../runtime/decisions/journal.md) retains prompts,
-responses, actions, worker settings and outcomes. `/automattic:setup calibrate`
+responses, actions, worker settings and outcomes. `/zloop:setup calibrate`
 runs a labeled calibration, `retro <journal>` an offline retrospective and
 `replay <journal> <cases>` a bounded wording/order experiment; replay does not train
 a model. Synthetic examples are integration checks, not evidence of production

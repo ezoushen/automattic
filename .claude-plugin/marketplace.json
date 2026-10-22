@@ -1,6 +1,6 @@
 {
-  "name": "automattic-dev",
-  "description": "Automattic local development source",
+  "name": "zloop-dev",
+  "description": "zloop local development source",
   "owner": { "name": "ezou" },
-  "plugins": [{ "name": "automattic", "source": "./", "version": "0.3.0" }]
+  "plugins": [{ "name": "zloop", "source": "./", "version": "0.3.0" }]
 }

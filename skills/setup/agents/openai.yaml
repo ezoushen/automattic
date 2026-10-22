@@ -1,5 +1,5 @@
 interface:
   short_description: "Explain or change worker, routing and decision settings"
-  default_prompt: "Use $automattic:setup to explain the current setup, or to inspect, configure or reset worker models, routes, pools, routers, profiles, decision opt-ins and calibration at user, project or session scope."
+  default_prompt: "Use $zloop:setup to explain the current setup, or to inspect, configure or reset worker models, routes, pools, routers, profiles, decision opt-ins and calibration at user, project or session scope."
 policy:
   allow_implicit_invocation: false

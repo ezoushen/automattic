@@ -32,6 +32,6 @@ show the concise proposal and wait for the requested human check before dependen
 execution; reuse approvals already given. Actual publication/resource permission
 gates retain their existing authorization requirements.
 
-Design choices belong to the design half of `/automattic:align`; ticket slicing to `/automattic:refine`.
+Design choices belong to the design half of `/zloop:align`; ticket slicing to `/zloop:refine`.
 They reuse this filter and ledger. Explicitly human-in-the-loop activities
 still need their live exchange; an agent decision cannot stand in for that human.

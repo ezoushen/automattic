@@ -10,7 +10,7 @@ Contents:
 - [Left to the human](#left-to-the-human)
 - [Delivery composition](#delivery-composition)
 
-The automattic plugin: nine commands, five of them in loop order (align, refine,
+The zloop plugin: nine commands, five of them in loop order (align, refine,
 dispatch, review, pr) plus remediate, setup, brief and huh, and five skills the user
 types or the agent loads when a request matches (diagnose, research, prototype,
 explain, tdd); one artefact directory
@@ -23,24 +23,24 @@ alternatives — the principal can veto. Align and refine append to one
 
 | Phase | Command | Owns | Writes | Hands on |
 |---|---|---|---|---|
-| Mandate and alignment | `/automattic:align` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape; WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `ledger.md` (first rows), settled terms in `GLOSSARY.md`, standing principles in ADRs/memory, `alignment.md` | slug, ledger, the brief |
-| Refinement | `/automattic:refine` | ticket slicing by the board's [slicing rules](../../runtime/board/slicing.md) from the brief or a plan agreed in chat, edges, sizing and their rejected alternatives | configured tracker issues, or local Markdown tickets | dispatch-ready tickets |
-| Execution | `/automattic:dispatch` | scheduling on `blocked_by`, capacity and area locks; how each ticket runs (inline or a builder worktree) and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` (or `main` when the user says so) | implementation status and review report |
-| Review | `/automattic:review` | direction → blast radius → implementation, complete layer batches, scoped invalidation, reproduction, optional autofix with applicable E2E, local comment drafts and follow-ups | review and verification report | reviewed commit, gate outcomes and unresolved findings |
-| Delivery | `/automattic:pr` (optional) | the description assembled from the artefacts above | `pr.md`, the PR | a URL |
+| Mandate and alignment | `/zloop:align` | the question filter; the mandate's tree (goal, principles, constraints, context); the ledger row shape; WHAT / WHY / HOW, depth proportional to risk; reuse accepted decisions and ask only material forks | `ledger.md` (first rows), settled terms in `GLOSSARY.md`, standing principles in ADRs/memory, `alignment.md` | slug, ledger, the brief |
+| Refinement | `/zloop:refine` | ticket slicing by the board's [slicing rules](../../runtime/board/slicing.md) from the brief or a plan agreed in chat, edges, sizing and their rejected alternatives | configured tracker issues, or local Markdown tickets | dispatch-ready tickets |
+| Execution | `/zloop:dispatch` | scheduling on `blocked_by`, capacity and area locks; how each ticket runs (inline or a builder worktree) and integration; builder evidence and merge-conflict jobs; handoff to shared review | `reports/*.md`, `feat/<slug>` (or `main` when the user says so) | implementation status and review report |
+| Review | `/zloop:review` | direction → blast radius → implementation, complete layer batches, scoped invalidation, reproduction, optional autofix with applicable E2E, local comment drafts and follow-ups | review and verification report | reviewed commit, gate outcomes and unresolved findings |
+| Delivery | `/zloop:pr` (optional) | the description assembled from the artefacts above | `pr.md`, the PR | a URL |
 
 ## Guides and configuration
 
 For a change you want to understand before assessing it, use
-[/automattic:review walkthrough](../review/walkthrough.md). It teaches and discusses the PR,
+[/zloop:review walkthrough](../review/walkthrough.md). It teaches and discusses the PR,
 then can hand agreed criteria into the same review procedure when requested.
 It is optional; direct review starts assessment without this learning step.
 For a progress snapshot of the active task or a named effort, use
-[/automattic:brief](SKILL.md); `/automattic:brief map` shows this map. When an
-explanation loses you, `/automattic:huh` backs up to what you missed and re-pitches it.
+[/zloop:brief](SKILL.md); `/zloop:brief map` shows this map. When an
+explanation loses you, `/zloop:huh` backs up to what you missed and re-pitches it.
 
 Configuration is optional and separate from the delivery phases. Use
-[/automattic:setup](../setup/SKILL.md) to understand the current setup and update it
+[/zloop:setup](../setup/SKILL.md) to understand the current setup and update it
 at user, project or session scope, or name the setting directly;
 see [configuration examples](../../runtime/config/executors.md). Existing native behavior
 continues without configuration. Setup does not start workers or change review gates.
@@ -64,11 +64,11 @@ outer loop is this pipeline's, and each command is one of its nodes:
 
 | Node | What it does here | Command |
 |---|---|---|
-| Intent | success criteria and constraints: the mandate's limits, the brief, every criterion's `Verify` command | `/automattic:align`, `/automattic:refine` |
-| Context | a state payload, not a conversation: ticket, brief, project vocabulary/instructions, absolute paths | `/automattic:dispatch` prompts |
-| Action | each ticket inline by the orchestrator or by a fresh builder in its own worktree, chosen per ticket | `/automattic:dispatch` |
-| Observation | the report's recorded evidence; board acceptance checks; scoped review with repros; applicable verification | `/automattic:dispatch`, shared review procedure |
-| Adjustment | use blocker/failure evidence to correct context, environment, approach or worker; preserve scope and attempt limits | `/automattic:dispatch`, shared review procedure, re-entry below |
+| Intent | success criteria and constraints: the mandate's limits, the brief, every criterion's `Verify` command | `/zloop:align`, `/zloop:refine` |
+| Context | a state payload, not a conversation: ticket, brief, project vocabulary/instructions, absolute paths | `/zloop:dispatch` prompts |
+| Action | each ticket inline by the orchestrator or by a fresh builder in its own worktree, chosen per ticket | `/zloop:dispatch` |
+| Observation | the report's recorded evidence; board acceptance checks; scoped review with repros; applicable verification | `/zloop:dispatch`, shared review procedure |
+| Adjustment | use blocker/failure evidence to correct context, environment, approach or worker; preserve scope and attempt limits | `/zloop:dispatch`, shared review procedure, re-entry below |
 
 Issue state lives in the configured board; execution evidence lives in reports
 and the ledger. Read both fresh every iteration. Local front matter applies only
@@ -93,10 +93,10 @@ human-authorized merge by the orchestrator.
   [diagnosis](../diagnose/SKILL.md); a **contract decision** → resolve against accepted
   priorities and record the deciding source; unresolved conflicts return for human
   alignment while independent work continues, not a retrospective rewrite of criteria; a **wrong
-  design** → `/automattic:align` at the affected level, then `/automattic:refine` re-cuts.
+  design** → `/zloop:align` at the affected level, then `/zloop:refine` re-cuts.
 - A question no level can settle on paper → a [prototype](../prototype/SKILL.md), which align assigns
   through its prototype job; its verdict returns as a ledger row.
-- A veto or a steering answer is recorded where `/automattic:align` settles the mandate, so the
+- A veto or a steering answer is recorded where `/zloop:align` settles the mandate, so the
   same question is decided, not asked, next time.
 
 ## Flows
@@ -119,7 +119,7 @@ folder; commands read the shared interview and board procedures and the other ru
 - [Research](../research/SKILL.md): cited facts from primary sources, for the user, align, review and blocked tickets.
 - [Prototype](../prototype/SKILL.md): a verdict from throwaway code, for the user and align's prototype job.
 - [TDD](../tdd/SKILL.md): test-first work with the user in place of a ticket.
-- [Explain](../explain/SKILL.md): telling in layers and the views, shared by briefings, the walkthrough, the setup tour and `/automattic:huh`, a sibling command this map names without a link.
+- [Explain](../explain/SKILL.md): telling in layers and the views, shared by briefings, the walkthrough, the setup tour and `/zloop:huh`, a sibling command this map names without a link.
 - [Ask with context](../../runtime/ask/ask.md): the context and the re-pitch every question to the user carries.
 
 ## Our methods underneath
@@ -134,7 +134,7 @@ from a [prototype](../prototype/SKILL.md). The review command supplies
 scope, priority and allowed mutation context and its own
 [Standards/Spec method](../review/method.md). Simplicity is part of that review.
 For PR descriptions, the [PR guide](../../standards/pr.md) owns structure,
-evidence, refresh and self-check. The PR phase (`/automattic:pr`) owns delivery
+evidence, refresh and self-check. The PR phase (`/zloop:pr`) owns delivery
 evidence and publication.
 
 ## Left to the human
@@ -160,7 +160,7 @@ in dispatch or PR. Standalone read-only review remains a review/comment workflow
 
 Autofix continues until review, documentation and applicable verification gates
 pass, or records concrete blockers. It does not require a separate full-delivery
-request to run tests. For an Automattic effort the shared procedure also checks the
+request to run tests. For a zloop effort the shared procedure also checks the
 board's delivery gate. PR remains a consumer of that completed evidence and owns
 its description/publication; invoking PR does not start testing or grant repairs.
 Implementation-only and read-only requests can therefore leave delivery gates

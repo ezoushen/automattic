@@ -28,7 +28,7 @@ def load_script(filename, name=None):
 
 
 def isolated_env(root, **values):
-    """The current environment with Automattic state, config and Codex home under root."""
+    """The current environment with zloop state, config and Codex home under root."""
     root = Path(root)
     return dict(os.environ, XDG_STATE_HOME=str(root / 'state'), XDG_CONFIG_HOME=str(root / 'config'),
                 CODEX_HOME=str(root / 'codex'), **values)

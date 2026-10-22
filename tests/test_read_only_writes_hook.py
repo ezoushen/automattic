@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A Claude PreToolUse hook keeps an Automattic `writes: none` subagent's writes inside the reports."""
+"""A Claude PreToolUse hook keeps a zloop `writes: none` subagent's writes inside the reports."""
 import json
 import os
 from pathlib import Path
@@ -19,7 +19,7 @@ class Checkouts(unittest.TestCase):
     """A main checkout with a ticket worktree and an effort's reports directory."""
 
     def setUp(self):
-        tmp = tempfile.TemporaryDirectory(prefix='automattic read-only ')
+        tmp = tempfile.TemporaryDirectory(prefix='zloop read-only ')
         self.addCleanup(tmp.cleanup)
         self.tmp = Path(tmp.name).resolve()
         self.main = self.tmp / 'project'
@@ -33,7 +33,7 @@ class Checkouts(unittest.TestCase):
         self.reports = self.main / '.scratch/effort/reports'
         self.reports.mkdir(parents=True)
 
-    def assert_denied(self, decision, path, agent='automattic:reviewer'):
+    def assert_denied(self, decision, path, agent='zloop:reviewer'):
         self.assertIsNotNone(decision, path)
         self.assertEqual(decision['permissionDecision'], 'deny')
         reason = decision['permissionDecisionReason']
@@ -57,7 +57,7 @@ class ReadOnlyWrites(Checkouts):
                                     'message': {'role': 'user', 'content': text}}) + '\n')
         return path
 
-    def run_hook(self, tool, tool_input, agent='automattic:reviewer', cwd=None, agent_id='a1'):
+    def run_hook(self, tool, tool_input, agent='zloop:reviewer', cwd=None, agent_id='a1'):
         """The hook's decision for one tool call a subagent of type `agent` (None: the main session) makes."""
         payload = {'hook_event_name': 'PreToolUse', 'tool_name': tool, 'tool_input': tool_input,
                    'cwd': str(cwd or self.worktree), 'session_id': 'host-1', 'transcript_path': str(self.transcript),
@@ -77,7 +77,7 @@ class ReadOnlyWrites(Checkouts):
         notebook = self.worktree / 'n.ipynb'
         family = self.tmp / 'elsewhere-wt/src/app.py'
         edit = {'old_string': 'a', 'new_string': 'b'}
-        for agent in ('automattic:reviewer', 'automattic:verifier', 'automattic-reviewer-0123456789ab'):
+        for agent in ('zloop:reviewer', 'zloop:verifier', 'zloop-reviewer-0123456789ab'):
             with self.subTest(agent=agent):
                 self.assert_denied(self.run_hook('Edit', {'file_path': str(inside), **edit}, agent), inside, agent)
                 self.assert_denied(self.run_hook('Write', {'file_path': str(family), 'content': 'x'}, agent),
@@ -94,7 +94,7 @@ class ReadOnlyWrites(Checkouts):
                 self.assertIsNone(self.run_hook('Edit', {'file_path': str(report), **edit}, agent))
                 self.assertIsNone(self.run_hook('Write', {'file_path': str(self.reports / 'notes/run.log'),
                                                           'content': 'x'}, agent))
-                for outside in (self.tmp / 'copy/src/app.py', Path('/private/var/tmp/automattic-probe.txt')):
+                for outside in (self.tmp / 'copy/src/app.py', Path('/private/var/tmp/zloop-probe.txt')):
                     self.assertIsNone(self.run_hook('Write', {'file_path': str(outside), 'content': 'x'}, agent))
 
     def test_a_read_only_agent_also_writes_in_the_worktree_its_assignment_names(self):
@@ -210,9 +210,9 @@ class ReadOnlyWrites(Checkouts):
                 self.assertIsNone(self.run_hook('Bash', {'command': command}))
 
     def test_writers_other_agents_and_the_main_session_are_not_checked(self):
-        # Rule (T11): only `writes: none` Automattic agents are held to their reports.
+        # Rule (T11): only `writes: none` zloop agents are held to their reports.
         inside = {'file_path': str(self.worktree / 'src/app.py'), 'content': 'x'}
-        for agent in ('automattic:builder', 'automattic-builder-0123456789ab', 'general-purpose', 'reviewer', None):
+        for agent in ('zloop:builder', 'zloop-builder-0123456789ab', 'general-purpose', 'reviewer', None):
             with self.subTest(agent=agent):
                 self.assertIsNone(self.run_hook('Write', inside, agent))
                 self.assertIsNone(self.run_hook('Bash', {'command': 'echo x > src/app.py'}, agent))
@@ -232,7 +232,7 @@ class ReadOnlyWrites(Checkouts):
                        'Bash': {'command': 'echo x > src/app.py'}}
         for tool, [command] in commands.items():
             payload = {'hook_event_name': 'PreToolUse', 'tool_name': tool, 'tool_input': tool_inputs[tool],
-                       'cwd': str(self.worktree), 'agent_type': 'automattic:reviewer', 'agent_id': 'a1'}
+                       'cwd': str(self.worktree), 'agent_type': 'zloop:reviewer', 'agent_id': 'a1'}
             result = subprocess.run(command.replace('${CLAUDE_PLUGIN_ROOT}', str(support.ROOT)), shell=True,
                                     input=json.dumps(payload), capture_output=True, text=True, timeout=20)
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -265,7 +265,7 @@ class CodexChildren(Checkouts):
         super().setUp()
         self.records = self.main / '.scratch/codex-children/s1'
         self.agents = support.ROOT / 'agents'
-        # The Automattic state directory, where codex-assign also indexes each session's recording checkouts.
+        # The zloop state directory, where codex-assign also indexes each session's recording checkouts.
         self.env = dict({key: value for key, value in os.environ.items() if not key.startswith('CODEX_')},
                         XDG_STATE_HOME=str(self.tmp / 'state'))
 
@@ -348,7 +348,7 @@ class CodexChildren(Checkouts):
                                          task='review_9'))
 
     def test_sessions_without_records_and_the_parent_itself_are_not_checked(self):
-        # Rule (T15 R2'): a session with no record directory (Codex used without Automattic dispatch) and every call
+        # Rule (T15 R2'): a session with no record directory (Codex used without zloop dispatch) and every call
         # of the parent (no agent_id) are allowed, wherever they write.
         self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
         tracked = {'command': f'echo x > {quote(str(self.main / "src/app.py"))}'}
@@ -370,7 +370,7 @@ class CodexChildren(Checkouts):
         # The records directory has the shape of <main>/.scratch/<slug>/reports/ too; it is never a report.
         lookalike = self.main / '.scratch/codex-children/reports/x.json'
         # The index naming the session's recording checkouts (codex-assign keeps it in the state directory).
-        [index] = (self.tmp / 'state/automattic/codex-children/s1').iterdir()
+        [index] = (self.tmp / 'state/zloop/codex-children/s1').iterdir()
         for task in ('build_1', 'review_9'):
             for path in (forged, lookalike, index):
                 with self.subTest(task=task, path=path):
@@ -596,7 +596,7 @@ class CodexChildren(Checkouts):
         self.assert_denied(decision, other / 'a.py', 'Codex child review_1')
         mine = {'command': f'echo x > {quote(str(self.worktree / "a.py"))}'}
         self.assertEqual(self.run_codex('Bash', mine, task='review_2')['permissionDecision'], 'deny')
-        (self.tmp / 'state/automattic/codex-children/s3/broken').mkdir(parents=True)
+        (self.tmp / 'state/zloop/codex-children/s3/broken').mkdir(parents=True)
         self.assertIsNone(self.run_codex('Bash', mine, session='s3', cwd=self.tmp))
         for payload in ('[1]', '"x"', json.dumps({'tool_name': 'Bash', 'agent_id': 'c1', 'session_id': 's1',
                                                   'tool_input': 'echo', 'cwd': str(self.main)})):
@@ -628,7 +628,7 @@ class CodexChildren(Checkouts):
         claude = ReadOnlyWrites(methodName='run_hook')
         claude.tmp, claude.worktree, claude.transcript = self.tmp, self.worktree, self.tmp / 'session.jsonl'
         for name, run in (('Codex child review_1', lambda: self.run_codex('Bash', command)),
-                          ('automattic:reviewer', lambda: claude.run_hook('Bash', command))):
+                          ('zloop:reviewer', lambda: claude.run_hook('Bash', command))):
             with self.subTest(name=name):
                 started = time.monotonic()
                 decision = run()
@@ -684,7 +684,7 @@ class CodexChildren(Checkouts):
         subprocess.run(self.git + ['worktree', 'add', '-q', '--detach', str(other)], check=True)
         self.assertEqual(self.record('review_1', self.agents / 'reviewer.md', self.worktree).returncode, 0)
         forbidden = {'command': f'echo x > {quote(str(other / "a.py"))}'}
-        index = self.tmp / 'state/automattic/codex-children/s1'
+        index = self.tmp / 'state/zloop/codex-children/s1'
         (index / 'x').mkdir()
         (index / 'y').write_bytes(b'\xff\xfe')
         self.assert_denied(self.run_codex('Bash', forbidden), other / 'a.py', 'Codex child review_1')

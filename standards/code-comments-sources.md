@@ -2,7 +2,7 @@
 
 These sources inform function/interface documentation and maintenance. Their
 broader advice about implementation comments is not permission to add them:
-Automattic permits other comments only for a constraint that cannot be encoded as
+zloop permits other comments only for a constraint that cannot be encoded as
 a type, assertion, test or lint rule, after trying to encode it. A project's
 documented convention wins. The sources do not define that project policy.
 
@@ -22,7 +22,7 @@ requirement to add an example to every symbol. Keep those choices with the proje
 language and tooling. Function/interface documentation must communicate usable
 contracts; explaining reasoning alone does not satisfy the constraint rule for other comments.
 
-Automattic's mandatory documentation review gate, scoped follow-ups, prohibition on
+zloop's mandatory documentation review gate, scoped follow-ups, prohibition on
 working-journal comments (including ADR/ticket references), and rule against
 weakening docs to excuse bugs come from the user's explicit requirements.
 Implementation history and ADR/ticket references belong in Git commit messages;

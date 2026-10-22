@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Judges assigned Automattic work read-only against its contract and returns evidence-backed verdicts. Launched only by the Automattic orchestrator with an assignment.
+description: Judges assigned zloop work read-only against its contract and returns evidence-backed verdicts. Launched only by the zloop orchestrator with an assignment.
 writes: none
 core_skills: ["standards/code-comments.md", "standards/kinds/tautological-tests.md"]
 tools: Read, Grep, Glob, Bash, Edit, Skill, SendMessage, Monitor, TaskStop

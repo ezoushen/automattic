@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Automattic bounded decision request",
+  "title": "zloop bounded decision request",
   "type": "object",
   "properties": {
     "family": {"enum": ["mandate", "alignment", "refinement", "worker-selection", "review-triage", "recovery", "delivery", "skill-selection", "failure-cause", "wake-triage", "test-shape"]},

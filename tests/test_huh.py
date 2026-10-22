@@ -74,7 +74,7 @@ class Huh(unittest.TestCase):
                 self.assertIn(phrase, prose(ROOT / name), name)
 
     def test_the_pipeline_map_names_huh(self):
-        self.assertIn('`/automattic:huh`', (ROOT / 'skills/brief/pipeline.md').read_text())
+        self.assertIn('`/zloop:huh`', (ROOT / 'skills/brief/pipeline.md').read_text())
 
     def test_every_explaining_command_reads_the_explain_skill(self):
         for name in ('skills/brief/SKILL.md', 'skills/review/walkthrough.md', 'skills/setup/tour.md'):
@@ -89,7 +89,7 @@ class Huh(unittest.TestCase):
         self.assertFalse((ROOT / 'runtime/explain').exists())
         # Progress is a briefing, which reads live worker and check evidence that explaining skips.
         # explain skips the bootstrap that says how each host types a skill, so it names all three forms.
-        self.assertIn('(`/automattic:brief` in Claude Code, `$automattic:brief` in Codex, `/skill:brief` in Pi)', section)
+        self.assertIn('(`/zloop:brief` in Claude Code, `$zloop:brief` in Codex, `/skill:brief` in Pi)', section)
         readme_row = next(line for line in (ROOT / 'README.md').read_text().splitlines() if line.startswith('| `explain` |'))
         for where, text in (('frontmatter', EXPLAIN.read_text().split('---', 2)[1]), ('README row', readme_row),
                             ('openai.yaml', (ROOT / 'skills/explain/agents/openai.yaml').read_text())):

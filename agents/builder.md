@@ -1,6 +1,6 @@
 ---
 name: builder
-description: Writes code, tests and docs for one assigned Automattic job in its own worktree. Launched only by the Automattic orchestrator with an assignment.
+description: Writes code, tests and docs for one assigned zloop job in its own worktree. Launched only by the zloop orchestrator with an assignment.
 writes: worktree
 core_skills: ["standards/tdd.md", "standards/code-comments.md", "standards/kinds/tautological-tests.md", "standards/documentation.md"]
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill, SendMessage, Monitor, TaskStop

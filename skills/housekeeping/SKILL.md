@@ -11,7 +11,7 @@ First read: this procedure only.
 
 Leave the assigned project ready for handoff: remove disposable task residue,
 update documentation affected by the change, and retain useful evidence. Work
-within the current task's checkout and scope; no Automattic board is required.
+within the current task's checkout and scope; no zloop board is required.
 Use existing authorization for routine cleanup and documentation updates.
 A read-only assignment stays read-only: report candidates instead of editing.
 
@@ -45,7 +45,7 @@ before removal; do not follow a link and delete an external target. Use a projec
 cleanup command only when its targets match this scope. Do not use blanket Git
 clean/reset, erase shared caches, or change ignore rules merely to hide residue.
 Branch/worktree retirement remains with the existing lifecycle owner; in
-Automattic, dispatch and PR own it. This skill does not grant publication or
+zloop, dispatch and PR own it. This skill does not grant publication or
 branch deletion permission or override native tool restrictions.
 
 ## Retire a worktree

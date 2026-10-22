@@ -1,8 +1,8 @@
 {
-  "name": "automattic-dev",
-  "interface": { "displayName": "Automattic development" },
+  "name": "zloop-dev",
+  "interface": { "displayName": "zloop development" },
   "plugins": [{
-    "name": "automattic",
+    "name": "zloop",
     "source": { "source": "local", "path": "./" },
     "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
     "category": "Productivity"

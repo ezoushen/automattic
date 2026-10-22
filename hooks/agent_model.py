@@ -2,7 +2,7 @@
 """PreToolUse hook: an Agent launch names its model, unless its definition pins one.
 
 Without a model, Claude Code runs helpers on the session's model, usually the most
-expensive one. Set AUTOMATTIC_AGENT_MODEL_HOOK=off to disable the check.
+expensive one. Set ZLOOP_AGENT_MODEL_HOOK=off to disable the check.
 """
 import json
 import os
@@ -19,10 +19,10 @@ REASON = (
     'Pass an explicit `model` to this Agent call; without it the subagent runs on the session model. '
     'Choose the cheapest adequate one: haiku for search, lookups and summaries; sonnet for research, '
     'review and bounded implementation; opus only for hard design, adversarial review or deep diagnosis. '
-    'Automattic agents are routed with agent_models.py --job first.'
+    'zloop agents are routed with agent_models.py --job first.'
 )
 
-ASSIGNMENT_REASON = ('An Automattic agent needs its assignment: write `job_file: <absolute job path>` and every input '
+ASSIGNMENT_REASON = ('A zloop agent needs its assignment: write `job_file: <absolute job path>` and every input '
                      'that job lists as `name: value` in the prompt (see the job file and the host adapter). ')
 
 
@@ -61,8 +61,8 @@ def assignment_problem(agent, prompt):
 
 
 def stale_profile(name, cwd):
-    """Return why a generated `automattic-<agent>-<digest>` profile no longer matches its agent, or None."""
-    match = re.fullmatch(r'automattic-([a-z0-9-]+)-[0-9a-f]{12}', name)
+    """Return why a generated `zloop-<agent>-<digest>` profile no longer matches its agent, or None."""
+    match = re.fullmatch(r'zloop-([a-z0-9-]+)-[0-9a-f]{12}', name)
     agent = match and ROOT / 'agents' / f'{match.group(1)}.md'
     profile = match and definition(name, cwd)
     if not (profile and agent.is_file()) or None in (tools(profile), tools(agent)) or tools(profile) == tools(agent):
@@ -89,7 +89,7 @@ def definition(name, cwd):
 
 
 def main():
-    if os.environ.get('AUTOMATTIC_AGENT_MODEL_HOOK') == 'off':
+    if os.environ.get('ZLOOP_AGENT_MODEL_HOOK') == 'off':
         return
     try:
         event = json.load(sys.stdin)
@@ -97,7 +97,7 @@ def main():
             return
         tool_input = event.get('tool_input') or {}
         subagent = tool_input.get('subagent_type') or ''
-        named = re.fullmatch(r'automattic(?::([a-z0-9-]+)|-([a-z0-9-]+)-[0-9a-f]{12})', subagent)
+        named = re.fullmatch(r'zloop(?::([a-z0-9-]+)|-([a-z0-9-]+)-[0-9a-f]{12})', subagent)
         if named:
             problem = assignment_problem(named.group(1) or named.group(2), tool_input.get('prompt') or '')
             if problem:

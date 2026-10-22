@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Automattic agent execution configuration",
+  "title": "zloop agent execution configuration",
   "type": "object",
   "properties": {
     "$schema": { "type": "string" },
@@ -38,7 +38,7 @@
       }
     },
     "allow_training": {
-      "description": "Permit models whose data policy is trains. Set it in a repository's .automattic/executors.json only where its code may train a provider's models.",
+      "description": "Permit models whose data policy is trains. Set it in a repository's .zloop/executors.json only where its code may train a provider's models.",
       "type": "boolean"
     },
     "profiles": {

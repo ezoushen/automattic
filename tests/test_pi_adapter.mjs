@@ -7,21 +7,21 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // Use the installed SDK without loading the user's extensions or calling a model.
 const { DefaultResourceLoader, SettingsManager } = await import(pathToFileURL(process.argv[2]).href);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const temp = mkdtempSync(join(tmpdir(), "automattic pi "));
+const temp = mkdtempSync(join(tmpdir(), "zloop pi "));
 try {
   const agentDir = join(temp, "agent");
   const extensions = join(agentDir, "extensions");
   const skills = join(agentDir, "skills");
   mkdirSync(extensions, { recursive: true });
   mkdirSync(skills);
-  symlinkSync(join(root, "hosts/pi/bootstrap.ts"), join(extensions, "automattic.ts"));
+  symlinkSync(join(root, "hosts/pi/bootstrap.ts"), join(extensions, "zloop.ts"));
   const packageDir = join(temp, "package");
   const unselectedAddon = join(packageDir, "addons/unselected/skills/probe");
   mkdirSync(unselectedAddon, { recursive: true });
   writeFileSync(join(unselectedAddon, "SKILL.md"),
     "---\nname: unselected-addon-probe\ndescription: Optional addon discovery fixture\n---\nNever auto-load this addon.\n");
   symlinkSync(join(root, "skills"), join(packageDir, "skills"));
-  symlinkSync(join(packageDir, "skills"), join(skills, "automattic"));
+  symlinkSync(join(packageDir, "skills"), join(skills, "zloop"));
   const loader = new DefaultResourceLoader({
     cwd: temp, agentDir, settingsManager: SettingsManager.inMemory({}),
     noContextFiles: true, noPromptTemplates: true, noThemes: true,
@@ -53,16 +53,16 @@ try {
     assert.deepEqual(await bounded("bash", { command: "find / -name x" }), { command: "find / -name x", timeout: 120 });
     assert.deepEqual(await bounded("bash", { command: "make test", timeout: 900 }), { command: "make test", timeout: 900 });
     assert.deepEqual(await bounded("bg_run", { command: "sleep 600" }), { command: "sleep 600" });
-    // AUTOMATTIC_BASH_TIMEOUT=off turns the default off, and the hint then promises no bound.
-    const previousTimeout = process.env.AUTOMATTIC_BASH_TIMEOUT;
-    process.env.AUTOMATTIC_BASH_TIMEOUT = "off";
+    // ZLOOP_BASH_TIMEOUT=off turns the default off, and the hint then promises no bound.
+    const previousTimeout = process.env.ZLOOP_BASH_TIMEOUT;
+    process.env.ZLOOP_BASH_TIMEOUT = "off";
     try {
       assert.deepEqual(await bounded("bash", { command: "find / -name x" }), { command: "find / -name x" });
       const unbounded = await extension.handlers.get("before_agent_start")[0]({ systemPrompt: "existing" }, {});
       assert.ok(!unbounded.systemPrompt.includes("Shell commands given no timeout"));
     } finally {
-      if (previousTimeout === undefined) delete process.env.AUTOMATTIC_BASH_TIMEOUT;
-      else process.env.AUTOMATTIC_BASH_TIMEOUT = previousTimeout;
+      if (previousTimeout === undefined) delete process.env.ZLOOP_BASH_TIMEOUT;
+      else process.env.ZLOOP_BASH_TIMEOUT = previousTimeout;
     }
     // Loop guard: the same call returning the same result three times in a row is blocked next time.
     const toolResult = extension.handlers.get("tool_result")[0];
@@ -84,13 +84,13 @@ try {
     // A different call resets it, and polling whose output changes is never blocked.
     assert.equal(await step("git status", "clean"), undefined);
     for (let i = 0; i < 5; i++) assert.equal(await step("herdr agent get w", `working ${i}`), undefined);
-    const previousGuard = process.env.AUTOMATTIC_LOOP_GUARD;
-    process.env.AUTOMATTIC_LOOP_GUARD = "off";
+    const previousGuard = process.env.ZLOOP_LOOP_GUARD;
+    process.env.ZLOOP_LOOP_GUARD = "off";
     try {
       for (let i = 0; i < 5; i++) assert.equal(await step("pwd", "/repo"), undefined);
     } finally {
-      if (previousGuard === undefined) delete process.env.AUTOMATTIC_LOOP_GUARD;
-      else process.env.AUTOMATTIC_LOOP_GUARD = previousGuard;
+      if (previousGuard === undefined) delete process.env.ZLOOP_LOOP_GUARD;
+      else process.env.ZLOOP_LOOP_GUARD = previousGuard;
     }
     await step("reset", "x");
     const handlers = extension.handlers.get("before_agent_start");

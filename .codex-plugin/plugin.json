@@ -1,5 +1,5 @@
 {
-  "name": "automattic",
+  "name": "zloop",
   "version": "0.3.0",
   "skills": "./skills/",
   "hooks": "./hosts/codex/hooks.json"

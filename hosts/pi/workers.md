@@ -15,10 +15,10 @@ Use the registered generic `worker` with the assigned `agent_file` (builder, rev
 or verifier) and `job_file`. Verify its actual tools
 meet the assignment; project profiles can override defaults. Agent permissions
 still apply even when its tool list permits writes. Do not request nonexistent
-Automattic-named Pi profiles or copy the Claude profiles into Pi.
+zloop-named Pi profiles or copy the Claude profiles into Pi.
 
 Start a child with `agent: "worker", task: <assignment>, cwd: <assigned worktree>,
-context: "fresh", async: true, worktree: false`. Automattic already owns the
+context: "fresh", async: true, worktree: false`. zloop already owns the
 worktree; explicitly disable extra isolation even if Pi's configured default
 enables it. Include absolute `adapter`, `agent_file`, `job_file`,
 `plugin_root`, `repo`, report and input paths, branch/head, accepted scope and
@@ -38,7 +38,7 @@ resolve the model the worker would otherwise use from native settings/catalog
 (including provider and agent defaults); do not assume it is the parent's model or
 pass `inherit:<effort>`. If that model cannot be established, report the missing
 capability. Validate suffix support and inspect returned effective metadata.
-`inherit` passes no model/effort override; do not reapply Automattic preferences.
+`inherit` passes no model/effort override; do not reapply zloop preferences.
 
 Use the smaller of available runtime capacity and the shared scheduling ceiling
 of 8; an unlimited runtime does not remove that ceiling. Count all live workers.
@@ -75,7 +75,7 @@ failures are boundaries; availability failures use the shared recovery policy.
 Reconcile partially started children before retrying or replacing them.
 
 The orchestrator retains board updates, integration and authorized publication.
-Automattic adds no Git blocklist. Native permissions and agent permissions
+zloop adds no Git blocklist. Native permissions and agent permissions
 remain binding. Scheduling a recurring run or enabling a persistent goal requires
 an explicit user request; ordinary async dispatch uses completion notifications.
 

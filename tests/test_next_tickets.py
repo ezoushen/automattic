@@ -94,7 +94,7 @@ class Scheduling(unittest.TestCase):
 
 class BoardCLI(unittest.TestCase):
     def setUp(self):
-        tmp = tempfile.TemporaryDirectory(prefix='automattic-board-')
+        tmp = tempfile.TemporaryDirectory(prefix='zloop-board-')
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         subprocess.run(['git', 'init', '-q', '-b', 'main', str(self.root)], check=True)
@@ -553,7 +553,7 @@ class BoardCLI(unittest.TestCase):
 
     def test_a_measurement_that_outruns_its_timeout_is_killed_with_its_children_and_refused(self):
         # The shell is not the only process to stop: a child it started must not outlive the refusal.
-        scratch = Path(tempfile.mkdtemp(prefix='automattic-pid-'))
+        scratch = Path(tempfile.mkdtemp(prefix='zloop-pid-'))
         self.addCleanup(shutil.rmtree, scratch, True)
         pidfile = scratch / 'pid'
         self.measured_ticket(f'sleep 15 >/dev/null 2>&1 & echo $! > {shlex.quote(str(pidfile))}; wait', timeout_seconds=1)
@@ -652,7 +652,7 @@ class BoardCLI(unittest.TestCase):
         assert 'recall is 83, worse than baseline 100' in self.refusal()
 
     def test_a_child_that_escapes_the_process_group_and_holds_stdout_cannot_stall_acceptance(self):
-        scratch = Path(tempfile.mkdtemp(prefix='automattic-pid-'))
+        scratch = Path(tempfile.mkdtemp(prefix='zloop-pid-'))
         self.addCleanup(shutil.rmtree, scratch, True)
         pidfile = scratch / 'pid'
         child = ('import subprocess, sys; from pathlib import Path; '

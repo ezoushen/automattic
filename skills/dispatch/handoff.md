@@ -32,7 +32,7 @@ Keep a review limited to selected tickets distinct from effort-wide delivery pro
 An active writer that cannot be reconciled safely or unavailable review capability
 leaves the handoff blocked with its reason, never silently skipped or marked clean.
 
-Do not call `Skill(automattic:review)` or ask the user to run `/review` to continue
+Do not call `Skill(zloop:review)` or ask the user to run `/review` to continue
 an ordinary dispatch. The public review command remains user-invoked; its shared
 procedure is already part of this dispatch. Native tool refusals
 remain binding, including those from reviewer dependencies; stop the denied action

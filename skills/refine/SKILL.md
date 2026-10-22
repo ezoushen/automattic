@@ -31,7 +31,7 @@ retain the prepared input and explain the native restriction. Never retry a
 refused operation through this reference. Tracker publication still follows the
 existing task authorization and project conventions.
 
-`/automattic:refine` cuts work into tickets by the board's [slicing rules](../../runtime/board/slicing.md):
+`/zloop:refine` cuts work into tickets by the board's [slicing rules](../../runtime/board/slicing.md):
 thin end-to-end slices with **blocking edges**, each sized for one fresh context window.
 It adds what a scrum backlog needs — a **user story** and **acceptance criteria** per
 ticket — and uses the project's ticket convention. For local Markdown only, it writes the
@@ -140,7 +140,7 @@ material question answered is not spec-ready; apply the same question filter.
 
 ## Then
 
-`/automattic:dispatch` schedules the tickets on `blocked_by` and `touches`; its builders
+`/zloop:dispatch` schedules the tickets on `blocked_by` and `touches`; its builders
 follow the ticket job, using `alignment.md`
 as the spec.
 

@@ -53,7 +53,7 @@ or replace project tooling just to obtain an optional field.
 
 Read scope, acceptance criteria, priorities, ownership, dependencies and statuses
 from canonical issues. Preserve native IDs and relationships. Map workflow states
-by the project's meanings, not guessed label names; don't add Automattic fields or
+by the project's meanings, not guessed label names; don't add zloop fields or
 labels. Reject cycles and unresolved dependencies. An external blocker may stay
 external: verify its delivery/integration evidence or keep the dependent blocked.
 A closed/cancelled issue alone is not proof its prerequisite code was delivered.

@@ -36,7 +36,7 @@ the assignment when needed for evidence, using existing project conventions.
   --journal <absolute-session-decisions.jsonl> --assignment-id <assignment/attempt>
 ```
 
-Use `--session <root-session-id>` for session overrides; `AUTOMATTIC_SESSION` also
+Use `--session <root-session-id>` for session overrides; `ZLOOP_SESSION` also
 applies. `--user-executors` selects an alternate user configuration for evaluation.
 No subprocess worker is created. `recommended` includes the choice and proposer;
 `host_required` means disabled, abstained, failed or invalid. Resume reuses the

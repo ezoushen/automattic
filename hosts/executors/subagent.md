@@ -18,7 +18,7 @@ apply `settings.model` and `settings.effort` (the normalized thinking label) to
 the actual worker. Changing a forwarding agent's model is not sufficient.
 
 For default native workers, reuse the host's settings mapping and generated
-profiles where needed. For named agents, do not generate a default Automattic
+profiles where needed. For named agents, do not generate a default zloop
 profile that would replace the chosen agent. Use its supported controls, preserving
 its tools and restrictions, or report that the requested settings cannot be applied.
 Settings expressed only as prose are not runtime overrides.

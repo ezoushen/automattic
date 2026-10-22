@@ -20,7 +20,7 @@ SCRIPT = support.script('agent_models.py')
 
 class LaunchControls(unittest.TestCase):
     def setUp(self):
-        tmp = tempfile.TemporaryDirectory(prefix='automattic launch ')
+        tmp = tempfile.TemporaryDirectory(prefix='zloop launch ')
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         self.user = self.root / 'executors.json'
@@ -43,8 +43,8 @@ class LaunchControls(unittest.TestCase):
                                   '--job', job, '--route', '--user-executors', str(self.user),
                                   '--user-config', str(self.root / 'absent.json'), *options],
                                  capture_output=True, text=True,
-                                 env=support.isolated_env(self.root, HERDR_ENV='1', AUTOMATTIC_PROFILE='',
-                                                          AUTOMATTIC_SESSION=''))
+                                 env=support.isolated_env(self.root, HERDR_ENV='1', ZLOOP_PROFILE='',
+                                                          ZLOOP_SESSION=''))
         self.assertEqual(process.returncode, code, process.stderr)
         return json.loads(process.stdout) if code == 0 else process.stderr
 
@@ -67,15 +67,15 @@ class LaunchControls(unittest.TestCase):
         tail = ['-a', 'never', '-m', 'gpt-6.1-sol', '-c', 'model_reasoning_effort="high"']
         self.assertEqual(self.route('sol', 'diff-review', 'claude', *options)['launch'], {
             'writes': 'none',
-            'argv': ['-c', 'default_permissions="automattic_none"',
-                     '-c', 'permissions.automattic_none.filesystem={":root"="read",":tmpdir"="write",'
+            'argv': ['-c', 'default_permissions="zloop_none"',
+                     '-c', 'permissions.zloop_none.filesystem={":root"="read",":tmpdir"="write",'
                      f'"{reports}"="write"}}', *tail],
             'verify': {'sandbox': 'workspace-write', 'approval': 'never',
                        'filesystem': sorted(['read :root', 'write :tmpdir', f'write {reports}'])}})
         self.assertEqual(self.route('sol', 'ticket', 'claude', *options)['launch'], {
             'writes': 'worktree',
-            'argv': ['-c', 'default_permissions="automattic_worktree"',
-                     '-c', 'permissions.automattic_worktree.filesystem={":root"="read",":tmpdir"="write",'
+            'argv': ['-c', 'default_permissions="zloop_worktree"',
+                     '-c', 'permissions.zloop_worktree.filesystem={":root"="read",":tmpdir"="write",'
                      f'"{reports}"="write","{worktree}"="write","{git}"="write","{git}/worktrees/wt"="write"}}',
                      *tail],
             'verify': {'sandbox': 'workspace-write', 'approval': 'never', 'filesystem': sorted([

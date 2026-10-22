@@ -12,7 +12,7 @@ Contents:
 - [Watch the required checks](#watch-the-required-checks)
 
 Read this before writing a PR description and before every later edit or push to a
-PR branch, whether or not `/automattic:pr` was invoked. It applies to free-text
+PR branch, whether or not `/zloop:pr` was invoked. It applies to free-text
 requests such as "update the PR description".
 
 A good description lets a reviewer who has never seen the effort answer four

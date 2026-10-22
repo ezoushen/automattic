@@ -6,7 +6,7 @@ and emits JSON on stdout. It does not call a model or change jobs, hooks or acco
 configuration. Save output in the existing effort report directory when needed.
 
 ```sh
-python3 /path/to/automattic/scripts/claude_usage.py \
+python3 /path/to/zloop/scripts/claude_usage.py \
   --since 2026-09-27T18:00:00+00:00 \
   --until 2026-09-28T01:00:00+00:00
 ```
@@ -21,7 +21,7 @@ External SDK/hook sessions are separate transcript families. After confirming th
 working directories, include exact paths with repeated `--related-worktree` options:
 
 ```sh
-python3 /path/to/automattic/scripts/claude_usage.py \
+python3 /path/to/zloop/scripts/claude_usage.py \
   --since 2026-09-27T18:00:00+00:00 --until 2026-09-28T01:00:00+00:00 \
   --session <parent-UUID> --related-worktree /absolute/project/.worktrees/ticket
 ```

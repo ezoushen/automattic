@@ -56,7 +56,7 @@ files/worktrees and record replacement IDs.
 Use only the route's resolved settings; ticket workload labels do not select models.
 Map `model` to the native
 spawn model and `effort` to `reasoning_effort` (or the current schema's equivalent).
-`inherit` supplies no model/effort fields; do not reapply saved Automattic preferences.
+`inherit` supplies no model/effort fields; do not reapply saved zloop preferences.
 Omit absent fields; use `fork_turns="none"` with this host's explicit overrides.
 Check supported model/effort combinations. Native custom-agent configuration can
 supersede spawn settings: inspect it and report conflicts rather than assuming the

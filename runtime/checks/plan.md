@@ -16,7 +16,7 @@ and whole environment/settings dumps do not belong in command output.
 
 ## Coordinate the actual resource
 
-Run checks without an Automattic lock by default. Use the project's existing
+Run checks without a zloop lock by default. Use the project's existing
 coordination when commands share mutable outputs, a device or another exclusive
 resource. Only an evidenced conflict calls for a resource-specific lock; a build
 command or high CPU usage alone does not. Machine load belongs in the concurrency

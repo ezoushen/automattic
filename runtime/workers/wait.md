@@ -69,7 +69,7 @@ day, and sends you back once. It holds only the Herdr pane that registered a wor
 or, outside Herdr, sessions that are not inside a worker's own worktree.
 Every session is also held for each Herdr launch it logged ([launch log](prepare.md)) into
 `.worktrees/` or a cwd Herdr did not report and, unless its launch marked it a worker
-(`AUTOMATTIC_WORKER`, as [prepare](prepare.md) says) and inside Herdr, for each other live
+(`ZLOOP_WORKER`, as [prepare](prepare.md) says) and inside Herdr, for each other live
 agent of its workspace whose cwd is in `.worktrees/` (none asked when the checkout has no
 `.worktrees/`), when no attempt names that pane or agent (alone or in a
 `<session>/<pane>/<name>` handle; for a launch, never one another host session registered when it
@@ -88,7 +88,7 @@ report records `autofix: true` (before it does, the binding's `--autofix`) and n
 every ticket done and `--delivery` failing, until it is finished: its branch deleted, its reviewed head
 in main and a passing `e2e_status` recorded at a head in main.
 A closed workspace or stopped Herdr session means the tab is gone.
-`AUTOMATTIC_YIELD_HOOK=off` disables the hooks.
+`ZLOOP_YIELD_HOOK=off` disables the hooks.
 Read every completed wait's retained log and inspect the native worker/report. When
 the opt-in [wake-triage pilot](../decisions/shadow-pilots.md#wake-triage-shadow-pilot) is enabled,
 add `capture`, a literal argv that prints the worker's current output, to each

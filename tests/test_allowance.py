@@ -19,7 +19,7 @@ NOW = 1792000000  # A fixed clock for every reading.
 
 class Allowance(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic allowance ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop allowance ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.enterContext(patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'state')}))

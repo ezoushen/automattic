@@ -5,7 +5,7 @@ usage: adr_numbers.py --repo <checkout> [--dir docs/adr] [--ref <commit> [--agai
 
 Checks one folder of `NNNN-slug.md` files. With --against, the folder is checked as merging
 the two commits would leave it, using `git merge-tree` (Git 2.38 or later) without touching
-any branch or working tree. With --index, the folder must also follow Automattic's index
+any branch or working tree. With --index, the folder must also follow zloop's index
 convention: a `README.md` index whose Accepted, Superseded and Deprecated sections list each
 ADR under its status (front matter `status:`, default accepted), only existing files, and
 supersede links answered at both ends. Without it, a project's own convention is not judged. Prints JSON {"dir", "duplicates":
@@ -155,7 +155,7 @@ def main(argv):
     parser.add_argument('--dir', default='docs/adr', help="the project's ADR folder")
     parser.add_argument('--ref', help='read the folder at this commit instead of the working tree')
     parser.add_argument('--against', help='check the folder as merging this commit would leave it')
-    parser.add_argument('--index', action='store_true', help="also check Automattic's index and supersede links")
+    parser.add_argument('--index', action='store_true', help="also check zloop's index and supersede links")
     args = parser.parse_args(argv)
     repo = args.repo.resolve()
     try:

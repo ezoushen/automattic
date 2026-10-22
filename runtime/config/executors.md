@@ -7,8 +7,8 @@ Contents:
 
 ## Configuration examples
 
-Optional files: `~/.config/automattic/executors.json` and
-`<canonical-main-checkout>/.automattic/executors.json`. Merge the requested agent
+Optional files: `~/.config/zloop/executors.json` and
+`<canonical-main-checkout>/.zloop/executors.json`. Merge the requested agent
 into an existing file; do not replace unrelated agent entries. The
 [configuration schema](../../schemas/executors.schema.json) ships with the plugin.
 An optional `$schema` path supports editors but does not change runtime validation.
@@ -142,7 +142,7 @@ metadata in `candidate_routes`. No skill is invoked during configuration inspect
 ## Manual setup and inspection
 
 The configuration skill can perform setup. For manual setup, replace
-`<plugin_root>` with the maintained Automattic directory and prepare its isolated
+`<plugin_root>` with the maintained zloop directory and prepare its isolated
 Python environment once, or use an existing environment with requirements.txt:
 
 ```sh

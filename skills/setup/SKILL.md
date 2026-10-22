@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "Explain the current Automattic setup, or inspect, configure or reset worker models, routes, pools, routers, profiles, thinking bounds and decision opt-ins and calibration at user, project or session scope."
+description: "Explain the current zloop setup, or inspect, configure or reset worker models, routes, pools, routers, profiles, thinking bounds and decision opt-ins and calibration at user, project or session scope."
 disable-model-invocation: true
 argument-hint: "[question | show|set|reset [agent|router|decisions|profile|model-definition|runtime-definition|executor-definition] | calibrate | calibration status | check | retro <journal> | replay <journal> <cases>] [--scope user|project|session] [--route] [--config-profile <name>] [runtime=claude|codex|pi|opencode] [--candidate <id>] [thinking=<label|JSON>]"
 ---
@@ -31,17 +31,17 @@ authorization and report its effective result.
 
 ## Direct changes
 
-Use `/automattic:setup` in Claude Code, `$automattic:setup` in Codex, or
+Use `/zloop:setup` in Claude Code, `$zloop:setup` in Codex, or
 `/skill:setup` in Pi. These are chat invocations, not shell commands. A request that
 names `show`, `set` or `reset` goes straight to
 [select the configuration flow](#select-the-configuration-flow) without the tour.
 For example, using Claude's spelling:
 
 ```text
-/automattic:setup set reviewer --route executor=subagent mode=inherit
-/automattic:setup set reviewer --route thinking=high
-/automattic:setup show reviewer --route
-/automattic:setup reset reviewer --route thinking
+/zloop:setup set reviewer --route executor=subagent mode=inherit
+/zloop:setup set reviewer --route thinking=high
+/zloop:setup show reviewer --route
+/zloop:setup reset reviewer --route thinking
 ```
 
 The second command explicitly overrides thinking; the worker's model remains at

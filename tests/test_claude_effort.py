@@ -83,7 +83,7 @@ class ClaudeNativeEffort(unittest.TestCase):
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
             try:
-                with tempfile.TemporaryDirectory(prefix='automattic native effort ') as tmp:
+                with tempfile.TemporaryDirectory(prefix='zloop native effort ') as tmp:
                     root = Path(tmp)
                     path = root / profile['path']
                     path.parent.mkdir(parents=True)

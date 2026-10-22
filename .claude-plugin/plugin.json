@@ -1,5 +1,5 @@
 {
-  "name": "automattic",
+  "name": "zloop",
   "version": "0.3.0",
   "description": "Loop engineering: the principal steers, agents decide within a vetoable ledger, and a graph-scheduled outer loop drives tickets to done.",
   "author": {

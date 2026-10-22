@@ -19,7 +19,7 @@ LIFECYCLE = support.script('worker_lifecycle.py')
 
 class EffortSpend(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic spend ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop spend ')
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         # Outcomes go to a ledger under the state home; keep the user's ledger out of tests.
@@ -235,7 +235,7 @@ class EffortSpend(unittest.TestCase):
         usage = {'input': 1, 'output': 7, 'cacheRead': 0, 'cacheWrite': 0}
         pi = self.pi_transcript('host-p', [
             receipt, (usage, [('bash', {'command': 'python3 /p/scripts/worker_lifecycle.py ack --event-id 3'})]),
-            {'customType': 'automattic_yield_gate', 'content': 'x'}, (usage, [('read', {'path': '/r.md'})]),
+            {'customType': 'zloop_yield_gate', 'content': 'x'}, (usage, [('read', {'path': '/r.md'})]),
             {'customType': 'background-task-notification', 'content': '<background-task-notification>x'},
             (usage, [])])
         codex = self.codex_transcript('host-c', [(10, 0, 5, ['git diff --stat']), (10, 0, 6, [])])

@@ -23,7 +23,7 @@ An opening excerpt or CLI help alone does not establish the lifecycle contract.
 Establish that it can launch the requested worker, honor its access limits and
 collect its complete result. Read the destination's settings guidance as needed.
 Use the skill's supported delegation entrypoint for the supplied assignment;
-Automattic retains planning, review and acceptance gates. If the skill requires an
+zloop retains planning, review and acceptance gates. If the skill requires an
 incompatible orchestration loop, treat it as non-composable rather than bypassing
 its rules or nesting a second workflow.
 `inherit` must preserve that destination's model/thinking configuration; merely

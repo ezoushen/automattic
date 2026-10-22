@@ -154,7 +154,7 @@ not the installed bridge's actual behavior.
 
 - Case 1 loads the applicable lifecycle sections before mutation, follows the
   installed skill's normal completion operation and preserves caller layout/focus.
-  It does not copy a new Herdr manual into Automattic.
+  It does not copy a new Herdr manual into zloop.
 - Case 2 recognizes the valid settled state, accepts only after report/revision
   checks, retires the obsolete owned wait and corrects subsequent waiting. It does
   not require the old wait to finish, the user to keep polling or label every

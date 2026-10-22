@@ -329,7 +329,7 @@ independent evaluator. Simulate evidence; no real repository or external actions
   then reviews delta plus affected callers/docs. Direction stays settled unless
   contradicted. Repair-introduced contract failure remains a hard gate; invalidated
   checks rerun, unaffected checks retain provenance. No ritual full-PR pass.
-- Case 3 applies Automattic's own review method, not either catalog skill; one
+- Case 3 applies zloop's own review method, not either catalog skill; one
   implementation review owner, complete Standards/Spec findings and coverage, no
   top-N truncation or nested full review.
 

@@ -43,4 +43,4 @@ explicit persistent goal, establish its supported blocked/resume behavior before
 installing it. Never mark unfinished work complete or pause a goal without the
 required user authorization. If an external evaluator keeps waking an unchanged
 blocker and exposes no usable suspension operation, report that runtime limitation
-and the native action needed from the user; Automattic cannot guarantee its wake cadence.
+and the native action needed from the user; zloop cannot guarantee its wake cadence.

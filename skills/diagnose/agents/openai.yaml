@@ -1,5 +1,5 @@
 interface:
   short_description: "Find the cause of a bug, failure or regression"
-  default_prompt: "Use $automattic:diagnose <symptom or failing command> to build a failing loop, find the cause and return a reproducer."
+  default_prompt: "Use $zloop:diagnose <symptom or failing command> to build a failing loop, find the cause and return a reproducer."
 policy:
   allow_implicit_invocation: true

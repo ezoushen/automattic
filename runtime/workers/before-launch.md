@@ -36,7 +36,7 @@ execution evidence instead of treating a hard-coded model as a routed choice.
 
 ## Profiles, Herdr and thinking
 
-Explicit `--config-profile` or `AUTOMATTIC_PROFILE` selects a routing profile;
+Explicit `--config-profile` or `ZLOOP_PROFILE` selects a routing profile;
 otherwise use the configured router, defaulting to host judgment.
 Profile lookup is by agent and worker runtime, not caller. Consume selection options
 before forwarding phase arguments to the scheduler or review target helper.

@@ -124,7 +124,7 @@ class PrBodyHook(unittest.TestCase):
         self.assertIsNone(self.run_hook('gh pr create --body x', tool='Read'))
 
     def test_opt_out_and_malformed_input_never_block(self):
-        self.assertIsNone(self.run_hook('gh pr create --body x', env={'AUTOMATTIC_PR_HOOK': 'off'}))
+        self.assertIsNone(self.run_hook('gh pr create --body x', env={'ZLOOP_PR_HOOK': 'off'}))
         result = subprocess.run([sys.executable, str(HOOK)], input='not json', capture_output=True, text=True,
                                 timeout=10)
         self.assertEqual((result.returncode, result.stdout), (0, ''))

@@ -38,7 +38,7 @@ class Executors(unittest.TestCase):
     """Executor configuration, routing profiles and the Bash handoff."""
 
     def test_routing_profiles_select_validate_and_reject_unknown(self):
-        with tempfile.TemporaryDirectory(prefix='automattic profiles ') as tmp:
+        with tempfile.TemporaryDirectory(prefix='zloop profiles ') as tmp:
             root = Path(tmp)
             user = root / 'user.json'
             data = {'agents': {'reviewer': instance()}, 'profiles': {'balanced': {}}}
@@ -46,7 +46,7 @@ class Executors(unittest.TestCase):
             cli = [sys.executable, '-B', str(models.ROOT / 'scripts/agent_models.py'), '--repo', str(root),
                    '--user-executors', str(user), '--user-config', str(root/'absent-models.json'),
                    '--harness', 'claude', '--job', 'diff-review', '--config-profile', 'balanced']
-            with patch.dict(os.environ, {'AUTOMATTIC_PROFILE': '', 'AUTOMATTIC_SESSION': '', 'HERDR_ENV': ''}):
+            with patch.dict(os.environ, {'ZLOOP_PROFILE': '', 'ZLOOP_SESSION': '', 'HERDR_ENV': ''}):
                 result = subprocess.run(cli + ['--route'], capture_output=True, text=True, check=True)
                 resolved = json.loads(result.stdout)
                 assert resolved['config_profile'] == 'balanced'
@@ -62,11 +62,11 @@ class Executors(unittest.TestCase):
     def test_schemas_precedence_model_policy_and_bash_handoff(self):
         for path in (models.ROOT / 'schemas').rglob('*.schema.json'):
             Draft202012Validator.check_schema(json.loads(path.read_text()))
-        with tempfile.TemporaryDirectory(prefix='automattic executors ') as tmp, \
-                patch.dict(os.environ, {'AUTOMATTIC_PROFILE': '', 'HERDR_ENV': ''}):
+        with tempfile.TemporaryDirectory(prefix='zloop executors ') as tmp, \
+                patch.dict(os.environ, {'ZLOOP_PROFILE': '', 'HERDR_ENV': ''}):
             root = Path(tmp)
             user = root / 'user/executors.json'
-            project = root / '.automattic/executors.json'
+            project = root / '.zloop/executors.json'
             preferences = root / 'user/models.json'
 
             def resolve(host='claude', agent='reviewer', choice=None, adaptive_thinking=None, **task):

@@ -19,7 +19,7 @@ First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 This is a manually requested, read-only briefing, not another workflow phase.
 Use the active task and its accepted scope unless the user names a different
 target. With `map` as the whole target, follow [show the pipeline map](#show-the-pipeline-map)
-instead; an effort named `map` is named by its path, `.scratch/map`. No Automattic board
+instead; an effort named `map` is named by its path, `.scratch/map`. No zloop board
 or report is required. If target identity is ambiguous, state what can be established
 and ask only for the missing selection; offer the map when no work is in progress.
 

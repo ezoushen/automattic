@@ -137,20 +137,20 @@ class PrePushSignals(HookRepo):
         finished = subprocess.Popen(['true'])
         finished.wait()
         dead = str(finished.pid)
-        own = self.tmp / 'automattic-pre-push.Ab12Cd'
+        own = self.tmp / 'zloop-pre-push.Ab12Cd'
         own.mkdir()
         (own / 'pid').write_text(dead)
         (own / 'group').write_text(dead)
-        fresh = self.tmp / 'automattic-pre-push.Fr35hX'  # killed before recording its checks: may still run
+        fresh = self.tmp / 'zloop-pre-push.Fr35hX'  # killed before recording its checks: may still run
         fresh.mkdir()
         (fresh / 'pid').write_text(dead)
-        others = {'automattic-pre-push.Ab12C': dead, 'automattic-pre-push.Ab12Cde': dead,
-                  'automattic-pre-push.Xy34Zw': 'abc', 'automattic-pre-push.Qr56St': ''}
+        others = {'zloop-pre-push.Ab12C': dead, 'zloop-pre-push.Ab12Cde': dead,
+                  'zloop-pre-push.Xy34Zw': 'abc', 'zloop-pre-push.Qr56St': ''}
         for name, owner in others.items():  # wrong name length or no numeric owner: not provably the hook's
             (self.tmp / name).mkdir()
             (self.tmp / name / 'pid').write_text(owner)
-        mine = self.base / 'automattic-pre-push.mine'  # a user's directory that happens to share the prefix
-        nopid = self.base / 'automattic-pre-push.Zz99Zz'  # no pid file: not provably the hook's
+        mine = self.base / 'zloop-pre-push.mine'  # a user's directory that happens to share the prefix
+        nopid = self.base / 'zloop-pre-push.Zz99Zz'  # no pid file: not provably the hook's
         for directory in (mine, nopid):
             git(self.root, 'worktree', 'add', '-q', '--detach', str(directory / 'tree'))
             (directory / 'keep.txt').write_text('user data\n')

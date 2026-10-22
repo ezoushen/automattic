@@ -74,7 +74,7 @@ Stages after this one, in order: [coverage and findings](coverage.md),
    must honor the adapter's preflight and assigned worktree boundary.
 3. Read the PR/issue discussion and existing review comments, changed code, relevant
    callers, project standards and existing alignment, including canonical issues
-   in the project's configured tracker under the bootstrap's conventions. For a verified Automattic
+   in the project's configured tracker under the bootstrap's conventions. For a verified zloop
    effort use `.scratch/<slug>/reports/spec-review.md`; otherwise use a local
    `.scratch/reviews/<review-id>/review.md` with a stable, filesystem-safe ID and the
    target identity recorded inside it. Never infer an effort from a similar name.

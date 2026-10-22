@@ -34,14 +34,14 @@ class CrossHarness(unittest.TestCase):
     """Package, scheduler and lock regressions in temporary repositories with isolated state."""
 
     def setUp(self):
-        state = tempfile.TemporaryDirectory(prefix='automattic cross harness state ')
+        state = tempfile.TemporaryDirectory(prefix='zloop cross harness state ')
         self.addCleanup(state.cleanup)
         environment = patch.dict(os.environ, support.isolated_env(state.name))
         environment.start()
         self.addCleanup(environment.stop)
 
     def test_scheduler_scopes_locks_waves_and_acceptance(self):
-        with tempfile.TemporaryDirectory(prefix='automattic check ') as tmp:
+        with tempfile.TemporaryDirectory(prefix='zloop check ') as tmp:
             repo = Path(tmp) / 'repo'
             repo.mkdir()
             def git(*args):
@@ -94,7 +94,7 @@ class CrossHarness(unittest.TestCase):
             evidence = (f'---\nreview_status: clean\ndocumentation_status: passed\nreview_head: {reviewed_head}\n'
                     f'review_base: {review_base}\nreview_diff_base: {review_base}\n'
                     f'e2e_status: passed\ne2e_head: {reviewed_head}\n'
-                    f'review_by: automattic-reviewer/agent-1\ne2e_by: automattic-verifier/agent-2\n---\n')
+                    f'review_by: zloop-reviewer/agent-1\ne2e_by: zloop-verifier/agent-2\n---\n')
             source_report.write_text(evidence)
             cli('a', '--delivery')
             for valid, invalid in [('review_status: clean', 'review_status: findings'),
@@ -106,10 +106,10 @@ class CrossHarness(unittest.TestCase):
                                    (f'review_head: {reviewed_head}', f'review_head: {review_base}'),
                                    (f'review_diff_base: {review_base}', f'review_diff_base: {reviewed_head}'),
                                    # Status without the run that produced it is not delivery evidence.
-                                   ('review_by: automattic-reviewer/agent-1\n', ''),
-                                   ('e2e_by: automattic-verifier/agent-2', 'e2e_by: orchestrator'),
-                                   ('review_by: automattic-reviewer/agent-1', 'review_by: host'),
-                                   ('review_by: automattic-reviewer/agent-1', 'review_by: none')]:
+                                   ('review_by: zloop-reviewer/agent-1\n', ''),
+                                   ('e2e_by: zloop-verifier/agent-2', 'e2e_by: orchestrator'),
+                                   ('review_by: zloop-reviewer/agent-1', 'review_by: host'),
+                                   ('review_by: zloop-reviewer/agent-1', 'review_by: none')]:
                 source_report.write_text(evidence.replace(valid, invalid))
                 assert cli('a', '--delivery', ok=False).returncode != 0
                 assert names('b') == []
@@ -147,7 +147,7 @@ class CrossHarness(unittest.TestCase):
         import re
         portable = json.loads((PLUGIN / 'plugin.json').read_text())
         claude = json.loads((PLUGIN / '.claude-plugin/plugin.json').read_text())
-        assert portable['name'] == claude['name'] == 'automattic'
+        assert portable['name'] == claude['name'] == 'zloop'
         codex = json.loads((PLUGIN / '.codex-plugin/plugin.json').read_text())
         assert portable['version'] == claude['version'] == codex['version']
         assert codex['skills'] == './skills/'
@@ -258,9 +258,9 @@ class CrossHarness(unittest.TestCase):
                 continue
             text = path.read_text()
             # Codex lists every skill; the typed Claude and Pi forms name only the skills the user can type.
-            for command in re.findall(r'\$automattic:([a-z][a-z0-9-]*)', text):
+            for command in re.findall(r'\$zloop:([a-z][a-z0-9-]*)', text):
                 assert command in skills, (name, command)
-            for command in re.findall(r'(?:/automattic:|/skill:)([a-z][a-z0-9-]*)', text):
+            for command in re.findall(r'(?:/zloop:|/skill:)([a-z][a-z0-9-]*)', text):
                 assert command in commands, (name, command)
 
     def test_agent_docs_pass_the_doc_checker(self):
@@ -295,7 +295,7 @@ class CrossHarness(unittest.TestCase):
             assert f'`{value}' in source, value
         ui = (path.parent / 'agents/openai.yaml').read_text()
         assert 'allow_implicit_invocation: false' in ui
-        assert '$automattic:remediate' in ui
+        assert '$zloop:remediate' in ui
         for host in ('claude', 'codex', 'pi', 'opencode'):
             assert (PLUGIN / 'hosts' / host / 'session.md').is_file()
             assert (PLUGIN / 'hosts' / host / 'workers.md').is_file()
@@ -344,7 +344,7 @@ class CrossHarness(unittest.TestCase):
         assert 'scan every file no worker accounted for' in detect, detect
 
     def test_resource_lock_excludes_releases_and_keeps_exit_status(self):
-        with tempfile.TemporaryDirectory(prefix='automattic mutex ') as tmp:
+        with tempfile.TemporaryDirectory(prefix='zloop mutex ') as tmp:
             env = dict(os.environ, RESOURCE_LOCK=str(Path(tmp) / 'resource.lock'), RESOURCE_LOCK_TIMEOUT='0')
             wrapper = str(PLUGIN / 'scripts/resource_lock.py')
             # The exec'd build holds the descriptor: a contender must fail until it exits.
@@ -366,7 +366,7 @@ class CrossHarness(unittest.TestCase):
                 blank = subprocess.run([sys.executable, wrapper, 'true'], capture_output=True, text=True,
                                        env=dict(env, RESOURCE_LOCK=str(Path(tmp) / 'other.lock'), RESOURCE_LOCK_TIMEOUT=''))
                 assert blank.returncode == 0, blank.stderr  # an empty timeout means the default
-                missing = subprocess.run([sys.executable, wrapper, 'automattic-no-such-command'], env=env,
+                missing = subprocess.run([sys.executable, wrapper, 'zloop-no-such-command'], env=env,
                                          capture_output=True, text=True)
                 assert missing.returncode != 0 and 'not found' in missing.stderr, missing.stderr
             finally:
@@ -378,12 +378,12 @@ class CrossHarness(unittest.TestCase):
 class NativeHarnesses(unittest.TestCase):
     """Installed Claude, Codex and Pi package readers, without model calls."""
 
-    @unittest.skipUnless(os.environ.get('AUTOMATTIC_NATIVE') == '1', 'set AUTOMATTIC_NATIVE=1 to check installed CLIs')
+    @unittest.skipUnless(os.environ.get('ZLOOP_NATIVE') == '1', 'set ZLOOP_NATIVE=1 to check installed CLIs')
     def test_claude_and_codex_read_the_package(self):
         import selectors
         import time
         run('claude', 'plugin', 'validate', '--strict', str(PLUGIN))
-        inventory = run('claude', '--plugin-dir', str(PLUGIN), 'plugin', 'details', 'automattic').stdout
+        inventory = run('claude', '--plugin-dir', str(PLUGIN), 'plugin', 'details', 'zloop').stdout
         skill_count = len(list((PLUGIN / 'skills').glob('*/SKILL.md')))
         hook_events = len(json.loads((PLUGIN / 'hooks/hooks.json').read_text())['hooks'])
         for expected in (f'Skills ({skill_count})', 'Agents (3)', f'Hooks ({hook_events})'):
@@ -391,7 +391,7 @@ class NativeHarnesses(unittest.TestCase):
         # Source inventory does not resolve installed-plugin dependencies.
         installed = json.loads(run('claude', 'plugin', 'list', '--json').stdout)
         current = [entry for entry in installed
-                   if entry['id'].startswith('automattic@')
+                   if entry['id'].startswith('zloop@')
                    and Path(entry['installPath']).resolve() == PLUGIN]
         for entry in current:
             assert entry.get('enabled') and not entry.get('errors'), entry
@@ -417,11 +417,11 @@ class NativeHarnesses(unittest.TestCase):
                         return response['result']
             raise AssertionError(f'Codex timed out: {method}')
         try:
-            request(1, 'initialize', {'clientInfo': {'name': 'automattic-validation', 'version': '0.3.0'},
+            request(1, 'initialize', {'clientInfo': {'name': 'zloop-validation', 'version': '0.3.0'},
                                       'capabilities': {'experimentalApi': True}})
             plugin = request(2, 'plugin/read', {'marketplacePath': str(PLUGIN / '.agents/plugins/marketplace.json'),
-                                               'pluginName': 'automattic'})['plugin']
-            assert {s['name'] for s in plugin['skills']} == {f'automattic:{p.name}' for p in (PLUGIN / 'skills').iterdir()}
+                                               'pluginName': 'zloop'})['plugin']
+            assert {s['name'] for s in plugin['skills']} == {f'zloop:{p.name}' for p in (PLUGIN / 'skills').iterdir()}
             assert all(Path(s['path']).is_relative_to(PLUGIN / 'skills') for s in plugin['skills'])
             for skill in plugin['skills']:
                 interface = skill.get('interface') or {}
@@ -440,11 +440,11 @@ class NativeHarnesses(unittest.TestCase):
             server.stdin.close()
             server.stdout.close()
 
-    @unittest.skipUnless(os.environ.get('AUTOMATTIC_NATIVE_PI') == '1', 'set AUTOMATTIC_NATIVE_PI=1 to check the installed Pi SDK')
+    @unittest.skipUnless(os.environ.get('ZLOOP_NATIVE_PI') == '1', 'set ZLOOP_NATIVE_PI=1 to check the installed Pi SDK')
     def test_pi_sdk_discovers_and_bootstraps(self):
         import shutil
         executable = shutil.which('pi')
-        assert executable, 'Pi must be installed for AUTOMATTIC_NATIVE_PI=1'
+        assert executable, 'Pi must be installed for ZLOOP_NATIVE_PI=1'
         cli = Path(executable).resolve()
         if cli.name == 'mise':  # A mise shim resolves to mise itself; ask it for the real CLI.
             cli = Path(run('mise', 'which', 'pi').stdout.strip()).resolve()

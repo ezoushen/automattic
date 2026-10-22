@@ -32,7 +32,7 @@ def ledger_path():
     state = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state').expanduser()
     if not state.is_absolute():
         raise ValueError('XDG_STATE_HOME must be an absolute directory')
-    return state / 'automattic/outcomes.sqlite'
+    return state / 'zloop/outcomes.sqlite'
 
 
 def connect():

@@ -16,5 +16,5 @@ conversation is ready and no `alignment.md` exists for it.
    user's check. From dispatch, that approval continues this dispatch into its iteration;
    a change request re-cuts first.
 
-`/automattic:align` stays available for a plan that needs it: unsettled goals, competing
+`/zloop:align` stays available for a plan that needs it: unsettled goals, competing
 designs or a contract change the conversation did not decide.

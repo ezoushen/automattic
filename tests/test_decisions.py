@@ -426,7 +426,7 @@ class CheckpointCLI(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.repo = self.root / 'repo'
-        (self.repo / '.automattic').mkdir(parents=True)
+        (self.repo / '.zloop').mkdir(parents=True)
         self.user = self.root / 'user.json'
         self.journal = self.root / 'phases.jsonl'
         self.request = self.root / 'request.json'
@@ -470,7 +470,7 @@ class CheckpointCLI(unittest.TestCase):
             'endpoint': f'http://127.0.0.1:{self.server.server_port}/v1/systemone'}}}
         self.user.write_text(json.dumps(self.config))
         self.env = dict(os.environ, XDG_STATE_HOME=str(self.root / 'state'))
-        self.env.pop('AUTOMATTIC_SESSION', None)
+        self.env.pop('ZLOOP_SESSION', None)
 
     def stop_server(self):
         self.server.shutdown()
@@ -514,7 +514,7 @@ class CheckpointCLI(unittest.TestCase):
     def test_project_and_session_policy_control_the_same_cli(self):
         project = copy.deepcopy(self.config)
         project['decisions']['enabled'] = ['alignment']
-        (self.repo / '.automattic/executors.json').write_text(json.dumps(project))
+        (self.repo / '.zloop/executors.json').write_text(json.dumps(project))
         result = self.phase()
         self.assertEqual(result['skip_reason'], 'disabled')
         self.assertEqual(self.calls, [])

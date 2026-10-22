@@ -24,7 +24,7 @@ dialog, a probe) is accounted for by running the command the stop message prints
 `--session` outside Herdr; the dismissal covers only this coordinator's launches logged
 before it.
 
-Launch every worker with `AUTOMATTIC_WORKER=<slug>/<assignment>` in its environment (in
+Launch every worker with `ZLOOP_WORKER=<slug>/<assignment>` in its environment (in
 Herdr, the Herdr guide's tab recipe sets it). For the Herdr
 checks a session is a worker exactly when this marker is set: the stop check still holds it
 for its own launches, but not for live agents beside it. A session without it is a

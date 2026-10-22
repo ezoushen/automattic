@@ -16,7 +16,7 @@ rt = support.load_script('review_target.py', 'review_target')
 
 class ReviewTarget(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix='automattic review ')
+        self.tmp = tempfile.TemporaryDirectory(prefix='zloop review ')
         self.addCleanup(self.tmp.cleanup)
         self.directory = self.tmp.name
         self.repo = Path(self.directory)
