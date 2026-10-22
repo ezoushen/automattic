@@ -5,8 +5,10 @@ import { fileURLToPath } from "node:url";
 
 const SECTION = "automattic_harness";
 // Pi's bash has no default timeout, so one forgotten search of / can hold a session for hours. Claude Code and
-// OpenCode stop a foreground command after 2 minutes; this gives Pi the same bound.
+// OpenCode stop a foreground command after 2 minutes; this gives Pi the same bound unless
+// AUTOMATTIC_BASH_TIMEOUT=off.
 const BASH_TIMEOUT_SECONDS = 120;
+const bashBounded = () => process.env.AUTOMATTIC_BASH_TIMEOUT !== "off";
 
 export default function (pi) {
   const root = resolve(dirname(realpathSync(fileURLToPath(import.meta.url))), "../..");
@@ -14,7 +16,7 @@ export default function (pi) {
     const herdr = process.env.HERDR_ENV === "1"
       ? ` Herdr environment detected: before delegation also read ${root}/hosts/herdr.md for routing, waits and cleanup.`
       : "";
-    const hint = `Automattic harness: pi. When using an Automattic skill, first read ${root}/bootstrap.md and ${root}/hosts/pi/session.md. Plugin root: ${root}. Load only this host session part; pass its absolute path and the agent and job files to workers. Shell commands given no timeout stop after ${BASH_TIMEOUT_SECONDS} s: pass a timeout for a longer foreground command, or run it in the background.${herdr}`;
+    const hint = `Automattic harness: pi. When using an Automattic skill, first read ${root}/bootstrap.md and ${root}/hosts/pi/session.md. Plugin root: ${root}. Load only this host session part; pass its absolute path and the agent and job files to workers.${bashBounded() ? ` Shell commands given no timeout stop after ${BASH_TIMEOUT_SECONDS} s: pass a timeout for a longer foreground command, or run it in the background.` : ""}${herdr}`;
     // Returning systemPrompt forces the prompt for this run only, so runs that
     // start without a typed prompt revert to the structured one and every switch
     // invalidates the server's prefix cache. A section is diffed by Pi instead.
@@ -61,7 +63,7 @@ export default function (pi) {
 
   // First, so every later handler and the tool_result see the bounded input.
   pi.on("tool_call", (event) => {
-    if (event.toolName === "bash" && event.input && event.input.timeout === undefined) {
+    if (bashBounded() && event.toolName === "bash" && event.input && event.input.timeout === undefined) {
       event.input.timeout = BASH_TIMEOUT_SECONDS;
     }
     return undefined;

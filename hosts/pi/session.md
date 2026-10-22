@@ -15,6 +15,7 @@ Pi's `bash` has no default timeout, so the extension gives a call that sets none
 120 s timeout, as Claude Code and OpenCode do natively; Codex returns from a long
 command after a few seconds and leaves it running in a session. An explicit `timeout`
 is kept, and background tools such as `bg_run` are not bounded.
+`AUTOMATTIC_BASH_TIMEOUT=off` disables it.
 
 Before delegating, resuming or acting as a worker, also read [workers.md](workers.md). In worker
 messages, `adapter` is this file's absolute path.

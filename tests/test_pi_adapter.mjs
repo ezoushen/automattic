@@ -53,6 +53,17 @@ try {
     assert.deepEqual(await bounded("bash", { command: "find / -name x" }), { command: "find / -name x", timeout: 120 });
     assert.deepEqual(await bounded("bash", { command: "make test", timeout: 900 }), { command: "make test", timeout: 900 });
     assert.deepEqual(await bounded("bg_run", { command: "sleep 600" }), { command: "sleep 600" });
+    // AUTOMATTIC_BASH_TIMEOUT=off turns the default off, and the hint then promises no bound.
+    const previousTimeout = process.env.AUTOMATTIC_BASH_TIMEOUT;
+    process.env.AUTOMATTIC_BASH_TIMEOUT = "off";
+    try {
+      assert.deepEqual(await bounded("bash", { command: "find / -name x" }), { command: "find / -name x" });
+      const unbounded = await extension.handlers.get("before_agent_start")[0]({ systemPrompt: "existing" }, {});
+      assert.ok(!unbounded.systemPrompt.includes("Shell commands given no timeout"));
+    } finally {
+      if (previousTimeout === undefined) delete process.env.AUTOMATTIC_BASH_TIMEOUT;
+      else process.env.AUTOMATTIC_BASH_TIMEOUT = previousTimeout;
+    }
     // Loop guard: the same call returning the same result three times in a row is blocked next time.
     const toolResult = extension.handlers.get("tool_result")[0];
     let id = 0;
