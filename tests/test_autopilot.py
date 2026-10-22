@@ -31,6 +31,10 @@ class RunCard(unittest.TestCase):
             self.assertIn(key, state)
         self.assertIn('.scratch/<slug>/autopilot.md', prose(SKILL))
 
+    def test_the_card_is_workflow_state_that_a_rule_about_project_files_does_not_forbid(self):
+        # Seen live on Codex: "no new files" in the goal kept the card out of .scratch/ and it lived only in chat.
+        self.assertIn('a principle about the project\'s files never keeps them out of `.scratch/`', prose(SKILL))
+
     def test_the_user_confirms_the_card_once_and_is_asked_nothing_after(self):
         text = prose(SKILL)
         self.assertIn('asks the user to confirm it once', text)

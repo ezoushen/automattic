@@ -34,6 +34,7 @@ that mentions it is not an invocation. It never widens native permissions.
 - **`--auto-merge`:** with either form, also grants merging once the PR is open; see [Stop](#stop).
 
 Then autopilot writes the [run card](run-card.md) to `.scratch/<slug>/autopilot.md` and asks the user to confirm it once.
+The card, ledger and reports are the workflow's state, not project changes: a principle about the project's files never keeps them out of `.scratch/`.
 Each acceptance criterion on the card has a Verify line that can tell success from
 failure. No phase after align starts before that confirmation, and an unrelated reply
 or silence is not one. Record the confirmation on the card, with the user's words. The confirmed card is the user's explicit request for every action it
