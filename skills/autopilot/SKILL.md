@@ -46,6 +46,9 @@ The confirmed card authorizes every action it grants, and stands for the user's 
 ## Run
 
 After confirmation, ask the user nothing. Re-read the card and ledger before each phase and after every compaction or resume.
+A message from the user during the run is an instruction, not a pause: follow it, record it in the ledger as the
+user's decision with their words, and ask nothing. One that changes the goal, a criterion or a grant also updates
+the card with the user's words.
 
 1. [refine](../refine/SKILL.md) the brief into tickets;
 2. [dispatch](../dispatch/SKILL.md) them with `--autofix` (review, repairs, applicable E2E);

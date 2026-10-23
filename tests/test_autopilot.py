@@ -188,6 +188,12 @@ class JumpIn(unittest.TestCase):
         self.assertIn('first record each decision the user made while in control in the ledger as theirs, with their words', start)
         self.assertIn('and re-read the branch and the board, so the work the user did is the current state', start)
 
+    def test_an_ordinary_message_mid_run_is_an_instruction_not_a_pause(self):
+        run = ' '.join(SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('A message from the user during the run is an instruction, not a pause', run)
+        self.assertIn("follow it, record it in the ledger as the user's decision with their words, and ask nothing", run)
+        self.assertIn("One that changes the goal, a criterion or a grant also updates the card with the user's words", run)
+
 
 class Registration(unittest.TestCase):
     def test_only_the_user_starts_it_on_every_harness(self):
