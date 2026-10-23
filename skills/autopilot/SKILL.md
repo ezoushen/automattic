@@ -1,8 +1,8 @@
 ---
 name: autopilot
-description: "Run the whole loop hands-off: settle the goal in one interview, confirm a run card with its stop condition, then refine, dispatch with autofix, review and open the PR without asking again."
+description: "Run the whole loop hands-off: settle the goal in one interview, confirm a run card with its stop condition, then refine, dispatch with autofix, review and open the PR without asking again; --pause takes control, --take-over hands it back."
 disable-model-invocation: true
-argument-hint: "<goal> | --take-over [--auto-merge]"
+argument-hint: "<goal> | --take-over [--auto-merge] | --pause"
 ---
 
 # autopilot

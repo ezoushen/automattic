@@ -1,5 +1,5 @@
 interface:
   short_description: "Run the whole loop hands-off after one interview"
-  default_prompt: "Use $zloop:autopilot <goal> to settle the goal in one interview, confirm the run card, then refine, dispatch with autofix, review and open the PR without asking again; --take-over starts from this session's state."
+  default_prompt: "Use $zloop:autopilot <goal> to settle the goal in one interview, confirm the run card, then refine, dispatch with autofix, review and open the PR without asking again; --take-over starts from this session's state or hands a paused run back; --pause takes control of it."
 policy:
   allow_implicit_invocation: false
