@@ -12,12 +12,11 @@ First read: the runtime bootstrap (`../../bootstrap.md`), the host session part.
 A first argument `walkthrough` selects the [walkthrough procedure](walkthrough.md)
 and is not forwarded: explain and discuss the remaining target first, then continue into
 review only when the user asks. A branch named `walkthrough` is given as `refs/heads/walkthrough`.
-This public command remains user-invoked; dispatch and an authorized walkthrough
-handoff use the same procedure without calling this command through Skill.
 
 This procedure is shared by review, dispatch and an authorized walkthrough handoff.
-Dispatch and the walkthrough read this file directly; it is not an alternative entry
-point after a tool refusal. The entry point loads the runtime bootstrap and selected adapter first.
+The public command stays user-invoked: dispatch and the walkthrough read this file
+directly instead of calling the command through Skill, and reading it is not an
+alternative entry point after a tool refusal. The entry point loads the runtime bootstrap and selected adapter first.
 Review forwards the user's target and flags; dispatch supplies the verified effort
 branch, selected ticket scope and accepted alignment. Walkthrough supplies the
 discussion, agreed review criteria and authorization to begin review.
@@ -114,8 +113,9 @@ and the smallest adequate change. Use [research](../research/SKILL.md) or [modul
 only when needed; do not copy their methods. With no human-approved priority standard, label the
 ordering provisional and complete fact-finding; draft design questions rather than
 inventing product decisions. Such findings are ineligible for automatic redesign.
-Conflicting human direction or a missing decision that determines correctness stays
-an explicit unresolved item. Neither timeout nor a review request supplies a missing decision.
-Resolve apparent conflicts using the priority authority in [agree scope and priorities](#agree-scope-and-priorities) and cite the deciding
-source. If it does not settle the conflict, keep the item unresolved and continue
-independent work; do not amend accepted criteria merely to match the implementation.
+Resolve an apparent conflict by the priority authority in
+[agree scope and priorities](#agree-scope-and-priorities) and cite the deciding
+source. Conflicting human direction, or a missing decision that determines correctness,
+that the authority does not settle stays an explicit unresolved item: continue
+independent work, and never amend accepted criteria merely to match the implementation.
+Neither timeout nor a review request supplies a missing decision.

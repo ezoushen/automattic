@@ -27,9 +27,8 @@ Dispatch's internal review defaults to draft; do not infer posting from delivery
 
 ## Delegated review
 
-Walkthrough discussion and review-comment publication have separate authorization.
-Carry the [comment policy](#comment-policy) and its
-authorization source into delegated review orchestrators. For confirm mode, show
-the full batch in the conversation/report before using a native question tool;
-do not squeeze comment bodies into choice labels or require one approval per item.
-For post mode, honor existing authorization without an extra confirmation.
+Carry the [comment policy](#comment-policy) and its authorization source into
+delegated review orchestrators; walkthrough discussion does not authorize publication.
+For confirm mode, show the full batch in the conversation or report before using a
+native question tool; never squeeze comment bodies into choice labels or require one
+approval per item.

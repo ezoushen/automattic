@@ -43,12 +43,10 @@ that implementation batch.
 
 Assign one implementation-review owner for the eligible batch. That owner applies
 the [implementation review method](method.md) once, with the accepted boundary and
-prior coverage; its Standards and Spec axes are the review itself.
-The assigned reviewer completes its axes directly. Additional independent scope
-assignments belong to the orchestrator, within available capacity and selected
-executor settings; a worker does not create a nested review team. Serial execution
-preserves the same two axes. Preserve both complete axis reports. A return
-summary word limit applies to the summary, never to findings or coverage evidence.
+prior coverage, and completes both axes directly; serial execution keeps the same two
+axes and both complete axis reports. Additional independent scope assignments belong
+to the orchestrator, within available capacity and selected executor settings; a
+worker does not create a nested review team.
 
 ## Reopen only affected coverage
 
