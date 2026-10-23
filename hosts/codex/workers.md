@@ -5,6 +5,7 @@ Contents:
 - [Peer messages](#peer-messages)
 - [Continuation](#continuation)
 - [Top-level workers](#top-level-workers)
+- [Resume timer](#resume-timer)
 
 Resolve [executors](../../runtime/workers/launch.md) first. Default to native children, not sidebar
 tasks. An explicitly selected external executor owns its launch/lifecycle and
@@ -132,3 +133,9 @@ Startup follows [the startup order](../../runtime/workers/prepare.md): the rollo
 `submit`.
 
 The [executor guides](../executors/README.md) cover each executor type a route can select.
+
+## Resume timer
+
+Codex's scheduled tasks are recurring and belong to the app, not the CLI, and `codex queue` sends a message at once,
+so an autopilot allowance pause can set no timer here. Put the resume command `$zloop:autopilot --take-over` and
+the time after which it can run in the report, and install no operating-system timer unless the user asks.

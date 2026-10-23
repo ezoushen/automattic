@@ -6,3 +6,9 @@ explicit invocation policy.
 
 Before configuring, launching or acting as a worker, also read [workers.md](workers.md). In
 worker messages, `adapter` is this file's absolute path.
+
+## Resume timer
+
+OpenCode has no built-in scheduler, so an autopilot allowance pause can set no timer here. Put the
+resume command, as the user types it in OpenCode, and the time after which it can run in the report, and install no
+operating-system timer unless the user asks.

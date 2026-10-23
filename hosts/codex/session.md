@@ -32,3 +32,5 @@ zloop does not block Git commands. The orchestrator can perform authorized
 publication and cleanup directly; workers retain their agent's permissions.
 Follow native permissions, and never route around a denial or treat Claude
 profile tool lists as Codex restrictions.
+
+An autopilot allowance pause also reads the Resume timer section of [workers.md](workers.md).
