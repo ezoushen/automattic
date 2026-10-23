@@ -13,7 +13,7 @@ The binding decisions of this repository, newest last. Format, statuses and supe
 - [0007](0007-builders-work-test-first-from-our-own-standard.md) Builders work test-first from our own standard, and tests protect business rules: one rule at a time, each test names its business rule and fails when that rule breaks; coverage means rules, not lines.
 - [0008](0008-builders-refactor-after-green-within-the-ticket.md) Builders refactor after green, within the ticket: the ticket's own code, within its scope; a wider refactor goes to review.
 - [0009](0009-the-framework-depends-on-no-external-skill-package.md) The framework depends on no external skill package: no manifest dependency, its own procedures under its own names, guarded by a repository-wide test.
-- [0010](0010-autopilot-merges-only-through-the-normal-path.md) Autopilot merges only through the repository's normal path: only with `--auto-merge`, after required checks and the approval path, never by admin override or self-approval.
+- [0010](0010-autopilot-merges-only-through-the-normal-path.md) Autopilot merges only through the repository's normal path: only with `--auto-merge`, once required checks and the approval path are satisfied, never by admin override or self-approval.
 - [0011](0011-the-engineering-standard-is-extended-never-overridden.md) The engineering standard is extended, never overridden: docs that link it add rules for their own decisions and never relax a principle.
 
 ## Superseded
