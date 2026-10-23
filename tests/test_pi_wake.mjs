@@ -22,10 +22,11 @@ const { sent, tool } = await load();
 assert.ok(tool, "the extension registers zloop_wake");
 
 // At the time given, the command is typed back into the session, expanded as a skill command, queued when busy.
-const scheduled = await tool.execute("call-1", { at: inMs(60), command: COMMAND });
+const scheduled = await tool.execute("call-1", { at: inMs(500), command: COMMAND });
 assert.match(text(scheduled), /timer \S+/);
-assert.equal(sent.length, 0);
-await sleep(200);
+await sleep(100);
+assert.equal(sent.length, 0, "nothing is sent before its time");
+await sleep(800);
 assert.deepEqual(sent, [[COMMAND, { deliverAs: "followUp", expandPromptTemplates: true }]]);
 
 // A cancelled timer never fires, and cancelling says which timer it dropped.
