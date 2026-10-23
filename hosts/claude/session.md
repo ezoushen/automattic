@@ -23,9 +23,11 @@ messages, `adapter` is this file's absolute path.
 
 ## Resume timer
 
-An autopilot allowance pause schedules its resume with `CronCreate` with `recurring: false` and prompt
-`/zloop:autopilot --take-over`, the cron pinned to the reset's minute, hour, day and month in local time, a few
-minutes after it and off :00 and :30. Record the job id and the next run time the result gives on the card. The job
-is session-only and fires only while the session is idle: it ends with the session, so a Claude that exits before the
-reset resumes only when the user types the command. Cancel a leftover job with `CronDelete`. The user's request for
-the resume (the run card) is the explicit request for scheduled work that [workers.md](workers.md) asks for.
+An autopilot allowance pause schedules its resume with `CronCreate` with `recurring: false`, the cron pinned to the
+reset's minute, hour, day and month, a few minutes after it; record the job id on the card. A scheduled prompt cannot
+run a skill marked `disable-model-invocation`, so the prompt is plain text that names the card and the plugin's
+autopilot skill file, by absolute path, and asks for its `--take-over --timed` procedure. The job fires only while the
+session is idle. Claude restores it when the same session is resumed with `claude --resume` or `claude --continue`
+before its time; it stops firing when the session exits, and a time that passed while it was closed is not caught up.
+Cancel a leftover with `CronDelete`. The run card is the explicit request for scheduled work that
+[workers.md](workers.md) asks for.
