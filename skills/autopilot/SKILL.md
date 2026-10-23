@@ -29,6 +29,8 @@ types the command; a message that mentions it is not an invocation. Never widens
   A confirmed card whose goal, criteria and grants are unchanged is not confirmed again;
   a card that ended `waiting-on-user` or `paused-allowance` resumes once its cause is gone. Taking over a card
   moves its terminal state to `history:`, clears `terminal:` and restores the phase it stopped in.
+- **`autopilot --pause`:** the user takes control of a confirmed run. Record `paused-by-user` with the user's words
+  and the phase it stopped in, and answer the user as an ordinary session from then on.
 - **`--auto-merge`:** also grants merging once the PR is open; see [Stop](#stop).
 
 Then autopilot writes the [run card](run-card.md) to `.scratch/<slug>/autopilot.md` and asks the user to confirm it once.
@@ -77,6 +79,7 @@ Record exactly one terminal state, with its evidence, in the card's State:
   and the [approval path](../../runtime/board/approval-path.md) are satisfied, never by admin override or self-approval.
 - `waiting-on-user`: a pause-list action is needed.
 - `paused-allowance`: the allowance reached `critical`.
+- `paused-by-user`: the user took control with `--pause`.
 - `blocked`: no option fits the principles, or split tickets failed again.
 
 Report in the conversation. The final report leads with the open assumptions, then the terminal state, PR or branch, decisive evidence and the user's next action.

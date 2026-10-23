@@ -11,7 +11,8 @@ ROOT = support.ROOT
 SKILL = ROOT / 'skills/autopilot/SKILL.md'
 CARD = ROOT / 'skills/autopilot/run-card.md'
 # The terminal states and the pause list agreed in .scratch/autopilot/alignment.md (WHAT 4) and ledger U1.
-STATES = ('`delivered`', '`delivered-local`', '`merged`', '`waiting-on-user`', '`paused-allowance`', '`blocked`')
+STATES = ('`delivered`', '`delivered-local`', '`merged`', '`waiting-on-user`', '`paused-allowance`', '`paused-by-user`',
+          '`blocked`')
 PAUSES = ('login or permission prompt', 'credentials', 'spending money', 'deleting data', 'production change',
           'merging without `--auto-merge`', 'missing approval')
 
@@ -141,6 +142,15 @@ class Flags(unittest.TestCase):
         self.assertIn('prefer the reversible direction', text)
         self.assertIn('record its basis and reversibility in the ledger', text)
         self.assertIn('The final report leads with the open assumptions', text)
+
+
+class JumpIn(unittest.TestCase):
+    def test_pause_ends_the_run_in_paused_by_user_with_the_users_words_and_the_stopped_phase(self):
+        text = prose(SKILL)
+        self.assertIn('**`autopilot --pause`:**', text)
+        self.assertIn("Record `paused-by-user` with the user's words and the phase it stopped in", text)
+        stop = SKILL.read_text().split('## Stop', 1)[1]
+        self.assertRegex(stop, r'(?m)^- `paused-by-user`: the user took control with `--pause`')
 
 
 class Registration(unittest.TestCase):
