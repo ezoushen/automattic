@@ -55,19 +55,24 @@ Resolve scope before acting:
   within them. Follow callers and implementation for evidence, keeping repairs
   inside the selected paths.
 - **Whole project**: only when explicitly requested. Inventory top-level modules
-  and assign a reviewer the [audit](jobs/audit.md) job per module through normal
-  routing. Follow the selected adapter's capacity and worker lifecycle; use sequential read-only
+  and assign a reviewer the [audit](jobs/audit.md) job per module, split or merged
+  by item count, through normal routing. Follow the selected adapter's capacity and worker lifecycle; use sequential read-only
   passes when workers are unavailable. Record coverage and any unscanned modules.
   Present proven findings and dropped/unverified counts before any repair, then
   wait for the user's confirmation of the findings to repair. Time passing or a
   completed scan is not confirmation.
 
-For a paths or whole-project scan, first count the items the kind's Proof covers one
-by one, such as tests or comment blocks, from the project's own listing where it has
-one, and size the audit partitions by that count. If those steps cannot be finished
-for every item with the available workers and allowance, [ask the user](../../runtime/ask/ask.md)
-before detection: more workers, a narrower scope, or a sample they accept. Never
-sample, or screen by pattern, in place of those steps without the user's agreement.
+For a paths or whole-project scan, first count the items the kind checks one by one:
+every test for tautological-tests, every comment block or docstring for
+misleading-comments, the units its signal names for a free-form goal. Use the
+project's own listing where it has one, and size the audit partitions by that count.
+If those per-item checks (the Proof checklist for each test, the reading of each
+comment block against its code) cannot be completed for every counted item with the
+available workers and allowance, [ask the user](../../runtime/ask/ask.md) before
+detection: more workers, a narrower scope, or a sample they accept. An accepted
+sample becomes the inventory, and every item outside it is reported as unscanned.
+Never sample, or screen by pattern, in place of the per-item checks without the
+user's agreement.
 
 Diff/path invocations authorize repairs after proof. Whole-project confirmation
 authorizes only the selected findings; refresh their evidence if inputs changed

@@ -56,10 +56,18 @@ class Standards(unittest.TestCase):
     def test_a_scan_counts_its_items_and_asks_before_it_samples(self):
         # A per-item proof too large for the workers is the user's cost decision, not a silent sample.
         remediate = ' '.join((ROOT / 'skills/remediate/SKILL.md').read_text().split())
-        self.assertIn("count the items the kind's Proof covers one by one", remediate)
+        self.assertIn('count the items the kind checks one by one: every test for tautological-tests, '
+                      'every comment block or docstring for misleading-comments', remediate)
         self.assertIn('size the audit partitions by that count', remediate)
-        self.assertIn('[ask the user](../../runtime/ask/ask.md) before detection', remediate)
-        self.assertIn("in place of those steps without the user's agreement", remediate)
+        self.assertIn('assign a reviewer the [audit](jobs/audit.md) job per module, split or merged by item count',
+                      remediate)
+        # The condition and the question are pinned together, so an inverted condition fails.
+        self.assertIn('cannot be completed for every counted item with the available workers and allowance, '
+                      '[ask the user](../../runtime/ask/ask.md) before detection', remediate)
+        self.assertIn('An accepted sample becomes the inventory, and every item outside it is reported as unscanned.',
+                      remediate)
+        self.assertIn("Never sample, or screen by pattern, in place of the per-item checks without the user's "
+                      'agreement.', remediate)
 
     def test_coverage_is_counted_per_item_and_a_generated_verdict_covers_nothing(self):
         # A file can be "inventoried" while most of its tests were never read.
@@ -69,8 +77,9 @@ class Standards(unittest.TestCase):
                       'is uncovered, not clean', remediate)
         self.assertIn('A generated or default verdict covers nothing.', remediate)
         audit = ' '.join((ROOT / 'skills/remediate/jobs/audit.md').read_text().split())
-        self.assertIn("every item the kind's Proof covers has a recorded observation", audit)
-        self.assertIn('how many have a recorded observation; a generated or default verdict is not one', audit)
+        self.assertIn('every item the kind checks one by one has a recorded observation', audit)
+        self.assertIn('the location of every item without one; a generated or default verdict is not an observation',
+                      audit)
 
     def test_comment_signal_names_the_claims_that_go_stale_first(self):
         kind = ' '.join((STANDARDS / 'kinds/misleading-comments.md').read_text().split())
