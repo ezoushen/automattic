@@ -1,6 +1,7 @@
 # Launch a worker
 
-Read before every worker launch: executor resolution, host selection and what an assignment carries.
+Read before every worker launch. Goal: each worker starts on a verified executor with
+resolved settings and a complete assignment.
 
 Contents:
 - [Host selection](#host-selection)
@@ -8,38 +9,32 @@ Contents:
 - [Assignment and outcome](#assignment-and-outcome)
 - [Fan-out](#fan-out)
 
-Core owns assignments, scope, capacity, worktrees and acceptance gates. Three
-built-in executor adapters own invocation and collection: `subagent`, `skill`,
-and `bash`. Their JSON Schemas live in `schemas/executors/`; instances belong in
-runtime launch routes or directly in `agents`. User-defined `executor_types`
-encapsulate skill usage and expand to the existing skill adapter. Definitions are
-configuration data; resolution never loads user-supplied code or schemas.
+Core owns assignments, scope, capacity, worktrees and acceptance gates. The built-in
+executor adapters `subagent`, `skill` and `bash` own invocation and collection (JSON Schemas in `schemas/executors/`; instances in runtime launch routes or directly in `agents`).
+User-defined `executor_types` wrap skill usage and expand to the skill adapter.
+Definitions are configuration data: resolution never loads user-supplied code or schemas.
 
 ## Host selection
 
-Claude and Codex startup hooks, and Pi's bootstrap extension, identify the current
-host for its adapter. Without that hint, select the harness explicitly under the
-runtime bootstrap. OpenCode currently requires explicit selection.
+Claude and Codex startup hooks and Pi's bootstrap extension name the current host.
+Without that hint, select the harness explicitly under the runtime bootstrap; OpenCode
+always needs it.
 
-Top-level `agents` defines shared pools for `builder`, `reviewer` and `verifier`, or intentional fixed instances.
-`router` selects host judgment (the default), a routing skill, a System One decision model or a sparse named profile. See
-[routers and sparse profiles](../config/routers.md#routers-and-sparse-profiles) for the
-configuration and omission semantics. A profile key such as `builder.codex`
-addresses the worker runtime, even when the host is Claude.
-Shared [decisions and calibration](../config/decision-backend.md) configure a reusable backend and
-explicit phase opt-ins. A decision-model worker router can use that backend;
-skill/profile routers retain their existing selection policy.
+Top-level `agents` defines shared pools for `builder`, `reviewer` and `verifier`, or
+fixed instances. `router` selects host judgment (default), a routing skill, a System One
+decision model or a sparse named profile
+([routers and sparse profiles](../config/routers.md#routers-and-sparse-profiles)). A
+profile key such as `builder.codex` addresses the worker runtime, even on a Claude host.
+Shared [decisions and calibration](../config/decision-backend.md) configure a backend
+and explicit phase opt-ins; a decision-model router may use it, skill and profile
+routers keep their own policy.
 
-Routing profile selection is explicit: `--config-profile <name>`, then
-`ZLOOP_PROFILE`, then the configured router. Omitting the router uses
-host judgment. Profile names do not establish Herdr or select the host.
-Caller-specific native routes continue to win over a Herdr bridge when available;
-Herdr routes still require `HERDR_ENV=1` and runtime preflight. A single routing
-profile can contain preferences for several worker runtimes without duplicating
-models, pools or launch routes.
-
-The existing `--profile` flag renders a native worker settings file only after
-selection completes. It is separate from routing `--config-profile`.
+The routing profile is `--config-profile <name>`, else `ZLOOP_PROFILE`, else the
+configured router; no router means host judgment. A profile name neither establishes
+Herdr nor selects the host. Caller-specific native routes win over a Herdr bridge when available;
+Herdr routes need `HERDR_ENV=1` and runtime preflight. One profile can hold preferences
+for several worker runtimes without duplicating models, pools or routes. The separate
+`--profile` flag renders a native worker settings file, only after selection.
 
 ## Resolution and models
 
@@ -49,116 +44,103 @@ Before every worker launch, the orchestrator runs:
 "<python>" "<plugin_root>/scripts/agent_models.py" --repo "<canonical-main-checkout>" --harness <host> --job <job> --route
 ```
 
-The job selects its agent; a launch route without `--job` is refused. Use
-`--agent <agent>` only to inspect or edit settings, such as `--list-candidates`.
-The worker's assignment text carries `adapter`, `agent_file`, `job_file`,
-`plugin_root`, `repo` and every input in the job's frontmatter, each as
-`name: value`. Registration checks that text (its `packet`) and refuses one that
-lacks an input; on Claude the launch hook checks the prompt the same way.
+The job selects its agent; a route without `--job` is refused, and `--agent <agent>` is
+only for inspecting or editing settings (`--list-candidates`). The assignment text
+carries `adapter`, `agent_file`, `job_file`, `plugin_root`, `repo` and every input in the
+job's frontmatter, each as `name: value`; registration refuses a `packet` missing one,
+and on Claude the launch hook checks the prompt the same way. Use the plugin's
+`.venv/bin/python` when present, else a Python with the required dependency if
+configuration is present.
 
-Use plugin `.venv/bin/python` when present; otherwise use a Python environment
-with the required dependency if configuration is present. A `selection_required`
-result must complete [selection](../routing/choose.md) first; it has
-no launch settings. Then read the returned `executor_guide` and active host adapter.
-Resolution returns instructions/settings; it never launches a worker. Inspection
-is offline and read-only. An explicit `--assignment` (compact routing text) can call the decision backend
-and update calibration monitoring state. Only explicit session save/reset
-operations change the session configuration.
+A `selection_required` result has no launch settings: finish
+[selection](../routing/choose.md) first. Then read the returned `executor_guide` and the
+active host adapter. Resolution never launches a worker. Inspection is offline and
+read-only; only an explicit `--assignment` (compact routing text) may call the decision
+backend and update calibration monitoring, and only explicit session save or reset
+changes the session configuration.
 
-Agent precedence is **one-run choice → session → project → user → existing native**.
+Agent precedence: **one-run choice → session → project → user → existing native**.
 Agent entries replace in full. A top-level `jobs.<job>` entry has the same shape and,
-within the same layer, replaces its agent's entry for that job only; a higher layer's
-agent entry still wins over a lower layer's job entry. Model, runtime, routing profile and executor-type
-definitions merge by name across user → project → session, replacing each definition
-in full; `router` and `decisions` each replace the lower object in full.
-References expand after this merge.
-Profiles override only the specified candidate/thinking fields after worker runtime
-selection. The result records sources, target runtime and caller context.
-A shared agent set to `null` masks lower entries and restores existing native
-behavior, including saved native model preferences. Deleting it reveals the lower
-layer. Select a native executor with inherit to bypass those legacy preferences.
-The session layer applies only with a root session ID; see
-[session scope](../config/session.md).
-`--route-choice '<JSON agent instance>'` selects a complete one-run instance without
-saving it. Relative argv paths refer to the assigned worktree, not this config file.
+within one layer, replaces its agent's entry for that job only; a higher layer's agent
+entry still beats a lower layer's job entry. Model, runtime, routing profile and
+executor-type definitions merge by name user → project → session, each replacing the
+lower definition whole; `router` and `decisions` each replace the lower object whole.
+References expand after the merge. Profiles override only the candidate and thinking
+fields they name, after worker runtime selection. The result records sources, target
+runtime and caller context. A shared agent set to `null` masks lower entries and
+restores native behavior, saved native model preferences included; deleting it reveals
+the lower layer. A native executor with inherit bypasses legacy preferences. The session
+layer needs a root session ID ([session scope](../config/session.md)).
+`--route-choice '<JSON agent instance>'` picks a complete one-run instance without
+saving it. Relative argv paths refer to the assigned worktree, not the config file.
 
-When the result includes `candidate_pool`, follow [selection](../routing/choose.md)
-before launch. The configured router recommends model/thinking jointly; the resolver
-enforces configuration bounds. Adapters translate its returned settings to native
-controls; they do not choose models or supply agent-based defaults. With no override, retain the
-destination's native settings. Ticket `model: standard|deep` and legacy
-`sonnet|opus` values describe workload only and never select or promote a model.
+With `candidate_pool`, follow [selection](../routing/choose.md) before launch: the router
+recommends model and thinking together and the resolver enforces bounds. Adapters map
+the returned settings to native controls and never choose models or add agent defaults;
+with no override the destination's native settings stay. Ticket `model: standard|deep`
+and legacy `sonnet|opus` describe workload only and never select or promote a model.
 
-For a configured agent, omitted `models` means `{"mode":"inherit"}`:
+Omitted `models` on a configured agent means `{"mode":"inherit"}`:
 
-- **inherit** preserves the actual destination's model and reasoning settings.
-  Send no overrides, read no zloop model preferences, and do not promote by
-  workload. Bridges that discard destination settings cannot claim inheritance.
-- **override** uses only the agent's `models.model`/`models.thinking`, followed by
-  explicit task `--model`/`--thinking`. Omitted fields retain destination defaults.
-  Task value `native` removes that override for this launch. New instances never
-  merge the older models.json files. Inherit rejects override fields/task flags.
+- **inherit** keeps the destination's model and reasoning: no overrides sent, no zloop
+  model preferences read, no promotion by workload. A bridge that discards destination
+  settings cannot claim it. Override fields and task flags are rejected.
+- **override** uses only `models.model`/`models.thinking`, then explicit task
+  `--model`/`--thinking`; omitted fields keep destination defaults and task value
+  `native` drops the override for this launch. New instances never merge the older
+  models.json files.
 
 ## Assignment and outcome
 
-For every delegated assignment and after interruption/compaction, use
-worker attempts to [register native session identity and verify settings](prepare.md),
-[wait](wait.md), [collect](collect.md) and [account for retirement](../resources/retire.md).
-That protocol also owns [early design holds](design-hold.md) and their ruling/criteria gate.
+For every delegated assignment, and after an interruption or compaction, use worker
+attempts to [register native session identity and verify settings](prepare.md),
+[wait](wait.md), [collect](collect.md) and [account for retirement](../resources/retire.md);
+the same protocol owns [early design holds](design-hold.md) and their ruling and criteria gate.
 
-Inspect each assignment's configuration, preflight executor/profile discovery and
-supported settings, then select from those combinations before fan-out. Reuse
-successful capability evidence for the same host/session, executor, settings and
-environment; invalidate it when any changes or a launch fails. Use the first real
-assignment to establish runtime availability when no read-only probe exists.
-A missing profile or quota failure excludes all candidates sharing that failed
-capability/account. Follow [automatic recovery](recovery.md)
-to choose another suitable candidate in the allowed pool without another approval.
-Retry a failed route only after a relevant state change. Permission denials remain
-boundaries; do not use fallback to bypass them.
-When availability differs by effort/profile, carry those exact supported pairs with
-[`--eligible-thinking`](../routing/choose.md) into selection;
-rendering a profile is not discovery evidence. Record the failed capability once
-and reuse it across candidates sharing that route until registration or access changes.
-Verify each new attempt's runtime settings against the resolved snapshot and follow
-the [decision recording procedure](../routing/report.md). A failed
-resolution never permits launching with omitted settings.
+Before fan-out, inspect each assignment's configuration, preflight its executor and profile discovery and supported
+settings, and select among those combinations. Successful capability evidence is reusable only for the same host session, executor, settings and environment; a change or failed launch
+voids it. With no read-only probe, the first real assignment proves availability. A
+missing profile or quota failure excludes every candidate sharing that capability or
+account; [automatic recovery](recovery.md) picks another in the allowed pool without
+another approval. Retry a failed route only after a relevant state change; record the
+failure once and apply it to every candidate on that route until registration or access
+changes. Fallback never bypasses a permission denial. When availability differs by
+effort or profile, pass the exact supported pairs with
+[`--eligible-thinking`](../routing/choose.md); a rendered profile is not discovery
+evidence. Verify each new attempt's settings against the resolved snapshot and
+[record the decision](../routing/report.md). A failed resolution never permits launching
+with settings omitted.
 
-Supply a unique assignment ID, canonical repo, assigned worktree, branch/head,
-pinned review base, absolute agent and job file paths, scope/priorities, the job's inputs,
-[situational skills](skills.md), permissions, model policy/settings and expected evidence. Use fresh worker context.
-Carry the user's current allowance priority, required deliverable and deferred
-optional work in both the compact routing input and the worker assignment. Existing
-acceptance gates remain part of the deliverable. A quota concern does not imply a
-global model change; use the accepted priority when choosing this assignment.
-Send the whole assignment, the registered `packet` text, as the opening message;
-workers read the named adapter, agent and job files before acting. Include
-known source/test entry points and relevant prior evidence with its revision and
-applicability limits.
-Workers verify those anchors against their assigned checkout, then investigate
-remaining gaps with bounded reads; expand when the evidence requires it.
-The current adapters require access to the supplied paths; remote filesystem
-translation is not implemented. Verify that the selected executor can fulfill the
-assignment before starting. Missing skills, tools, permissions or settings support
-block that launch; the coordinator may select another permitted candidate under
-the recovery policy. Configuration is not proof of runtime capability.
+The assignment holds: unique assignment ID, canonical repo, worktree, branch and head,
+pinned review base, absolute agent and job paths, scope and priorities, job inputs,
+[situational skills](skills.md), permissions, model policy and settings, expected
+evidence, known source and test entry points, and relevant prior evidence with its revision and applicability limits. It also carries the user's current allowance priority, required deliverable and deferred
+optional work, in the compact routing input too; acceptance gates stay part of the
+deliverable, and a quota concern does not imply a global model change: choose this assignment by
+the accepted priority.
+Start a fresh worker context and send the registered `packet` text whole as the opening
+message. Workers read the named adapter, agent and job files first, verify the supplied
+anchors against their checkout, then fill gaps with bounded reads, widening only when
+evidence requires it.
 
-Use the executor's existing lifecycle, record its run handle and requested/confirmed
-settings, and count it in core capacity/locks. Collect a complete report attributable
-to this assignment and revision; the orchestrator persists read-only reports. A
-finished process, settled pane or empty output does not prove acceptance. Apply
-shared review/verification gates after collection. On timeout or session loss,
-reconcile the same run before retrying; never duplicate uncertain live work. Keep
-pending approvals for the user and clean up only this assignment's resources.
+Adapters need direct access to the supplied paths (no remote filesystem translation).
+Verify before starting that the executor can fulfil the assignment; configuration does
+not prove capability: missing skills, tools, permissions or settings
+support block the launch, and recovery may pick another permitted candidate. Use the
+executor's own lifecycle; record its run handle and requested and confirmed settings;
+count it in core capacity and locks. Collect a complete report attributable to this
+assignment and revision; the orchestrator persists read-only workers' reports. A finished
+process, settled pane or empty output is not acceptance; apply the shared review and verification gates after collection. On timeout or session loss, reconcile the same run before any
+retry and never duplicate uncertain live work. Leave pending approvals to the user and
+clean up only this assignment's resources.
 
 ## Fan-out
 
-Size a fan-out by how many parts can proceed without each other's results, not by
-idle capacity. A question one search or read answers gets no worker; one coherent
-change gets one worker. Launch independent siblings together, within
-[shared capacity](../resources/capacity.md).
-Each sibling's assignment states its objective, its boundary and what the other
-siblings cover, so no two workers repeat the same investigation and no part is left
-unowned. A worker that writes its own report returns status, decisive evidence and
-the report path; a read-only worker still returns its complete report sections. When results come back overlapping or shallow, sharpen
-the assignments rather than adding workers.
+Size a fan-out by how many parts can proceed without each other's results, not by idle
+capacity: a question one search or read answers gets no worker, one coherent change gets
+one worker. Launch independent siblings together within
+[shared capacity](../resources/capacity.md); each assignment states its objective, its
+boundary and what the siblings cover, so nothing is repeated or unowned. A worker that
+writes its own report returns status, decisive evidence and the report path; a read-only
+worker returns its complete report sections. Overlapping or shallow results mean sharper
+assignments, not more workers.
