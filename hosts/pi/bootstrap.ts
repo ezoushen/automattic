@@ -10,6 +10,9 @@ const SECTION = "zloop_harness";
 const BASH_TIMEOUT_SECONDS = 120;
 const bashBounded = () => process.env.ZLOOP_BASH_TIMEOUT !== "off";
 
+// setTimeout rejects a delay above 2^31 - 1 ms, about 24.8 days.
+const WAKE_MAX_MS = 2 ** 31 - 1;
+
 export default function (pi) {
   const root = resolve(dirname(realpathSync(fileURLToPath(import.meta.url))), "../..");
   pi.on("before_agent_start", (event) => {
@@ -26,6 +29,49 @@ export default function (pi) {
       return undefined;
     }
     return { systemPrompt: `${event.systemPrompt}\n\n${hint}` };
+  });
+
+  // Pi has no scheduler of its own. A run that must continue later, such as autopilot after an allowance pause, sets
+  // a timer that types its resume command back into this session; the timer lasts as long as the Pi process does.
+  const wakes = new Map();
+  let wakeSerial = 0;
+  pi.registerTool({
+    name: "zloop_wake",
+    label: "Wake",
+    description: "Type a command back into this session at a later time, for example `/skill:autopilot --take-over`, "
+      + "or cancel an earlier timer. The timer is lost if Pi exits first.",
+    parameters: {
+      type: "object",
+      properties: {
+        at: { type: "string", description: "When to run the command, as an ISO 8601 time with its offset." },
+        command: { type: "string", description: "The text to send, such as a `/skill:` command." },
+        cancel: { type: "string", description: "The id of a timer to cancel instead of setting one." },
+      },
+    },
+    async execute(_toolCallId, params) {
+      const reply = (text) => ({ content: [{ type: "text", text }], details: {} });
+      if (params.cancel !== undefined) {
+        const timer = wakes.get(params.cancel);
+        if (!timer) throw new Error(`no timer ${params.cancel}`);
+        clearTimeout(timer);
+        wakes.delete(params.cancel);
+        return reply(`cancelled timer ${params.cancel}`);
+      }
+      const command = typeof params.command === "string" ? params.command.trim() : "";
+      if (!command) throw new Error("zloop_wake needs a command to send");
+      const due = Date.parse(params.at);
+      if (Number.isNaN(due)) throw new Error("`at` must be an ISO 8601 time with its offset");
+      const delay = due - Date.now();
+      if (delay <= 0) throw new Error("`at` is in the past");
+      if (delay > WAKE_MAX_MS) throw new Error("`at` is more than 24 days away");
+      const id = String(++wakeSerial);
+      // unref: a headless run that ends must not wait hours for its timer.
+      wakes.set(id, setTimeout(() => {
+        wakes.delete(id);
+        pi.sendUserMessage(command, { deliverAs: "followUp", expandPromptTemplates: true });
+      }, delay).unref());
+      return reply(`timer ${id} will send \`${command}\` at ${new Date(due).toISOString()}`);
+    },
   });
 
   // Keep working while a lifecycle worker could finish without waking this host, a worker this session launched is

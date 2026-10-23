@@ -32,7 +32,7 @@ try {
     assert.deepEqual(loaded.errors, [], pass);
     assert.equal(loaded.extensions.length, 1, pass);
     const extension = loaded.extensions[0];
-    assert.equal(extension.tools.size, 0);
+    assert.deepEqual([...extension.tools.keys()], ["zloop_wake"]);
     assert.equal(extension.commands.size, 0);
     assert.deepEqual([...extension.handlers.keys()],
       ["before_agent_start", "agent_settled", "agent_before_settle", "tool_call", "tool_result"]);
