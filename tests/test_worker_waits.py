@@ -89,7 +89,8 @@ class Waits(WorkerLifecycleCase):
         pidfile = self.root / 'wait.pid'
         command = self.root / 'wait.json'
         command.write_text(json.dumps({'argv': [sys.executable, '-c',
-            f'import os,time; open({str(pidfile)!r}, "w").write(str(os.getpid())); time.sleep(30)'], 'timeout': 40}))
+            f'import os,time; open({str(pidfile)!r} + ".tmp", "w").write(str(os.getpid())); '
+            f'os.replace({str(pidfile)!r} + ".tmp", {str(pidfile)!r}); time.sleep(30)'], 'timeout': 40}))
         watcher = subprocess.Popen([sys.executable, '-B', str(SCRIPT), 'watch', '--state', str(self.state),
                                     '--attempt', 'ticket-1/1', '--input', str(command)], stdout=subprocess.PIPE, text=True)
         try:
@@ -222,7 +223,8 @@ class Waits(WorkerLifecycleCase):
         request.write_text(json.dumps({'argv': [sys.executable, '-c', 'print("settled")'],
             'timeout': 2, 'notify': {'argv': [sys.executable, '-c',
                 'import json,sys; json.loads(sys.argv[1])["kind"] == "channel-check" and sys.exit(); '
-                f'import os,time; open({str(pidfile)!r}, "w").write(str(os.getpid())); time.sleep(30)',
+                f'import os,time; open({str(pidfile)!r} + ".tmp", "w").write(str(os.getpid())); '
+            f'os.replace({str(pidfile)!r} + ".tmp", {str(pidfile)!r}); time.sleep(30)',
                 '{receipt}'], 'timeout': 40}}))
         watcher = subprocess.Popen([sys.executable, '-B', str(SCRIPT), 'watch', '--state', str(self.state),
                                     '--attempt', 'ticket-1/1', '--input', str(request)],
@@ -314,7 +316,8 @@ class Waits(WorkerLifecycleCase):
         self.register()
         self.ready()
         pidfile = self.root / 'wait.pid'
-        receipt = self.watch(script=f'import os,time; open({str(pidfile)!r}, "w").write(str(os.getpid())); time.sleep(30)',
+        receipt = self.watch(script=f'import os,time; open({str(pidfile)!r} + ".tmp", "w").write(str(os.getpid())); '
+            f'os.replace({str(pidfile)!r} + ".tmp", {str(pidfile)!r}); time.sleep(30)',
                              timeout=.15, code=124)
         self.assertEqual(receipt['reason'], 'timeout')
         with self.assertRaises(ProcessLookupError):
@@ -356,7 +359,8 @@ class Waits(WorkerLifecycleCase):
         pidfile = self.root / 'wait.pid'
         command = self.root / 'wait.json'
         command.write_text(json.dumps({'argv': [sys.executable, '-c',
-            f'import os,time; open({str(pidfile)!r}, "w").write(str(os.getpid())); time.sleep(30)'], 'timeout': 40}))
+            f'import os,time; open({str(pidfile)!r} + ".tmp", "w").write(str(os.getpid())); '
+            f'os.replace({str(pidfile)!r} + ".tmp", {str(pidfile)!r}); time.sleep(30)'], 'timeout': 40}))
         watcher = subprocess.Popen([sys.executable, '-B', str(SCRIPT), 'watch', '--state', str(self.state),
                                     '--attempt', 'ticket-1/1', '--input', str(command)], stdout=subprocess.PIPE, text=True)
         lock = sqlite3.connect(self.state, timeout=10, isolation_level=None)
@@ -406,7 +410,8 @@ class Waits(WorkerLifecycleCase):
         pidfile = self.root / 'wait.pid'
         command = self.root / 'wait.json'
         command.write_text(json.dumps({'argv': [sys.executable, '-c',
-            f'import os,time; open({str(pidfile)!r}, "w").write(str(os.getpid())); time.sleep(30)'], 'timeout': 40}))
+            f'import os,time; open({str(pidfile)!r} + ".tmp", "w").write(str(os.getpid())); '
+            f'os.replace({str(pidfile)!r} + ".tmp", {str(pidfile)!r}); time.sleep(30)'], 'timeout': 40}))
         watcher = subprocess.Popen([sys.executable, '-B', str(SCRIPT), 'watch', '--state', str(self.state),
                                     '--attempt', 'ticket-1/1', '--input', str(command)], stdout=subprocess.PIPE, text=True)
         wait_pid = None
