@@ -17,7 +17,8 @@ pinned head. [Remediate](../SKILL.md) assigns it; there is no diff and no repair
 The assignment names the `worktree` and pinned `head`, the `report`, the `goal`, the
 `kind` file (a built-in kind, or the free-form goal's written signal, independent
 source, deciding proof, allowed repair and exclusions), and the `inventory`: the
-files this worker owns, possibly one partition of a larger scan.
+files this worker owns, possibly one partition of a larger scan, or the items of a
+sample the user accepted, which bounds the job.
 
 ## Finish line
 

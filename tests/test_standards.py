@@ -62,8 +62,9 @@ class Standards(unittest.TestCase):
         self.assertIn('assign a reviewer the [audit](jobs/audit.md) job per module, split or merged by item count',
                       remediate)
         # The condition and the question are pinned together, so an inverted condition fails.
-        self.assertIn('cannot be completed for every counted item with the available workers and allowance, '
-                      '[ask the user](../../runtime/ask/ask.md) before detection', remediate)
+        self.assertIn('If those per-item checks (the Proof checklist for each test, the reading of each comment block '
+                      'against its code) cannot be completed for every counted item with the available workers and '
+                      'allowance, [ask the user](../../runtime/ask/ask.md) before detection', remediate)
         self.assertIn('An accepted sample becomes the inventory, and every item outside it is reported as unscanned.',
                       remediate)
         self.assertIn("Never sample, or screen by pattern, in place of the per-item checks without the user's "
@@ -78,6 +79,9 @@ class Standards(unittest.TestCase):
         self.assertIn('A generated or default verdict covers nothing.', remediate)
         audit = ' '.join((ROOT / 'skills/remediate/jobs/audit.md').read_text().split())
         self.assertIn('every item the kind checks one by one has a recorded observation', audit)
+        self.assertIn("each item's recorded observation or the path of the file that holds them", audit)
+        # An accepted sample is a list of items, so the job checks those items and no others.
+        self.assertIn('or the items of a sample the user accepted, which bounds the job', audit)
         self.assertIn('the location of every item without one; a generated or default verdict is not an observation',
                       audit)
 
