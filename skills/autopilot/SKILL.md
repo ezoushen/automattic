@@ -30,6 +30,9 @@ types the command; a message that mentions it is not an invocation. Never widens
   A confirmed card whose goal, criteria and grants are unchanged is not confirmed again;
   a card that ended `waiting-on-user` or `paused-allowance` resumes once its cause is gone. Taking over a card
   moves its terminal state to `history:`, clears `terminal:` and restores the phase it stopped in.
+  A card that ended `paused-by-user` resumes at once, with no cause to wait for: first record each decision the
+  user made while in control in the ledger as theirs, with their words, and re-read the branch and the board, so
+  the work the user did is the current state.
 - **`autopilot --pause`:** the user takes control of a confirmed run. Record `paused-by-user` with the user's words
   and the phase it stopped in, and answer the user as an ordinary session from then on.
 - **`--auto-merge`:** also grants merging once the PR is open; see [Stop](#stop).
