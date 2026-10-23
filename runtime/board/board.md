@@ -22,12 +22,17 @@ a supplied slug never widens. `TICKET_PRIORITY=a,b` orders efforts when requeste
 Also apply [shared capacity](../resources/capacity.md) across
 known account users; `--max-live` sees this board's workers, not every service client.
 
-Use `--check` for validation, no action for candidates, `--counts` for counts,
-`--set <ticket> status=<state>` or `worker=<id>` for runtime state (`status=blocked` also
-takes a new `blocker=<reason>`, which the ticket's front matter keeps until it leaves `blocked`),
-`--accept <ticket>` for structural evidence checks and standing measurements, `--delivery` for the
-structural delivery gate, which names each failing field, and `--coordinate` to bind the calling
-session as the effort's coordinator. Read and judge the evidence after those checks.
+| Flag | Use |
+|---|---|
+| no action flag | candidates (scheduling calls still take `--max-live`) |
+| `--check` | validation |
+| `--counts` | counts |
+| `--set <ticket> status=<state>` or `worker=<id>` | runtime state; `status=blocked` also takes a new `blocker=<reason>`, which the ticket's front matter keeps until it leaves `blocked` |
+| `--accept <ticket>` | structural evidence checks and standing measurements |
+| `--delivery` | the structural delivery gate, which names each failing field |
+| `--coordinate` | bind the calling session as the effort's coordinator |
+
+Read and judge the evidence after those checks.
 Ordinary issue history without machine ticket metadata is not enrolled in this
 board. Malformed machine tickets remain errors; `--board` exposes invalid statuses
 and `--set` repairs them. Scheduling still validates all enrolled efforts so a slug
