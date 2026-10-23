@@ -160,6 +160,12 @@ class JumpIn(unittest.TestCase):
         self.assertIn('The card grants nothing until `--take-over`', paused)
         self.assertIn('ask the user what the next decision needs', paused)
 
+    def test_taking_over_a_paused_card_keeps_what_the_user_did_and_decided_in_control(self):
+        start = ' '.join(SKILL.read_text().split('## Start', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('A card that ended `paused-by-user` resumes at once, with no cause to wait for', start)
+        self.assertIn('first record each decision the user made while in control in the ledger as theirs, with their words', start)
+        self.assertIn('and re-read the branch and the board, so the work the user did is the current state', start)
+
 
 class Registration(unittest.TestCase):
     def test_only_the_user_starts_it_on_every_harness(self):
