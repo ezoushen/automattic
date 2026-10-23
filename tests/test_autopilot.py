@@ -144,6 +144,28 @@ class Flags(unittest.TestCase):
         self.assertIn('The final report leads with the open assumptions', text)
 
 
+class AllowanceResume(unittest.TestCase):
+    def test_an_allowance_pause_schedules_its_own_resume_and_asks_only_when_the_host_needs_approval(self):
+        run = ' '.join(SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('Ending `paused-allowance`, schedule the resume instead of leaving it to the user', run)
+        self.assertIn("set one timer through the host's scheduler for just after the reset of the window that drove the level", run)
+        self.assertIn('the latest `resets_at` of the windows at 90% used or projected', run)
+        self.assertIn('that runs `autopilot --take-over`', run)
+        self.assertIn("record the time and the timer's handle on the card", run)
+        self.assertIn("The user's request for it is the authorization", run)
+        self.assertIn("A host whose timer needs the user's approval keeps that prompt pending", run)
+        self.assertIn('a host with no scheduler gets the resume command in the report', run)
+
+    def test_a_timer_that_fires_while_still_limited_sets_the_next_only_for_a_later_reset(self):
+        run = ' '.join(SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('If the allowance is still `critical` when the timer fires', run)
+        self.assertIn('set the next timer only when the new reset is later than the one just waited for', run)
+        self.assertIn('A take-over, by the timer or by the user, cancels a timer left over', run)
+
+    def test_the_card_records_the_timer(self):
+        self.assertIn('timer:', CARD.read_text().split('## State', 1)[1])
+
+
 class JumpIn(unittest.TestCase):
     def test_pause_ends_the_run_in_paused_by_user_with_the_users_words_and_the_stopped_phase(self):
         text = prose(SKILL)
