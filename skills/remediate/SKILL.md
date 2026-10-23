@@ -62,6 +62,13 @@ Resolve scope before acting:
   wait for the user's confirmation of the findings to repair. Time passing or a
   completed scan is not confirmation.
 
+For a paths or whole-project scan, first count the items the kind's Proof covers one
+by one, such as tests or comment blocks, from the project's own listing where it has
+one, and size the audit partitions by that count. If those steps cannot be finished
+for every item with the available workers and allowance, [ask the user](../../runtime/ask/ask.md)
+before detection: more workers, a narrower scope, or a sample they accept. Never
+sample, or screen by pattern, in place of those steps without the user's agreement.
+
 Diff/path invocations authorize repairs after proof. Whole-project confirmation
 authorizes only the selected findings; refresh their evidence if inputs changed
 while waiting. A free-form goal needing runtime changes exceeds this procedure:
@@ -81,8 +88,10 @@ report that boundary for a separate implementation task.
    docstrings by inventorying the source (language tokenizer/AST where available,
    otherwise careful reading). When the kind's Proof has steps for every test,
    run them for every test in scope during detection, before selecting candidates.
-   For a paths or whole-project scan, reconcile the file inventory against the
-   workers' coverage file by file, and scan every file no worker accounted for.
+   For a paths or whole-project scan, reconcile the inventory against the workers'
+   coverage item by item, and cover every file and item no worker accounted for:
+   a test without its checklist, or a comment block not read against its code, is
+   uncovered, not clean. A generated or default verdict covers nothing.
    Detection makes no source edits; delegated detection is a reviewer's audit job.
    Every delegated audit, reproduce or repair assignment names its job's inputs, with
    an absolute report outside the worktree, such as

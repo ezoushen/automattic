@@ -6,7 +6,9 @@ Look for comments or docstrings that promise behavior the implementation does no
 provide, describe a removed path, contradict the accepted contract, or narrate code
 without adding a caller contract or necessary constraint. Check renamed symbols,
 units, ownership, ordering and failure behavior against relevant callers and tests.
-A list of added comments is a discovery aid, not proof.
+Numbers, counts and absolute words (all, every, only, never) go stale first: check
+each against the code it describes. A list of added comments is a discovery aid, not
+proof.
 
 ## Proof
 

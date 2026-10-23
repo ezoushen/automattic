@@ -53,6 +53,30 @@ class Standards(unittest.TestCase):
         remediate = ' '.join((ROOT / 'skills/remediate/SKILL.md').read_text().split())
         self.assertIn('untracked files are outside the diff', remediate)
 
+    def test_a_scan_counts_its_items_and_asks_before_it_samples(self):
+        # A per-item proof too large for the workers is the user's cost decision, not a silent sample.
+        remediate = ' '.join((ROOT / 'skills/remediate/SKILL.md').read_text().split())
+        self.assertIn("count the items the kind's Proof covers one by one", remediate)
+        self.assertIn('size the audit partitions by that count', remediate)
+        self.assertIn('[ask the user](../../runtime/ask/ask.md) before detection', remediate)
+        self.assertIn("in place of those steps without the user's agreement", remediate)
+
+    def test_coverage_is_counted_per_item_and_a_generated_verdict_covers_nothing(self):
+        # A file can be "inventoried" while most of its tests were never read.
+        remediate = ' '.join((ROOT / 'skills/remediate/SKILL.md').read_text().split())
+        self.assertIn("reconcile the inventory against the workers' coverage item by item", remediate)
+        self.assertIn('a test without its checklist, or a comment block not read against its code, '
+                      'is uncovered, not clean', remediate)
+        self.assertIn('A generated or default verdict covers nothing.', remediate)
+        audit = ' '.join((ROOT / 'skills/remediate/jobs/audit.md').read_text().split())
+        self.assertIn("every item the kind's Proof covers has a recorded observation", audit)
+        self.assertIn('how many have a recorded observation; a generated or default verdict is not one', audit)
+
+    def test_comment_signal_names_the_claims_that_go_stale_first(self):
+        kind = ' '.join((STANDARDS / 'kinds/misleading-comments.md').read_text().split())
+        signal = kind[kind.index('## Signal'):kind.index('## Proof')]
+        self.assertIn('Numbers, counts and absolute words (all, every, only, never) go stale first', signal)
+
     def test_the_three_standards_exist(self):
         for name in ('code-comments.md', 'documentation.md', 'pr.md'):
             self.assertTrue((STANDARDS / name).is_file(), name)

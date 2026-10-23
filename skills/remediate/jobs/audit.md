@@ -37,12 +37,15 @@ evidence; a candidate the Proof confirms by reading needs no run. Mark a flag yo
 would dismiss, or one you cannot prove, UNVERIFIED (disputed) and list its ID for a
 [reproduce](../../review/jobs/reproduce.md) job; another worker decides it.
 
-Discoveries outside the kind or goal go to `## Follow-ups`. Done when every file in
-the inventory is accounted for and every candidate has a verdict.
+Discoveries outside the kind or goal go to `## Follow-ups`. Done when every item the
+kind's Proof covers has a recorded observation, every file in the inventory is
+accounted for and every candidate has a verdict.
 
 ## Return
 
-`## Coverage`: every inventory file, scanned or not and why. `## Findings`: per
+`## Coverage`: every inventory file, scanned or not and why, with the count of its
+items and how many have a recorded observation; a generated or default verdict is
+not one. `## Findings`: per
 candidate, its ID, location, claim, contract source, deciding evidence (trace,
 re-read lines, or mutation diff with command and output) and verdict, plus a
 proposed minimal repair for CONFIRMED ones. End with counts per verdict and the IDs

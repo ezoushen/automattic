@@ -340,8 +340,8 @@ class CrossHarness(unittest.TestCase):
         skill = (PLUGIN / 'skills/remediate/SKILL.md').read_text()
         detect = ' '.join(re.search(r'^1\. \*\*Detect read-only\.\*\*(.+?)^2\. ', skill, re.M | re.S).group(1).split())
         assert "run them for every test in scope during detection, before selecting candidates" in detect, detect
-        assert 'For a paths or whole-project scan, reconcile the file inventory' in detect, detect
-        assert 'scan every file no worker accounted for' in detect, detect
+        assert "For a paths or whole-project scan, reconcile the inventory against the workers' coverage item by item" in detect, detect
+        assert 'cover every file and item no worker accounted for' in detect, detect
 
     def test_resource_lock_excludes_releases_and_keeps_exit_status(self):
         with tempfile.TemporaryDirectory(prefix='zloop mutex ') as tmp:
