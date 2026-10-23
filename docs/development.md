@@ -23,6 +23,10 @@ only accepted ADRs bind, and a change that conflicts with one is raised, not wor
   ([ADR 0008](adr/0008-builders-refactor-after-green-within-the-ticket.md)).
 - The plugin declares no external skill package as a dependency
   ([ADR 0009](adr/0009-the-framework-depends-on-no-external-skill-package.md)).
+- Autopilot merges only with `--auto-merge`, through the repository's normal path
+  ([ADR 0010](adr/0010-autopilot-merges-only-through-the-normal-path.md)).
+- Docs that link the engineering standard add rules and never relax one of its principles
+  ([ADR 0011](adr/0011-the-engineering-standard-is-extended-never-overridden.md)).
 
 ## Suite and hooks
 
