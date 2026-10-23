@@ -11,6 +11,7 @@ Contents:
 - [Start](#start)
 - [Run](#run)
 - [Decide without asking](#decide-without-asking)
+- [While paused](#while-paused)
 - [Stop](#stop)
 
 First read: the runtime bootstrap (`../../bootstrap.md`), the host session part, [engineering judgment](../../standards/engineering.md).
@@ -66,6 +67,13 @@ money, deleting data, a production change, merging without `--auto-merge`, a mis
 approval the repository's approval path requires, weakening an acceptance criterion's
 Verify, or narrowing a decision the user made. Reaching one ends `waiting-on-user` instead of deciding it;
 leave the native prompt pending and record on the card what is needed and the resume command.
+
+## While paused
+
+After `--pause`, start no worker. Workers already running finish, and their results wait unaccepted in the
+effort's reports: stopping them loses their work, and accepting them would race the user's own changes.
+Integrate, push and publish nothing, and ask the user what the next decision needs. The card grants nothing
+until `--take-over`.
 
 ## Stop
 

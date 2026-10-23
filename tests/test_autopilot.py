@@ -152,6 +152,14 @@ class JumpIn(unittest.TestCase):
         stop = SKILL.read_text().split('## Stop', 1)[1]
         self.assertRegex(stop, r'(?m)^- `paused-by-user`: the user took control with `--pause`')
 
+    def test_while_paused_nothing_starts_lands_or_goes_out_and_the_user_is_asked(self):
+        paused = ' '.join(SKILL.read_text().split('## While paused', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('start no worker', paused)
+        self.assertIn('Workers already running finish, and their results wait unaccepted in the effort\'s reports', paused)
+        self.assertIn('Integrate, push and publish nothing', paused)
+        self.assertIn('The card grants nothing until `--take-over`', paused)
+        self.assertIn('ask the user what the next decision needs', paused)
+
 
 class Registration(unittest.TestCase):
     def test_only_the_user_starts_it_on_every_harness(self):
