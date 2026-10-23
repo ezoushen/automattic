@@ -58,6 +58,37 @@ package entry before starting a session. Check installation with
 `hooks/list`: a listed installation alone does not prove that its skills or hook were
 loaded. Its required presentation reference is packaged with the plugin.
 
+## OpenCode
+
+There is no zloop OpenCode bootstrap extension
+([OpenCode settings](../hosts/opencode/session.md)); OpenCode loads the shared skills
+through its native discovery, so the development installation is one link:
+
+```sh
+mkdir -p ~/.config/opencode/skills
+ln -s /absolute/path/to/zloop/skills ~/.config/opencode/skills/zloop
+```
+
+Keep an existing matching symlink; do not overwrite a different installation. Link
+`skills/`, not the repository root, for the reason the Pi section gives: a directory
+holding `SKILL.md` is one skill, and a grouping directory supplies only the ID, so the
+commands stay flat under `zloop`. A top-level `*.md` at a skill source root would
+itself become a skill, so the link must stay restricted to `skills/`. Retarget this
+verified development symlink only when the checkout moves.
+
+No reinstall and no service restart are needed: OpenCode watches its skill and
+configuration sources, so edits here appear in a running session at its next model
+step. Run `opencode reload` when a new link or skill directory does not appear, and
+reserve `opencode service restart` for service troubleshooting. Confirm registration
+with `opencode api skill.list`, which lists each skill with its `autoinvoke` flag: the
+six model-invocable ids (diagnose, explain, housekeeping, prototype, research, tdd) and
+the ten commands, loadable only by explicit id (`@align` and the like), should be
+present. The native check is
+`ZLOOP_NATIVE=1 .venv/bin/python -B tests/test_cross_harness.py NativeHarnesses`.
+
+This covers model settings and skill discovery only; OpenCode still has no native
+dispatch lifecycle ([workers](../hosts/opencode/workers.md)).
+
 ## Pi
 
 Development installation uses two symlinks to this source tree:
