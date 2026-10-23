@@ -68,7 +68,11 @@ export default function (pi) {
       // unref: a headless run that ends must not wait hours for its timer.
       wakes.set(id, setTimeout(() => {
         wakes.delete(id);
-        pi.sendUserMessage(command, { deliverAs: "followUp", expandPromptTemplates: true });
+        try {
+          pi.sendUserMessage(command, { deliverAs: "followUp", expandPromptTemplates: true });
+        } catch {
+          // Pi replaced this extension (/reload, a new session) and invalidated its API: the timer's session is gone.
+        }
       }, delay).unref());
       return reply(`timer ${id} will send \`${command}\` at ${new Date(due).toISOString()}`);
     },

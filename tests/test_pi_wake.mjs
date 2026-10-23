@@ -13,7 +13,7 @@ const load = async () => {
   const tools = new Map();
   const pi = { on() {}, registerTool: (tool) => tools.set(tool.name, tool), sendUserMessage: (...args) => sent.push(args) };
   (await import(`${bootstrap}?${Math.random()}`)).default(pi);
-  return { sent, tool: tools.get("zloop_wake") };
+  return { sent, pi, tool: tools.get("zloop_wake") };
 };
 const text = (result) => result.content.map((part) => part.text).join("");
 const inMs = (ms) => new Date(Date.now() + ms).toISOString();
@@ -41,6 +41,18 @@ await assert.rejects(tool.execute("call-5", { at: inMs(-1000), command: COMMAND 
 await assert.rejects(tool.execute("call-6", { at: "tomorrow-ish", command: COMMAND }), /ISO 8601/);
 await assert.rejects(tool.execute("call-7", { at: inMs(30 * 24 * 3600 * 1000), command: COMMAND }), /24 days/);
 await assert.rejects(tool.execute("call-8", { at: inMs(1000), command: "  " }), /command/);
+
+// A timer that fires after Pi replaced this extension (/reload, a new session) finds its API invalidated and throws;
+// that must not become an uncaught exception that takes the process down.
+const stale = await load();
+stale.pi.sendUserMessage = () => { throw new Error("SDK stale extension after /reload"); };
+const crashes = [];
+const record = (error) => crashes.push(error);
+process.on("uncaughtException", record);
+await stale.tool.execute("call-9", { at: inMs(40), command: COMMAND });
+await sleep(150);
+process.off("uncaughtException", record);
+assert.deepEqual(crashes.map(String), []);
 
 // A pending timer never holds the process open: a headless run that ends exits at once.
 const child = spawnSync(process.execPath, ["--input-type=module", "-e", `
