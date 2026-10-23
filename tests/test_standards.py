@@ -53,9 +53,13 @@ class Standards(unittest.TestCase):
         remediate = ' '.join((ROOT / 'skills/remediate/SKILL.md').read_text().split())
         self.assertIn('untracked files are outside the diff', remediate)
 
-    def test_the_four_standards_exist(self):
-        for name in ('code-comments.md', 'code-comments-sources.md', 'documentation.md', 'pr.md'):
+    def test_the_three_standards_exist(self):
+        for name in ('code-comments.md', 'documentation.md', 'pr.md'):
             self.assertTrue((STANDARDS / name).is_file(), name)
+
+    def test_the_comment_rules_have_no_separate_sources_file(self):
+        self.assertFalse((STANDARDS / 'code-comments-sources.md').exists())
+        self.assertNotIn('code-comments-sources', (STANDARDS / 'code-comments.md').read_text())
 
     def test_the_comment_rules_reach_writers_and_reviewers_as_a_core_skill_not_a_skill_folder(self):
         import agent_defs
