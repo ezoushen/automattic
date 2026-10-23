@@ -205,6 +205,13 @@ class Registration(unittest.TestCase):
         first_read = re.search(r'^First read:.*?(?:\n\n|\Z)', SKILL.read_text(), re.M | re.S).group(0)
         self.assertIn('](../../standards/engineering.md)', first_read)
 
+    def test_pause_is_listed_where_users_see_the_command(self):
+        self.assertIn('argument-hint: "<goal> | --take-over [--auto-merge] | --pause"', SKILL.read_text())
+        self.assertIn('--pause', (ROOT / 'skills/autopilot/agents/openai.yaml').read_text())
+        readme = next(l for l in (ROOT / 'README.md').read_text().splitlines() if l.startswith('| `autopilot` |'))
+        self.assertIn('`--pause` to take control', readme)
+        self.assertIn('`paused-by-user`', CARD.read_text().split('## Stop condition', 1)[1].split('\n## ', 1)[0])
+
     def test_the_command_is_listed_where_users_and_the_doc_checker_look(self):
         self.assertRegex((ROOT / 'README.md').read_text(), r'(?m)^\| `autopilot` \|')
         self.assertIn('[`/zloop:autopilot`](../autopilot/SKILL.md)', (ROOT / 'skills/brief/pipeline.md').read_text())

@@ -17,7 +17,7 @@ The user's goal, in their words, with its ledger IDs.
 ## Stop condition
 Ends in exactly one of: `delivered` (PR open, required checks pass, every criterion
 has passing evidence), `delivered-local` (no PR host: branch and delivery report
-ready), `merged` (only with `--auto-merge`), `waiting-on-user`, `paused-allowance`, `blocked`.
+ready), `merged` (only with `--auto-merge`), `waiting-on-user`, `paused-allowance`, `paused-by-user` (the user's `--pause`), `blocked`.
 
 ## Granted actions
 refine; dispatch with autofix (review, repairs, applicable E2E); push the effort branch;
