@@ -376,7 +376,7 @@ class CrossHarness(unittest.TestCase):
 
 
 class NativeHarnesses(unittest.TestCase):
-    """Installed Claude, Codex and Pi package readers, without model calls."""
+    """Installed Claude, Codex, Pi and OpenCode package readers, without model calls."""
 
     @unittest.skipUnless(os.environ.get('ZLOOP_NATIVE') == '1', 'set ZLOOP_NATIVE=1 to check installed CLIs')
     def test_claude_and_codex_read_the_package(self):
@@ -439,6 +439,67 @@ class NativeHarnesses(unittest.TestCase):
                 server.wait()
             server.stdin.close()
             server.stdout.close()
+
+    @unittest.skipUnless(os.environ.get('ZLOOP_NATIVE') == '1', 'set ZLOOP_NATIVE=1 to check installed CLIs')
+    def test_opencode_discovers_skills_and_their_invocation_policy(self):
+        import re
+        import shutil
+        import socket
+        import time
+        executable = shutil.which('opencode')
+        if not executable:
+            self.skipTest('the opencode CLI is not installed')
+        with tempfile.TemporaryDirectory(prefix='zloop native skills ') as tmp:
+            root = Path(tmp)
+            env = dict(os.environ)
+            for key, directory in [('XDG_CONFIG_HOME', 'config'), ('XDG_CACHE_HOME', 'cache'),
+                                   ('XDG_DATA_HOME', 'data'), ('XDG_STATE_HOME', 'state')]:
+                env[key] = str(root / directory)
+                Path(env[key]).mkdir()
+            link = Path(env['XDG_CONFIG_HOME']) / 'opencode/skills/zloop'
+            link.parent.mkdir(parents=True)
+            link.symlink_to(PLUGIN / 'skills', target_is_directory=True)  # the documented development install
+
+            def opencode(*args):
+                return subprocess.run([executable, *args], cwd=root, env=env, capture_output=True,
+                                      text=True, timeout=60)
+
+            def skill_list():
+                # A piped response is cut short once it is large, so let the CLI write a file.
+                listing = root / 'skills.json'
+                with listing.open('w') as output:
+                    result = subprocess.run([executable, 'api', 'skill.list'], cwd=root, env=env,
+                                            stdout=output, stderr=subprocess.PIPE, text=True, timeout=60)
+                assert result.returncode == 0, result.stderr
+                return json.loads(listing.read_text())['data']
+
+            with socket.socket() as probe:  # the service's fixed port is held by the user's own service
+                probe.bind(('127.0.0.1', 0))
+                port = probe.getsockname()[1]
+            assert opencode('service', 'set', 'port', str(port)).returncode == 0
+            try:
+                expected = {path.name for path in (PLUGIN / 'skills').iterdir() if (path / 'SKILL.md').exists()}
+                # A location's first request can answer before it finishes loading its skill sources.
+                for _ in range(30):
+                    found = {entry['id']: entry for entry in skill_list()
+                             if Path(entry.get('path', '')).resolve().is_relative_to((PLUGIN / 'skills').resolve())}
+                    if found.keys() >= expected:
+                        break
+                    time.sleep(0.5)
+                assert set(found) == expected, (sorted(found), sorted(expected))
+                policies = {}
+                for path in (PLUGIN / 'skills').glob('*/SKILL.md'):
+                    metadata = path.read_text().split('---', 2)[1]
+                    disabled = re.search(r'^disable-model-invocation:\s*true\s*$', metadata, re.M) is not None
+                    policies[path.parent.name] = not disabled
+                    if disabled:
+                        assert found[path.parent.name].get('autoinvoke') is False, path
+                    else:
+                        assert found[path.parent.name].get('autoinvoke') is not False, path
+                print(f'OpenCode native skills: {len(found)} registered, '
+                      f'{sum(policies.values())} model-invocable')
+            finally:
+                opencode('service', 'stop')
 
     @unittest.skipUnless(os.environ.get('ZLOOP_NATIVE_PI') == '1', 'set ZLOOP_NATIVE_PI=1 to check the installed Pi SDK')
     def test_pi_sdk_discovers_and_bootstraps(self):
