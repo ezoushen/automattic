@@ -20,3 +20,12 @@ upgrades or disabling approvals/sandboxing to make a delegate run.
 Before launching, resuming or acting as a worker, also read [workers.md](workers.md): it holds
 launch, profile and effort handling, the Claude hooks, child slots and goals. In worker
 messages, `adapter` is this file's absolute path.
+
+## Resume timer
+
+An autopilot allowance pause schedules its resume with `CronCreate` with `recurring: false` and prompt
+`/zloop:autopilot --take-over`, the cron pinned to the reset's minute, hour, day and month in local time, a few
+minutes after it and off :00 and :30. Record the job id and the next run time the result gives on the card. The job
+is session-only and fires only while the session is idle: it ends with the session, so a Claude that exits before the
+reset resumes only when the user types the command. Cancel a leftover job with `CronDelete`. The user's request for
+the resume (the run card) is the explicit request for scheduled work that [workers.md](workers.md) asks for.

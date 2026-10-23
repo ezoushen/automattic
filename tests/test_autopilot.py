@@ -148,7 +148,7 @@ class AllowanceResume(unittest.TestCase):
     def test_an_allowance_pause_schedules_its_own_resume_and_asks_only_when_the_host_needs_approval(self):
         run = ' '.join(SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0].split())
         self.assertIn('Ending `paused-allowance`, schedule the resume instead of leaving it to the user', run)
-        self.assertIn("set one timer through the host's scheduler for just after the reset of the window that drove the level", run)
+        self.assertIn("set one timer through the host's native scheduler, named in its session part's Resume timer section, for just after the reset of the window that drove the level", run)
         self.assertIn('the latest `resets_at` of the windows at 90% used or projected', run)
         self.assertIn('that runs `autopilot --take-over`', run)
         self.assertIn("record the time and the timer's handle on the card", run)
@@ -164,6 +164,47 @@ class AllowanceResume(unittest.TestCase):
 
     def test_the_card_records_the_timer(self):
         self.assertIn('timer:', CARD.read_text().split('## State', 1)[1])
+
+
+def timer_section(host, part='session'):
+    text = (ROOT / f'hosts/{host}/{part}.md').read_text()
+    return ' '.join(text.split('## Resume timer', 1)[1].split('\n## ', 1)[0].split())
+
+
+class HostTimers(unittest.TestCase):
+    def test_the_shared_text_names_no_runtime_tool_and_points_at_the_host_adapter(self):
+        text = prose(SKILL)
+        self.assertIn("through the host's native scheduler, named in its session part's Resume timer section", text)
+        for tool in ('CronCreate', 'zloop_wake', 'launchd', 'crontab'):
+            self.assertNotIn(tool, text)
+
+    def test_claude_schedules_a_one_shot_cron_job_that_lasts_as_long_as_the_session(self):
+        section = timer_section('claude')
+        self.assertIn('`CronCreate` with `recurring: false`', section)
+        self.assertIn('prompt `/zloop:autopilot --take-over`', section)
+        self.assertIn("pinned to the reset's minute, hour, day and month", section)
+        self.assertIn('ends with the session', section)
+        self.assertIn('`CronDelete`', section)
+
+    def test_pi_schedules_through_the_bootstrap_extensions_wake_tool(self):
+        section = timer_section('pi')
+        self.assertIn('`zloop_wake`', section)
+        self.assertIn('`command` is `/skill:autopilot --take-over`', section)
+        self.assertIn('lost if Pi exits', section)
+        self.assertIn('`cancel`', section)
+
+    def test_codex_and_opencode_have_no_one_shot_timer_so_the_report_carries_the_resume_command(self):
+        codex = timer_section('codex', 'workers')
+        self.assertIn('Resume timer section of [workers.md](workers.md)', ' '.join((ROOT / 'hosts/codex/session.md').read_text().split()))
+        self.assertIn("Codex's scheduled tasks are recurring and belong to the app, not the CLI", codex)
+        self.assertIn('set no timer', codex)
+        self.assertIn('`$zloop:autopilot --take-over`', codex)
+        opencode = timer_section('opencode')
+        self.assertIn('OpenCode has no built-in scheduler', opencode)
+        self.assertIn('set no timer', opencode)
+        for section in (codex, opencode):
+            self.assertIn('and the time after which it can run', section)
+            self.assertIn('install no operating-system timer unless the user asks', section)
 
 
 class JumpIn(unittest.TestCase):
