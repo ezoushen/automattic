@@ -150,7 +150,7 @@ class AllowanceResume(unittest.TestCase):
         self.assertIn('Ending `paused-allowance`, schedule the resume instead of leaving it to the user', run)
         self.assertIn("set one timer through the host's native scheduler, named in its session part's Resume timer section, for just after the reset of the window that drove the level", run)
         self.assertIn('the latest `resets_at` of the windows at 80% used or projected', run)
-        self.assertIn('that runs `autopilot --take-over`', run)
+        self.assertIn('that runs `autopilot --take-over --timed`', run)
         self.assertIn("record the time and the timer's handle on the card", run)
         self.assertIn("The user's request for it is the authorization", run)
         self.assertIn("A host whose timer needs the user's approval keeps that prompt pending", run)
@@ -160,7 +160,7 @@ class AllowanceResume(unittest.TestCase):
         run = ' '.join(SKILL.read_text().split('## Run', 1)[1].split('\n## ', 1)[0].split())
         self.assertIn('If the allowance is still `critical` when the timer fires', run)
         self.assertIn('set the next timer only when the new reset is later than the one just waited for', run)
-        self.assertIn('A take-over, by the timer or by the user, cancels a timer left over', run)
+        self.assertIn('A take-over or a pause, by the timer or by the user, cancels a timer left over', run)
 
     def test_the_card_records_the_timer(self):
         self.assertIn('timer:', CARD.read_text().split('## State', 1)[1])
@@ -169,6 +169,14 @@ class AllowanceResume(unittest.TestCase):
 def timer_section(host, part='session'):
     text = (ROOT / f'hosts/{host}/{part}.md').read_text()
     return ' '.join(text.split('## Resume timer', 1)[1].split('\n## ', 1)[0].split())
+
+
+class TimedResume(unittest.TestCase):
+    def test_a_timer_resumes_only_the_card_that_is_still_waiting_on_it(self):
+        start = ' '.join(SKILL.read_text().split('## Start', 1)[1].split('\n## ', 1)[0].split())
+        self.assertIn('**`autopilot --take-over --timed`:** what a resume timer runs, as the user\'s own take-over, authorized on the card', start)
+        self.assertIn('It resumes only a card that still ended `paused-allowance` with `timer:` set', start)
+        self.assertIn("for any other state it reports the card's state and changes nothing", start)
 
 
 class HostTimers(unittest.TestCase):
@@ -181,17 +189,29 @@ class HostTimers(unittest.TestCase):
     def test_claude_schedules_a_one_shot_cron_job_that_lasts_as_long_as_the_session(self):
         section = timer_section('claude')
         self.assertIn('`CronCreate` with `recurring: false`', section)
-        self.assertIn('prompt `/zloop:autopilot --take-over`', section)
         self.assertIn("pinned to the reset's minute, hour, day and month", section)
-        self.assertIn('ends with the session', section)
         self.assertIn('`CronDelete`', section)
+
+    def test_claude_prompts_in_plain_text_because_a_scheduled_prompt_cannot_run_a_user_only_skill(self):
+        section = timer_section('claude')
+        self.assertIn('A scheduled prompt cannot run a skill marked `disable-model-invocation`', section)
+        self.assertIn("plain text that names the card and the plugin\'s autopilot skill file, by absolute path, and asks for its `--take-over --timed` procedure", section)
+
+    def test_claude_describes_when_the_timer_survives_and_when_it_does_not(self):
+        section = timer_section('claude')
+        self.assertIn('Claude restores it when the same session is resumed with `claude --resume` or `claude --continue` before its time', section)
+        self.assertIn('stops firing when the session exits', section)
+        self.assertIn('a time that passed while it was closed is not caught up', section)
+        self.assertIn('fires only while the session is idle', section)
 
     def test_pi_schedules_through_the_bootstrap_extensions_wake_tool(self):
         section = timer_section('pi')
         self.assertIn('`zloop_wake`', section)
-        self.assertIn('`command` is `/skill:autopilot --take-over`', section)
+        self.assertIn('`command` is `/skill:autopilot --take-over --timed`', section)
         self.assertIn('lost if Pi exits or replaces the extension (`/reload`, a new session)', section)
         self.assertIn('`cancel`', section)
+        self.assertIn('Pi drops a wake that arrives while it compacts', section)
+        self.assertIn('the card keeps the resume command', section)
 
     def test_codex_and_opencode_have_no_one_shot_timer_so_the_report_carries_the_resume_command(self):
         codex = timer_section('codex', 'workers')

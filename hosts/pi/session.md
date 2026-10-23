@@ -23,8 +23,8 @@ messages, `adapter` is this file's absolute path.
 ## Resume timer
 
 An autopilot allowance pause schedules its resume with the extension's `zloop_wake` tool: `at` is the reset time
-as an ISO 8601 time with its offset, a few minutes after it, and `command` is `/skill:autopilot --take-over`, which
+as an ISO 8601 time with its offset, a few minutes after it, and `command` is `/skill:autopilot --take-over --timed`, which
 Pi expands as a skill command and queues if the agent is busy. Record the timer id it returns on the card; `cancel`
 with that id drops a leftover. The timer is lost if Pi exits or replaces the extension (`/reload`, a new session) before it fires, and a pending timer never keeps a
-headless run alive. The user's request for the resume (the run card) is the explicit request for scheduled work
+headless run alive. Pi drops a wake that arrives while it compacts, so the card keeps the resume command. The user's request for the resume (the run card) is the explicit request for scheduled work
 that [workers.md](workers.md) asks for.

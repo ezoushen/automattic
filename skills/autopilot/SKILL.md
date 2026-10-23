@@ -35,6 +35,9 @@ types the command; a message that mentions it is not an invocation. Never widens
   the work the user did is the current state.
 - **`autopilot --pause`:** the user takes control of a confirmed run. Record `paused-by-user` with the user's words
   and the phase it stopped in, and answer the user as an ordinary session from then on.
+- **`autopilot --take-over --timed`:** what a resume timer runs, as the user's own take-over, authorized on the card.
+  It resumes only a card that still ended `paused-allowance` with `timer:` set; for any other state it reports the
+  card's state and changes nothing.
 - **`--auto-merge`:** also grants merging once the PR is open; see [Stop](#stop).
 
 Then autopilot writes the [run card](run-card.md) to `.scratch/<slug>/autopilot.md` and asks the user to confirm it once.
@@ -59,11 +62,11 @@ At each phase boundary and before each worker launch, run `python3 "<plugin_root
 If it is `critical` for a provider this run uses, finish the step in progress, commit passing work and end `paused-allowance`.
 Ending `paused-allowance`, schedule the resume instead of leaving it to the user: set one timer through the host's
 native scheduler, named in its session part's Resume timer section, for just after the reset of the window that drove the level (the latest `resets_at` of the windows at 80%
-used or projected, below which `critical` ends) that runs `autopilot --take-over`, and record the time and the timer's handle on the card. The
+used or projected, below which `critical` ends) that runs `autopilot --take-over --timed`, and record the time and the timer's handle on the card. The
 user's request for it is the authorization, and the timer stays on the card, not in the host's settings. A host whose
 timer needs the user's approval keeps that prompt pending, and a host with no scheduler gets the resume command in
 the report. If the allowance is still `critical` when the timer fires, set the next timer only when the new reset is
-later than the one just waited for; otherwise end with the resume command. A take-over, by the timer or by the
+later than the one just waited for; otherwise end with the resume command. A take-over or a pause, by the timer or by the
 user, cancels a timer left over.
 Update the card's State as each phase ends, with the commit and report it reached.
 Candidate ADRs the user has not approved are not written; the final report lists them among the user's actions; approved ones are written as dispatch says.
