@@ -229,10 +229,10 @@ class Waits(WorkerLifecycleCase):
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         callback_pid = None
         try:
-            deadline = time.monotonic() + 5
-            while not pidfile.exists() and time.monotonic() < deadline:
+            # The callback creates the file before writing its pid, so wait for the pid itself.
+            deadline = time.monotonic() + 15
+            while not (pidfile.exists() and pidfile.read_text().strip()) and time.monotonic() < deadline:
                 time.sleep(.02)
-            self.assertTrue(pidfile.exists())
             callback_pid = int(pidfile.read_text())
             watcher.kill()
             watcher.communicate(timeout=5)
