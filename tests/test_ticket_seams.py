@@ -19,7 +19,7 @@ class TicketSeams(unittest.TestCase):
                       'as few as will do>', prose(TEMPLATE))
 
     def test_refine_prepares_each_ticket_with_its_seams_for_the_users_check(self):
-        self.assertIn('A **Seams** line names the public interfaces its tests reach, existing and higher ones first, '
+        self.assertIn('**Seams:** the public interfaces its tests reach, existing and higher ones first, '
                       'as few as will do; the ticket check approves them', prose(REFINE))
 
     def test_refine_stays_under_the_size_cap(self):
