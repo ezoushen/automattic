@@ -15,6 +15,7 @@ The binding decisions of this repository, newest last. Format, statuses and supe
 - [0009](0009-the-framework-depends-on-no-external-skill-package.md) The framework depends on no external skill package: no manifest dependency, its own procedures under its own names, guarded by a repository-wide test.
 - [0010](0010-autopilot-merges-only-through-the-normal-path.md) Autopilot merges only through the repository's normal path: only with `--auto-merge`, once required checks and the approval path are satisfied, never by admin override or self-approval.
 - [0011](0011-the-engineering-standard-is-extended-never-overridden.md) The engineering standard is extended, never overridden: docs that link it add rules for their own decisions and never relax a principle.
+- [0012](0012-an-autopilot-resume-timer-is-the-users-own-take-over.md) An autopilot resume timer is the user's own take-over: authorized on the run card, it runs `--take-over --timed` and resumes only a card still waiting on it; a pause or take-over cancels it.
 
 ## Superseded
 

@@ -16,7 +16,7 @@ class RepoAdrs(unittest.TestCase):
                                  '--index'], capture_output=True, text=True)
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         out = json.loads(result.stdout)
-        self.assertEqual('0012', out['next'])
+        self.assertEqual('0013', out['next'])
         index = (ROOT / 'docs/adr/README.md').read_text()
         accepted = index[index.index('## Accepted'):index.index('## Superseded')]
         for name in ('0001-adr-numbers-are-checked-on-main.md', '0002-grilling-asks-principles-only.md',
@@ -26,7 +26,8 @@ class RepoAdrs(unittest.TestCase):
                      '0008-builders-refactor-after-green-within-the-ticket.md',
                      '0009-the-framework-depends-on-no-external-skill-package.md',
                      '0010-autopilot-merges-only-through-the-normal-path.md',
-                     '0011-the-engineering-standard-is-extended-never-overridden.md'):
+                     '0011-the-engineering-standard-is-extended-never-overridden.md',
+                     '0012-an-autopilot-resume-timer-is-the-users-own-take-over.md'):
             self.assertIn(f']({name})', accepted)
 
     def test_adr_0004_states_the_repair_exception(self):
@@ -62,7 +63,7 @@ class RepoAdrs(unittest.TestCase):
         index = (ROOT / 'docs/adr/README.md').read_text()
         accepted = index[index.index('## Accepted'):index.index('## Superseded')]
         entries = re.findall(r'^- \[\d{4}\]\((\d{4}-[^)]+\.md)\) (.+)$', accepted, re.M)
-        self.assertEqual(11, len(entries))
+        self.assertEqual(12, len(entries))
         for name, text in entries:
             title = (ROOT / 'docs/adr' / name).read_text().splitlines()[0].removeprefix('# ')
             with self.subTest(adr=name):
@@ -77,6 +78,16 @@ class RepoAdrs(unittest.TestCase):
         for name in re.findall(r'^- \[\d{4}\]\((\d{4}-[^)]+\.md)\)', accepted, re.M):
             with self.subTest(adr=name):
                 self.assertGreaterEqual(len(rules.get(name, '').split()), 4, rules.get(name))
+
+    def test_the_resume_timer_adr_states_its_authority_its_guard_and_where_it_applies(self):
+        adr = ' '.join((ROOT / 'docs/adr/0012-an-autopilot-resume-timer-is-the-users-own-take-over.md').read_text().split())
+        self.assertIn('schedules its own resume where the host has a scheduler', adr)
+        self.assertIn("recorded on the run card, is its authorization", adr)
+        self.assertIn('runs `--take-over --timed`, which resumes only a card that still ended `paused-allowance`', adr)
+        index = ' '.join((ROOT / 'docs/adr/README.md').read_text().split())
+        development = ' '.join((ROOT / 'docs/development.md').read_text().split())
+        for text in (index, development):
+            self.assertRegex(text, r"resume timer is the user's own take-over[^\n]*authorized on the run card[^\n]*`--take-over --timed`")
 
     def test_the_development_rules_point_to_the_standalone_framework_adrs(self):
         text = ' '.join((ROOT / 'docs/development.md').read_text().split())

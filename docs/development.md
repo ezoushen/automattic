@@ -27,6 +27,8 @@ only accepted ADRs bind, and a change that conflicts with one is raised, not wor
   ([ADR 0010](adr/0010-autopilot-merges-only-through-the-normal-path.md)).
 - Docs that link the engineering standard add rules and never relax one of its principles
   ([ADR 0011](adr/0011-the-engineering-standard-is-extended-never-overridden.md)).
+- An autopilot resume timer is the user's own take-over, authorized on the run card and run as `--take-over --timed`
+  ([ADR 0012](adr/0012-an-autopilot-resume-timer-is-the-users-own-take-over.md)).
 
 ## Suite and hooks
 
